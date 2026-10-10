@@ -10,6 +10,18 @@ export const TransactionTypeSchema = z.enum([
 ]);
 export type TransactionType = z.infer<typeof TransactionTypeSchema>;
 
+export const TransactionItemSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  amount: z.number(),
+  bonus: z.number().default(0),
+  method: z.string(),
+  status: z.enum(["SUCCESS", "PENDING", "FAILED"]),
+  referenceId: z.string(),
+  createdAt: z.string(),
+});
+export type TransactionItem = z.infer<typeof TransactionItemSchema>;
+
 export const WalletTransactionSchema = z.object({
   id: z.string(),
   type: TransactionTypeSchema,
@@ -22,8 +34,8 @@ export const WalletTransactionSchema = z.object({
 export type WalletTransaction = z.infer<typeof WalletTransactionSchema>;
 
 export const DepositInputSchema = z.object({
-  gateway: z.enum(["STRIPE", "CRYPTO", "PAYPAL", "MANUAL"]),
-  amount: z.number().min(5, "Minimum deposit is $5").max(10000, "Maximum deposit is $10,000"),
+  gateway: z.enum(["STRIPE", "CRYPTO", "PAYPAL", "MANUAL", "UPI", "RAZORPAY"]),
+  amount: z.number().min(100, "Minimum deposit is ₹100").max(500000, "Maximum deposit is ₹500,000"),
   couponCode: z.string().optional(),
 });
 export type DepositInput = z.infer<typeof DepositInputSchema>;

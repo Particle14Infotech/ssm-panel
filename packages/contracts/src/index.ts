@@ -4,3 +4,5 @@ export * from "./orders";
 export * from "./wallet";
 export * from "./contact";
 export * from "./pricing";
+export * from "./tickets";
+export * from "./profile";
