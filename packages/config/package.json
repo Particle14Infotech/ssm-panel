@@ -1,0 +1,11 @@
+{
+  "name": "@smm/config",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "files": [
+    "tailwind-preset.js",
+    "tsconfig.base.json",
+    "eslint-preset.js"
+  ]
+}

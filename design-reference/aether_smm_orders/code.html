@@ -1,0 +1,486 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><title>AETHER SMM</title><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-container-highest": "#353534", "on-secondary-container": "#ffd5e6", "tertiary-fixed-dim": "#bec6df", "surface-tint": "#bccf74", "surface-dim": "#131313", "on-secondary-fixed": "#3d0027", "outline-variant": "#46483a", "on-tertiary": "#283044", "on-primary-fixed-variant": "#3e4c00", "primary-fixed": "#d8ec8d", "error": "#ffb4ab", "secondary-fixed-dim": "#ffafd5", "surface-container": "#201f1f", "outline": "#909281", "tertiary-container": "#dae2fc", "on-surface-variant": "#c7c8b6", "inverse-surface": "#e5e2e1", "primary-fixed-dim": "#bccf74", "on-error": "#690005", "surface-bright": "#3a3939", "on-secondary": "#620042", "on-background": "#e5e2e1", "on-error-container": "#ffdad6", "on-primary": "#2a3400", "primary": "#ffffff", "surface-container-lowest": "#0e0e0e", "on-tertiary-fixed": "#131b2e", "surface": "#131313", "tertiary": "#ffffff", "surface-container-low": "#1c1b1b", "error-container": "#93000a", "surface-container-high": "#2a2a2a", "background": "#131313", "primary-container": "#d8ec8d", "surface-variant": "#353534", "on-tertiary-container": "#5c647a", "on-primary-fixed": "#171e00", "secondary-container": "#bd0183", "on-secondary-fixed-variant": "#8a005e", "inverse-on-surface": "#313030", "on-tertiary-fixed-variant": "#3e475b", "secondary": "#ffafd5", "on-primary-container": "#5b6b1b", "inverse-primary": "#556515", "tertiary-fixed": "#dae2fc", "secondary-fixed": "#ffd8e8", "on-surface": "#e5e2e1" }, "borderRadius": { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" }, "spacing": { "margin": "2.5rem", "gutter-mobile": "1rem", "space-xl": "3rem", "gutter": "1.5rem", "space-lg": "2rem", "space-md": "1.25rem", "space-sm": "0.75rem", "margin-mobile": "1.25rem", "space-xs": "0.375rem" }, "fontFamily": { "label-xs": ["Urbanist"], "headline-lg": ["Urbanist"], "headline-xl-mobile": ["Urbanist"], "stat-display": ["Urbanist"], "body-md": ["Urbanist"], "body-lg": ["Urbanist"], "label-sm": ["Urbanist"], "headline-xl": ["Urbanist"] }, "fontSize": { "label-xs": ["10px", { "lineHeight": "14px", "letterSpacing": "0.08em", "fontWeight": "400" }], "headline-lg": ["22px", { "lineHeight": "30px", "letterSpacing": "0.03em", "fontWeight": "400" }], "headline-xl-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "0.03em", "fontWeight": "300" }], "stat-display": ["42px", { "lineHeight": "48px", "letterSpacing": "0.05em", "fontWeight": "200" }], "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0.02em", "fontWeight": "400" }], "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.06em", "fontWeight": "400" }], "headline-xl": ["46px", { "lineHeight": "56px", "letterSpacing": "0.04em", "fontWeight": "300" }] } } } };</script></head><body class="bg-background text-on-surface font-body-md text-body-md selection:bg-primary-fixed-dim selection:text-on-primary-fixed min-h-screen"><header class="fixed top-0 left-0 right-0 z-50 bg-surface/75 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-20 w-full px-gutter md:px-margin flex items-center justify-between gap-gutter"><div class="flex items-center gap-space-sm flex-shrink-0"><img alt="Aether SMM Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1X4gX0C4obliRle4UeVWjkCe72dNXYNidYFN_pnXxgu19fkQeJH8xFlrzXKOOcQW8EgBV95QXFpkFm27sm707Cvit0LWVms3WEYqdEeXP5JPfF6WFp1YxclWr2QO93ZmTy6FM7i490_MiU8DMlfV7X5bSDXcR5sNCbmV4gs5lSqIlH9SouQAAoYDcxPKMh_PRoXcmI8uskbEI_Hoc5T15ElUqSaSQL4b3lajNnQQWmYeIIkksPbextmVws"><div class="flex items-center gap-1"><span class="font-headline-lg text-headline-lg uppercase tracking-wider text-primary font-semibold">[YOUR BRAND]</span><span class="text-primary-fixed text-headline-lg leading-none font-bold select-none">*</span></div></div><nav class="hidden lg:flex items-center bg-surface-container/60 p-1.5 rounded-full backdrop-blur-md gap-1" data-active-classes="bg-surface-container-highest text-primary font-medium rounded-full"><a class="px-space-md py-1.5 rounded-full text-on-surface-variant font-body-md text-body-md transition-all hover:bg-surface-container-high hover:text-on-surface" data-path="dashboard" href="#">Dashboard</a><a class="px-space-md py-1.5 rounded-full text-on-surface-variant font-body-md text-body-md transition-all hover:bg-surface-container-high hover:text-on-surface" data-path="campaigns" href="#">Campaigns</a><a aria-current="page" class="px-space-md py-1.5 transition-all bg-surface-container-highest text-primary font-medium rounded-full" data-path="orders" href="#">Orders</a><a class="px-space-md py-1.5 rounded-full text-on-surface-variant font-body-md text-body-md transition-all hover:bg-surface-container-high hover:text-on-surface" data-path="analytics" href="#">Analytics</a><a class="px-space-md py-1.5 rounded-full text-on-surface-variant font-body-md text-body-md transition-all hover:bg-surface-container-high hover:text-on-surface" data-path="services" href="#">Services</a></nav><div class="flex items-center gap-space-sm flex-shrink-0"><div class="hidden sm:flex items-center gap-space-xs bg-surface-container/70 rounded-full px-space-md py-1.5 backdrop-blur-md"><span class="w-2 h-2 rounded-full bg-primary-fixed-dim animate-pulse"></span><span class="font-label-xs text-label-xs uppercase text-on-surface-variant tracking-wider">Balance</span><span class="font-body-md text-body-md font-medium text-primary ml-1">$14,850.40</span></div><button class="relative w-9 h-9 rounded-full bg-surface-container/60 hover:bg-surface-container-high hover:text-on-surface transition-all flex items-center justify-center text-on-surface-variant focus:outline-none" type="button"><span class="material-symbols-outlined text-[18px]">notifications</span><span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-error ring-2 ring-surface"></span></button><button class="w-9 h-9 rounded-full bg-surface-container/60 hover:bg-surface-container-high hover:text-on-surface transition-all flex items-center justify-center text-on-surface-variant focus:outline-none" type="button"><span class="material-symbols-outlined text-[18px]">settings</span></button><div class="pl-1 flex items-center"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXc1u8Qva4cxEdOUcYds7g9oTapdbqBlWOy_rkrAHb4k4HHd0J2nQws-RSH2llMWY7qBTRCSsVWgHgh2FtPHSBQouLijjc6QLmbSw6v13pM1ze1pQ07EdO3mF6EvDbbJsIdTHbsqMlzDwKZ2NOW43X7a33KFbnCfM3hFXxs-DOBgGxKMQlg9m1J8kmI3k4hbkXcyzimm6Pt-6qODzq6kYqUk9X7Fa_Z1yLNm76Ibk81GpUgZ_k8chi"></div></div></div></header><main class="w-full pt-20 bg-background min-h-[calc(100vh-80px)]"><div class="flex flex-col w-full">
+<!-- UPPER LIGHT INVERSION TIER -->
+<section class="w-full bg-[#F5F5F8] text-[#131313] pt-space-lg pb-space-xl relative overflow-hidden transition-colors">
+<!-- Ambient subtle background blur circles inside light section -->
+<div class="absolute -top-32 right-12 w-96 h-96 rounded-full bg-primary-fixed/30 blur-3xl pointer-events-none"></div><div class="absolute -top-24 right-4 sm:right-20 w-80 h-80 sm:w-96 sm:h-96 pointer-events-none opacity-45 mix-blend-multiply overflow-hidden rounded-full"><img src="https://lh3.googleusercontent.com/aida/AEtjO1U-brywaNPhlPwvIos4V7AxzBa3ZTzqzoTmufhbe3N9ZJ_B4fEZitg6B-WTtuKH7jiHwigsWVj61l5rF0FmJK9tQiybqMRMkCA-DmXad9nBKUPv1XctV5bKVOgTUCfWDciIM6e36JOimeUK0AZUTI_L0wx5DXHya9hqUdmGEcm1mqxettZObigzOFK6-aSyreZxON3a6Aq7q9B51bK01YacG0QIn1mVgfh33HQoiXH2yD07l8vvHTDB9zM" alt="Tulip Crown Art Object" class="w-full h-full object-cover filter blur-[2px]"></div>
+<div class="absolute top-40 -left-20 w-80 h-80 rounded-full bg-secondary-fixed/40 blur-3xl pointer-events-none"></div>
+<div class="w-full px-gutter md:px-margin max-w-7xl mx-auto relative z-10">
+<!-- Top Utility Header & Period Strip -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-md mb-space-lg">
+<div>
+<div class="flex items-center gap-space-xs mb-1">
+<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#131313] text-primary-fixed">
+<span class="material-symbols-outlined text-[13px]">bolt</span>
+</span>
+<span class="font-label-xs text-label-xs tracking-widest uppercase text-[#555555] font-semibold">Algorithmic Queue Controller</span>
+<span class="text-primary-container font-headline-lg leading-none">*</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-[#0E0E0E] tracking-tight">Orders</h1>
+<p class="font-body-md text-body-md text-[#666666] max-w-lg mt-1">Autonomous dispatch monitor, drop-mitigation protocols, and node telemetry across distributed target networks.</p>
+</div>
+<!-- Period Toggle Strip -->
+<div class="flex items-center gap-1 bg-[#E8E8EE] p-1.5 rounded-full shadow-sm self-start lg:self-auto overflow-x-auto max-w-full">
+<button class="px-space-md py-1.5 rounded-full bg-[#FFFFFF] text-[#0E0E0E] font-label-sm text-label-sm shadow-sm transition-all hover:bg-[#FFFFFF]" type="button">Today</button>
+<button class="px-space-md py-1.5 rounded-full text-[#666666] font-label-sm text-label-sm transition-all hover:text-[#0E0E0E]" type="button">24h</button>
+<button class="px-space-md py-1.5 rounded-full text-[#666666] font-label-sm text-label-sm transition-all hover:text-[#0E0E0E]" type="button">7d</button>
+<button class="px-space-md py-1.5 rounded-full text-[#666666] font-label-sm text-label-sm transition-all hover:text-[#0E0E0E]" type="button">30d</button>
+<button class="px-space-md py-1.5 rounded-full text-[#666666] font-label-sm text-label-sm transition-all hover:text-[#0E0E0E] flex items-center gap-1" type="button">
+<span class="">Custom</span>
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+</button>
+</div>
+</div>
+<!-- Upper Cards Grid: 4 KPIs + Interactive Annotation -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md relative">
+<!-- Card 1: Pending Verification -->
+<div class="bg-[#FFFFFF] p-space-md shadow-sm relative group hover:shadow-md transition-shadow rounded-xl">
+<div class="flex items-center justify-between text-[#888888] font-label-sm text-label-sm mb-space-sm">
+<span class="">Pending Verification</span>
+<span class="material-symbols-outlined text-[18px] text-[#A0A0A0]">hourglass_top</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-stat-display text-[52px] leading-none font-extralight tracking-tight text-[#111111]">12</span>
+<span class="font-label-xs text-label-xs text-[#E65100] bg-[#FFF3E0] px-2 py-0.5 rounded-full font-medium">In Validation</span>
+</div>
+<div class="mt-space-sm flex items-center justify-between text-[#888888] font-label-xs text-label-xs">
+<span class="">Avg handoff latency</span>
+<span class="text-[#222222] font-semibold">180ms</span>
+</div>
+<div class="w-full bg-[#F0F0F4] h-1 rounded-full mt-2 overflow-hidden">
+<div class="bg-[#FFA726] h-full w-[24%] rounded-full"></div>
+</div>
+</div>
+<!-- Card 2: Fulfilling (With Hairline Pin to Callout) -->
+<div class="bg-[#FFFFFF] p-space-md shadow-sm relative group hover:shadow-md transition-shadow rounded-xl" id="fulfillingCard">
+<div class="flex items-center justify-between text-[#888888] font-label-sm text-label-sm mb-space-sm">
+<span class="">Fulfilling</span>
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-fixed-dim opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-on-primary-fixed-variant"></span>
+</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-stat-display text-[52px] leading-none font-extralight tracking-tight text-[#111111]">84</span>
+<span class="font-label-xs text-label-xs text-on-primary-fixed bg-primary-container px-2 py-0.5 rounded-full font-semibold">Active Run</span>
+</div>
+<div class="mt-space-sm flex items-center justify-between text-[#888888] font-label-xs text-label-xs">
+<span class="">Aggregated throughput</span>
+<span class="text-[#222222] font-semibold">4.8k req/sec</span>
+</div>
+<div class="w-full bg-[#F0F0F4] h-1 rounded-full mt-2 overflow-hidden">
+<div class="bg-[#7A981B] h-full w-[72%] rounded-full"></div>
+</div>
+<!-- Floating Annotation Callout (Dark Glass Pill with hairline connector) -->
+<div class="hidden xl:flex absolute -top-12 -right-8 z-30 pointer-events-none items-center gap-2">
+<div class="bg-[#111111]/90 backdrop-blur-md px-3 py-1 rounded-full shadow-lg text-primary-fixed font-label-xs text-label-xs flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-fixed animate-pulse"></span>
+<span class="">Order progress 72%</span>
+</div>
+<!-- Hairline pointer stem -->
+<svg class="w-6 h-6 -ml-3 text-[#111111]" fill="none" viewBox="0 0 24 24">
+<path d="M4 2L16 20" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"></path>
+</svg>
+</div>
+</div>
+<!-- Card 3: Completed Today -->
+<div class="bg-[#FFFFFF] p-space-md shadow-sm relative group hover:shadow-md transition-shadow rounded-xl">
+<div class="flex items-center justify-between text-[#888888] font-label-sm text-label-sm mb-space-sm">
+<span class="">Completed Today</span>
+<span class="material-symbols-outlined text-[18px] text-[#A0A0A0]">check_circle</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-stat-display text-[52px] leading-none font-extralight tracking-tight text-[#111111]">1,290</span>
+<span class="font-label-xs text-label-xs text-[#2E7D32] bg-[#E8F5E9] px-2 py-0.5 rounded-full font-medium">+18.4%</span>
+</div>
+<div class="mt-space-sm flex items-center justify-between text-[#888888] font-label-xs text-label-xs">
+<span class="">Volume dispatched</span>
+<span class="text-[#222222] font-semibold">14.2M Units</span>
+</div>
+<div class="w-full bg-[#F0F0F4] h-1 rounded-full mt-2 overflow-hidden">
+<div class="bg-[#2E7D32] h-full w-[96%] rounded-full"></div>
+</div>
+</div>
+<!-- Card 4: Refill Protected -->
+<div class="bg-[#FFFFFF] p-space-md shadow-sm relative group hover:shadow-md transition-shadow rounded-xl">
+<div class="flex items-center justify-between text-[#888888] font-label-sm text-label-sm mb-space-sm">
+<span class="">Refill Protected</span>
+<span class="material-symbols-outlined text-[18px] text-secondary-container">shield_with_heart</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-stat-display text-[52px] leading-none font-extralight tracking-tight text-[#111111]">100%</span>
+<span class="font-label-xs text-label-xs text-secondary-container bg-secondary-fixed px-2 py-0.5 rounded-full font-semibold">Zero-Drop SLA</span>
+</div>
+<div class="mt-space-sm flex items-center justify-between text-[#888888] font-label-xs text-label-xs">
+<span class="">Autonomous audits</span>
+<span class="text-[#222222] font-semibold">24/24 active</span>
+</div>
+<div class="w-full bg-[#F0F0F4] h-1 rounded-full mt-2 overflow-hidden">
+<div class="bg-secondary-container h-full w-full rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- NOTCHED DIVIDER TAB WITH CHEVRON DRAG-HANDLE -->
+<div class="relative w-full h-8 bg-[#000000] flex items-center justify-center z-20">
+<div class="absolute -top-4 flex items-center justify-center">
+<div class="bg-[#181818] shadow-md px-6 py-1 rounded-full flex items-center gap-2 cursor-pointer hover:bg-surface-container-highest transition-colors">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-fixed"></span>
+<span class="font-label-xs text-label-xs text-on-surface-variant tracking-wider uppercase">Live Telemetry Ledger</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant -ml-0.5">unfold_more</span>
+</div>
+</div>
+</div>
+<!-- LOWER DARK SECTION (#000000) -->
+<section class="w-full bg-[#000000] text-on-surface py-space-xl relative overflow-hidden min-h-[700px]">
+<!-- Ambient Green Glow Spotlight Backdrop -->
+<div class="absolute top-1/4 left-1/3 w-[600px] h-[600px] rounded-full bg-primary-fixed-variant/10 blur-[130px] pointer-events-none" style="background: radial-gradient(circle, rgba(188, 207, 116, 0.22) 0%, rgba(62, 76, 0, 0.15) 50%, transparent 75%); filter: blur(90px);"></div>
+<div class="absolute bottom-10 right-10 w-[450px] h-[450px] rounded-full bg-primary-container/5 blur-[100px] pointer-events-none"></div>
+<!-- Background Subtle Dot Matrix Canvas Overlay -->
+<div class="absolute inset-0 opacity-[0.07] pointer-events-none" style="background-image: radial-gradient(#FFFFFF 1px, transparent 1px); background-size: 24px 24px;"></div>
+<div class="w-full px-gutter md:px-margin max-w-7xl mx-auto relative z-10 flex flex-col gap-space-lg">
+<!-- Filter and Bulk Action Top Bar -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-sm flex-wrap">
+<div class="relative min-w-[280px]">
+<span class="material-symbols-outlined text-[18px] text-outline absolute left-3.5 top-1/2 -translate-y-1/2">search</span>
+<input class="w-full bg-[#0D0D0D]/80 backdrop-blur-md rounded-full py-2.5 pl-10 pr-4 text-on-surface font-body-md text-body-md placeholder-outline focus:outline-none focus:bg-surface-container-high transition-colors" placeholder="Search Order ID, URL handle, or service node..." type="text" style="backdrop-filter: blur(20px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: rgba(255, 255, 255, 0.1) 0px 1px 1px 0px inset;">
+</div>
+<button class="bg-surface-container-low hover:bg-surface-container text-on-surface font-label-sm text-label-sm px-4 py-2.5 rounded-full flex items-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">filter_list</span>
+<span class="">Filter Status</span>
+</button>
+<button class="bg-surface-container-low hover:bg-surface-container text-on-surface font-label-sm text-label-sm px-4 py-2.5 rounded-full flex items-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">tune</span>
+<span class="">Velocity: Normal</span>
+</button>
+</div>
+<div class="flex items-center gap-space-sm">
+<span class="font-label-xs text-label-xs text-outline uppercase tracking-wider hidden sm:inline">Active Synchronizers: 3 Node Clusters</span>
+<button class="bg-surface-container-highest hover:bg-surface-bright text-primary font-label-sm text-label-sm px-4 py-2.5 rounded-full flex items-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary-fixed">refresh</span>
+<span class="">Poll Cluster</span>
+</button>
+</div>
+</div>
+<!-- MAIN DATA SECTION: Split between Ledger Glass Cards & Highlight Promo Card -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- Left: Glass Cards List (8 Cols) -->
+<div class="lg:col-span-8 flex flex-col gap-space-md">
+<!-- ORDER 1: ORD-9921 (Active Syncing with Dot-Matrix Progress) -->
+<div class="bg-[#0D0D0D]/90 backdrop-blur-xl rounded-lg p-space-md relative overflow-hidden transition-all duration-300 hover:bg-[#141414]" style="backdrop-filter: blur(24px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: rgba(255, 255, 255, 0.2) 0px 1px 1px 0px inset, rgba(0, 0, 0, 0.6) 0px 10px 30px -10px;">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-space-sm">
+<div class="flex items-center gap-space-sm">
+<span class="bg-surface-container-high text-primary font-mono font-semibold font-label-sm text-label-sm px-2.5 py-1 rounded-full">#ORD-9921</span>
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-outline">Target Node: US-EAST-VIRGINIA</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 bg-primary-container/20 text-primary-fixed font-label-xs text-label-xs px-3 py-1 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-fixed animate-ping"></span>
+                  Active Syncing
+                </span>
+<span class="font-label-xs text-label-xs text-outline">14m ago</span>
+</div>
+</div>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm mb-space-md">
+<div>
+<h3 class="font-headline-lg text-headline-lg text-primary font-medium tracking-normal">Instagram High-Retention Views</h3>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-2 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-outline">link</span>
+<span class="font-mono text-outline">instagram.com/reel/C89xKlp0vX_</span>
+<span class="text-outline-variant">•</span>
+<span class="text-primary-fixed-dim font-label-xs text-label-xs">Direct / Search Source Split</span>
+</p>
+</div>
+<div class="text-right">
+<div class="font-headline-lg text-headline-lg text-primary font-light tracking-tight">50,000</div>
+<div class="font-label-xs text-label-xs text-outline uppercase tracking-wider">Ordered Units</div>
+</div>
+</div>
+<!-- Dot-Matrix Progress Visualization -->
+<div class="bg-surface-container-lowest/80 rounded-DEFAULT p-space-sm mb-space-md">
+<div class="flex items-center justify-between font-label-xs text-label-xs text-on-surface-variant mb-2">
+<span class="flex items-center gap-1">
+<span class="text-primary-fixed font-medium">36,500</span> / 50,000 Delivered (73%)
+                </span>
+<span class="text-outline">ETA: 42 mins remaining</span>
+</div>
+<!-- Dot matrix rows -->
+<div class="flex flex-wrap gap-1.5 items-center">
+<!-- 24 visual dots indicating chunked batch distribution -->
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary-fixed animate-pulse"></span>
+<!-- Inactive / Pending dots -->
+<span class="w-2.5 h-2.5 rounded-full bg-surface-container-highest"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-surface-container-highest"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-surface-container-highest"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-surface-container-highest"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-surface-container-highest"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-surface-container-highest"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-surface-container-highest"></span>
+</div>
+</div>
+<!-- Footer Action Strip -->
+<div class="flex items-center justify-between pt-2">
+<div class="flex items-center gap-space-sm">
+<span class="inline-flex items-center gap-1 text-primary-fixed-dim font-label-xs text-label-xs">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+                  Auto-Refill: Active (30d)
+                </span>
+<span class="text-outline text-label-xs font-label-xs">• 1.8k views/min</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-outline hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">query_stats</span>
+</button>
+<button class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-outline hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- ORDER 2: ORD-9918 (TikTok Follower Network with Waveform Meter) -->
+<div class="bg-[#0D0D0D]/90 backdrop-blur-xl rounded-lg p-space-md relative overflow-hidden transition-all duration-300 hover:bg-[#141414]" style="backdrop-filter: blur(24px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: rgba(255, 255, 255, 0.2) 0px 1px 1px 0px inset, rgba(0, 0, 0, 0.6) 0px 10px 30px -10px;">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-space-sm">
+<div class="flex items-center gap-space-sm">
+<span class="bg-surface-container-high text-primary font-mono font-semibold font-label-sm text-label-sm px-2.5 py-1 rounded-full">#ORD-9918</span>
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-outline">Target Node: EU-CENTRAL-FRANKFURT</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 bg-surface-container-highest text-on-surface font-label-xs text-label-xs px-3 py-1 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-[#E65100]"></span>
+                  In Queue
+                </span>
+<span class="font-label-xs text-label-xs text-outline">32m ago</span>
+</div>
+</div>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm mb-space-md">
+<div>
+<h3 class="font-headline-lg text-headline-lg text-primary font-medium tracking-normal">TikTok Follower Network</h3>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-2 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-outline">account_circle</span>
+<span class="font-mono text-outline">@algorithmic.creator</span>
+<span class="text-outline-variant">•</span>
+<span class="text-secondary font-label-xs text-label-xs">Organic AI Filtered Profiles</span>
+</p>
+</div>
+<div class="text-right">
+<div class="font-headline-lg text-headline-lg text-primary font-light tracking-tight">10,000</div>
+<div class="font-label-xs text-label-xs text-outline uppercase tracking-wider">Followers Reserved</div>
+</div>
+</div>
+<!-- Waveform Activity Meter -->
+<div class="bg-surface-container-lowest/80 rounded-DEFAULT p-space-sm mb-space-md flex items-center justify-between gap-space-md">
+<div class="flex flex-col gap-1">
+<span class="font-label-xs text-label-xs text-outline">Cluster Dispatch Waveform</span>
+<span class="font-body-md text-body-md text-primary font-medium">Warmup Throttle: 320/hour</span>
+</div>
+<!-- Segmented Vertical Waveform Bars -->
+<div class="flex items-end gap-1 h-9 px-2">
+<span class="w-1 bg-primary-fixed rounded-full h-2"></span>
+<span class="w-1 bg-primary-fixed rounded-full h-4"></span>
+<span class="w-1 bg-primary-fixed rounded-full h-7"></span>
+<span class="w-1 bg-primary-fixed rounded-full h-3"></span>
+<span class="w-1 bg-primary-fixed rounded-full h-8"></span>
+<span class="w-1 bg-primary-fixed rounded-full h-5"></span>
+<span class="w-1 bg-primary-fixed rounded-full h-9"></span>
+<span class="w-1 bg-primary-fixed rounded-full h-6"></span>
+<span class="w-1 bg-surface-container-highest rounded-full h-3"></span>
+<span class="w-1 bg-surface-container-highest rounded-full h-2"></span>
+<span class="w-1 bg-surface-container-highest rounded-full h-5"></span>
+<span class="w-1 bg-surface-container-highest rounded-full h-3"></span>
+<span class="w-1 bg-surface-container-highest rounded-full h-1"></span>
+</div>
+</div>
+<!-- Footer Action Strip -->
+<div class="flex items-center justify-between pt-2">
+<div class="flex items-center gap-space-sm">
+<span class="text-outline text-label-xs font-label-xs">Stagger interval: 18s • Anti-Ban Heuristics Active</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1 bg-surface-container hover:bg-surface-container-high text-primary font-label-xs text-label-xs rounded-full transition-colors" type="button">
+                  Adjust Ramp
+                </button>
+<button class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-outline hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- ORDER 3: ORD-9910 (X Verified Reposts with Circular SVG Ring 100%) -->
+<div class="bg-[#0D0D0D]/90 backdrop-blur-xl rounded-lg p-space-md relative overflow-hidden transition-all duration-300 hover:bg-[#141414]" style="backdrop-filter: blur(24px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: rgba(255, 255, 255, 0.2) 0px 1px 1px 0px inset, rgba(0, 0, 0, 0.6) 0px 10px 30px -10px;">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-space-sm">
+<div class="flex items-center gap-space-sm">
+<span class="bg-surface-container-high text-primary font-mono font-semibold font-label-sm text-label-sm px-2.5 py-1 rounded-full">#ORD-9910</span>
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-outline">Target Node: GLOBAL EDGE CDN</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 bg-primary-container text-on-primary-container font-label-xs text-label-xs px-3 py-1 rounded-full font-semibold">
+<span class="material-symbols-outlined text-[12px]">done_all</span>
+                  Fulfilled
+                </span>
+<span class="font-label-xs text-label-xs text-outline">2h ago</span>
+</div>
+</div>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-md">
+<!-- Circular Ring Progress -->
+<div class="relative w-14 h-14 flex-shrink-0 flex items-center justify-center">
+<svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">
+<circle class="stroke-surface-container-highest" cx="18" cy="18" fill="none" r="15.9155" stroke-width="2.5"></circle>
+<circle class="stroke-primary-fixed" cx="18" cy="18" fill="none" r="15.9155" stroke-dasharray="100, 100" stroke-linecap="round" stroke-width="2.5"></circle>
+</svg>
+<span class="absolute w-2 h-2 rounded-full bg-primary-fixed"></span>
+</div>
+<div>
+<h3 class="font-headline-lg text-headline-lg text-primary font-medium tracking-normal">X Verified Reposts &amp; Quotes</h3>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-2 mt-0.5">
+<span class="font-mono text-outline">x.com/status/183920194821</span>
+<span class="text-outline-variant">•</span>
+<span class="text-primary-fixed font-label-xs text-label-xs">100% Blue Tick Nodes</span>
+</p>
+</div>
+</div>
+<div class="text-right">
+<div class="font-headline-lg text-headline-lg text-primary font-light tracking-tight">2,500 / 2,500</div>
+<div class="font-label-xs text-label-xs text-outline uppercase tracking-wider">Success Rate: 100.0%</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-space-md mt-space-sm">
+<div class="flex items-center gap-space-xs text-label-xs font-label-xs text-outline">
+<span class="material-symbols-outlined text-[14px] text-primary-fixed">verified</span>
+<span class="">Audit hash logged to ledger: 0x8a92f...41e</span>
+</div>
+<button class="text-primary-fixed hover:underline font-label-xs text-label-xs flex items-center gap-1" type="button">
+<span class="">View Analytics Receipt</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Right: Secondary Highlight Card (Olive-to-Lime Gradient) + System Status (4 Cols) -->
+<div class="lg:col-span-4 flex flex-col gap-space-md">
+<!-- Instant Bulk Order Dispatcher Pill/Card -->
+<div class="p-space-lg relative overflow-hidden text-[#111111] shadow-xl rounded-xl" style="background: linear-gradient(135deg, rgb(36, 49, 0) 0%, rgb(118, 150, 21) 45%, rgb(219, 239, 144) 100%); box-shadow: rgba(219, 239, 144, 0.35) 0px 20px 50px -10px, rgba(219, 239, 144, 0.25) 0px 0px 45px, rgba(255, 255, 255, 0.4) 0px 1px 1px 0px inset; border: 1px solid rgba(255, 255, 255, 0.35);"><div class="absolute inset-0 pointer-events-none mix-blend-overlay opacity-30 overflow-hidden"><img src="https://lh3.googleusercontent.com/aida/AEtjO1U-brywaNPhlPwvIos4V7AxzBa3ZTzqzoTmufhbe3N9ZJ_B4fEZitg6B-WTtuKH7jiHwigsWVj61l5rF0FmJK9tQiybqMRMkCA-DmXad9nBKUPv1XctV5bKVOgTUCfWDciIM6e36JOimeUK0AZUTI_L0wx5DXHya9hqUdmGEcm1mqxettZObigzOFK6-aSyreZxON3a6Aq7q9B51bK01YacG0QIn1mVgfh33HQoiXH2yD07l8vvHTDB9zM" alt="Abstract Tulip Accent" class="w-full h-full object-cover scale-125 filter blur-[1px]"></div>
+<!-- Decorative Accent Star from brand inspiration -->
+<div class="absolute -right-6 -bottom-6 w-36 h-36 opacity-30 pointer-events-none text-primary-fixed flex items-center justify-center">
+<svg class="w-full h-full fill-current" viewBox="0 0 100 100">
+<polygon points="50,5 64,36 98,36 70,57 81,91 50,70 19,91 30,57 2,36 36,36"></polygon>
+</svg>
+</div>
+<div class="flex items-center justify-between mb-space-md relative z-10">
+<span class="bg-[#111111]/90 backdrop-blur-md text-primary-fixed font-label-xs text-label-xs uppercase px-3 py-1 rounded-full font-semibold tracking-wider">
+                Protocol Accelerator
+              </span>
+<span class="material-symbols-outlined text-[#111111] text-[22px]">bolt</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-[#0A0E00] font-semibold leading-snug mb-2 relative z-10">
+              Instant Bulk Order Dispatcher
+            </h2>
+<p class="font-body-md text-body-md text-[#1E2900] mb-space-lg relative z-10 font-normal">
+              Directly orchestrate multi-tier algorithmic campaigns across Instagram, TikTok, and X in a single concurrent thread.
+            </p>
+<!-- Verification Stepper -->
+<div class="bg-[#111111]/15 backdrop-blur-md rounded-DEFAULT p-space-sm mb-space-lg relative z-10">
+<div class="flex items-center justify-between text-[#0E1500] font-label-xs text-label-xs mb-1.5 font-medium">
+<span class="">Sanitization Pipeline</span>
+<span class="font-semibold text-[#000000]">4 / 5 steps verified</span>
+</div>
+<div class="w-full bg-[#111111]/20 h-1.5 rounded-full overflow-hidden">
+<div class="bg-[#111111] h-full w-[80%] rounded-full"></div>
+</div>
+</div>
+<!-- Action Trigger Button with Circular Arrow -->
+<div class="flex items-center justify-between pt-1 relative z-10">
+<div class="flex flex-col">
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-[#2E3C00]">Batch Cost Est.</span>
+<span class="font-headline-lg text-headline-lg font-medium text-[#0A0E00]">$240.80</span>
+</div>
+<button class="w-12 h-12 rounded-full bg-[#0A0E00] hover:bg-[#1A2500] text-primary-fixed flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95" type="button">
+<span class="material-symbols-outlined text-[24px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Network Cluster Telemetry Micro-Widget -->
+<div class="bg-[#0D0D0D]/90 backdrop-blur-xl rounded-lg p-space-md text-on-surface" style="backdrop-filter: blur(24px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: rgba(255, 255, 255, 0.2) 0px 1px 1px 0px inset, rgba(0, 0, 0, 0.6) 0px 10px 30px -10px;">
+<div class="flex items-center justify-between mb-space-sm">
+<span class="font-label-xs text-label-xs uppercase tracking-wider text-outline">Network Health Map</span>
+<span class="w-2 h-2 rounded-full bg-primary-fixed"></span>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between font-body-md text-body-md">
+<span class="text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary-fixed">hub</span>
+                  Proxy Shuffler US-01
+                </span>
+<span class="text-primary font-mono font-medium">99.98%</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+<div class="bg-primary-fixed h-full w-[99.98%] rounded-full"></div>
+</div>
+<div class="flex items-center justify-between font-body-md text-body-md pt-2">
+<span class="text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary-fixed">dns</span>
+                  Residential Gateway EU
+                </span>
+<span class="text-primary font-mono font-medium">98.40%</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+<div class="bg-primary-fixed-dim h-full w-[98.4%] rounded-full"></div>
+</div>
+<div class="flex items-center justify-between font-body-md text-body-md pt-2">
+<span class="text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-secondary">memory</span>
+                  AI Pattern Anti-Detection
+                </span>
+<span class="text-secondary font-mono font-medium">Optimal</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+<div class="bg-secondary h-full w-[95%] rounded-full"></div>
+</div>
+</div>
+<div class="mt-space-md pt-space-sm flex items-center justify-between text-outline font-label-xs text-label-xs">
+<span class="">Sync cycle: 500ms</span>
+<a class="hover:text-primary transition-colors text-primary-fixed-dim" href="#">View Full Matrix →</a>
+</div>
+</div>
+<!-- Quick Support / Protocol Assistance -->
+<div class="bg-surface-container-lowest/80 rounded-lg p-space-md flex items-center justify-between" style="backdrop-filter: blur(24px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: rgba(255, 255, 255, 0.15) 0px 1px 1px 0px inset;">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary-fixed">
+<span class="material-symbols-outlined text-[18px]">support_agent</span>
+</div>
+<div>
+<div class="font-body-md text-body-md text-primary font-medium">Priority Dispatch Desk</div>
+<div class="font-label-xs text-label-xs text-outline">Dedicated agent standby: ~45s</div>
+</div>
+</div>
+<button class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-label-sm transition-colors" type="button">
+              Chat
+            </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div></main>
+
+
+
+</body></html>

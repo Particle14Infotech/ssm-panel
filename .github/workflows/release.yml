@@ -1,0 +1,26 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    name: Build & Publish Release Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Web Image
+        run: docker build -f infra/Dockerfile.web -t ghcr.io/${{ github.repository }}/web:${{ github.ref_name }} .
+
+      - name: Build API Image
+        run: docker build -f infra/Dockerfile.api -t ghcr.io/${{ github.repository }}/api:${{ github.ref_name }} .
+
+      - name: Build Worker Image
+        run: docker build -f infra/Dockerfile.worker -t ghcr.io/${{ github.repository }}/worker:${{ github.ref_name }} .
