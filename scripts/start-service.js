@@ -18,8 +18,10 @@ if (service === "web") {
     console.log("[start-service] Running Prisma schema synchronization...");
     run("pnpm exec prisma db push --skip-generate");
     console.log("[start-service] Database schema synchronized.");
+    console.log("[start-service] Running idempotent seed...");
+    run("node scripts/seed.js");
   } catch (err) {
-    console.warn("[start-service] Note: db push failed or deferred:", err.message);
+    console.warn("[start-service] Note: db sync/seed warning:", err.message);
   }
   run("node apps/api/dist/src/main.js || node apps/api/dist/main.js || pnpm --filter @smm/api start:prod");
 }

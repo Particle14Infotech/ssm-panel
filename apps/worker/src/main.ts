@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import { PrismaClient, OrderStatus, OutboxStatus } from "@prisma/client";
 import Redis from "ioredis";
-import { Worker as BullWorker, Job } from "bullmq";
+import { Queue, Worker as BullWorker, Job } from "bullmq";
 import pino from "pino";
 
 dotenv.config();
@@ -52,8 +52,18 @@ export class SMMWorkerEngine {
           }
         );
 
-        this.bullWorker.on("ready", () => {
+        this.bullWorker.on("ready", async () => {
           logger.info("🚀 BullMQ queue listeners ready on queue 'smm-queue'");
+          try {
+            const testQueue = new Queue("smm-queue", { connection: this.redis! });
+            await testQueue.add("worker-boot-verification", {
+              service: "smm-worker",
+              dispatchedAt: new Date().toISOString(),
+            });
+            logger.info("📤 BullMQ self-test job enqueued to 'smm-queue'");
+          } catch (qErr: any) {
+            logger.warn({ err: qErr.message }, "Warning during BullMQ self-test job dispatch");
+          }
         });
 
         this.bullWorker.on("failed", (job, err) => {
