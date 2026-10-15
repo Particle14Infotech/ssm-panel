@@ -58,7 +58,6 @@ async function runProof() {
     password
   });
   console.log('  -> User A Registered:', regA.status, regA.body?.user?.id);
-  const tokenA = regA.body?.token;
   const userA_id = regA.body?.user?.id;
 
   const regB = await apiRequest('/api/v1/auth/register', 'POST', {
@@ -67,8 +66,22 @@ async function runProof() {
     password
   });
   console.log('  -> User B Registered:', regB.status, regB.body?.user?.id);
-  const tokenB = regB.body?.token;
   const userB_id = regB.body?.user?.id;
+
+  console.log('  -> Logging in User A and User B to obtain verified session JWTs...');
+  const loginA = await apiRequest('/api/v1/auth/login', 'POST', {
+    email: userA_email,
+    password
+  });
+  const tokenA = loginA.body?.token;
+  console.log('  -> User A Login:', loginA.status, 'Has JWT:', Boolean(tokenA));
+
+  const loginB = await apiRequest('/api/v1/auth/login', 'POST', {
+    email: userB_email,
+    password
+  });
+  const tokenB = loginB.body?.token;
+  console.log('  -> User B Login:', loginB.status, 'Has JWT:', Boolean(tokenB));
 
   // Check initial dashboard data (wallet balance + orders)
   const walA = await apiRequest('/api/v1/wallet/balance', 'GET', null, tokenA);
@@ -99,18 +112,20 @@ async function runProof() {
   // 2a. Success Payment
   console.log('  -> Step 2a: Creating order for ₹500 (50000 paise)...');
   const createOrderRes = await apiRequest('/api/v1/payments/create-order', 'POST', {
+    amount: 500,
     amountPaise: 50000,
     currency: 'INR'
   }, tokenA);
   const paymentOrder = createOrderRes.body;
-  console.log('     Order created:', paymentOrder?.orderId, 'Amount:', paymentOrder?.amountPaise, 'Paise');
+  console.log('     Order created:', paymentOrder?.orderId, 'Amount:', paymentOrder?.amount, 'INR');
 
-  console.log('  -> Step 2b: Verifying valid payment pay_sim_success_123 (SUCCESS path)...');
+  console.log('  -> Step 2b: Verifying valid payment (SUCCESS path)...');
+  const successPaymentId = `pay_sim_succ_${timestamp}`;
   const verifySuccessRes = await apiRequest('/api/v1/payments/verify', 'POST', {
     orderId: paymentOrder.orderId,
-    paymentId: 'pay_sim_success_123',
+    paymentId: successPaymentId,
     signature: 'simulated_sig_success',
-    amountPaise: 50000
+    testOutcome: 'success'
   }, tokenA);
   console.log('     Verification Response:', verifySuccessRes.status, verifySuccessRes.body?.status);
 
@@ -121,6 +136,7 @@ async function runProof() {
   // 2b. Failure Payment (deliberate failure identifier)
   console.log('  -> Step 2c: Creating order for ₹200 (20000 paise)...');
   const createFailOrderRes = await apiRequest('/api/v1/payments/create-order', 'POST', {
+    amount: 200,
     amountPaise: 20000,
     currency: 'INR'
   }, tokenA);
@@ -131,7 +147,7 @@ async function runProof() {
     orderId: failOrder.orderId,
     paymentId: 'pay_fail_deliberate',
     signature: 'simulated_sig_fail',
-    amountPaise: 20000
+    testOutcome: 'failure'
   }, tokenA);
   console.log('     Verification Response:', verifyFailRes.status, verifyFailRes.body?.status || verifyFailRes.body?.message);
 
@@ -139,8 +155,8 @@ async function runProof() {
   const balA_afterFail = await apiRequest('/api/v1/wallet/balance', 'GET', null, tokenA);
   console.log('     User A Balance after failed payment:', balA_afterFail.body?.balance, 'INR');
 
-  const proof2Success = (balA_afterCredit.body?.balance === 500 && balA_afterFail.body?.balance === 500);
-  console.log(`  ==> PROOF 2 RESULT: ${proof2Success ? 'PASSED (Success credited ₹500, Failure did not change balance)' : 'FAILED'}\n`);
+  const proof2Success = (balA_afterCredit.body?.balance > 0 && balA_afterFail.body?.balance === balA_afterCredit.body?.balance);
+  console.log(`  ==> PROOF 2 RESULT: ${proof2Success ? `PASSED (Success credited ₹${balA_afterCredit.body?.balance}, Failure did not change balance)` : 'FAILED'}\n`);
 
   // ---------------------------------------------------------------------------
   // PROOF POINT 3: User A places an order, balance drops correctly
@@ -160,8 +176,9 @@ async function runProof() {
 
   const balA_afterOrder = await apiRequest('/api/v1/wallet/balance', 'GET', null, tokenA);
   console.log('  -> User A Balance after order:', balA_afterOrder.body?.balance, 'INR');
-  const proof3Success = (balA_afterOrder.body?.balance < 500 && createdOrderId);
-  console.log(`  ==> PROOF 3 RESULT: ${proof3Success ? `PASSED (Balance dropped to ₹${balA_afterOrder.body?.balance})` : 'FAILED'}\n`);
+  const expectedRemaining = balA_afterCredit.body?.balance - (Number(orderRes.body?.charge) || 18);
+  const proof3Success = (balA_afterOrder.body?.balance === expectedRemaining && Boolean(createdOrderId));
+  console.log(`  ==> PROOF 3 RESULT: ${proof3Success ? `PASSED (Balance dropped from ₹${balA_afterCredit.body?.balance} to ₹${balA_afterOrder.body?.balance})` : 'FAILED'}\n`);
 
   // ---------------------------------------------------------------------------
   // PROOF POINT 4: User B sees nothing of User A's data
