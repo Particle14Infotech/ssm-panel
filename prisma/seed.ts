@@ -28,13 +28,13 @@ async function main() {
     },
   });
 
-  // 2. Demo Admin User
+  // 2. Admin User
   const adminUser = await prisma.user.upsert({
-    where: { email: "admin@aether-network.io" },
+    where: { email: "admin@smm-panel.io" },
     update: {},
     create: {
       id: "usr_admin_001",
-      email: "admin@aether-network.io",
+      email: "admin@smm-panel.io",
       name: "System Administrator",
       passwordHash: "$argon2id$v=19$m=65536,t=3,p=4$demo_salt$demo_hash",
       role: "ADMIN",
@@ -48,33 +48,33 @@ async function main() {
     },
   });
 
-  // 3. Demo Customer User
+  // 3. Customer User
   const customerUser = await prisma.user.upsert({
-    where: { email: "alex.vance@aether-network.io" },
+    where: { email: "alex.vance@smm-panel.io" },
     update: {},
     create: {
-      id: "usr_998124aether",
-      email: "alex.vance@aether-network.io",
+      id: "usr_998124smm",
+      email: "alex.vance@smm-panel.io",
       name: "Alex Vance",
       passwordHash: "$argon2id$v=19$m=65536,t=3,p=4$demo_salt$demo_hash",
       role: "CUSTOMER",
       tier: "PRO_SCALE",
       wallet: {
         create: {
-          balance: 2450.0,
+          balance: 0.0,
           currency: "INR",
         },
       },
     },
   });
 
-  // 4. Demo Reseller User
+  // 4. Reseller User
   const resellerUser = await prisma.user.upsert({
-    where: { email: "reseller@aether-network.io" },
+    where: { email: "reseller@smm-panel.io" },
     update: {},
     create: {
       id: "usr_reseller_001",
-      email: "reseller@aether-network.io",
+      email: "reseller@smm-panel.io",
       name: "Apex Reseller",
       passwordHash: "$argon2id$v=19$m=65536,t=3,p=4$demo_salt$demo_hash",
       role: "RESELLER",

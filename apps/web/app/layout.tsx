@@ -78,7 +78,7 @@ export default function RootLayout({
         contactPoint: {
           "@type": "ContactPoint",
           contactType: "Customer Support",
-          email: "support@aethersmm.internal",
+          email: "support@smmpanel.io",
           availableLanguage: ["English", "Hindi"],
         },
       },
@@ -104,7 +104,7 @@ export default function RootLayout({
         logo: "https://smmarchitecture.com/icon.png",
         image: "https://smmarchitecture.com/opengraph-image",
         description: "Authoritative Social Media Marketing Platform and Reseller API Infrastructure",
-        email: "support@aethersmm.internal",
+        email: "support@smmpanel.io",
         priceRange: "$$",
         address: {
           "@type": "PostalAddress",

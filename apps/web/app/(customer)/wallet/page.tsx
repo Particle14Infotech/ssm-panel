@@ -421,7 +421,7 @@ export default function WalletPage() {
                 </div>
                 <div className="text-right">
                   <span className="text-on-surface-variant text-[10px] block">ISSUED BY</span>
-                  <span className="text-white font-bold">AETHER SMM PVT LTD</span>
+                  <span className="text-white font-bold">SMM PANEL PVT LTD</span>
                   <div className="text-on-surface-variant">GSTIN: 27AABCA1234F1Z8</div>
                 </div>
               </div>

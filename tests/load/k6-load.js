@@ -27,7 +27,7 @@ const BASE_URL = __ENV.API_URL || "http://localhost:4000/api/v1";
 export default function () {
   // 1. Login
   const loginPayload = JSON.stringify({
-    email: "alex.vance@aether-network.io",
+    email: "alex.vance@smm-panel.io",
     password: "SecurePassword123!",
   });
   const loginRes = http.post(`${BASE_URL}/auth/login`, loginPayload, {
@@ -38,7 +38,7 @@ export default function () {
     "login status is 201 or 200": (r) => r.status === 200 || r.status === 201,
   });
 
-  const authToken = loginRes.json("token") || "jwt_aether_fallback";
+  const authToken = loginRes.json("token") || "jwt_smm_fallback";
   const authHeaders = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${authToken}`,

@@ -25,7 +25,7 @@
 
 | Component | SRS Spec | Current Status | File Evidence | Notes / Resolution |
 | :--- | :--- | :--- | :--- | :--- |
-| **Brand Identity** | SMM PANEL | **DONE** | [`apps/web/content/landing.ts`](file:///d:/projects/internship%20projects/SMM/apps/web/content/landing.ts) | All AETHER and SMM ARCHITECTURE placeholders removed in favor of SMM PANEL. |
+| **Brand Identity** | SMM PANEL | **DONE** | [`apps/web/content/landing.ts`](file:///d:/projects/internship%20projects/SMM/apps/web/content/landing.ts) | All old brand names removed in favor of SMM Panel. |
 | **Money Currency** | Strictly Indian Rupees (₹) via Intl / Decimal | **DONE** | [`apps/api/src/common/money.util.ts`](file:///d:/projects/internship%20projects/SMM/apps/api/src/common/money.util.ts) | Verified in `money.util.spec.ts`. Integer paise/Decimal only. Zero float math. |
 | **Pessimistic Wallet Locking** | `SELECT ... FOR UPDATE` | **DONE** | [`apps/api/src/modules/wallet/wallet.service.ts`](file:///d:/projects/internship%20projects/SMM/apps/api/src/modules/wallet/wallet.service.ts) | Deductions locked with pessimistic concurrency; ledger double-entry preserved. |
 | **Double-Entry Ledger** | Single REFUND per order, balance == sum | **DONE** | [`prisma/schema.prisma`](file:///d:/projects/internship%20projects/SMM/prisma/schema.prisma) | Enforced via unique compound constraints `unique_refund_per_order`. |

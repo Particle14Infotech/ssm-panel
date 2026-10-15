@@ -70,7 +70,7 @@ export default function ProfileSecurityPage() {
     }
   };
 
-  const curlSnippet = `curl -X POST https://api.aethersmm.com/v1/orders/create \\
+  const curlSnippet = `curl -X POST https://api.smmpanel.io/v1/orders/create \\
   -H "Authorization: Bearer ${user.apiKey || "YOUR_API_KEY"}" \\
   -H "Content-Type: application/json" \\
   -d '{"serviceId": "1042", "target": "https://instagram.com/growth", "quantity": 1000}'`;

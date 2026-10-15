@@ -1,4 +1,4 @@
-# 🎬 AETHER SMM Platform: 8–10 Minute Evaluator Demo Script
+# 🎬 SMM Panel: 8–10 Minute Evaluator Demo Script
 
 > **Objective:** Walk through the complete customer journey, administrative controls, financial invariants, and failure recovery mechanisms step-by-step.  
 > **Target Environment:** Localhost (Web: `http://localhost:3000`, API: `http://localhost:4000`/`4001`)  

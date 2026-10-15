@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { useCustomer } from "@/context/CustomerContext";
+import { BRAND_NAME } from "@/lib/brand";
 import {
   Sparkles,
   Zap,
@@ -49,13 +50,13 @@ export function CustomerHeader() {
         <div className="flex items-center gap-4 shrink-0">
           <Link href="/dashboard" className="flex items-center gap-2 group">
             <div className="w-9 h-9 rounded-full bg-surface-container-high border border-white/10 flex items-center justify-center transition-transform group-hover:scale-105">
-              <Zap className="w-4 h-4 text-[#D8EC8D]" />
+              <Zap className="w-4 h-4 text-blue-400" />
             </div>
             <div className="flex items-baseline">
               <span className="font-headline-lg text-lg uppercase tracking-wider text-white font-bold">
-                AETHER
+                {BRAND_NAME}
               </span>
-              <span className="text-[#D8EC8D] text-lg font-light leading-none">*</span>
+              <span className="text-blue-400 text-lg font-light leading-none">*</span>
             </div>
           </Link>
 

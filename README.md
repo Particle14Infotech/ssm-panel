@@ -1,4 +1,4 @@
-# 🌐 AETHER SMM Platform (MVP Submission)
+# 🌐 SMM Panel (Production Platform)
 
 > **Enterprise-Grade Social Media Marketing Dispatch Platform & Reseller Infrastructure**  
 > *Built with NestJS Modular Monolith, Next.js 14 App Router, PostgreSQL Invariant Engine, Redis Outbox Queue & Zero-Docker Architecture.*
@@ -21,7 +21,7 @@
 
 ## 🌟 Overview & What It Is
 
-**AETHER SMM Platform** is an enterprise-grade automated dispatch system for social media growth services (Instagram, YouTube, TikTok, Telegram, X/Twitter, Spotify, LinkedIn). It provides dual-surface operations:
+**SMM Panel** is an enterprise-grade automated dispatch system for social media growth services (Instagram, YouTube, TikTok, Telegram, X/Twitter, Spotify, LinkedIn). It provides dual-surface operations:
 
 - **Customer Terminal:** Real-time catalog browsing, instant multi-tier wallet liquidity deposits (UPI, Cards, Netbanking), dynamic order vector configuration with client-side price quotes, automated status progression, and GST invoice generation.
 - **Admin Command Center:** System telemetry, provider integration nodes with AES-256-GCM encrypted API tokens, order queue override/resend/refund tools, audit logs, and customer balance adjustments requiring mandatory justifications.

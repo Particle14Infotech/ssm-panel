@@ -1,9 +1,9 @@
-# AETHER SMM Platform
+# SMM Panel
 
 > Authoritative Social Media Marketing Platform, Reseller API, and Order Accounting Infrastructure.
 
 ## Overview
-AETHER SMM Platform (`https://smmarchitecture.com`) is a high-reliability, provider-synchronized social media growth infrastructure designed for agencies, creators, and reseller networks. It operates on an automated double-entry ledger financial model, with sub-second order dispatch and real-time telemetry across major social networks.
+SMM Panel (`https://smmarchitecture.com`) is a high-reliability, provider-synchronized social media growth infrastructure designed for agencies, creators, and reseller networks. It operates on an automated double-entry ledger financial model, with sub-second order dispatch and real-time telemetry across major social networks.
 
 ## Core Features
 - **Deterministic Ledger Accounting:** Double-entry bookkeeping with strict row-level locking (`SELECT ... FOR UPDATE`), zero floating-point math, and integer paise precision.
@@ -30,4 +30,4 @@ AETHER SMM Platform (`https://smmarchitecture.com`) is a high-reliability, provi
 - Service Terms: `https://smmarchitecture.com/legal/terms`
 - Privacy Policy: `https://smmarchitecture.com/legal/privacy`
 - Refund Policy: `https://smmarchitecture.com/legal/refund` (Guaranteed automated wallet refund on cancelled/failed orders)
-- Technical Contact: `support@aethersmm.internal`
+- Technical Contact: `support@smmpanel.io`

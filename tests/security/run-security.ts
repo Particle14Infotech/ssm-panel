@@ -75,10 +75,10 @@ export async function runSecurityTests(): Promise<SecurityResult[]> {
   });
 
   // 3. IDOR (Insecure Direct Object Reference)
-  // Alex Vance (usr_998124aether) attempting to view foreign orders
+  // Alex Vance (usr_998124smm) attempting to view foreign orders
   const idorRes = await request(BASE_URL)
     .get("/orders/ORD-FOREIGN-999")
-    .set("Authorization", "Bearer jwt_aether_fake_foreign");
+    .set("Authorization", "Bearer jwt_smm_fake_foreign");
   const idorBlocked = idorRes.status === 404 || idorRes.status === 403 || idorRes.status === 401;
   results.push({
     suite: "IDOR Isolation",
@@ -90,7 +90,7 @@ export async function runSecurityTests(): Promise<SecurityResult[]> {
 
   // 4. Role Escalation
   // Customer JWT attempting admin endpoints
-  const customerToken = "jwt_aether_customer_token";
+  const customerToken = "jwt_smm_customer_token";
   const roleRes = await request(BASE_URL)
     .get("/providers")
     .set("Authorization", `Bearer ${customerToken}`);

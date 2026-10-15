@@ -207,7 +207,7 @@ export function CrownDepth({ size = "hero", className = "" }: CrownDepthProps) {
       {/* Static Image (Loaded first for 0 layout shift and instant LCP) */}
       <Image
         src="/brand/crown.webp"
-        alt="Aether SMM Glass Crown"
+        alt="SMM Panel Glass Crown"
         width={size === "hero" ? 640 : 380}
         height={size === "hero" ? 640 : 380}
         priority={size === "hero"}

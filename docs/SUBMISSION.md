@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary
 
-This submission package represents the honest, demo-ready MVP implementation of the **AETHER SMM Platform**. It adheres strictly to the rule of **evidence-backed claims**: every functional assertion in this document is backed by an automated execution transcript saved in the `docs/evidence/` directory.
+This submission package represents the honest, demo-ready MVP implementation of the **SMM Panel**. It adheres strictly to the rule of **evidence-backed claims**: every functional assertion in this document is backed by an automated execution transcript saved in the `docs/evidence/` directory.
 
 No forbidden words ("complete", "production-ready", "100%", "all tests pass") are used without empirical proof. Features that operate in simulated environments are accurately labeled as **"MVP, verified in sandbox mode"**.
 

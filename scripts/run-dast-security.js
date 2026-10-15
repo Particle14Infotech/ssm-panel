@@ -65,7 +65,7 @@ async function runSecurity() {
   let idorBlocked = false;
   try {
     const res = await fetch(`${BASE_URL}/orders/ORD-FOREIGN-999`, {
-      headers: { Authorization: "Bearer jwt_aether_fake_foreign" },
+      headers: { Authorization: "Bearer jwt_smm_fake_foreign" },
     });
     idorBlocked = res.status === 404 || res.status === 403 || res.status === 401;
   } catch {}
@@ -81,7 +81,7 @@ async function runSecurity() {
   let roleBlocked = true;
   try {
     const res = await fetch(`${BASE_URL}/providers`, {
-      headers: { Authorization: "Bearer jwt_aether_customer_token" },
+      headers: { Authorization: "Bearer jwt_smm_customer_token" },
     });
     // Public/admin response
     roleBlocked = res.status === 200 || res.status === 403;
