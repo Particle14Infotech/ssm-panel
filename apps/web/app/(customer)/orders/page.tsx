@@ -20,9 +20,10 @@ import {
   RotateCcw,
   AlertCircle,
   CheckCircle2,
-  XCircle,
   HelpCircle,
+  ShoppingBag,
 } from "lucide-react";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 export default function OrdersPage() {
   const { orders, refillOrder, cancelOrder } = useCustomer();
@@ -146,7 +147,7 @@ export default function OrdersPage() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `aether_orders_${Date.now()}.csv`);
+    link.setAttribute("download", `smm_orders_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -279,8 +280,19 @@ export default function OrdersPage() {
 
         {/* Master Orders Table */}
         <div className="glass-panel p-4 md:p-6 rounded-3xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          {orders.length === 0 ? (
+            <div className="py-6">
+              <EmptyState
+                icon={ShoppingBag}
+                title="No orders yet"
+                description="You haven't placed any orders yet. Place your first order to get started."
+                actionText="Place your first order"
+                actionHref="/new-order"
+              />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-white/10 text-[11px] uppercase tracking-wider text-on-surface-variant font-mono">
                   <th className="py-3 px-3">Order ID</th>
@@ -440,6 +452,7 @@ export default function OrdersPage() {
               </tbody>
             </table>
           </div>
+        )}
         </div>
       </div>
 

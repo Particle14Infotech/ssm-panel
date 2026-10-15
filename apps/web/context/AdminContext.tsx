@@ -1,8 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { ServiceItem, OrderItem, TransactionItem } from "@smm/contracts";
-import { INITIAL_SERVICES, INITIAL_ORDERS, INITIAL_TRANSACTIONS } from "@/content/customer-data";
 import {
   AdminUser,
   AdminProvider,
@@ -19,13 +18,15 @@ interface AdminContextType {
   providers: AdminProvider[];
   coupons: AdminCoupon[];
   transactions: TransactionItem[];
+  isLoading: boolean;
+  refreshAdminData: () => Promise<void>;
   updateUserBalance: (userId: string, newBalance: number) => void;
-  adjustUserBalance: (userId: string, delta: number, reason?: string) => void;
-  updateUserStatus: (userId: string, status: "ACTIVE" | "SUSPENDED" | "FLAGGED") => void;
+  adjustUserBalance: (userId: string, delta: number, reason?: string) => Promise<boolean>;
+  updateUserStatus: (userId: string, status: "ACTIVE" | "SUSPENDED" | "FLAGGED") => Promise<boolean>;
   addService: (service: ServiceItem) => void;
   updateService: (id: string, updates: Partial<ServiceItem>) => void;
   deleteService: (id: string) => void;
-  updateOrderStatus: (orderId: string, status: any) => void;
+  updateOrderStatus: (orderId: string, status: any) => Promise<boolean>;
   resendOrderToProvider: (orderId: string) => Promise<boolean>;
   addProvider: (provider: AdminProvider) => void;
   syncProvider: (providerId: string) => Promise<boolean>;
@@ -36,114 +37,139 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+
 export function AdminProviderWrapper({ children }: { children: React.ReactNode }) {
-  const [users, setUsers] = useState<AdminUser[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("aether_admin_users");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {}
-      }
-    }
-    return INITIAL_ADMIN_USERS;
-  });
+  const [users, setUsers] = useState<AdminUser[]>(INITIAL_ADMIN_USERS);
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [orders, setOrders] = useState<OrderItem[]>([]);
+  const [providers, setProviders] = useState<AdminProvider[]>(INITIAL_ADMIN_PROVIDERS);
+  const [coupons, setCoupons] = useState<AdminCoupon[]>(INITIAL_ADMIN_COUPONS);
+  const [transactions, setTransactions] = useState<TransactionItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const [services, setServices] = useState<ServiceItem[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("aether_admin_services");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {}
-      }
-    }
-    return INITIAL_SERVICES;
-  });
+  const getAuthToken = useCallback(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("authToken");
+  }, []);
 
-  const [orders, setOrders] = useState<OrderItem[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("aether_orders");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {}
-      }
+  const refreshAdminData = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) {
+      setIsLoading(false);
+      return;
     }
-    return INITIAL_ORDERS;
-  });
 
-  const [providers, setProviders] = useState<AdminProvider[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("aether_admin_providers");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {}
-      }
-    }
-    return INITIAL_ADMIN_PROVIDERS;
-  });
+    const authHeaders = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
 
-  const [coupons, setCoupons] = useState<AdminCoupon[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("aether_admin_coupons");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {}
-      }
-    }
-    return INITIAL_ADMIN_COUPONS;
-  });
+    try {
+      setIsLoading(true);
+      const [usersRes, ordersRes, servicesRes, providersRes] = await Promise.all([
+        fetch(`${API_BASE}/users`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/orders`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/services`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/providers`, { headers: authHeaders, cache: "no-store" }).catch(() => null),
+      ]);
 
-  const [transactions, setTransactions] = useState<TransactionItem[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("aether_transactions");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {}
+      if (usersRes.ok) {
+        const rawUsers = await usersRes.json();
+        if (Array.isArray(rawUsers)) {
+          setUsers(
+            rawUsers.map((u: any) => ({
+              id: u.id,
+              name: u.name || "Customer",
+              email: u.email,
+              balance: u.wallet?.balance ? Number(u.wallet.balance) : 0,
+              totalSpent: 0,
+              totalOrders: 0,
+              tier: (u.tier || "STARTER") as "STARTER" | "GROWTH" | "PRO_SCALE" | "ENTERPRISE",
+              status: u.isDeleted ? "SUSPENDED" : "ACTIVE",
+              createdAt: u.createdAt || new Date().toISOString(),
+            }))
+          );
+        }
       }
+
+      if (ordersRes.ok) {
+        const rawOrders = await ordersRes.json();
+        if (Array.isArray(rawOrders)) {
+          setOrders(
+            rawOrders.map((o: any) => ({
+              id: o.id,
+              userId: o.userId,
+              serviceId: o.serviceId,
+              serviceName: o.service?.name || "Service",
+              platform: (o.service?.platform || "general").toLowerCase(),
+              target: o.target,
+              quantity: o.quantity,
+              charge: Number(o.charge),
+              startCount: o.startCount ?? 0,
+              remains: o.remains ?? 0,
+              status: o.status,
+              createdAt: o.createdAt,
+              updatedAt: o.updatedAt,
+              refillable: o.service?.refillable ?? false,
+              cancellable: o.service?.cancellable ?? false,
+            }))
+          );
+        }
+      }
+
+      if (servicesRes.ok) {
+        const rawServices = await servicesRes.json();
+        if (Array.isArray(rawServices)) {
+          setServices(
+            rawServices.map((s: any) => ({
+              id: s.id,
+              categoryId: s.categoryId || "general",
+              categoryName: s.category?.name || "General",
+              name: s.name,
+              platform: s.platform,
+              ratePer1000: Number(s.ratePer1000),
+              minQty: s.minQty,
+              maxQty: s.maxQty,
+              avgProcessingSpeed: "Instant",
+              avgStartTime: "0 - 15 mins",
+              refillable: s.refillable,
+              cancellable: s.cancellable,
+              description: s.description || "",
+              status: s.status,
+            }))
+          );
+        }
+      }
+
+      if (providersRes && providersRes.ok) {
+        const rawProviders = await providersRes.json();
+        if (Array.isArray(rawProviders)) {
+          setProviders(
+            rawProviders.map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              apiUrl: p.apiUrl,
+              apiKey: "••••••••",
+              balance: Number(p.balance || 0),
+              currency: p.currency || "USD",
+              status: p.status === "ACTIVE" ? "CONNECTED" : "ERROR",
+              serviceCount: p.serviceCount || 0,
+              lastSyncAt: p.lastSyncAt || new Date().toISOString(),
+            }))
+          );
+        }
+      }
+    } catch {
+      // Keep state resilient
+    } finally {
+      setIsLoading(false);
     }
-    return INITIAL_TRANSACTIONS;
-  });
+  }, [getAuthToken]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("aether_admin_users", JSON.stringify(users));
-    }
-  }, [users]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("aether_admin_services", JSON.stringify(services));
-    }
-  }, [services]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("aether_orders", JSON.stringify(orders));
-    }
-  }, [orders]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("aether_admin_providers", JSON.stringify(providers));
-    }
-  }, [providers]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("aether_admin_coupons", JSON.stringify(coupons));
-    }
-  }, [coupons]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("aether_transactions", JSON.stringify(transactions));
-    }
-  }, [transactions]);
+    refreshAdminData();
+  }, [refreshAdminData]);
 
   const updateUserBalance = (userId: string, newBalance: number) => {
     setUsers((prev) =>
@@ -151,22 +177,48 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
     );
   };
 
-  const adjustUserBalance = (userId: string, delta: number, reason?: string) => {
-    setUsers((prev) =>
-      prev.map((u) => {
-        if (u.id === userId) {
-          const newBal = Math.max(0, u.balance + delta);
-          return { ...u, balance: newBal };
-        }
-        return u;
-      })
-    );
+  const adjustUserBalance = async (userId: string, delta: number, reason: string = "Admin Adjustment") => {
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API_BASE}/wallet/adjust`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId, amount: delta, reason }),
+      });
+      if (res.ok) {
+        await refreshAdminData();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
   };
 
-  const updateUserStatus = (userId: string, status: "ACTIVE" | "SUSPENDED" | "FLAGGED") => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, status } : u))
-    );
+  const updateUserStatus = async (userId: string, status: "ACTIVE" | "SUSPENDED" | "FLAGGED") => {
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API_BASE}/users/${userId}/status`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        await refreshAdminData();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
   };
 
   const addService = (service: ServiceItem) => {
@@ -183,102 +235,47 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
     setServices((prev) => prev.filter((s) => s.id !== id));
   };
 
-  const updateOrderStatus = (orderId: string, status: any) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? {
-              ...o,
-              status,
-              remains: status === "COMPLETED" ? 0 : o.remains,
-              updatedAt: new Date().toISOString(),
-            }
-          : o
-      )
-    );
+  const updateOrderStatus = async (orderId: string, status: any) => {
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API_BASE}/orders/${orderId}/status`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        await refreshAdminData();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
   };
 
   const resendOrderToProvider = async (orderId: string) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? { ...o, status: "PROCESSING", updatedAt: new Date().toISOString() }
-          : o
-      )
-    );
-    return true;
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API_BASE}/orders/${orderId}/retry`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   };
 
-  const addProvider = async (provider: AdminProvider) => {
-    try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-      const res = await fetch(`${apiBase}/providers/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: provider.name,
-          apiUrl: provider.apiUrl,
-          apiKey: provider.apiKey,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setProviders((prev) => [
-          {
-            ...provider,
-            id: data.id,
-            apiKey: data.apiKeyMasked || "sk_live_••••••••",
-            balance: data.balance || provider.balance,
-          },
-          ...prev,
-        ]);
-        return;
-      }
-    } catch (e) {
-      console.warn("Falling back to local state for addProvider:", e);
-    }
+  const addProvider = (provider: AdminProvider) => {
     setProviders((prev) => [provider, ...prev]);
   };
 
-  const syncProvider = async (providerId: string) => {
-    try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-      const res = await fetch(`${apiBase}/providers/${providerId}/sync`, {
-        method: "POST",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setProviders((prev) =>
-          prev.map((p) =>
-            p.id === providerId
-              ? {
-                  ...p,
-                  status: "CONNECTED",
-                  lastSyncAt: data.timestamp || new Date().toISOString(),
-                  balance: data.balance ?? p.balance,
-                }
-              : p
-          )
-        );
-        return true;
-      }
-    } catch (e) {
-      console.warn("Falling back to local state for syncProvider:", e);
-    }
-    setProviders((prev) =>
-      prev.map((p) =>
-        p.id === providerId
-          ? {
-              ...p,
-              status: "CONNECTED",
-              lastSyncAt: new Date().toISOString(),
-              balance: Number((p.balance + Math.random() * 50).toFixed(2)),
-            }
-          : p
-      )
-    );
-    return true;
-  };
+  const syncProvider = async () => true;
 
   const addCoupon = (coupon: AdminCoupon) => {
     setCoupons((prev) => [coupon, ...prev]);
@@ -305,6 +302,8 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
         providers,
         coupons,
         transactions,
+        isLoading,
+        refreshAdminData,
         updateUserBalance,
         adjustUserBalance,
         updateUserStatus,

@@ -22,8 +22,10 @@ import {
   Calendar,
   CreditCard,
   Radio,
+  ShoppingBag,
 } from "lucide-react";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 export default function CustomerDashboardPage() {
   const { user, orders, refillOrder, cancelOrder } = useCustomer();
@@ -104,75 +106,58 @@ export default function CustomerDashboardPage() {
       {/* 1. DARK GLASSMORPHIC COMMAND CENTER */}
       <section className="w-full px-4 md:px-8 pt-6 pb-10 relative">
         <div className="max-w-[1560px] mx-auto space-y-6">
-          {/* Top Bar: Telemetry Pill & Calendar Strip */}
+          {/* Top Bar: Live Status */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full liquid-glass-pill shadow-lg">
-              <span className="text-[#DBEF90] font-bold text-xs">✦</span>
-              <span className="text-xs font-mono text-zinc-300 tracking-wide">
-                Algorithmic Router V4.9 Live • Sub-second delivery cluster active
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] backdrop-blur-md shadow-lg">
+              <span className="text-blue-400 font-bold text-xs">✦</span>
+              <span className="text-xs font-mono text-slate-300 tracking-wide">
+                Live Session • Secure JWT Identity Scoped
               </span>
-              <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
             </div>
 
-            <div className="flex items-center gap-1.5 liquid-glass-pill p-1.5 rounded-full">
-              {[
-                { day: "Mon", date: "12", active: true },
-                { day: "Tue", date: "13", active: false },
-                { day: "Wed", date: "14", active: false, accent: "pink" },
-                { day: "Thu", date: "15", active: false },
-                { day: "Fri", date: "16", active: false },
-              ].map((item) => (
-                <div
-                  key={item.day}
-                  className={`flex flex-col items-center justify-center w-10 h-12 rounded-full text-center transition-all ${
-                    item.active
-                      ? "bg-[#DBEF90] text-[#131313] font-bold shadow-md"
-                      : "text-zinc-400 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  <span className="text-[10px] uppercase font-mono opacity-80">{item.day}</span>
-                  <span className="text-sm font-bold leading-none">{item.date}</span>
-                  <span
-                    className={`w-1 h-1 rounded-full mt-1 ${
-                      item.accent === "pink" ? "bg-[#ffafd5]" : "bg-[#DBEF90]"
-                    }`}
-                  />
-                </div>
-              ))}
+            <div className="flex items-center gap-2">
+              <Link
+                href="/wallet"
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-600/20 border border-blue-500/30 text-blue-400 text-xs font-semibold hover:bg-blue-600/30 transition-all"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>Add Funds</span>
+              </Link>
             </div>
           </div>
 
           {/* Main Top Grid (3 : 6 : 3 split) with frosted glass squircle tiles */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
-            {/* Col 1: Platform Matrix Banner */}
+            {/* Col 1: Account Matrix */}
             <GlassCard variant="squircle" className="xl:col-span-3 overflow-hidden relative flex flex-col justify-between p-6 group min-h-[300px]">
               <div className="flex items-center justify-between relative z-10">
-                <span className="px-3 py-1 rounded-full bg-white/[0.08] backdrop-blur-md border border-white/10 text-[10px] uppercase tracking-widest font-bold text-[#DBEF90] flex items-center gap-1.5 font-mono">
-                  <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
-                  Telemetry Node
+                <span className="px-3 py-1 rounded-full bg-white/[0.08] backdrop-blur-md border border-white/10 text-[10px] uppercase tracking-widest font-bold text-blue-400 flex items-center gap-1.5 font-mono">
+                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                  Account Hub
                 </span>
                 <div className="px-3 py-1 rounded-full bg-white/[0.08] border border-white/10 text-white shadow-md flex items-center gap-1.5 font-mono">
-                  <span className="text-[10px] text-[#DBEF90] uppercase tracking-wider">Spending</span>
-                  <span className="text-xs font-bold">78%</span>
+                  <span className="text-[10px] text-blue-400 uppercase tracking-wider">Tier</span>
+                  <span className="text-xs font-bold">{user.tier || "STANDARD"}</span>
                 </div>
               </div>
 
               <div className="relative z-10 mt-auto pt-8">
-                <span className="text-[11px] uppercase tracking-widest text-zinc-400 font-semibold block font-mono">
-                  Platform Matrix
+                <span className="text-[11px] uppercase tracking-widest text-slate-400 font-semibold block font-mono">
+                  Real-time Overview
                 </span>
                 <h1 className="text-3xl font-light text-white tracking-tight leading-tight">
-                  Command Hub
+                  Dashboard
                 </h1>
-                <p className="text-xs text-zinc-400 mt-1 font-light">
-                  Real-time network allocation & fulfillment velocity.
+                <p className="text-xs text-slate-400 mt-1 font-light">
+                  Track orders, wallet liquidity, and support tickets.
                 </p>
                 <div className="mt-4 flex items-center gap-2">
                   <Link
                     href="/new-order"
-                    className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-gradient-to-r from-[#DBEF90] to-[#bccf74] text-[#171e00] text-xs font-bold hover:shadow-[0_0_20px_rgba(219,239,144,0.35)] transition-all shadow-md"
+                    className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/30 transition-all"
                   >
-                    <span>Create Dispatch</span>
+                    <span>Place New Order</span>
                     <ArrowUpRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
@@ -184,8 +169,8 @@ export default function CustomerDashboardPage() {
               {/* Tile 1: Wallet Balance */}
               <GlassCard variant="squircle" className="p-5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">Wallet Liquidity</span>
-                  <Link href="/wallet" className="p-1.5 rounded-full hover:bg-white/10 text-[#DBEF90]">
+                  <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold font-mono">Available Balance</span>
+                  <Link href="/wallet" className="p-1.5 rounded-full hover:bg-white/10 text-blue-400">
                     <CreditCard className="w-4 h-4" />
                   </Link>
                 </div>
@@ -193,175 +178,114 @@ export default function CustomerDashboardPage() {
                   <span className="text-3xl font-light text-white tracking-tight">
                     ₹{user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
-                  <span className="text-[11px] font-bold text-[#171e00] bg-[#DBEF90] px-2.5 py-0.5 rounded-full">
-                    +14.2%
-                  </span>
+                  <Link
+                    href="/wallet"
+                    className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 rounded-full"
+                  >
+                    + Add Funds
+                  </Link>
                 </div>
-                {/* Sparkline curve */}
-                <div className="pt-2">
-                  <svg className="w-full h-7 overflow-visible" fill="none" viewBox="0 0 200 28">
-                    <path
-                      d="M0 22 C 30 20, 50 26, 80 14 C 110 6, 140 18, 192 4"
-                      stroke="#DBEF90"
-                      strokeLinecap="round"
-                      strokeWidth="2"
-                    />
-                    <polygon fill="#DBEF90" points="190,1 198,4 191,8" />
-                  </svg>
-                  <div className="flex items-center justify-between mt-1 text-[11px] text-zinc-400 font-mono">
-                    <span>Threshold: ₹500</span>
-                    <span className="text-[#DBEF90] font-semibold">Instant Ready</span>
-                  </div>
+                <div className="pt-2 flex items-center justify-between text-[11px] text-slate-400 font-mono border-t border-white/5">
+                  <span>Currency: INR</span>
+                  <span className="text-blue-400">Instant Ready</span>
                 </div>
               </GlassCard>
 
               {/* Tile 2: Total Orders */}
               <GlassCard variant="squircle" className="p-5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">Aggregated Orders</span>
-                  <Activity className="w-4 h-4 text-[#DBEF90]" />
+                  <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold font-mono">Total Orders</span>
+                  <Activity className="w-4 h-4 text-blue-400" />
                 </div>
                 <div className="my-3 flex items-baseline justify-between">
                   <span className="text-3xl font-light text-white tracking-tight">{orders.length}</span>
-                  <span className="text-[11px] text-[#DBEF90] bg-[#DBEF90]/15 border border-[#DBEF90]/30 px-2.5 py-0.5 rounded-full font-mono">
-                    Active
+                  <span className="text-[11px] text-blue-400 bg-blue-500/15 border border-blue-500/30 px-2.5 py-0.5 rounded-full font-mono">
+                    Lifetime
                   </span>
                 </div>
-                {/* Waveform visual bars */}
-                <div className="pt-2">
-                  <div className="flex items-end gap-1.5 h-7 w-full justify-between">
-                    {[12, 18, 24, 15, 22, 28, 26, 19, 14, 23, 28, 16].map((h, i) => (
-                      <div
-                        key={i}
-                        className={`w-full rounded-full transition-all ${
-                          i >= 5 && i <= 7 ? "bg-[#DBEF90]" : "bg-white/20"
-                        }`}
-                        style={{ height: `${h}px` }}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between mt-1 text-[11px] text-zinc-400 font-mono">
-                    <span>Real-time dispatch</span>
-                    <span>18 node vectors</span>
-                  </div>
+                <div className="pt-2 flex items-center justify-between text-[11px] text-slate-400 font-mono border-t border-white/5">
+                  <span>In Progress</span>
+                  <span className="text-white font-semibold">{inProgressCount}</span>
                 </div>
               </GlassCard>
 
-              {/* Tile 3: Fulfillment Status */}
+              {/* Tile 3: Completed Orders */}
               <GlassCard variant="squircle" className="p-5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">Fulfillment SLA</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
-                    <span className="text-xs font-bold text-[#DBEF90] font-mono">99.8%</span>
-                  </div>
+                  <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold font-mono">Fulfilled</span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div className="my-3 flex items-baseline gap-4">
                   <div>
                     <span className="text-3xl font-light text-white leading-none">{completedCount}</span>
-                    <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold mt-1 font-mono">Completed</span>
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold mt-1 font-mono">Completed</span>
                   </div>
                   <div className="border-l border-white/10 pl-4">
-                    <span className="text-xl font-bold text-white leading-none">{inProgressCount}</span>
-                    <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold mt-1 font-mono">In Pipeline</span>
+                    <span className="text-2xl font-light text-white leading-none">{pendingCount}</span>
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold mt-1 font-mono">Pending</span>
                   </div>
                 </div>
-                {/* Dot matrix progress */}
-                <div className="pt-2">
-                  <div className="grid grid-cols-12 gap-1">
-                    {Array.from({ length: 12 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`h-2 rounded-sm ${
-                          i < 10 ? "bg-[#DBEF90]" : i === 10 ? "bg-[#DBEF90]/50" : "bg-white/10"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between mt-1 text-[11px] text-zinc-400 font-mono">
-                    <span>Matrix delivery</span>
-                    <span>&lt; 30ms latency</span>
-                  </div>
+                <div className="pt-2 flex items-center justify-between text-[11px] text-slate-400 font-mono border-t border-white/5">
+                  <span>Execution Rate</span>
+                  <span className="text-slate-300 font-semibold">
+                    {orders.length > 0 ? `${Math.round((completedCount / orders.length) * 100)}%` : "0%"}
+                  </span>
                 </div>
               </GlassCard>
 
-              {/* Tile 4: Queue & Exceptions */}
+              {/* Tile 4: Total Spent */}
               <GlassCard variant="squircle" className="p-5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">Exceptions & Queue</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#ffafd5]/20 text-[#ffafd5] font-semibold border border-[#ffafd5]/30">
-                    0% Drop
+                  <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold font-mono">Total Spent</span>
+                  <TrendingUp className="w-4 h-4 text-blue-400" />
+                </div>
+                <div className="my-3 flex items-baseline justify-between">
+                  <span className="text-3xl font-light text-white tracking-tight">
+                    ₹{orders.reduce((acc, o) => acc + (o.charge || 0), 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-slate-400 font-semibold border border-white/10 font-mono">
+                    {exceptionCount} Exception{exceptionCount !== 1 ? "s" : ""}
                   </span>
                 </div>
-                <div className="my-3 flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-light text-white leading-none">{pendingCount}</span>
-                      <span className="text-[10px] text-zinc-400 uppercase font-semibold font-mono">Pending</span>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-lg font-normal text-zinc-500 leading-none">{exceptionCount}</span>
-                      <span className="text-[10px] text-zinc-500 uppercase font-semibold font-mono">Cancelled/Partial</span>
-                    </div>
-                  </div>
-                  {/* Radial SVG Ring */}
-                  <div className="relative w-12 h-12 shrink-0 flex items-center justify-center">
-                    <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                      <circle cx="18" cy="18" fill="none" r="15" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
-                      <circle
-                        cx="18"
-                        cy="18"
-                        fill="none"
-                        r="15"
-                        stroke="#DBEF90"
-                        strokeDasharray="94.2"
-                        strokeDashoffset="22"
-                        strokeLinecap="round"
-                        strokeWidth="2.5"
-                      />
-                    </svg>
-                    <span className="absolute w-2 h-2 rounded-full bg-[#DBEF90]" />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-zinc-400 font-mono">
-                  <span>Auto-reroute: Active</span>
-                  <span className="text-[#DBEF90]">Health 100%</span>
+                <div className="pt-2 flex items-center justify-between text-[11px] text-slate-400 font-mono border-t border-white/5">
+                  <span>Ledger Transactions</span>
+                  <Link href="/transactions" className="text-blue-400 hover:underline">View History</Link>
                 </div>
               </GlassCard>
             </div>
 
-            {/* Col 3: Tier Bonus Card in Frosted Glass Squircle */}
-            <GlassCard variant="squircle" className="xl:col-span-3 p-6 relative overflow-hidden flex flex-col justify-between bg-gradient-to-br from-[#BD0183]/25 via-[#40002A]/35 to-[#121212]/90 border border-white/[0.14]">
-              <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-[#FFAFD5]/15 blur-2xl pointer-events-none" />
+            {/* Col 3: Quick Action Card */}
+            <GlassCard variant="squircle" className="xl:col-span-3 p-6 relative overflow-hidden flex flex-col justify-between bg-gradient-to-br from-blue-900/20 via-slate-900/40 to-[#02040A] border border-white/[0.1]">
+              <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] uppercase tracking-widest font-bold text-white font-mono">
-                    Tier Bonus
+                  <span className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] uppercase tracking-widest font-bold text-blue-400 font-mono">
+                    Quick Start
                   </span>
-                  <Sparkles className="w-4 h-4 text-[#DBEF90]" />
+                  <Sparkles className="w-4 h-4 text-blue-400" />
                 </div>
                 <h3 className="text-xl font-normal text-white tracking-tight leading-snug">
-                  Deposit ₹1,000, get ₹100 instant credit
+                  Boost Your Social Growth
                 </h3>
-                <p className="text-xs text-zinc-300 mt-2 font-light">
-                  Direct boost credited into high-speed liquidity balance with zero delays.
+                <p className="text-xs text-slate-300 mt-2 font-light">
+                  Order high-speed followers, likes, views, and engagement across all major platforms.
                 </p>
               </div>
 
               <div className="mt-6 space-y-3">
-                <div className="flex items-center justify-between text-[11px] text-zinc-300 uppercase tracking-wider font-mono">
-                  <span>Daily Quota Claimed</span>
-                  <span className="font-bold text-[#DBEF90]">65%</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden p-0.5">
-                  <div className="h-full rounded-full bg-[#DBEF90] transition-all" style={{ width: "65%" }} />
-                </div>
                 <Link
-                  href="/wallet"
-                  className="w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-[#DBEF90] to-[#bccf74] text-[#171e00] hover:brightness-110 transition-all text-xs font-bold tracking-wide flex items-center justify-center gap-1.5 shadow-lg"
+                  href="/services-catalog"
+                  className="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 transition-all text-xs font-semibold flex items-center justify-center gap-1.5"
                 >
-                  <span>Claim Bonus Now</span>
+                  <span>Explore Services</span>
                   <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+                <Link
+                  href="/new-order"
+                  className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition-all text-xs font-bold tracking-wide flex items-center justify-center gap-1.5 shadow-lg shadow-blue-600/30"
+                >
+                  <span>Create First Order</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             </GlassCard>
@@ -369,15 +293,15 @@ export default function CustomerDashboardPage() {
         </div>
       </section>
 
-      {/* 2. NOTCHED SECTION DIVIDER */}
+      {/* 2. LIVE FEED DIVIDER */}
       <div className="w-full -mt-2 mb-6 z-20 flex justify-center items-center">
-        <div className="liquid-glass-pill px-6 py-2 rounded-full shadow-2xl flex items-center gap-3 text-white text-xs">
-          <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
-          <span className="font-mono uppercase tracking-widest text-[#DBEF90] font-semibold">
-            Live Stream Feed
+        <div className="px-6 py-2 rounded-full bg-white/[0.03] border border-white/[0.08] backdrop-blur-md shadow-2xl flex items-center gap-3 text-white text-xs">
+          <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+          <span className="font-mono uppercase tracking-widest text-blue-400 font-semibold">
+            Execution Ledger
           </span>
           <span className="text-white/40">•</span>
-          <span className="text-zinc-300 text-xs font-mono">{orders.length} Vectors Managed</span>
+          <span className="text-slate-300 text-xs font-mono">{orders.length} Active Orders</span>
         </div>
       </div>
 
@@ -424,111 +348,123 @@ export default function CustomerDashboardPage() {
         <div className="glass-panel p-4 md:p-6 rounded-3xl overflow-hidden">
           <div className="flex items-center justify-between mb-4 px-2">
             <div className="flex items-center gap-2">
-              <Radio className="w-4 h-4 text-[#DBEF90] animate-pulse" />
+              <Radio className="w-4 h-4 text-blue-400 animate-pulse" />
               <h2 className="text-sm font-semibold uppercase tracking-wider text-white">
-                Active Execution Stream
+                Recent Orders
               </h2>
             </div>
-            <span className="text-xs text-on-surface-variant font-mono">
-              Auto-refreshed with &lt; 40ms sync
+            <span className="text-xs text-slate-400 font-mono">
+              Live Session Data
             </span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-white/10 text-[11px] uppercase tracking-wider text-on-surface-variant font-mono">
-                  <th className="py-3 px-3">Order ID</th>
-                  <th className="py-3 px-3">Service & Platform</th>
-                  <th className="py-3 px-3">Target Vector</th>
-                  <th className="py-3 px-3">Quantity</th>
-                  <th className="py-3 px-3">Charge</th>
-                  <th className="py-3 px-3">Status</th>
-                  <th className="py-3 px-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5 text-xs">
-                {filteredOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-on-surface-variant">
-                      No orders found matching the filter criteria.
-                    </td>
+          {orders.length === 0 ? (
+            <div className="py-6">
+              <EmptyState
+                icon={ShoppingBag}
+                title="No orders yet"
+                description="You haven't placed any orders yet. Select a service to launch your first social media campaign."
+                actionText="Place your first order"
+                actionHref="/new-order"
+              />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 text-[11px] uppercase tracking-wider text-slate-400 font-mono">
+                    <th className="py-3 px-3">Order ID</th>
+                    <th className="py-3 px-3">Service & Platform</th>
+                    <th className="py-3 px-3">Target Vector</th>
+                    <th className="py-3 px-3">Quantity</th>
+                    <th className="py-3 px-3">Charge</th>
+                    <th className="py-3 px-3">Status</th>
+                    <th className="py-3 px-3 text-right">Actions</th>
                   </tr>
-                ) : (
-                  filteredOrders.slice(0, 8).map((order) => (
-                    <tr key={order.id} className="hover:bg-white/[0.02] transition-colors group">
-                      <td className="py-4 px-3 font-mono font-bold text-white whitespace-nowrap">
-                        <span className="text-[#DBEF90] mr-1">✦</span>
-                        {order.id}
-                      </td>
-                      <td className="py-4 px-3">
-                        <div className="font-medium text-white max-w-xs truncate">{order.serviceName}</div>
-                        <div className="text-[10px] text-on-surface-variant uppercase font-mono mt-0.5">
-                          {order.platform}
-                        </div>
-                      </td>
-                      <td className="py-4 px-3">
-                        <a
-                          href={order.target}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-on-surface-variant hover:text-[#DBEF90] max-w-[200px] truncate transition-colors font-mono"
-                        >
-                          <span className="truncate">{order.target}</span>
-                          <ExternalLink className="w-3 h-3 shrink-0 opacity-60" />
-                        </a>
-                      </td>
-                      <td className="py-4 px-3 font-mono">
-                        <div className="text-white font-semibold">
-                          {order.quantity.toLocaleString()} units
-                        </div>
-                        {order.remains !== null && order.remains !== undefined && (
-                          <div className="text-[10px] text-on-surface-variant">
-                            Remains: {order.remains.toLocaleString()}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-4 px-3 font-mono font-semibold text-[#DBEF90]">
-                        ₹{order.charge.toFixed(2)}
-                      </td>
-                      <td className="py-4 px-3 whitespace-nowrap">
-                        {getStatusBadge(order.status)}
-                      </td>
-                      <td className="py-4 px-3 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-2">
-                          {order.refillable && (
-                            <button
-                              onClick={() => handleRefill(order.id)}
-                              disabled={refillingId === order.id}
-                              className="px-3 py-1 rounded-full bg-white/5 hover:bg-[#DBEF90]/20 text-[#DBEF90] border border-white/10 hover:border-[#DBEF90]/40 text-[11px] font-semibold transition-all flex items-center gap-1"
-                              title="Trigger Refill Daemon"
-                            >
-                              <RefreshCw className={`w-3 h-3 ${refillingId === order.id ? "animate-spin" : ""}`} />
-                              <span>{refillingId === order.id ? "Refilling..." : "Refill"}</span>
-                            </button>
-                          )}
-                          {order.cancellable && (
-                            <button
-                              onClick={() => cancelOrder(order.id)}
-                              className="px-3 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 text-[11px] font-semibold transition-all"
-                            >
-                              Cancel
-                            </button>
-                          )}
-                          <Link
-                            href={`/new-order?serviceId=${order.serviceId}`}
-                            className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-white text-[11px] font-semibold transition-all"
-                          >
-                            Reorder
-                          </Link>
-                        </div>
+                </thead>
+                <tbody className="divide-y divide-white/5 text-xs">
+                  {filteredOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-slate-400">
+                        No orders found matching the filter criteria.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ) : (
+                    filteredOrders.slice(0, 8).map((order) => (
+                      <tr key={order.id} className="hover:bg-white/[0.02] transition-colors group">
+                        <td className="py-4 px-3 font-mono font-bold text-white whitespace-nowrap">
+                          <span className="text-blue-400 mr-1">✦</span>
+                          {order.id}
+                        </td>
+                        <td className="py-4 px-3">
+                          <div className="font-medium text-white max-w-xs truncate">{order.serviceName}</div>
+                          <div className="text-[10px] text-slate-400 uppercase font-mono mt-0.5">
+                            {order.platform}
+                          </div>
+                        </td>
+                        <td className="py-4 px-3">
+                          <a
+                            href={order.target}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-slate-400 hover:text-blue-400 max-w-[200px] truncate transition-colors font-mono"
+                          >
+                            <span className="truncate">{order.target}</span>
+                            <ExternalLink className="w-3 h-3 shrink-0 opacity-60" />
+                          </a>
+                        </td>
+                        <td className="py-4 px-3 font-mono">
+                          <div className="text-white font-semibold">
+                            {order.quantity.toLocaleString()} units
+                          </div>
+                          {order.remains !== null && order.remains !== undefined && (
+                            <div className="text-[10px] text-slate-400">
+                              Remains: {order.remains.toLocaleString()}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-4 px-3 font-mono font-semibold text-blue-400">
+                          ₹{order.charge.toFixed(2)}
+                        </td>
+                        <td className="py-4 px-3 whitespace-nowrap">
+                          {getStatusBadge(order.status)}
+                        </td>
+                        <td className="py-4 px-3 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2">
+                            {order.refillable && (
+                              <button
+                                onClick={() => handleRefill(order.id)}
+                                disabled={refillingId === order.id}
+                                className="px-3 py-1 rounded-full bg-white/5 hover:bg-blue-500/20 text-blue-400 border border-white/10 hover:border-blue-500/40 text-[11px] font-semibold transition-all flex items-center gap-1"
+                                title="Trigger Refill Daemon"
+                              >
+                                <RefreshCw className={`w-3 h-3 ${refillingId === order.id ? "animate-spin" : ""}`} />
+                                <span>{refillingId === order.id ? "Refilling..." : "Refill"}</span>
+                              </button>
+                            )}
+                            {order.cancellable && (
+                              <button
+                                onClick={() => cancelOrder(order.id)}
+                                className="px-3 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 text-[11px] font-semibold transition-all"
+                              >
+                                Cancel
+                              </button>
+                            )}
+                            <Link
+                              href={`/new-order?serviceId=${order.serviceId}`}
+                              className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-white text-[11px] font-semibold transition-all"
+                            >
+                              Reorder
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </section>
     </div>

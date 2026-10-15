@@ -13,11 +13,12 @@ import {
   ShieldCheck,
   Clock,
   Flame,
-  Filter,
   Sparkles,
   ArrowRight,
+  Layers,
 } from "lucide-react";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 export default function ServicesCatalogPage() {
   const { services } = useCustomer();
@@ -170,8 +171,32 @@ export default function ServicesCatalogPage() {
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredServices.map((service) => (
+        {filteredServices.length === 0 ? (
+          <div className="py-8">
+            <EmptyState
+              icon={Layers}
+              title={services.length === 0 ? "No services available" : "No matching services"}
+              description={
+                services.length === 0
+                  ? "The service catalog is currently empty. Please check back later or reach out to support."
+                  : "No services found matching the active filters or search query."
+              }
+              actionText={services.length === 0 ? "Contact support" : "Reset filters"}
+              actionHref={services.length === 0 ? "/support" : undefined}
+              onActionClick={
+                services.length === 0
+                  ? undefined
+                  : () => {
+                      setSelectedPlatform("ALL");
+                      setSelectedCategory("ALL");
+                      setSearchQuery("");
+                    }
+              }
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredServices.map((service) => (
             <GlassCard
               key={service.id}
               variant="squircle"
@@ -252,8 +277,9 @@ export default function ServicesCatalogPage() {
                 </Link>
               </div>
             </GlassCard>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

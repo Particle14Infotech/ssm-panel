@@ -19,6 +19,7 @@ import {
   AlertCircle,
   Paperclip,
 } from "lucide-react";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 function SupportContent() {
   const searchParams = useSearchParams();
@@ -146,47 +147,65 @@ function SupportContent() {
             </div>
 
             <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
-              {filteredTickets.map((ticket) => {
-                const isSelected = activeTicket?.id === ticket.id;
-                return (
-                  <button
-                    key={ticket.id}
-                    onClick={() => {
-                      setSelectedTicketId(ticket.id);
-                      setIsCreatingTicket(false);
-                    }}
-                    className={`w-full p-4 rounded-2xl text-left border transition-all flex flex-col gap-2 ${
-                      isSelected
-                        ? "bg-[#d8ec8d]/10 border-[#DBEF90] shadow-[0_0_15px_rgba(219,239,144,0.15)]"
-                        : "bg-surface-container-high/40 border-white/5 hover:border-white/20"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-mono font-bold text-[#DBEF90]">
-                        ✦ {ticket.id}
-                      </span>
-                      <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-mono uppercase font-semibold ${
-                          ticket.status === "RESOLVED"
-                            ? "bg-emerald-500/20 text-emerald-300"
-                            : ticket.status === "ANSWERED"
-                            ? "bg-[#DBEF90]/20 text-[#DBEF90]"
-                            : "bg-amber-500/20 text-amber-300"
-                        }`}
-                      >
-                        {ticket.status}
-                      </span>
-                    </div>
+              {filteredTickets.length === 0 ? (
+                tickets.length === 0 ? (
+                  <div className="py-2">
+                    <EmptyState
+                      icon={HelpCircle}
+                      title="No tickets yet"
+                      description="Create a ticket to reach our support team."
+                      actionText="Open ticket"
+                      onActionClick={() => setIsCreatingTicket(true)}
+                    />
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-xs text-on-surface-variant font-mono">
+                    No matching tickets found.
+                  </div>
+                )
+              ) : (
+                filteredTickets.map((ticket) => {
+                  const isSelected = activeTicket?.id === ticket.id;
+                  return (
+                    <button
+                      key={ticket.id}
+                      onClick={() => {
+                        setSelectedTicketId(ticket.id);
+                        setIsCreatingTicket(false);
+                      }}
+                      className={`w-full p-4 rounded-2xl text-left border transition-all flex flex-col gap-2 ${
+                        isSelected
+                          ? "bg-blue-500/10 border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.2)]"
+                          : "bg-surface-container-high/40 border-white/5 hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-mono font-bold text-blue-400">
+                          ✦ {ticket.id}
+                        </span>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-mono uppercase font-semibold ${
+                            ticket.status === "RESOLVED"
+                              ? "bg-emerald-500/20 text-emerald-300"
+                              : ticket.status === "ANSWERED"
+                              ? "bg-blue-500/20 text-blue-400"
+                              : "bg-amber-500/20 text-amber-300"
+                          }`}
+                        >
+                          {ticket.status}
+                        </span>
+                      </div>
 
-                    <div className="text-xs font-semibold text-white truncate">{ticket.subject}</div>
+                      <div className="text-xs font-semibold text-white truncate">{ticket.subject}</div>
 
-                    <div className="flex items-center justify-between text-[10px] text-on-surface-variant font-mono pt-1">
-                      <span>{ticket.department}</span>
-                      <span>{new Date(ticket.lastReplyAt).toLocaleDateString()}</span>
-                    </div>
-                  </button>
-                );
-              })}
+                      <div className="flex items-center justify-between text-[10px] text-on-surface-variant font-mono pt-1">
+                        <span>{ticket.department}</span>
+                        <span>{new Date(ticket.lastReplyAt).toLocaleDateString()}</span>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -403,8 +422,14 @@ function SupportContent() {
                 </form>
               </div>
             ) : (
-              <div className="py-20 text-center text-on-surface-variant">
-                No ticket selected. Click &quot;Open New Ticket&quot; to create one.
+              <div className="py-12">
+                <EmptyState
+                  icon={HelpCircle}
+                  title="No ticket selected"
+                  description="Select an existing ticket from the sidebar or open a new support request."
+                  actionText="Open new ticket"
+                  onActionClick={() => setIsCreatingTicket(true)}
+                />
               </div>
             )}
           </div>

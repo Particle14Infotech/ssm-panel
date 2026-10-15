@@ -14,10 +14,10 @@ import {
   DollarSign,
   TrendingUp,
   Percent,
-  Sliders,
   Check,
   X,
 } from "lucide-react";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 export default function AdminServicesPage() {
   const { services, addService, updateService, deleteService } = useAdmin();
@@ -277,8 +277,23 @@ export default function AdminServicesPage() {
 
         {/* Services Table */}
         <div className="glass-panel rounded-3xl p-4 md:p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+          {filteredServices.length === 0 ? (
+            <div className="py-6">
+              <EmptyState
+                icon={Zap}
+                title={services.length === 0 ? "No services in catalog" : "No matching services"}
+                description={
+                  services.length === 0
+                    ? "Your catalog has no active services. Create a service manually or import from a connected provider."
+                    : "No services found matching your search or platform filter."
+                }
+                actionText="Add service / Import from provider"
+                onActionClick={() => setIsAdding(true)}
+              />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-white/10 text-[10px] uppercase font-mono text-on-surface-variant">
                   <th className="py-3 px-3">ID</th>
@@ -367,7 +382,8 @@ export default function AdminServicesPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        )}
+      </div>
       </div>
     </div>
   );
