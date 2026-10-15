@@ -68,27 +68,20 @@ export default function CustomerDashboardPage() {
       {/* 1. Header Telemetry & Quick CTA */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            <span className="uppercase tracking-widest font-semibold">Live Operational Dashboard</span>
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-medium text-blue-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+            <span>Live Operational Console</span>
           </div>
-          <h1 className="text-3xl font-semibold text-white tracking-tight">Overview</h1>
-          <p className="text-xs text-slate-400">
-            Welcome back, {user.name || "Customer"}. Real-time monitoring of your liquidity and campaigns.
+          <h1 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight font-sans">Overview</h1>
+          <p className="text-xs text-slate-400 font-sans">
+            Welcome back, {user.name || "Customer"}. Real-time monitoring of your liquidity and active orders.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <Link
-            href="/wallet"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-semibold border border-white/10 transition-all"
-          >
-            <Wallet className="w-3.5 h-3.5 text-blue-400" />
-            <span>Add Funds</span>
-          </Link>
+        <div className="flex items-center gap-3">
           <Link
             href="/new-order"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white text-xs font-semibold shadow-md shadow-blue-600/30 transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white text-xs font-semibold shadow-lg shadow-blue-600/30 transition-all font-sans"
           >
             <PlusCircle className="w-3.5 h-3.5" />
             <span>New Order</span>
@@ -136,19 +129,19 @@ export default function CustomerDashboardPage() {
       <GlassCard className="p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-0.5">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-white">
+            <h2 className="text-sm font-semibold tracking-wide text-white font-sans">
               Activity & Liquidity Velocity
             </h2>
-            <p className="text-xs text-slate-400">Daily dispatch count across selected window.</p>
+            <p className="text-xs text-slate-400 font-sans">Daily order dispatch volume across selected window.</p>
           </div>
 
           <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/5 self-start">
             <button
               type="button"
               onClick={() => setChartRange("7d")}
-              className={`px-3 py-1 rounded-lg text-xs font-mono font-medium transition-all ${
+              className={`px-3 py-1 rounded-lg text-xs font-medium font-sans transition-all ${
                 chartRange === "7d"
-                  ? "bg-blue-600 text-white shadow-sm"
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-600/40"
                   : "text-slate-400 hover:text-white"
               }`}
             >
@@ -157,9 +150,9 @@ export default function CustomerDashboardPage() {
             <button
               type="button"
               onClick={() => setChartRange("30d")}
-              className={`px-3 py-1 rounded-lg text-xs font-mono font-medium transition-all ${
+              className={`px-3 py-1 rounded-lg text-xs font-medium font-sans transition-all ${
                 chartRange === "30d"
-                  ? "bg-blue-600 text-white shadow-sm"
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-600/40"
                   : "text-slate-400 hover:text-white"
               }`}
             >
@@ -169,25 +162,32 @@ export default function CustomerDashboardPage() {
         </div>
 
         {/* Chart Visualization */}
-        <div className="h-44 w-full pt-4 flex items-end justify-between gap-1 sm:gap-2">
+        <div className="h-44 w-full pt-4 flex items-end justify-between gap-1 sm:gap-2 border-b border-white/5 pb-2">
           {chartData.map((d, i) => {
-            const heightPct = Math.max(Math.round((d.count / maxChartCount) * 100), 6);
+            const hasActivity = d.count > 0;
+            const heightPct = hasActivity
+              ? Math.max(Math.round((d.count / maxChartCount) * 100), 18)
+              : 8;
             return (
               <div key={i} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
                 <div className="w-full relative flex items-end justify-center h-32">
                   <div
                     style={{ height: `${heightPct}%` }}
-                    className="w-full max-w-[28px] rounded-t-lg bg-gradient-to-t from-blue-700 to-blue-500 opacity-80 group-hover:opacity-100 group-hover:from-blue-600 group-hover:to-blue-400 transition-all shadow-[0_0_12px_rgba(37,99,235,0.25)] relative"
+                    className={`w-full max-w-[28px] rounded-t-lg transition-all relative ${
+                      hasActivity
+                        ? "bg-gradient-to-t from-blue-700 to-blue-500 shadow-[0_0_12px_rgba(37,99,235,0.3)] opacity-90 group-hover:opacity-100"
+                        : "bg-white/5 group-hover:bg-blue-500/20"
+                    }`}
                   >
                     {/* Tooltip on Hover */}
                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center z-20 pointer-events-none">
-                      <div className="bg-[#070B16] border border-blue-500/40 px-2 py-1 rounded-lg shadow-lg text-[10px] font-mono text-white whitespace-nowrap">
+                      <div className="bg-[#070B16] border border-blue-500/40 px-2.5 py-1 rounded-lg shadow-xl text-[11px] font-sans tabular-nums text-white whitespace-nowrap">
                         {d.count} orders (₹{d.spend.toFixed(0)})
                       </div>
                     </div>
                   </div>
                 </div>
-                <span className="text-[10px] font-mono text-slate-400 truncate max-w-[40px] text-center">
+                <span className="text-[10px] font-sans text-slate-400 truncate max-w-[42px] text-center">
                   {d.date}
                 </span>
               </div>

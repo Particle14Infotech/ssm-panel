@@ -71,10 +71,10 @@ export function CustomerHeader() {
         {/* Right: Balance Chip + Add Funds, Notifications, User Menu */}
         <div className="flex items-center gap-3 shrink-0">
           {/* Balance Chip */}
-          <div className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-xl p-1 pr-1.5 pl-3">
-            <div className="flex items-baseline gap-1 font-mono">
-              <span className="text-[10px] text-slate-400 uppercase">Bal:</span>
-              <span className="text-xs font-semibold text-white">
+          <div className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-xl p-1 pr-1.5 pl-3">
+            <div className="flex items-baseline gap-1.5 font-sans">
+              <span className="text-[11px] text-slate-400 uppercase tracking-wide font-medium">Bal:</span>
+              <span className="text-xs font-semibold text-white tabular-nums tracking-tight">
                 ₹{user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </span>
             </div>

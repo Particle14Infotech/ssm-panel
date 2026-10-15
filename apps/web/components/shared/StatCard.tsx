@@ -37,7 +37,7 @@ export function StatCard({
       )}
 
       <div className="flex items-center justify-between gap-3 mb-3">
-        <span className="text-xs font-medium uppercase tracking-wider text-slate-400 font-mono">
+        <span className="text-xs font-medium uppercase tracking-wider text-slate-400 font-sans">
           {title}
         </span>
         {Icon && (
@@ -48,7 +48,7 @@ export function StatCard({
       </div>
 
       <div className="space-y-1">
-        <div className="text-2xl md:text-3xl font-semibold tracking-tight text-white font-mono">
+        <div className="text-2xl md:text-3xl font-semibold tracking-tight text-white font-sans tabular-nums">
           {value}
         </div>
 
@@ -56,7 +56,7 @@ export function StatCard({
           <div className="flex items-center gap-2 pt-1 text-xs">
             {trend && (
               <span
-                className={`font-mono font-medium ${
+                className={`font-sans font-medium tabular-nums ${
                   trend.isPositive ? "text-emerald-400" : "text-rose-400"
                 }`}
               >
@@ -64,7 +64,7 @@ export function StatCard({
                 {Math.abs(trend.value)}%
               </span>
             )}
-            {subtitle && <span className="text-slate-400 text-[11px]">{subtitle}</span>}
+            {subtitle && <span className="text-slate-400 text-[11px] font-sans">{subtitle}</span>}
           </div>
         )}
       </div>

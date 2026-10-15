@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Urbanist } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "@/styles/globals.css";
 import { landingContent } from "@/content/landing";
 
-const urbanist = Urbanist({
+const poppins = Poppins({
   subsets: ["latin"],
-  weight: ["200", "300", "400", "500", "600", "700", "800"],
-  variable: "--font-urbanist",
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-poppins",
   display: "swap",
 });
 
@@ -135,7 +135,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className={`dark ${urbanist.variable}`}>
+    <html lang="en" className={`dark ${poppins.variable}`}>
       <head>
         <link
           rel="stylesheet"
@@ -146,11 +146,11 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="bg-[#131313] text-[#e5e2e1] font-sans antialiased min-h-screen selection:bg-[#d8ec8d] selection:text-[#171e00]">
+      <body className="bg-[#02040A] text-white font-sans antialiased min-h-screen selection:bg-blue-600/30 selection:text-white">
         {/* WCAG 2.2 AA Skip Link */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 z-50 px-4 py-2 bg-[#d8ec8d] text-[#171e00] font-bold rounded-full shadow-lg"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 z-50 px-4 py-2 bg-blue-600 text-white font-semibold rounded-full shadow-lg border border-blue-400/30"
         >
           Skip to main content
         </a>

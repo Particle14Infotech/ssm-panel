@@ -70,9 +70,9 @@ module.exports = {
         sm: "0.75rem",
       },
       fontFamily: {
-        sans: ["var(--font-poppins)", "var(--font-urbanist)", "system-ui", "sans-serif"],
+        sans: ["var(--font-poppins)", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
         heading: ["var(--font-poppins)", "sans-serif"],
-        mono: ["var(--font-mono)", "monospace"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
       },
       animation: {
         "pulse-slow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
