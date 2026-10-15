@@ -1,0 +1,55 @@
+import { z } from "zod";
+
+export const EnvSchema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  PORT: z.string().default("4000"),
+  DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+  REDIS_HOST: z.string().default("localhost"),
+  REDIS_PORT: z.string().default("6379"),
+  JWT_ACCESS_SECRET: z.string().default("test_access_secret_32bytes_minimum_length_required"),
+  JWT_REFRESH_SECRET: z.string().default("test_refresh_secret_32bytes_minimum_length_required"),
+  WEB_URL: z.string().default("http://localhost:3000"),
+  API_URL: z.string().default("http://localhost:4000/api/v1"),
+  RAZORPAY_KEY_ID: z.string().optional(),
+  RAZORPAY_KEY_SECRET: z.string().optional(),
+  PAYMENT_WEBHOOK_SECRET: z.string().optional(),
+});
+
+export type ValidatedEnv = z.infer<typeof EnvSchema>;
+
+export function validateEnvironment(env: Record<string, string | undefined> = process.env): ValidatedEnv {
+  const isProduction = env.NODE_ENV === "production";
+
+  if (isProduction) {
+    const criticalVars = [
+      "DATABASE_URL",
+      "REDIS_HOST",
+      "JWT_ACCESS_SECRET",
+      "JWT_REFRESH_SECRET",
+      "RAZORPAY_KEY_ID",
+      "RAZORPAY_KEY_SECRET",
+    ];
+
+    const missing = criticalVars.filter((v) => {
+      const val = env[v];
+      return !val || val.trim() === "" || val.startsWith("REPLACE_ME");
+    });
+
+    if (missing.length > 0) {
+      console.error("\n=======================================================");
+      console.error("❌ FATAL: PRODUCTION BOOT REFUSED - MISSING SECRETS");
+      console.error("=======================================================");
+      missing.forEach((v) => console.error(`  - Missing or placeholder: ${v}`));
+      console.error("\nSet valid production credentials in the environment.\n");
+      process.exit(1);
+    }
+  }
+
+  const result = EnvSchema.safeParse(env);
+  if (!result.success && isProduction) {
+    console.error("FATAL: Environment validation failed:", result.error.format());
+    process.exit(1);
+  }
+
+  return (result.success ? result.data : env) as ValidatedEnv;
+}

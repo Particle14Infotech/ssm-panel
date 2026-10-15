@@ -100,7 +100,7 @@ export default function ProfileSecurityPage() {
   };
 
   return (
-    <div className="w-full bg-[#0e0e0e] min-h-screen pb-24 text-on-surface">
+    <div className="w-full bg-transparent min-h-screen pb-24 text-on-surface">
       <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-8 space-y-8">
         {/* Header Telemetry */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
@@ -134,7 +134,7 @@ export default function ProfileSecurityPage() {
             {/* Account Information Form */}
             <form
               onSubmit={handleSaveProfile}
-              className="bg-[#1c1b1b]/80 border border-white/10 backdrop-blur-2xl rounded-3xl p-6 md:p-8 shadow-2xl space-y-6"
+              className="glass-panel rounded-[2rem] p-6 md:p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-6"
             >
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-3">
@@ -255,7 +255,7 @@ export default function ProfileSecurityPage() {
             {/* Password Management */}
             <form
               onSubmit={handlePasswordChange}
-              className="bg-[#1c1b1b]/80 border border-white/10 backdrop-blur-2xl rounded-3xl p-6 md:p-8 shadow-2xl space-y-4 text-xs"
+              className="glass-panel rounded-[2rem] p-6 md:p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-4 text-xs"
             >
               <div className="flex items-center gap-2 border-b border-white/10 pb-3">
                 <Lock className="w-4 h-4 text-[#DBEF90]" />
@@ -327,7 +327,7 @@ export default function ProfileSecurityPage() {
             {/* API Key Management Box */}
             <div
               id="api-keys"
-              className="bg-[#1c1b1b]/90 border border-white/15 backdrop-blur-2xl rounded-3xl p-6 md:p-8 shadow-2xl space-y-4"
+              className="glass-panel rounded-[2rem] p-6 md:p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-4"
             >
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">

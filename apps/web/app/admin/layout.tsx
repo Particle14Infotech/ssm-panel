@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { AdminLayoutWrapper } from "@/components/admin/AdminLayoutWrapper";
 
 export const metadata: Metadata = {
-  title: "Admin Command Console | AETHER SMM",
+  title: "Admin Command Console | SMM PANEL",
   description: "Root administrative command center for high-frequency provider routing, revenue telemetry, and order settlement.",
 };
 

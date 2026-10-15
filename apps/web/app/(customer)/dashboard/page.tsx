@@ -23,6 +23,7 @@ import {
   CreditCard,
   Radio,
 } from "lucide-react";
+import { GlassCard } from "@/components/shared/GlassCard";
 
 export default function CustomerDashboardPage() {
   const { user, orders, refillOrder, cancelOrder } = useCustomer();
@@ -99,21 +100,21 @@ export default function CustomerDashboardPage() {
   };
 
   return (
-    <div className="w-full bg-[#0e0e0e] min-h-screen pb-20">
-      {/* 1. LIGHT SPLIT TOP TIER (HIGH CONTRAST OPULENCE) */}
-      <section className="w-full bg-[#F5F5F8] text-[#131313] px-4 md:px-8 pt-8 pb-12 rounded-b-[2.5rem] shadow-2xl relative overflow-hidden">
+    <div className="w-full bg-[#0e0e0e] min-h-screen pb-24 text-[#e5e2e1]">
+      {/* 1. DARK GLASSMORPHIC COMMAND CENTER */}
+      <section className="w-full px-4 md:px-8 pt-6 pb-10 relative">
         <div className="max-w-[1560px] mx-auto space-y-6">
           {/* Top Bar: Telemetry Pill & Calendar Strip */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-md shadow-sm border border-black/5">
-              <span className="text-[#5b6b1b] font-bold text-xs">✦</span>
-              <span className="text-xs font-medium text-[#353534] tracking-wide">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full liquid-glass-pill shadow-lg">
+              <span className="text-[#DBEF90] font-bold text-xs">✦</span>
+              <span className="text-xs font-mono text-zinc-300 tracking-wide">
                 Algorithmic Router V4.9 Live • Sub-second delivery cluster active
               </span>
-              <span className="w-2 h-2 rounded-full bg-[#bccf74] animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
             </div>
 
-            <div className="flex items-center gap-2 bg-white/90 p-1.5 rounded-full shadow-sm border border-black/5">
+            <div className="flex items-center gap-1.5 liquid-glass-pill p-1.5 rounded-full">
               {[
                 { day: "Mon", date: "12", active: true },
                 { day: "Tue", date: "13", active: false },
@@ -125,15 +126,15 @@ export default function CustomerDashboardPage() {
                   key={item.day}
                   className={`flex flex-col items-center justify-center w-10 h-12 rounded-full text-center transition-all ${
                     item.active
-                      ? "bg-[#131313] text-white shadow-md"
-                      : "text-[#555] hover:bg-black/5"
+                      ? "bg-[#DBEF90] text-[#131313] font-bold shadow-md"
+                      : "text-zinc-400 hover:text-white hover:bg-white/5"
                   }`}
                 >
-                  <span className="text-[10px] uppercase font-mono opacity-70">{item.day}</span>
+                  <span className="text-[10px] uppercase font-mono opacity-80">{item.day}</span>
                   <span className="text-sm font-bold leading-none">{item.date}</span>
                   <span
                     className={`w-1 h-1 rounded-full mt-1 ${
-                      item.accent === "pink" ? "bg-[#ffafd5]" : "bg-[#d8ec8d]"
+                      item.accent === "pink" ? "bg-[#ffafd5]" : "bg-[#DBEF90]"
                     }`}
                   />
                 </div>
@@ -141,58 +142,58 @@ export default function CustomerDashboardPage() {
             </div>
           </div>
 
-          {/* Main Top Grid (3 : 6 : 3 split) */}
+          {/* Main Top Grid (3 : 6 : 3 split) with frosted glass squircle tiles */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
             {/* Col 1: Platform Matrix Banner */}
-            <div className="xl:col-span-3 rounded-3xl overflow-hidden relative flex flex-col justify-between p-6 bg-white shadow-sm border border-black/5 group min-h-[300px]">
+            <GlassCard variant="squircle" className="xl:col-span-3 overflow-hidden relative flex flex-col justify-between p-6 group min-h-[300px]">
               <div className="flex items-center justify-between relative z-10">
-                <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-md shadow-sm text-[10px] uppercase tracking-widest font-bold text-[#131313] flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#bccf74]" />
+                <span className="px-3 py-1 rounded-full bg-white/[0.08] backdrop-blur-md border border-white/10 text-[10px] uppercase tracking-widest font-bold text-[#DBEF90] flex items-center gap-1.5 font-mono">
+                  <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
                   Telemetry Node
                 </span>
-                <div className="px-3 py-1 rounded-full bg-[#131313] text-white shadow-md flex items-center gap-1.5">
-                  <span className="text-[10px] text-[#bccf74] uppercase tracking-wider font-mono">Spending</span>
-                  <span className="text-xs font-bold font-mono">78%</span>
+                <div className="px-3 py-1 rounded-full bg-white/[0.08] border border-white/10 text-white shadow-md flex items-center gap-1.5 font-mono">
+                  <span className="text-[10px] text-[#DBEF90] uppercase tracking-wider">Spending</span>
+                  <span className="text-xs font-bold">78%</span>
                 </div>
               </div>
 
               <div className="relative z-10 mt-auto pt-8">
-                <span className="text-[11px] uppercase tracking-widest text-[#777] font-semibold block">
+                <span className="text-[11px] uppercase tracking-widest text-zinc-400 font-semibold block font-mono">
                   Platform Matrix
                 </span>
-                <h1 className="text-3xl font-light text-[#131313] tracking-tight leading-tight">
+                <h1 className="text-3xl font-light text-white tracking-tight leading-tight">
                   Command Hub
                 </h1>
-                <p className="text-xs text-[#666] mt-1 font-light">
+                <p className="text-xs text-zinc-400 mt-1 font-light">
                   Real-time network allocation & fulfillment velocity.
                 </p>
                 <div className="mt-4 flex items-center gap-2">
                   <Link
                     href="/new-order"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#131313] text-white text-xs font-semibold hover:bg-black/80 transition-all shadow-md"
+                    className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-gradient-to-r from-[#DBEF90] to-[#bccf74] text-[#171e00] text-xs font-bold hover:shadow-[0_0_20px_rgba(219,239,144,0.35)] transition-all shadow-md"
                   >
                     <span>Create Dispatch</span>
-                    <ArrowUpRight className="w-3.5 h-3.5 text-[#DBEF90]" />
+                    <ArrowUpRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               </div>
-            </div>
+            </GlassCard>
 
-            {/* Col 2: 2x2 Metric Tiles */}
+            {/* Col 2: 2x2 Metric Tiles in Frosted Glass Squircle */}
             <div className="xl:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Tile 1: Wallet Balance */}
-              <div className="bg-white rounded-3xl p-5 shadow-sm border border-black/5 flex flex-col justify-between hover:shadow-md transition-all">
+              <GlassCard variant="squircle" className="p-5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wider text-[#777] font-semibold">Wallet Liquidity</span>
-                  <Link href="/wallet" className="p-1.5 rounded-full hover:bg-black/5 text-[#131313]">
+                  <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">Wallet Liquidity</span>
+                  <Link href="/wallet" className="p-1.5 rounded-full hover:bg-white/10 text-[#DBEF90]">
                     <CreditCard className="w-4 h-4" />
                   </Link>
                 </div>
                 <div className="my-3 flex items-baseline justify-between">
-                  <span className="text-3xl font-extralight text-[#131313] tracking-tight">
+                  <span className="text-3xl font-light text-white tracking-tight">
                     ₹{user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
-                  <span className="text-[11px] font-bold text-[#2a3400] bg-[#d8ec8d] px-2 py-0.5 rounded-full">
+                  <span className="text-[11px] font-bold text-[#171e00] bg-[#DBEF90] px-2.5 py-0.5 rounded-full">
                     +14.2%
                   </span>
                 </div>
@@ -201,28 +202,28 @@ export default function CustomerDashboardPage() {
                   <svg className="w-full h-7 overflow-visible" fill="none" viewBox="0 0 200 28">
                     <path
                       d="M0 22 C 30 20, 50 26, 80 14 C 110 6, 140 18, 192 4"
-                      stroke="#131313"
+                      stroke="#DBEF90"
                       strokeLinecap="round"
-                      strokeWidth="1.75"
+                      strokeWidth="2"
                     />
-                    <polygon fill="#131313" points="190,1 198,4 191,8" />
+                    <polygon fill="#DBEF90" points="190,1 198,4 191,8" />
                   </svg>
-                  <div className="flex items-center justify-between mt-1 text-[11px] text-[#888] font-mono">
+                  <div className="flex items-center justify-between mt-1 text-[11px] text-zinc-400 font-mono">
                     <span>Threshold: ₹500</span>
-                    <span className="text-emerald-600 font-semibold">Instant Ready</span>
+                    <span className="text-[#DBEF90] font-semibold">Instant Ready</span>
                   </div>
                 </div>
-              </div>
+              </GlassCard>
 
               {/* Tile 2: Total Orders */}
-              <div className="bg-white rounded-3xl p-5 shadow-sm border border-black/5 flex flex-col justify-between hover:shadow-md transition-all">
+              <GlassCard variant="squircle" className="p-5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wider text-[#777] font-semibold">Aggregated Orders</span>
-                  <Activity className="w-4 h-4 text-[#131313]" />
+                  <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">Aggregated Orders</span>
+                  <Activity className="w-4 h-4 text-[#DBEF90]" />
                 </div>
                 <div className="my-3 flex items-baseline justify-between">
-                  <span className="text-3xl font-extralight text-[#131313] tracking-tight">{orders.length}</span>
-                  <span className="text-[11px] text-[#131313] bg-[#E5E2E1] px-2.5 py-0.5 rounded-full font-mono">
+                  <span className="text-3xl font-light text-white tracking-tight">{orders.length}</span>
+                  <span className="text-[11px] text-[#DBEF90] bg-[#DBEF90]/15 border border-[#DBEF90]/30 px-2.5 py-0.5 rounded-full font-mono">
                     Active
                   </span>
                 </div>
@@ -233,36 +234,36 @@ export default function CustomerDashboardPage() {
                       <div
                         key={i}
                         className={`w-full rounded-full transition-all ${
-                          i >= 5 && i <= 7 ? "bg-[#bccf74]" : "bg-[#131313]"
+                          i >= 5 && i <= 7 ? "bg-[#DBEF90]" : "bg-white/20"
                         }`}
                         style={{ height: `${h}px` }}
                       />
                     ))}
                   </div>
-                  <div className="flex items-center justify-between mt-1 text-[11px] text-[#888] font-mono">
+                  <div className="flex items-center justify-between mt-1 text-[11px] text-zinc-400 font-mono">
                     <span>Real-time dispatch</span>
                     <span>18 node vectors</span>
                   </div>
                 </div>
-              </div>
+              </GlassCard>
 
               {/* Tile 3: Fulfillment Status */}
-              <div className="bg-white rounded-3xl p-5 shadow-sm border border-black/5 flex flex-col justify-between hover:shadow-md transition-all">
+              <GlassCard variant="squircle" className="p-5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wider text-[#777] font-semibold">Fulfillment SLA</span>
+                  <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">Fulfillment SLA</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#bccf74]" />
-                    <span className="text-xs font-bold text-[#131313] font-mono">99.8%</span>
+                    <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
+                    <span className="text-xs font-bold text-[#DBEF90] font-mono">99.8%</span>
                   </div>
                 </div>
                 <div className="my-3 flex items-baseline gap-4">
                   <div>
-                    <span className="text-3xl font-extralight text-[#131313] leading-none">{completedCount}</span>
-                    <span className="text-[10px] text-[#777] uppercase tracking-wider block font-semibold">Completed</span>
+                    <span className="text-3xl font-light text-white leading-none">{completedCount}</span>
+                    <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold mt-1 font-mono">Completed</span>
                   </div>
-                  <div className="border-l border-black/10 pl-4">
-                    <span className="text-xl font-bold text-[#131313] leading-none">{inProgressCount}</span>
-                    <span className="text-[10px] text-[#777] uppercase tracking-wider block font-semibold">In Pipeline</span>
+                  <div className="border-l border-white/10 pl-4">
+                    <span className="text-xl font-bold text-white leading-none">{inProgressCount}</span>
+                    <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold mt-1 font-mono">In Pipeline</span>
                   </div>
                 </div>
                 {/* Dot matrix progress */}
@@ -272,111 +273,111 @@ export default function CustomerDashboardPage() {
                       <div
                         key={i}
                         className={`h-2 rounded-sm ${
-                          i < 10 ? "bg-[#131313]" : i === 10 ? "bg-[#bccf74]" : "bg-[#E5E2E1]"
+                          i < 10 ? "bg-[#DBEF90]" : i === 10 ? "bg-[#DBEF90]/50" : "bg-white/10"
                         }`}
                       />
                     ))}
                   </div>
-                  <div className="flex items-center justify-between mt-1 text-[11px] text-[#888] font-mono">
+                  <div className="flex items-center justify-between mt-1 text-[11px] text-zinc-400 font-mono">
                     <span>Matrix delivery</span>
                     <span>&lt; 30ms latency</span>
                   </div>
                 </div>
-              </div>
+              </GlassCard>
 
               {/* Tile 4: Queue & Exceptions */}
-              <div className="bg-white rounded-3xl p-5 shadow-sm border border-black/5 flex flex-col justify-between hover:shadow-md transition-all">
+              <GlassCard variant="squircle" className="p-5 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wider text-[#777] font-semibold">Exceptions & Queue</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#ffafd5]/20 text-[#620042] font-semibold">
+                  <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">Exceptions & Queue</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#ffafd5]/20 text-[#ffafd5] font-semibold border border-[#ffafd5]/30">
                     0% Drop
                   </span>
                 </div>
                 <div className="my-3 flex items-center justify-between">
                   <div className="space-y-1">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-extralight text-[#131313] leading-none">{pendingCount}</span>
-                      <span className="text-[10px] text-[#777] uppercase font-semibold">Pending</span>
+                      <span className="text-3xl font-light text-white leading-none">{pendingCount}</span>
+                      <span className="text-[10px] text-zinc-400 uppercase font-semibold font-mono">Pending</span>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-lg font-normal text-[#909281] leading-none">{exceptionCount}</span>
-                      <span className="text-[10px] text-[#909281] uppercase font-semibold">Cancelled/Partial</span>
+                      <span className="text-lg font-normal text-zinc-500 leading-none">{exceptionCount}</span>
+                      <span className="text-[10px] text-zinc-500 uppercase font-semibold font-mono">Cancelled/Partial</span>
                     </div>
                   </div>
                   {/* Radial SVG Ring */}
                   <div className="relative w-12 h-12 shrink-0 flex items-center justify-center">
                     <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                      <circle cx="18" cy="18" fill="none" r="15" stroke="#E5E2E1" strokeWidth="2.5" />
+                      <circle cx="18" cy="18" fill="none" r="15" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
                       <circle
                         cx="18"
                         cy="18"
                         fill="none"
                         r="15"
-                        stroke="#131313"
+                        stroke="#DBEF90"
                         strokeDasharray="94.2"
                         strokeDashoffset="22"
                         strokeLinecap="round"
                         strokeWidth="2.5"
                       />
                     </svg>
-                    <span className="absolute w-2 h-2 rounded-full bg-[#ffafd5]" />
+                    <span className="absolute w-2 h-2 rounded-full bg-[#DBEF90]" />
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-[#888] font-mono">
+                <div className="flex items-center justify-between text-[11px] text-zinc-400 font-mono">
                   <span>Auto-reroute: Active</span>
-                  <span>Health 100%</span>
+                  <span className="text-[#DBEF90]">Health 100%</span>
                 </div>
-              </div>
+              </GlassCard>
             </div>
 
-            {/* Col 3: Magenta Tier Bonus Promo Card */}
-            <div className="xl:col-span-3 rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between text-white shadow-xl bg-gradient-to-br from-[#FF1A8C] via-[#BD0183] to-[#40002A]">
-              <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-[#FFAFD5]/20 blur-2xl pointer-events-none" />
+            {/* Col 3: Tier Bonus Card in Frosted Glass Squircle */}
+            <GlassCard variant="squircle" className="xl:col-span-3 p-6 relative overflow-hidden flex flex-col justify-between bg-gradient-to-br from-[#BD0183]/25 via-[#40002A]/35 to-[#121212]/90 border border-white/[0.14]">
+              <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-[#FFAFD5]/15 blur-2xl pointer-events-none" />
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[10px] uppercase tracking-widest font-bold">
+                  <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] uppercase tracking-widest font-bold text-white font-mono">
                     Tier Bonus
                   </span>
-                  <Sparkles className="w-4 h-4 text-white" />
+                  <Sparkles className="w-4 h-4 text-[#DBEF90]" />
                 </div>
                 <h3 className="text-xl font-normal text-white tracking-tight leading-snug">
                   Deposit ₹1,000, get ₹100 instant credit
                 </h3>
-                <p className="text-xs text-white/80 mt-2 font-light">
+                <p className="text-xs text-zinc-300 mt-2 font-light">
                   Direct boost credited into high-speed liquidity balance with zero delays.
                 </p>
               </div>
 
               <div className="mt-6 space-y-3">
-                <div className="flex items-center justify-between text-[11px] text-white/90 uppercase tracking-wider font-mono">
+                <div className="flex items-center justify-between text-[11px] text-zinc-300 uppercase tracking-wider font-mono">
                   <span>Daily Quota Claimed</span>
-                  <span className="font-bold text-white">65%</span>
+                  <span className="font-bold text-[#DBEF90]">65%</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-black/30 overflow-hidden p-0.5">
-                  <div className="h-full rounded-full bg-white transition-all" style={{ width: "65%" }} />
+                <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden p-0.5">
+                  <div className="h-full rounded-full bg-[#DBEF90] transition-all" style={{ width: "65%" }} />
                 </div>
                 <Link
                   href="/wallet"
-                  className="w-full py-2.5 px-4 rounded-full bg-white text-[#131313] hover:bg-white/90 transition-all text-xs font-bold tracking-wide flex items-center justify-center gap-1.5 shadow-lg"
+                  className="w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-[#DBEF90] to-[#bccf74] text-[#171e00] hover:brightness-110 transition-all text-xs font-bold tracking-wide flex items-center justify-center gap-1.5 shadow-lg"
                 >
                   <span>Claim Bonus Now</span>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
-            </div>
+            </GlassCard>
           </div>
         </div>
       </section>
 
       {/* 2. NOTCHED SECTION DIVIDER */}
-      <div className="w-full -mt-4 mb-4 z-20 flex justify-center items-center">
-        <div className="bg-[#201f1f] border border-white/10 px-6 py-2 rounded-full shadow-2xl flex items-center gap-3 text-white text-xs">
+      <div className="w-full -mt-2 mb-6 z-20 flex justify-center items-center">
+        <div className="liquid-glass-pill px-6 py-2 rounded-full shadow-2xl flex items-center gap-3 text-white text-xs">
           <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
           <span className="font-mono uppercase tracking-widest text-[#DBEF90] font-semibold">
             Live Stream Feed
           </span>
           <span className="text-white/40">•</span>
-          <span className="text-on-surface-variant text-xs">{orders.length} Vectors Managed</span>
+          <span className="text-zinc-300 text-xs font-mono">{orders.length} Vectors Managed</span>
         </div>
       </div>
 
@@ -420,7 +421,7 @@ export default function CustomerDashboardPage() {
         </div>
 
         {/* Live Stream Orders Table */}
-        <div className="bg-[#1c1b1b]/80 border border-white/10 rounded-3xl p-4 md:p-6 backdrop-blur-2xl shadow-2xl overflow-hidden">
+        <div className="glass-panel p-4 md:p-6 rounded-3xl overflow-hidden">
           <div className="flex items-center justify-between mb-4 px-2">
             <div className="flex items-center gap-2">
               <Radio className="w-4 h-4 text-[#DBEF90] animate-pulse" />

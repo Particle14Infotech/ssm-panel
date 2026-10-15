@@ -8,6 +8,7 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "@smm/config": "workspace:*",
     "@smm/contracts": "workspace:*",
     "bullmq": "^5.41.3",

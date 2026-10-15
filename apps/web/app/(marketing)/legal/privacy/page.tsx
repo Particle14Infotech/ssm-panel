@@ -1,15 +1,22 @@
 import React from "react";
 import type { Metadata } from "next";
 
+import { landingContent } from "@/content/landing";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
+
 export const metadata: Metadata = {
-  title: "Privacy Policy | AETHER SMM",
-  description: "Privacy and data protection policies for users and API consumers of AETHER SMM.",
+  title: "Privacy Policy & Data Protection",
+  description: `Privacy and data protection policies for users and API consumers of ${landingContent.brand.name}.`,
+  alternates: {
+    canonical: "https://smmarchitecture.com/legal/privacy",
+  },
 };
 
 export default function PrivacyPage() {
   return (
     <div className="w-full pt-32 pb-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="mb-10">
+        <Breadcrumb items={[{ label: "Privacy Policy", href: "/legal/privacy" }]} />
         <span className="text-xs font-mono uppercase tracking-widest text-[#d8ec8d]">
           Data Protection
         </span>
@@ -19,7 +26,7 @@ export default function PrivacyPage() {
         <p className="text-xs font-mono text-[#c7c8b6]">Last Updated: January 2025</p>
       </div>
 
-      <div className="rounded-3xl p-8 bg-[#1c1b1b]/80 border border-white/10 flex flex-col gap-6 text-sm text-[#c7c8b6] leading-relaxed">
+      <div className="glass-panel rounded-3xl p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] flex flex-col gap-6 text-sm text-[#c7c8b6] leading-relaxed">
         <div>
           <h2 className="text-base font-semibold text-white mb-2">1. Information Collection</h2>
           <p>

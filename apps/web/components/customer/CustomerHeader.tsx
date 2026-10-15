@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { useCustomer } from "@/context/CustomerContext";
 import {
   Sparkles,
@@ -48,13 +49,13 @@ export function CustomerHeader() {
         <div className="flex items-center gap-4 shrink-0">
           <Link href="/dashboard" className="flex items-center gap-2 group">
             <div className="w-9 h-9 rounded-full bg-surface-container-high border border-white/10 flex items-center justify-center transition-transform group-hover:scale-105">
-              <span className="text-[#DBEF90] text-lg font-bold">✦</span>
+              <Zap className="w-4 h-4 text-[#D8EC8D]" />
             </div>
             <div className="flex items-baseline">
               <span className="font-headline-lg text-lg uppercase tracking-wider text-white font-bold">
                 AETHER
               </span>
-              <span className="text-[#DBEF90] text-lg font-light leading-none">*</span>
+              <span className="text-[#D8EC8D] text-lg font-light leading-none">*</span>
             </div>
           </Link>
 
@@ -64,21 +65,28 @@ export function CustomerHeader() {
           </div>
         </div>
 
-        {/* Desktop Navigation Pill Bar */}
-        <nav className="hidden lg:flex items-center gap-1 p-1.5 rounded-full bg-[#1c1b1b]/90 border border-white/10 shadow-inner">
+        {/* Desktop Navigation Pill Bar with motion layoutId */}
+        <nav className="hidden lg:flex items-center gap-1 p-1.5 rounded-full liquid-glass-pill relative">
           {navLinks.map((item) => {
             const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href));
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-all duration-200 flex items-center gap-1.5 ${
+                className={`relative px-4 py-2 rounded-full text-xs font-semibold tracking-wide transition-colors duration-200 flex items-center gap-1.5 z-10 ${
                   isActive
-                    ? "bg-[#d8ec8d] text-[#2a3400] shadow-[0_0_20px_rgba(219,239,144,0.3)] font-bold"
-                    : "text-on-surface-variant hover:bg-white/5 hover:text-white"
+                    ? "text-[#171e00] font-bold"
+                    : "text-zinc-400 hover:text-white"
                 }`}
               >
-                <item.icon className={`w-3.5 h-3.5 ${isActive ? "text-[#2a3400]" : "text-on-surface-variant"}`} />
+                {isActive && (
+                  <motion.div
+                    layoutId="customerNavPill"
+                    transition={{ type: "spring", stiffness: 500, damping: 32 }}
+                    className="absolute inset-0 rounded-full bg-[#DBEF90] shadow-[0_0_20px_rgba(219,239,144,0.3)] -z-10"
+                  />
+                )}
+                <item.icon className={`w-3.5 h-3.5 ${isActive ? "text-[#171e00]" : "text-zinc-400"}`} />
                 <span>{item.name}</span>
               </Link>
             );
@@ -90,18 +98,18 @@ export function CustomerHeader() {
           {/* Announcements Trigger */}
           <button
             onClick={() => setAnnouncementsOpen(!announcementsOpen)}
-            className="relative h-10 px-3 md:px-4 rounded-full bg-surface-container-low border border-white/10 hover:bg-surface-container-high text-on-surface-variant hover:text-white transition-all flex items-center gap-2"
+            className="relative h-10 px-3 md:px-4 rounded-full liquid-glass-pill text-zinc-300 hover:text-white transition-all flex items-center gap-2"
             type="button"
           >
             <Sparkles className="w-4 h-4 text-[#DBEF90]" />
-            <span className="hidden sm:inline text-xs uppercase tracking-wider font-medium">Updates</span>
+            <span className="hidden sm:inline text-xs uppercase tracking-wider font-medium font-mono">Updates</span>
             <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
           </button>
 
           {/* Balance Pill with Quick Deposit link */}
           <Link
             href="/wallet"
-            className="h-10 px-3 md:px-4 rounded-full bg-surface-container-low border border-white/10 hover:border-[#DBEF90]/40 flex items-center gap-2 group transition-all"
+            className="h-10 px-3 md:px-4 rounded-full liquid-glass-pill hover:border-[#DBEF90]/40 flex items-center gap-2 group transition-all"
           >
             <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-mono">Bal</span>
             <span className="text-xs md:text-sm font-semibold text-[#DBEF90] group-hover:underline">

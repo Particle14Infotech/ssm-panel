@@ -6,9 +6,9 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/app/", "/admin/", "/api/"],
+        disallow: ["/app/", "/admin/", "/api/", "/dev/"],
       },
     ],
-    sitemap: "https://aethersmm.internal/sitemap.xml",
+    sitemap: "https://smmarchitecture.com/sitemap.xml",
   };
 }

@@ -26,7 +26,7 @@ export default function VerifyPage() {
               </div>
             </div>
             <span className="font-heading font-bold text-2xl tracking-wider text-white">
-              AETHER SMM
+              SMM PANEL
             </span>
           </Link>
           <h1 className="font-heading text-2xl font-light text-white">Two-Factor Authentication</h1>
@@ -35,7 +35,7 @@ export default function VerifyPage() {
           </p>
         </div>
 
-        <div className="rounded-3xl p-8 bg-[#1c1b1b]/90 border border-white/10 backdrop-blur-2xl shadow-2xl">
+        <div className="glass-panel rounded-3xl p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
           {verified ? (
             <div className="text-center py-6">
               <div className="w-14 h-14 rounded-full bg-[#d8ec8d]/20 text-[#d8ec8d] flex items-center justify-center mx-auto mb-4">

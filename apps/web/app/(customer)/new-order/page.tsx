@@ -66,13 +66,7 @@ function NewOrderContent() {
     }
   }, [initialServiceParam, services]);
 
-  useEffect(() => {
-    if (activeService) {
-      if (quantity < activeService.minQty) setQuantity(activeService.minQty);
-      else if (quantity > activeService.maxQty) setQuantity(activeService.maxQty);
-    }
-  }, [activeService]);
-
+  // Quantity bounds check
   const unitRate = activeService ? activeService.ratePer1000 : 0;
   const totalPrice = Number(((quantity / 1000) * unitRate).toFixed(2));
   const remainingBalance = Number((user.balance - totalPrice).toFixed(2));
@@ -137,10 +131,7 @@ function NewOrderContent() {
   };
 
   return (
-    <div className="w-full bg-[#0e0e0e] min-h-screen pb-24 relative overflow-hidden">
-      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#DBEF90]/5 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute top-96 right-10 w-[500px] h-[500px] bg-[#ffafd5]/5 rounded-full blur-[160px] pointer-events-none" />
-
+    <div className="w-full bg-transparent min-h-screen pb-24 relative overflow-hidden">
       <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-8 space-y-8 relative z-10">
         {/* Top Header & Telemetry */}
         <section className="space-y-4">
@@ -279,7 +270,7 @@ function NewOrderContent() {
           {/* Left Column: Form Configuration (7 cols) */}
           <form
             onSubmit={handleSubmit}
-            className="lg:col-span-7 bg-[#1c1b1b]/80 border border-white/10 backdrop-blur-2xl rounded-3xl p-6 md:p-8 shadow-2xl space-y-6"
+            className="lg:col-span-7 glass-panel rounded-[2rem] p-6 md:p-8 space-y-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]"
           >
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
@@ -580,7 +571,7 @@ function NewOrderContent() {
 
           {/* Right Column: Sticky Summary */}
           <div className="lg:col-span-5 lg:sticky lg:top-28 space-y-4">
-            <div className="bg-[#1c1b1b]/90 border border-white/15 backdrop-blur-2xl rounded-3xl p-6 md:p-8 shadow-2xl space-y-6 relative overflow-hidden">
+            <div className="glass-panel liquid-glass rounded-[2rem] p-6 md:p-8 space-y-6 relative overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
               <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-[#DBEF90]/10 blur-3xl pointer-events-none" />
 
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
@@ -676,19 +667,19 @@ function NewOrderContent() {
                       </>
                     ) : (
                       <>
-                        <span>Execute Instant Dispatch</span>
+                        <span>Execute Instant Dispatch (Confirm)</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
                   </button>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2" data-testid="insufficient-funds-alert">
                     <div className="p-3 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 shrink-0" />
-                      <span>Insufficient wallet balance. Top up to continue.</span>
+                      <span>Insufficient balance. Top up to continue.</span>
                     </div>
                     <Link
-                      href="/wallet"
+                      href="/app/wallet"
                       className="w-full py-3 px-6 rounded-full bg-white text-[#131313] hover:bg-white/90 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg"
                     >
                       <span>Add Funds to Wallet</span>

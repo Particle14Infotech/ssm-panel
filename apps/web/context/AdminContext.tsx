@@ -20,6 +20,7 @@ interface AdminContextType {
   coupons: AdminCoupon[];
   transactions: TransactionItem[];
   updateUserBalance: (userId: string, newBalance: number) => void;
+  adjustUserBalance: (userId: string, delta: number, reason?: string) => void;
   updateUserStatus: (userId: string, status: "ACTIVE" | "SUSPENDED" | "FLAGGED") => void;
   addService: (service: ServiceItem) => void;
   updateService: (id: string, updates: Partial<ServiceItem>) => void;
@@ -150,6 +151,18 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
     );
   };
 
+  const adjustUserBalance = (userId: string, delta: number, reason?: string) => {
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === userId) {
+          const newBal = Math.max(0, u.balance + delta);
+          return { ...u, balance: newBal };
+        }
+        return u;
+      })
+    );
+  };
+
   const updateUserStatus = (userId: string, status: "ACTIVE" | "SUSPENDED" | "FLAGGED") => {
     setUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, status } : u))
@@ -196,11 +209,60 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
     return true;
   };
 
-  const addProvider = (provider: AdminProvider) => {
+  const addProvider = async (provider: AdminProvider) => {
+    try {
+      const res = await fetch("http://localhost:4000/api/v1/providers/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: provider.name,
+          apiUrl: provider.apiUrl,
+          apiKey: provider.apiKey,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProviders((prev) => [
+          {
+            ...provider,
+            id: data.id,
+            apiKey: data.apiKeyMasked || "sk_live_••••••••",
+            balance: data.balance || provider.balance,
+          },
+          ...prev,
+        ]);
+        return;
+      }
+    } catch (e) {
+      console.warn("Falling back to local state for addProvider:", e);
+    }
     setProviders((prev) => [provider, ...prev]);
   };
 
   const syncProvider = async (providerId: string) => {
+    try {
+      const res = await fetch(`http://localhost:4000/api/v1/providers/${providerId}/sync`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProviders((prev) =>
+          prev.map((p) =>
+            p.id === providerId
+              ? {
+                  ...p,
+                  status: "CONNECTED",
+                  lastSyncAt: data.timestamp || new Date().toISOString(),
+                  balance: data.balance ?? p.balance,
+                }
+              : p
+          )
+        );
+        return true;
+      }
+    } catch (e) {
+      console.warn("Falling back to local state for syncProvider:", e);
+    }
     setProviders((prev) =>
       prev.map((p) =>
         p.id === providerId
@@ -242,6 +304,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
         coupons,
         transactions,
         updateUserBalance,
+        adjustUserBalance,
         updateUserStatus,
         addService,
         updateService,

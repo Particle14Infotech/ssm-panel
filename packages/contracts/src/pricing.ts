@@ -55,21 +55,4 @@ export function calculateSellingRate(
   };
 }
 
-/**
- * Calculates refund amount for partial orders.
- */
-export function calculatePartialRefund(
-  totalCharge: number | string | Decimal,
-  remains: number | string | Decimal,
-  initialQuantity: number | string | Decimal
-): Decimal {
-  const charge = new Decimal(totalCharge);
-  const rem = new Decimal(remains);
-  const qty = new Decimal(initialQuantity);
-
-  if (qty.isZero() || rem.isZero()) {
-    return new Decimal(0);
-  }
-
-  return charge.times(rem).dividedBy(qty);
-}
+// Note: calculatePartialRefund is authoritatively exported from ./orders

@@ -52,27 +52,179 @@
 }
 
 /* Glassmorphism and specialized visual helpers */
+/* STYLE LOCK: Dark glassmorphism only (frosted blur 16-24px, saturate 120-140%, 1px borders at 10-15% white, soft inner glow) */
 .glass-panel {
-  background-color: rgba(28, 27, 27, 0.65);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background-color: rgba(18, 18, 18, 0.72);
+  backdrop-filter: blur(20px) saturate(130%);
+  -webkit-backdrop-filter: blur(20px) saturate(130%);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: rgba(0, 0, 0, 0.5) 0px 20px 40px -15px, rgba(255, 255, 255, 0.18) 0px 1px 1px 0px inset;
+  border-radius: 1.5rem;
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 20px 0 rgba(255, 255, 255, 0.02),
+    0 16px 36px -8px rgba(0, 0, 0, 0.5);
 }
 
-.glass-panel-light {
-  background-color: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.04);
+.glass-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 100%), rgba(16, 16, 16, 0.75);
+  backdrop-filter: blur(20px) saturate(130%);
+  -webkit-backdrop-filter: blur(20px) saturate(130%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.5rem;
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 16px 0 rgba(255, 255, 255, 0.02),
+    0 20px 40px -10px rgba(0, 0, 0, 0.55);
+}
+
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-hover:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%), rgba(20, 20, 20, 0.82);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 20px 0 rgba(255, 255, 255, 0.04),
+    0 24px 48px -12px rgba(0, 0, 0, 0.65);
+}
+
+/* Frosted glass squircle tiles: dark, minimal, 1px hairline border at 10-15% white, subtle inner glow, soft long shadow */
+.glass-squircle {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%), rgba(16, 16, 16, 0.78);
+  backdrop-filter: blur(20px) saturate(130%);
+  -webkit-backdrop-filter: blur(20px) saturate(130%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 2rem;
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 0 18px 0 rgba(255, 255, 255, 0.02),
+    0 24px 48px -12px rgba(0, 0, 0, 0.65);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-squircle:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 24px 0 rgba(219, 239, 144, 0.04),
+    0 32px 64px -16px rgba(0, 0, 0, 0.75);
+}
+
+/* Liquid Glass accents: ONLY on hero cards, nav pill and floating callouts */
+.liquid-glass {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%), rgba(15, 15, 15, 0.72);
+  backdrop-filter: blur(28px) saturate(135%);
+  -webkit-backdrop-filter: blur(28px) saturate(135%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid rgba(255, 255, 255, 0.32); /* Thin specular highlight on top edge */
+  border-radius: 1.5rem;
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.28), /* Edge refraction specular */
+    inset 0 0 24px 0 rgba(219, 239, 144, 0.04), /* Subtle lime core refraction */
+    0 20px 48px -12px rgba(0, 0, 0, 0.65);
+  overflow: hidden;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.liquid-glass:hover {
+  border-top-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 0 28px 0 rgba(219, 239, 144, 0.08),
+    0 28px 56px -12px rgba(0, 0, 0, 0.75);
+}
+
+.liquid-glass-pill {
+  position: relative;
+  background: rgba(20, 20, 20, 0.75);
+  backdrop-filter: blur(24px) saturate(135%);
+  -webkit-backdrop-filter: blur(24px) saturate(135%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid rgba(255, 255, 255, 0.28); /* Thin specular highlight on top edge */
+  border-radius: 9999px;
+  box-shadow: 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+    0 12px 28px -8px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Soft light sweep on hover for Liquid Glass */
+.liquid-glass::before,
+.liquid-glass-pill::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 35%,
+    rgba(219, 239, 144, 0.12) 50%,
+    rgba(255, 255, 255, 0.18) 53%,
+    transparent 68%
+  );
+  transform: skewX(-20deg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 2;
+}
+
+.liquid-glass:hover::before,
+.liquid-glass-pill:hover::before {
+  opacity: 1;
+  animation: liquid-sweep 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes liquid-sweep {
+  0% {
+    left: -150%;
+  }
+  100% {
+    left: 150%;
+  }
+}
+
+/* Lime #243100 to #DBEF90 gradient glow behind glass */
+.glow-lime-backdrop {
+  background: radial-gradient(ellipse at center, rgba(219, 239, 144, 0.18) 0%, rgba(36, 49, 0, 0.35) 55%, transparent 75%);
 }
 
 .glow-lime {
-  box-shadow: 0 0 28px rgba(216, 236, 141, 0.35), 0 4px 16px rgba(216, 236, 141, 0.2);
+  box-shadow: 0 0 28px rgba(219, 239, 144, 0.35), 0 4px 16px rgba(36, 49, 0, 0.4);
 }
 
 .glow-pink {
   box-shadow: 0 0 32px rgba(189, 1, 131, 0.35), 0 4px 16px rgba(255, 175, 213, 0.25);
+}
+
+/* Fallbacks: browsers without backdrop-filter and prefers-reduced-transparency */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-panel,
+  .glass-card,
+  .glass-squircle,
+  .liquid-glass,
+  .liquid-glass-pill {
+    background-color: #161616 !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass-panel,
+  .glass-card,
+  .glass-squircle,
+  .liquid-glass,
+  .liquid-glass-pill {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: #161616 !important;
+  }
 }
 
 /* Custom scrollbars */

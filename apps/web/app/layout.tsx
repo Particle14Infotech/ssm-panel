@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Urbanist } from "next/font/google";
 import "@/styles/globals.css";
-import { Navbar } from "@/components/shared/Navbar";
-import { Footer } from "@/components/shared/Footer";
+import { landingContent } from "@/content/landing";
 
 const urbanist = Urbanist({
   subsets: ["latin"],
@@ -12,35 +11,52 @@ const urbanist = Urbanist({
 });
 
 export const metadata: Metadata = {
-  title: "AETHER SMM | Autonomous Social Growth Telemetry Engine",
+  metadataBase: new URL("https://smmarchitecture.com"),
+  title: {
+    default: `${landingContent.brand.name} | Social Media Marketing Platform & Reseller Infrastructure`,
+    template: `%s | ${landingContent.brand.name}`,
+  },
   description:
-    "Order social growth services. Track every order. One wallet, a clear catalog, live order status, and zero race-condition ledger accounting.",
-  metadataBase: new URL("https://aethersmm.internal"),
+    "Order verified social growth services with real-time tracking, double-entry protected ledger accounting, and sub-second automated provider synchronization.",
   keywords: [
     "SMM Panel",
     "Social Media Marketing",
-    "Growth Telemetry",
     "Instagram Services",
     "TikTok Growth",
+    "YouTube Subscribers",
     "Reseller API",
-    "Autonomous Social Engine",
+    "Social Platform Infrastructure",
+    "Automated Order Dispatch",
   ],
-  authors: [{ name: "AETHER SMM Platform" }],
+  authors: [{ name: `${landingContent.brand.name} Platform` }],
+  creator: landingContent.brand.name,
+  publisher: landingContent.brand.name,
+  alternates: {
+    canonical: "https://smmarchitecture.com",
+  },
   openGraph: {
-    title: "AETHER SMM | Autonomous Social Growth Telemetry Engine",
-    description: "One wallet, a clear catalog, live order status. High-frequency provider synchronization.",
-    siteName: "AETHER SMM",
+    title: `${landingContent.brand.name} | Social Media Marketing Platform`,
+    description: "One unified wallet, 500+ direct provider services, real-time sync, and double-entry protected ledger accounting.",
+    url: "https://smmarchitecture.com",
+    siteName: landingContent.brand.name,
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AETHER SMM | Autonomous Social Growth Telemetry Engine",
-    description: "One wallet, a clear catalog, live order status. High-frequency provider synchronization.",
+    title: `${landingContent.brand.name} | Social Media Marketing Platform`,
+    description: "One unified wallet, 500+ direct provider services, real-time sync, and double-entry protected ledger accounting.",
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 
@@ -51,27 +67,86 @@ export default function RootLayout({
 }>) {
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "AETHER SMM",
-    url: "https://aethersmm.internal",
-    logo: "https://aethersmm.internal/icon.png",
-    description: "Autonomous Social Growth Telemetry Engine and API Platform",
-    contactPoint: {
-      "@type": "ContactPoint",
-      contactType: "Customer Support",
-      email: "support@aethersmm.internal",
-    },
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://smmarchitecture.com/#organization",
+        name: landingContent.brand.name,
+        url: "https://smmarchitecture.com",
+        logo: "https://smmarchitecture.com/icon.png",
+        description: "Authoritative Social Media Marketing Platform and Reseller API Infrastructure",
+        contactPoint: {
+          "@type": "ContactPoint",
+          contactType: "Customer Support",
+          email: "support@aethersmm.internal",
+          availableLanguage: ["English", "Hindi"],
+        },
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://smmarchitecture.com/#website",
+        url: "https://smmarchitecture.com",
+        name: landingContent.brand.name,
+        publisher: {
+          "@id": "https://smmarchitecture.com/#organization",
+        },
+        potentialAction: {
+          "@type": "SearchAction",
+          target: "https://smmarchitecture.com/services?q={search_term_string}",
+          "query-input": "required name=search_term_string",
+        },
+      },
+      {
+        "@type": "LocalBusiness",
+        "@id": "https://smmarchitecture.com/#localbusiness",
+        name: landingContent.brand.name,
+        url: "https://smmarchitecture.com",
+        logo: "https://smmarchitecture.com/icon.png",
+        image: "https://smmarchitecture.com/opengraph-image",
+        description: "Authoritative Social Media Marketing Platform and Reseller API Infrastructure",
+        email: "support@aethersmm.internal",
+        priceRange: "$$",
+        address: {
+          "@type": "PostalAddress",
+          "streetAddress": "Tech Hub Corridor, Cyber City",
+          "addressLocality": "Bengaluru",
+          "addressRegion": "KA",
+          "postalCode": "560001",
+          "addressCountry": "IN",
+        },
+        openingHoursSpecification: [
+          {
+            "@type": "OpeningHoursSpecification",
+            dayOfWeek: [
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+              "Sunday",
+            ],
+            opens: "00:00",
+            closes: "23:59",
+          },
+        ],
+      },
+    ],
   };
 
   return (
     <html lang="en" className={`dark ${urbanist.variable}`}>
       <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=optional"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="bg-[#131313] text-[#e5e2e1] font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-[#d8ec8d] selection:text-[#171e00]">
+      <body className="bg-[#131313] text-[#e5e2e1] font-sans antialiased min-h-screen selection:bg-[#d8ec8d] selection:text-[#171e00]">
         {/* WCAG 2.2 AA Skip Link */}
         <a
           href="#main-content"
@@ -80,11 +155,9 @@ export default function RootLayout({
           Skip to main content
         </a>
 
-        <Navbar />
-        <main id="main-content" className="flex-1 w-full">
+        <main id="main-content" className="w-full min-h-screen">
           {children}
         </main>
-        <Footer />
       </body>
     </html>
   );

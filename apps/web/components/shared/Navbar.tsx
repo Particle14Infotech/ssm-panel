@@ -1,37 +1,52 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { landingContent } from "@/content/landing";
-import { Menu, X, ArrowRight, ShieldCheck, Zap } from "lucide-react";
+import { Menu, X, ArrowRight, Zap } from "lucide-react";
+import { MagneticButton } from "@/components/motion/MagneticButton";
 
 export function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [hoveredLink, setHoveredLink] = useState<string | null>(null);
+  const lastScrollY = useRef(0);
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      const currentScrollY = window.scrollY;
+      setScrolled(currentScrollY > 24);
+
+      if (currentScrollY > 120 && currentScrollY > lastScrollY.current + 8) {
+        setHidden(true);
+      } else if (currentScrollY < lastScrollY.current - 8) {
+        setHidden(false);
+      }
+      lastScrollY.current = currentScrollY;
     };
-    window.addEventListener("scroll", handleScroll);
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close mobile menu on path change
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
 
   return (
     <>
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? "bg-[#131313]/90 backdrop-blur-xl border-b border-white/10 shadow-2xl py-3"
+      <motion.header
+        initial={{ y: 0 }}
+        animate={{ y: hidden ? -100 : 0 }}
+        transition={{ duration: 0.3, ease: [0.25, 1, 0.5, 1] }}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
+            ? "bg-[#131313]/85 backdrop-blur-xl border-b border-white/10 shadow-2xl py-3"
             : "bg-transparent py-5"
-        }`}
+          }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Brand Logo */}
@@ -52,23 +67,31 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop Navigation Links */}
+          {/* Desktop Navigation Links with layoutId active pill */}
           <nav
             aria-label="Main Navigation"
-            className="hidden md:flex items-center bg-[#201f1f]/80 p-1.5 rounded-full border border-white/10 backdrop-blur-md gap-1"
+            className="hidden md:flex items-center liquid-glass-pill p-1.5 rounded-full gap-1 relative"
+            onMouseLeave={() => setHoveredLink(null)}
           >
             {landingContent.navigation.links.map((item) => {
               const isActive = pathname === item.href;
+              const isHovered = hoveredLink === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`px-4 py-1.5 rounded-full text-sm transition-all duration-200 ${
-                    isActive
-                      ? "bg-[#353534] text-white font-medium shadow-sm"
-                      : "text-[#c7c8b6] hover:text-white hover:bg-[#2a2a2a]"
-                  }`}
+                  onMouseEnter={() => setHoveredLink(item.href)}
+                  className={`relative px-4 py-1.5 rounded-full text-sm transition-colors duration-200 z-10 ${isActive ? "text-white font-medium" : "text-[#c7c8b6] hover:text-white"
+                    }`}
                 >
+                  {(isActive || isHovered) && (
+                    <motion.div
+                      layoutId="navPill"
+                      transition={{ type: "spring", stiffness: 450, damping: 30 }}
+                      className={`absolute inset-0 rounded-full -z-10 ${isActive ? "bg-[#353534]" : "bg-white/10"
+                        }`}
+                    />
+                  )}
                   {item.label}
                 </Link>
               );
@@ -77,12 +100,12 @@ export function Navbar() {
 
           {/* Right Header Actions */}
           <div className="hidden lg:flex items-center gap-3">
-            {/* Live Telemetry Pill */}
-            <div className="flex items-center gap-2 bg-[#201f1f]/80 border border-white/10 rounded-full px-3.5 py-1.5 text-xs text-[#c7c8b6]">
-              <span className="w-2 h-2 rounded-full bg-[#d8ec8d] animate-pulse" />
-              <span className="font-mono text-[#d8ec8d]">Cluster Active</span>
+            {/* Live Status Pill */}
+            <div className="flex items-center gap-2 liquid-glass-pill rounded-full px-3.5 py-1.5 text-xs text-[#c7c8b6]">
+              <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
+              <span className="font-mono text-[#DBEF90]">System Online</span>
               <span className="text-white/30">•</span>
-              <span className="font-mono">14ms</span>
+              <span className="font-mono text-zinc-300">Live Status</span>
             </div>
 
             {/* Auth CTAs */}
@@ -93,13 +116,15 @@ export function Navbar() {
               {landingContent.navigation.cta.login}
             </Link>
 
-            <Link
-              href="/register"
-              className="px-5 py-2 rounded-full bg-gradient-to-r from-[#d8ec8d] to-[#bccf74] text-[#171e00] text-sm font-semibold hover:shadow-[0_0_24px_rgba(216,236,141,0.45)] hover:scale-[1.02] transition-all flex items-center gap-1.5 group"
-            >
-              <span>{landingContent.navigation.cta.register}</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
+            <MagneticButton>
+              <Link
+                href="/register"
+                className="px-5 py-2 rounded-full bg-gradient-to-r from-[#d8ec8d] to-[#bccf74] text-[#171e00] text-sm font-semibold hover:shadow-[0_0_24px_rgba(216,236,141,0.45)] transition-all flex items-center gap-1.5 group"
+              >
+                <span>{landingContent.navigation.cta.register}</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            </MagneticButton>
           </div>
 
           {/* Mobile Menu Button */}
@@ -121,53 +146,66 @@ export function Navbar() {
             </button>
           </div>
         </div>
-      </header>
+      </motion.header>
 
-      {/* Mobile Drawer Menu */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-40 bg-[#131313]/95 backdrop-blur-2xl pt-24 px-6 flex flex-col justify-between pb-8 md:hidden">
-          <div className="flex flex-col gap-3">
-            <div className="text-xs uppercase tracking-widest text-[#d8ec8d] font-mono mb-2">
-              Navigation Menu
-            </div>
-            {landingContent.navigation.links.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`text-lg py-2 border-b border-white/10 flex items-center justify-between ${
-                  pathname === item.href ? "text-[#d8ec8d] font-semibold" : "text-white/80"
-                }`}
-              >
-                <span>{item.label}</span>
-                <ArrowRight className="w-4 h-4 opacity-50" />
-              </Link>
-            ))}
-          </div>
-
-          <div className="flex flex-col gap-3 pt-6">
-            <div className="flex items-center justify-between text-xs text-[#c7c8b6] bg-[#201f1f] p-3 rounded-2xl border border-white/10">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#d8ec8d] animate-pulse" />
-                <span>Node 08-Alpha Live</span>
+      {/* Mobile Drawer Menu with Staggered Framer Motion Entrance */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-40 bg-[#131313]/95 backdrop-blur-2xl pt-24 px-6 flex flex-col justify-between pb-8 md:hidden"
+          >
+            <div className="flex flex-col gap-3">
+              <div className="text-xs uppercase tracking-widest text-[#d8ec8d] font-mono mb-2">
+                Navigation Menu
               </div>
-              <span className="font-mono text-[#d8ec8d]">99.98% SLA</span>
+              {landingContent.navigation.links.map((item, i) => (
+                <motion.div
+                  key={item.href}
+                  initial={{ opacity: 0, x: -16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.05 * i }}
+                >
+                  <Link
+                    href={item.href}
+                    className={`text-lg py-2 border-b border-white/10 flex items-center justify-between ${pathname === item.href ? "text-[#d8ec8d] font-semibold" : "text-white/80"
+                      }`}
+                  >
+                    <span>{item.label}</span>
+                    <ArrowRight className="w-4 h-4 opacity-50" />
+                  </Link>
+                </motion.div>
+              ))}
             </div>
 
-            <Link
-              href="/register"
-              className="w-full py-3.5 rounded-full bg-gradient-to-r from-[#d8ec8d] to-[#bccf74] text-[#171e00] font-bold text-center shadow-lg"
-            >
-              {landingContent.navigation.cta.register}
-            </Link>
-            <Link
-              href="/login"
-              className="w-full py-3 rounded-full bg-[#201f1f] text-white font-medium text-center border border-white/10"
-            >
-              {landingContent.navigation.cta.login}
-            </Link>
-          </div>
-        </div>
-      )}
+            <div className="flex flex-col gap-3 pt-6">
+              <div className="flex items-center justify-between text-xs text-[#c7c8b6] bg-[#201f1f] p-3 rounded-2xl border border-white/10">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#d8ec8d] animate-pulse" />
+                  <span>Node 08-Alpha Live</span>
+                </div>
+                <span className="font-mono text-[#d8ec8d]">99.98% SLA</span>
+              </div>
+
+              <Link
+                href="/register"
+                className="w-full py-3.5 rounded-full bg-gradient-to-r from-[#d8ec8d] to-[#bccf74] text-[#171e00] font-bold text-center shadow-lg"
+              >
+                {landingContent.navigation.cta.register}
+              </Link>
+              <Link
+                href="/login"
+                className="w-full py-3 rounded-full bg-[#201f1f] text-white font-medium text-center border border-white/10"
+              >
+                {landingContent.navigation.cta.login}
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

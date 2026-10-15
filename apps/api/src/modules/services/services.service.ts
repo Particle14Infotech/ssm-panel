@@ -108,14 +108,93 @@ export class ServicesService {
     },
   ];
 
-  findAll(platform?: string) {
-    if (!platform || platform === "ALL") return this.services;
-    return this.services.filter(
-      (s) => s.platform.toLowerCase() === platform.toLowerCase()
-    );
+  private categories = [
+    { id: "cat_ig", name: "Followers", slug: "instagram-followers" },
+    { id: "cat_yt", name: "Views", slug: "youtube-views" },
+    { id: "cat_tt", name: "Views", slug: "tiktok-views" },
+    { id: "cat_tg", name: "Members", slug: "telegram-members" },
+    { id: "cat_tw", name: "Followers", slug: "twitter-followers" },
+  ];
+
+  getPlatforms(): string[] {
+    return Array.from(new Set(this.services.map((s) => s.platform)));
+  }
+
+  getCategories() {
+    return this.categories;
+  }
+
+  createCategory(input: { name: string; slug?: string }) {
+    const newCat = {
+      id: `cat_${Math.random().toString(36).substring(2, 7)}`,
+      name: input.name,
+      slug: input.slug || input.name.toLowerCase().replace(/\s+/g, "-"),
+    };
+    this.categories.push(newCat);
+    return { success: true, category: newCat };
+  }
+
+  findAll(platform?: string, query?: string, categoryId?: string, sortBy?: string) {
+    let result = [...this.services];
+    if (platform && platform !== "ALL") {
+      result = result.filter(
+        (s) => s.platform.toLowerCase() === platform.toLowerCase()
+      );
+    }
+    if (categoryId) {
+      result = result.filter((s) => s.categoryId === categoryId);
+    }
+    if (query) {
+      const q = query.toLowerCase();
+      result = result.filter(
+        (s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q)
+      );
+    }
+    if (sortBy === "price_asc") {
+      result.sort((a, b) => a.ratePer1000 - b.ratePer1000);
+    } else if (sortBy === "price_desc") {
+      result.sort((a, b) => b.ratePer1000 - a.ratePer1000);
+    }
+    return result;
   }
 
   findOne(id: string) {
     return this.services.find((s) => s.id === id);
+  }
+
+  create(input: any) {
+    const newService: ServiceItem = {
+      id: input.id || String(Math.floor(1000 + Math.random() * 9000)),
+      categoryId: input.categoryId || "cat_ig",
+      categoryName: input.categoryName || "General",
+      name: input.name,
+      platform: input.platform || "INSTAGRAM",
+      ratePer1000: Number(input.ratePer1000) || 100,
+      minQty: Number(input.minQty) || 50,
+      maxQty: Number(input.maxQty) || 100000,
+      avgProcessingSpeed: input.avgProcessingSpeed || "Standard",
+      avgStartTime: input.avgStartTime || "Instant",
+      refillable: Boolean(input.refillable),
+      cancellable: Boolean(input.cancellable),
+      description: input.description || "",
+      status: "ACTIVE",
+      badge: input.badge,
+    };
+    this.services.unshift(newService);
+    return { success: true, service: newService };
+  }
+
+  update(id: string, input: any) {
+    const idx = this.services.findIndex((s) => s.id === id);
+    if (idx === -1) return null;
+    this.services[idx] = { ...this.services[idx], ...input };
+    return { success: true, service: this.services[idx] };
+  }
+
+  remove(id: string) {
+    const idx = this.services.findIndex((s) => s.id === id);
+    if (idx === -1) return false;
+    this.services.splice(idx, 1);
+    return true;
   }
 }

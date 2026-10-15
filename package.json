@@ -8,10 +8,22 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
+    "check:externals": "node scripts/check-externals.js",
+    "check:contracts": "node scripts/check-contract-diff.js",
+    "verify:backend": "node scripts/verify-backend.js",
+    "smoke": "node scripts/smoke.js",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "^1.64.0",
+    "@prisma/client": "^5.22.0",
+    "@types/supertest": "^7.2.1",
+    "ioredis-mock": "^8.13.1",
+    "pg-mem": "^3.0.14",
     "prettier": "^3.5.3",
+    "prisma": "^5.22.0",
+    "supertest": "^7.3.1",
     "turbo": "^2.4.4",
     "typescript": "^5.7.3"
   }

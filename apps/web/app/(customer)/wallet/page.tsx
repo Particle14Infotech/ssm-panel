@@ -1,93 +1,72 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCustomer } from "@/context/CustomerContext";
-import { TransactionItem } from "@smm/contracts";
+import { TransactionItem, calculateDepositBonus, PaymentMethod } from "@smm/contracts";
 import {
   Wallet,
   ArrowUpRight,
   TrendingUp,
   Sparkles,
   CreditCard,
-  QrCode,
   ShieldCheck,
   CheckCircle2,
   Download,
   AlertCircle,
-  Copy,
-  Check,
   RefreshCw,
   FileText,
 } from "lucide-react";
 
 export default function WalletPage() {
-  const { user, transactions, depositFunds } = useCustomer();
-  const [selectedMethod, setSelectedMethod] = useState<string>("UPI");
+  const { user, transactions, initiateDeposit, depositFunds } = useCustomer();
+  const router = useRouter();
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("UPI");
   const [amount, setAmount] = useState<number>(1000);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [successTxn, setSuccessTxn] = useState<{ bonus: number; total: number } | null>(null);
   const [invoiceModalTxn, setInvoiceModalTxn] = useState<TransactionItem | null>(null);
-  const [copiedCrypto, setCopiedCrypto] = useState<boolean>(false);
 
   const gateways = [
     {
-      id: "UPI",
-      name: "UPI / Instant QR Code",
-      sub: "0% Fee • Instant (0–10s)",
-      badge: "Popular in India",
+      id: "UPI" as PaymentMethod,
+      name: "UPI (Unified Payments Interface)",
+      sub: "0% Transaction Fee • Instant (0–10s)",
+      badge: "Fastest Method",
       icon: "⚡",
     },
     {
-      id: "CRYPTO_USDT",
-      name: "USDT (TRC-20 / ERC-20)",
-      sub: "+5% Automatic Bonus • Worldwide",
-      badge: "Global Web3",
-      icon: "₮",
-    },
-    {
-      id: "CARD",
+      id: "CARD" as PaymentMethod,
       name: "Credit / Debit Card",
-      sub: "Visa, Mastercard, RuPay (Stripe)",
-      badge: "Instant 3D Secure",
+      sub: "Visa, Mastercard, RuPay (3D Secure)",
+      badge: "Protected Gateway",
       icon: "💳",
     },
     {
-      id: "NETBANKING",
+      id: "NETBANKING" as PaymentMethod,
       name: "Netbanking / IMPS",
-      sub: "Razorpay / Cashfree Gateway",
-      badge: "All Indian Banks",
+      sub: "All Major Indian Commercial Banks",
+      badge: "Direct Settlement",
       icon: "🏛️",
     },
   ];
 
   const presets = [500, 1000, 2500, 5000, 10000];
 
-  let bonusPercent = 0;
-  if (amount >= 5000) bonusPercent = 15;
-  else if (amount >= 1000) bonusPercent = 10;
-  else if (amount >= 500) bonusPercent = 5;
-
-  const bonusAmount = (amount * bonusPercent) / 100;
-  const totalReceivable = amount + bonusAmount;
+  const { bonusPercent, bonusAmount, totalCredit } = calculateDepositBonus(amount);
 
   const handleDeposit = async () => {
     if (amount <= 0) return;
     setIsProcessing(true);
-    const res = await depositFunds(amount, selectedMethod);
+    const result = await depositFunds(amount, selectedMethod);
     setIsProcessing(false);
-    if (res.success) {
-      setSuccessTxn({ bonus: res.bonus, total: res.total });
+    if (result && result.success) {
+      setSuccessTxn({ bonus: result.bonus, total: result.total });
     }
   };
 
-  const handleCopyCrypto = () => {
-    navigator.clipboard.writeText("TYjG81792NxKLoPwe98Vv1aZxq982138Kl");
-    setCopiedCrypto(true);
-    setTimeout(() => setCopiedCrypto(false), 1500);
-  };
-
   return (
-    <div className="w-full bg-[#0e0e0e] min-h-screen pb-24 text-on-surface">
+    <div className="w-full bg-transparent min-h-screen pb-24 text-on-surface">
       <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-8 space-y-8">
         {/* Header Telemetry */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
@@ -135,7 +114,7 @@ export default function WalletPage() {
         {/* Dual Column: Balance Overview & Deposit Form */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Top Up Gateway Selector (7 cols) */}
-          <div className="lg:col-span-7 bg-[#1c1b1b]/80 border border-white/10 backdrop-blur-2xl rounded-3xl p-6 md:p-8 shadow-2xl space-y-6">
+          <div className="lg:col-span-7 glass-panel rounded-[2rem] p-6 md:p-8 space-y-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -232,7 +211,7 @@ export default function WalletPage() {
                     {bonusPercent > 0 ? `${bonusPercent}% Tier Bonus Applied!` : "Deposit ₹500+ for 5% Bonus!"}
                   </div>
                   <div className="text-[11px] text-white/70">
-                    You receive ₹{totalReceivable.toFixed(2)} in total spendable credit.
+                    You receive ₹{totalCredit.toFixed(2)} in total spendable credit.
                   </div>
                 </div>
               </div>
@@ -242,28 +221,13 @@ export default function WalletPage() {
             {/* Simulated Payment Gateway Interactive Box */}
             {selectedMethod === "UPI" && (
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4">
-                <div className="w-24 h-24 bg-white p-2 rounded-xl flex items-center justify-center shrink-0">
-                  <QrCode className="w-20 h-20 text-black" />
+                <div className="w-12 h-12 bg-[#201f1f] rounded-xl flex items-center justify-center shrink-0 border border-white/10">
+                  <span className="text-2xl">⚡</span>
                 </div>
                 <div className="space-y-1 text-xs">
-                  <div className="font-semibold text-white">Scan with Google Pay, PhonePe, Paytm or UPI App</div>
-                  <div className="text-on-surface-variant font-mono text-[11px]">VPA: aether.payments@axisbank</div>
+                  <div className="font-semibold text-white">Instant UPI Auto-Verification (VPA/Intent)</div>
+                  <div className="text-on-surface-variant font-mono text-[11px]">Handles Google Pay, PhonePe, Paytm, BHIM</div>
                   <div className="text-emerald-400 font-mono text-[11px]">✦ Real-time webhooks auto-verify in &lt; 5 seconds</div>
-                </div>
-              </div>
-            )}
-
-            {selectedMethod === "CRYPTO_USDT" && (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2 text-xs font-mono">
-                <div className="text-on-surface-variant">Send TRC-20 USDT to Deposit Address:</div>
-                <div className="flex items-center justify-between bg-black/40 p-2.5 rounded-xl text-white">
-                  <span className="truncate mr-2">TYjG81792NxKLoPwe98Vv1aZxq982138Kl</span>
-                  <button
-                    onClick={handleCopyCrypto}
-                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-[#DBEF90] hover:text-black transition-colors"
-                  >
-                    {copiedCrypto ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
                 </div>
               </div>
             )}
@@ -271,6 +235,7 @@ export default function WalletPage() {
             {/* Deposit CTA */}
             <button
               type="button"
+              data-testid="deposit-submit-btn"
               onClick={handleDeposit}
               disabled={isProcessing || amount <= 0}
               className="w-full py-4 px-6 rounded-full bg-[#d8ec8d] text-[#2a3400] hover:brightness-110 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(219,239,144,0.3)] disabled:opacity-50"
@@ -292,7 +257,7 @@ export default function WalletPage() {
           {/* Right Column: Balance Summary & Tier Card (5 cols) */}
           <div className="lg:col-span-5 space-y-6">
             {/* Wallet Balance Hero Card */}
-            <div className="bg-[#1c1b1b]/90 border border-white/15 backdrop-blur-2xl rounded-3xl p-6 md:p-8 shadow-2xl space-y-6 relative overflow-hidden">
+            <div className="glass-panel liquid-glass rounded-[2rem] p-6 md:p-8 space-y-6 relative overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
               <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-[#DBEF90]/10 blur-3xl pointer-events-none" />
 
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
@@ -347,7 +312,7 @@ export default function WalletPage() {
         </div>
 
         {/* Transactions Statements Table */}
-        <div className="bg-[#1c1b1b]/80 border border-white/10 rounded-3xl p-4 md:p-6 backdrop-blur-2xl shadow-2xl overflow-hidden space-y-4">
+        <div className="glass-panel rounded-[2rem] p-4 md:p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] overflow-hidden space-y-4">
           <div className="flex items-center justify-between px-2">
             <div>
               <h2 className="text-sm font-semibold uppercase tracking-wider text-white">

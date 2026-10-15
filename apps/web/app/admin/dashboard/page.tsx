@@ -21,6 +21,7 @@ import {
   Sliders,
   RotateCcw,
 } from "lucide-react";
+import { GlassCard } from "@/components/shared/GlassCard";
 
 export default function AdminDashboardPage() {
   const { users, services, orders, providers, transactions, syncProvider, updateOrderStatus } = useAdmin();
@@ -37,201 +38,199 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="w-full bg-[#0e0e0e] min-h-screen pb-24 text-on-surface">
+    <div className="w-full bg-[#0e0e0e] min-h-screen pb-24 text-[#e5e2e1]">
       <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-6 space-y-8">
         {/* System Protocol Banner */}
         <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-container-low border border-white/10 shadow-sm text-xs font-mono">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full liquid-glass-pill shadow-sm text-xs font-mono">
             <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
-            <span className="text-on-surface-variant uppercase tracking-widest text-[11px]">
+            <span className="text-zinc-300 uppercase tracking-widest text-[11px]">
               SYSTEM PROTOCOL: Node cluster AP-S1 operating at 99.98% throughput • High-frequency provider synchronization active
             </span>
           </div>
-          <div className="hidden md:flex items-center gap-3 text-xs font-mono text-on-surface-variant">
+          <div className="hidden md:flex items-center gap-3 text-xs font-mono text-zinc-400">
             <span>SHARD: 0x9AF4 • KERNEL v8.4.1</span>
             <span className="text-[#DBEF90] font-bold">✦ AUTO RE-ROUTE ON</span>
           </div>
         </div>
 
-        {/* 1. LIGHT HIGH-KEY SPLIT TOP CONTAINER */}
-        <section className="w-full rounded-[2.5rem] bg-[#F5F5F8] text-[#131313] shadow-2xl p-6 md:p-8 relative overflow-hidden">
-          <div className="relative z-10 space-y-6">
-            {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-black/10">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs uppercase tracking-widest font-bold text-[#666] font-mono">
-                    Telemetry Core
-                  </span>
-                  <span className="text-[#5b6b1b] text-xl font-bold">*</span>
-                </div>
-                <h1 className="text-2xl md:text-3xl font-light text-[#131313] tracking-tight">
-                  Admin Master Dashboard
-                </h1>
-              </div>
-
+        {/* 1. DARK GLASSMORPHIC ADMIN TELEMETRY CORE */}
+        <section className="w-full relative space-y-6">
+          {/* Header */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/10">
+            <div>
               <div className="flex items-center gap-2">
-                <div className="inline-flex p-1 rounded-full bg-black/5 text-xs font-semibold">
-                  <button className="px-4 py-1.5 rounded-full bg-[#131313] text-white shadow-sm">
-                    Realtime (30D)
-                  </button>
-                  <button className="px-4 py-1.5 rounded-full text-[#666] hover:text-[#131313]">
-                    Q3 Rolling
-                  </button>
-                  <button className="px-4 py-1.5 rounded-full text-[#666] hover:text-[#131313]">
-                    Fiscal YTD
-                  </button>
-                </div>
+                <span className="text-xs uppercase tracking-widest font-bold text-[#DBEF90] font-mono">
+                  Telemetry Core
+                </span>
+                <span className="text-[#DBEF90] text-xl font-bold">*</span>
               </div>
+              <h1 className="text-2xl md:text-3xl font-light text-white tracking-tight">
+                Admin Master Dashboard
+              </h1>
             </div>
 
-            {/* 4 Operational Metrics Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-white p-4 rounded-2xl shadow-sm border border-black/5 flex flex-col justify-between">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] uppercase tracking-wider text-[#777] font-semibold">Registered Users</span>
-                  <span className="text-[11px] font-bold text-[#2a3400] bg-[#d8ec8d] px-2 py-0.5 rounded-full">+12.4%</span>
-                </div>
-                <div className="my-2">
-                  <span className="text-2xl font-light text-[#131313] font-mono">48,290</span>
-                </div>
-                <div className="text-[10px] text-[#888] font-mono">14,810 Active This Week</div>
-              </div>
-
-              <div className="bg-white p-4 rounded-2xl shadow-sm border border-black/5 flex flex-col justify-between">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] uppercase tracking-wider text-[#777] font-semibold">Total Orders</span>
-                  <Activity className="w-3.5 h-3.5 text-[#131313]" />
-                </div>
-                <div className="my-2">
-                  <span className="text-2xl font-light text-[#131313] font-mono">642,850</span>
-                </div>
-                <div className="text-[10px] text-[#888] font-mono">3,420 Today (↑ 8.2%)</div>
-              </div>
-
-              <div className="bg-white p-4 rounded-2xl shadow-sm border border-black/5 flex flex-col justify-between">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] uppercase tracking-wider text-[#777] font-semibold">Active Services</span>
-                  <span className="w-2 h-2 rounded-full bg-[#bccf74]" />
-                </div>
-                <div className="my-2">
-                  <span className="text-2xl font-light text-[#131313] font-mono">{services.length}</span>
-                </div>
-                <div className="text-[10px] text-[#888] font-mono">Across 7 Social Networks</div>
-              </div>
-
-              <div className="bg-white p-4 rounded-2xl shadow-sm border border-black/5 flex flex-col justify-between">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] uppercase tracking-wider text-[#777] font-semibold">Connected Providers</span>
-                  <Server className="w-3.5 h-3.5 text-[#131313]" />
-                </div>
-                <div className="my-2">
-                  <span className="text-2xl font-light text-[#131313] font-mono">{providers.length}</span>
-                </div>
-                <div className="text-[10px] text-emerald-600 font-mono font-semibold">100% Health Status</div>
+            <div className="flex items-center gap-2">
+              <div className="inline-flex p-1 rounded-full liquid-glass-pill text-xs font-semibold">
+                <button className="px-4 py-1.5 rounded-full bg-[#DBEF90] text-[#131313] font-bold shadow-sm">
+                  Realtime (30D)
+                </button>
+                <button className="px-4 py-1.5 rounded-full text-zinc-400 hover:text-white transition-colors">
+                  Q3 Rolling
+                </button>
+                <button className="px-4 py-1.5 rounded-full text-zinc-400 hover:text-white transition-colors">
+                  Fiscal YTD
+                </button>
               </div>
             </div>
+          </div>
 
-            {/* 4 Highlight Financial Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Card 1: Gross Ingress */}
-              <div className="bg-white rounded-3xl p-5 shadow-sm border border-black/5 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs uppercase tracking-wider text-[#777] font-semibold">Gross Ingress</span>
-                    <span className="text-[10px] font-mono bg-black/5 px-2 py-0.5 rounded-full font-bold">+18.2% MoM</span>
-                  </div>
-                  <span className="text-3xl font-extralight text-[#131313] tracking-tight block font-mono">
-                    ₹{totalRevenue.toLocaleString("en-IN")}
-                  </span>
-                  <span className="text-[10px] text-[#888] font-mono">.00 INR GROSS</span>
+          {/* 4 Operational Metrics Row in Frosted Glass Squircle */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <GlassCard variant="squircle" className="p-4 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold font-mono">Registered Users</span>
+                <span className="text-[11px] font-bold text-[#171e00] bg-[#DBEF90] px-2 py-0.5 rounded-full">+12.4%</span>
+              </div>
+              <div className="my-2">
+                <span className="text-2xl font-light text-white font-mono">48,290</span>
+              </div>
+              <div className="text-[10px] text-zinc-400 font-mono">14,810 Active This Week</div>
+            </GlassCard>
+
+            <GlassCard variant="squircle" className="p-4 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold font-mono">Total Orders</span>
+                <Activity className="w-3.5 h-3.5 text-[#DBEF90]" />
+              </div>
+              <div className="my-2">
+                <span className="text-2xl font-light text-white font-mono">642,850</span>
+              </div>
+              <div className="text-[10px] text-zinc-400 font-mono">3,420 Today (↑ 8.2%)</div>
+            </GlassCard>
+
+            <GlassCard variant="squircle" className="p-4 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold font-mono">Active Services</span>
+                <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
+              </div>
+              <div className="my-2">
+                <span className="text-2xl font-light text-white font-mono">{services.length}</span>
+              </div>
+              <div className="text-[10px] text-zinc-400 font-mono">Across 7 Social Networks</div>
+            </GlassCard>
+
+            <GlassCard variant="squircle" className="p-4 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold font-mono">Connected Providers</span>
+                <Server className="w-3.5 h-3.5 text-[#DBEF90]" />
+              </div>
+              <div className="my-2">
+                <span className="text-2xl font-light text-white font-mono">{providers.length}</span>
+              </div>
+              <div className="text-[10px] text-[#DBEF90] font-mono font-semibold">100% Health Status</div>
+            </GlassCard>
+          </div>
+
+          {/* 4 Highlight Financial Cards in Frosted Glass Squircle */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Card 1: Gross Ingress */}
+            <GlassCard variant="squircle" className="p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">Gross Ingress</span>
+                  <span className="text-[10px] font-mono bg-white/10 text-[#DBEF90] px-2 py-0.5 rounded-full font-bold">+18.2% MoM</span>
                 </div>
-                <div className="pt-3">
-                  <svg className="w-full h-7 text-[#131313]" fill="none" viewBox="0 0 160 28">
-                    <path
-                      d="M0 24 C20 20, 40 26, 60 14 C80 6, 100 16, 120 8 C140 3, 150 6, 160 2"
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                  <div className="flex justify-between text-[10px] text-[#888] font-mono pt-1">
-                    <span>Day 01</span>
-                    <span>Peak Ingress</span>
-                  </div>
+                <span className="text-3xl font-light text-white tracking-tight block font-mono">
+                  ₹{totalRevenue.toLocaleString("en-IN")}
+                </span>
+                <span className="text-[10px] text-zinc-400 font-mono">.00 INR GROSS</span>
+              </div>
+              <div className="pt-3">
+                <svg className="w-full h-7 text-[#DBEF90]" fill="none" viewBox="0 0 160 28">
+                  <path
+                    d="M0 24 C20 20, 40 26, 60 14 C80 6, 100 16, 120 8 C140 3, 150 6, 160 2"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeWidth="2"
+                  />
+                </svg>
+                <div className="flex justify-between text-[10px] text-zinc-400 font-mono pt-1">
+                  <span>Day 01</span>
+                  <span className="text-[#DBEF90]">Peak Ingress</span>
                 </div>
               </div>
+            </GlassCard>
 
-              {/* Card 2: Upstream Expenditure */}
-              <div className="bg-white rounded-3xl p-5 shadow-sm border border-black/5 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs uppercase tracking-wider text-[#777] font-semibold">Upstream Cost</span>
-                    <span className="text-[10px] text-[#888] font-mono">62.4% ratio</span>
-                  </div>
-                  <span className="text-3xl font-extralight text-[#131313] tracking-tight block font-mono">
-                    ₹{upstreamCost.toLocaleString("en-IN")}
-                  </span>
-                  <span className="text-[10px] text-[#888] font-mono">.00 INR PROVIDERS</span>
+            {/* Card 2: Upstream Expenditure */}
+            <GlassCard variant="squircle" className="p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">Upstream Cost</span>
+                  <span className="text-[10px] text-zinc-400 font-mono">62.4% ratio</span>
                 </div>
-                <div className="pt-3 space-y-1.5">
-                  <div className="w-full bg-black/10 h-2 rounded-full overflow-hidden flex">
-                    <div className="bg-[#131313] h-full" style={{ width: "62.4%" }} />
-                  </div>
-                  <div className="flex justify-between text-[10px] text-[#888] font-mono">
-                    <span>Direct API Sinks</span>
-                    <span>Buffer Safe</span>
-                  </div>
+                <span className="text-3xl font-light text-white tracking-tight block font-mono">
+                  ₹{upstreamCost.toLocaleString("en-IN")}
+                </span>
+                <span className="text-[10px] text-zinc-400 font-mono">.00 INR PROVIDERS</span>
+              </div>
+              <div className="pt-3 space-y-1.5">
+                <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden flex">
+                  <div className="bg-[#DBEF90] h-full" style={{ width: "62.4%" }} />
+                </div>
+                <div className="flex justify-between text-[10px] text-zinc-400 font-mono">
+                  <span>Direct API Sinks</span>
+                  <span className="text-[#DBEF90]">Buffer Safe</span>
                 </div>
               </div>
+            </GlassCard>
 
-              {/* Card 3: Signature Magenta Net Profit Card */}
-              <div className="rounded-3xl p-5 shadow-xl flex flex-col justify-between text-white relative overflow-hidden bg-gradient-to-br from-[#BD0183] via-[#d80064] to-[#40002A]">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs uppercase tracking-wider text-white/80 font-semibold">Net Profit / Margin</span>
-                    <Sparkles className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="text-3xl font-extralight text-white tracking-tight block font-mono">
-                    ₹{netProfit.toLocaleString("en-IN")}
-                  </span>
-                  <span className="text-[10px] text-white/80 font-mono">+37.6% NET YIELD</span>
+            {/* Card 3: Signature Magenta Net Profit Card */}
+            <GlassCard variant="squircle" className="p-5 flex flex-col justify-between text-white relative overflow-hidden bg-gradient-to-br from-[#BD0183]/30 via-[#d80064]/25 to-[#161616]">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs uppercase tracking-wider text-zinc-300 font-semibold font-mono">Net Profit / Margin</span>
+                  <Sparkles className="w-4 h-4 text-[#DBEF90]" />
                 </div>
-                <div className="pt-3">
-                  <div className="text-[10px] text-white/90 font-mono flex items-center justify-between">
-                    <span>Auto-Sweep to Treasury</span>
-                    <span className="font-bold">Active</span>
-                  </div>
+                <span className="text-3xl font-light text-white tracking-tight block font-mono">
+                  ₹{netProfit.toLocaleString("en-IN")}
+                </span>
+                <span className="text-[10px] text-[#DBEF90] font-mono">+37.6% NET YIELD</span>
+              </div>
+              <div className="pt-3">
+                <div className="text-[10px] text-zinc-300 font-mono flex items-center justify-between">
+                  <span>Auto-Sweep to Treasury</span>
+                  <span className="font-bold text-[#DBEF90]">Active</span>
                 </div>
               </div>
+            </GlassCard>
 
-              {/* Card 4: Liquidity Pool */}
-              <div className="bg-white rounded-3xl p-5 shadow-sm border border-black/5 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs uppercase tracking-wider text-[#777] font-semibold">Customer Balances</span>
-                    <span className="text-[10px] text-emerald-600 font-bold font-mono">100% Backed</span>
-                  </div>
-                  <span className="text-3xl font-extralight text-[#131313] tracking-tight block font-mono">
-                    ₹4,12,000
-                  </span>
-                  <span className="text-[10px] text-[#888] font-mono">.00 INR IN VAULTS</span>
+            {/* Card 4: Liquidity Pool */}
+            <GlassCard variant="squircle" className="p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">Customer Balances</span>
+                  <span className="text-[10px] text-[#DBEF90] font-bold font-mono">100% Backed</span>
                 </div>
-                <div className="pt-3">
-                  <div className="text-[10px] text-[#888] font-mono flex items-center justify-between">
-                    <span>Multi-Sig Treasury Vault</span>
-                    <span className="text-[#131313] font-bold">Cold Secure</span>
-                  </div>
+                <span className="text-3xl font-light text-white tracking-tight block font-mono">
+                  ₹4,12,000
+                </span>
+                <span className="text-[10px] text-zinc-400 font-mono">.00 INR IN VAULTS</span>
+              </div>
+              <div className="pt-3">
+                <div className="text-[10px] text-zinc-400 font-mono flex items-center justify-between">
+                  <span>Multi-Sig Treasury Vault</span>
+                  <span className="text-white font-bold">Cold Secure</span>
                 </div>
               </div>
-            </div>
+            </GlassCard>
           </div>
         </section>
 
         {/* 2. LOWER DARK COMMAND CENTER (PROVIDERS & INGRESS STREAM) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: API Providers Status (5 cols) */}
-          <div className="lg:col-span-5 bg-[#1c1b1b]/80 border border-white/10 rounded-3xl p-6 backdrop-blur-2xl shadow-2xl space-y-4">
+          <GlassCard variant="squircle" className="lg:col-span-5 p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
                 <Server className="w-4 h-4 text-[#DBEF90]" />
@@ -276,10 +275,10 @@ export default function AdminDashboardPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </GlassCard>
 
           {/* Right Column: Global Orders Control Table (7 cols) */}
-          <div className="lg:col-span-7 bg-[#1c1b1b]/80 border border-white/10 rounded-3xl p-6 backdrop-blur-2xl shadow-2xl space-y-4">
+          <GlassCard variant="squircle" className="lg:col-span-7 p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-[#DBEF90]" />
@@ -345,7 +344,7 @@ export default function AdminDashboardPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </GlassCard>
         </div>
       </div>
     </div>
