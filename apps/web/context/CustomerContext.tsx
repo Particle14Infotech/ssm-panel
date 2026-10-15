@@ -365,7 +365,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
 
     if (token) {
       try {
-        const res = await fetch(`${API_BASE}/payments/initiate`, {
+        const res = await fetch(`${API_BASE}/payments/create-order`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -373,16 +373,16 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
           },
           body: JSON.stringify({
             amount: input.amount,
-            method: input.method,
-            couponCode: input.couponCode,
+            idempotencyKey: input.idempotencyKey,
           }),
         });
         if (res.ok) {
           const data = await res.json();
+          const gatewayId = data.orderId || data.gatewayOrderId || data.id;
           return {
-            sessionId: data.paymentId || data.gatewayOrderId,
-            referenceId: data.gatewayOrderId || referenceId,
-            redirectUrl: `/app/wallet/verify?ref=${data.gatewayOrderId || referenceId}`,
+            sessionId: gatewayId,
+            referenceId: gatewayId,
+            redirectUrl: `/wallet`,
             amount: input.amount,
             bonusAmount,
             totalCredit,

@@ -9,6 +9,26 @@ describe("PaymentsController Security & Webhook Tests", () => {
 
   beforeEach(async () => {
     mockPaymentsService = {
+      createPaymentOrder: jest.fn().mockResolvedValue({
+        success: true,
+        paymentId: "pay_1",
+        gatewayOrderId: "order_mock_123",
+        amount: 1000,
+        amountRupees: 1000,
+        amountPaise: 100000,
+        bonusAmount: 100,
+        bonusRupees: 100,
+        currency: "INR",
+        provider: "simulated",
+        isTestMode: true,
+      }),
+      verifyPayment: jest.fn().mockResolvedValue({
+        success: true,
+        paymentId: "pay_1",
+        creditedAmount: 1100,
+        status: "paid",
+        newBalance: 1100,
+      }),
       initiate: jest.fn().mockResolvedValue({
         success: true,
         paymentId: "pay_1",

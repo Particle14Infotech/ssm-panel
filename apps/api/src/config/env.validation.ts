@@ -13,6 +13,8 @@ export const EnvSchema = z.object({
   FRONTEND_URL: z.string().optional(),
   API_URL: z.string().default("http://localhost:4000/api/v1"),
   PAYMENTS_MODE: z.string().optional().default("sandbox"),
+  PAYMENT_PROVIDER: z.enum(["simulated", "razorpay"]).default("simulated"),
+  ALLOW_SIMULATED_PAYMENTS: z.string().optional(),
   RAZORPAY_KEY_ID: z.string().optional(),
   RAZORPAY_KEY_SECRET: z.string().optional(),
   PAYMENT_WEBHOOK_SECRET: z.string().optional(),
@@ -22,6 +24,7 @@ export type ValidatedEnv = z.infer<typeof EnvSchema>;
 
 export function validateEnvironment(env: Record<string, string | undefined> = process.env): ValidatedEnv {
   const isProduction = env.NODE_ENV === "production";
+  const paymentProvider = env.PAYMENT_PROVIDER || "simulated";
 
   if (isProduction) {
     const criticalVars = [
@@ -43,7 +46,16 @@ export function validateEnvironment(env: Record<string, string | undefined> = pr
       missing.push("REDIS_URL or REDIS_HOST");
     }
 
-    if (env.PAYMENTS_MODE !== "sandbox") {
+    // Production guard for payments
+    if (paymentProvider === "simulated") {
+      if (env.ALLOW_SIMULATED_PAYMENTS !== "true") {
+        missing.push("ALLOW_SIMULATED_PAYMENTS (Simulated payments in production requires ALLOW_SIMULATED_PAYMENTS=true)");
+      } else {
+        console.warn("\n=======================================================");
+        console.warn("⚠️  [Payments Guard] WARNING: Running with SIMULATED payments in PRODUCTION mode. No real money will be charged.");
+        console.warn("=======================================================\n");
+      }
+    } else if (paymentProvider === "razorpay") {
       ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"].forEach((v) => {
         const val = env[v];
         if (!val || val.trim() === "" || val.startsWith("REPLACE_ME")) {

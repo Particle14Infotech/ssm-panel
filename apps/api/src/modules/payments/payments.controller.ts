@@ -19,9 +19,26 @@ import { CurrentUser, CurrentUserData } from "../../common/current-user.decorato
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
+  @Post("create-order")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Create Payment Order (paise/rupees)" })
+  async createOrder(
+    @Body() body: { amount: number; idempotencyKey?: string },
+    @CurrentUser() user: CurrentUserData
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException("Authenticated user ID is required.");
+    }
+    return await this.paymentsService.createPaymentOrder({
+      userId: user.id,
+      amount: body.amount,
+      idempotencyKey: body.idempotencyKey,
+    });
+  }
+
   @Post("initiate")
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: "Initiate Liquidity Deposit Session" })
+  @ApiOperation({ summary: "Initiate Liquidity Deposit Session (Canonical/Legacy)" })
   async initiate(
     @Body() body: { amount: number; method?: string; couponCode?: string; userId?: string },
     @CurrentUser() user?: CurrentUserData
@@ -30,9 +47,32 @@ export class PaymentsController {
     if (!effectiveUserId) {
       throw new BadRequestException("Authenticated user ID is required.");
     }
-    return await this.paymentsService.initiate({
-      ...body,
+    return await this.paymentsService.createPaymentOrder({
       userId: effectiveUserId,
+      amount: body.amount,
+    });
+  }
+
+  @Post("verify")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Server-Side Verify Payment and Credit Wallet" })
+  async verifyPayment(
+    @Body()
+    body: {
+      orderId: string;
+      paymentId: string;
+      signature?: string;
+      method?: string;
+      testOutcome?: "success" | "failure";
+    },
+    @CurrentUser() user: CurrentUserData
+  ) {
+    if (!user?.id) {
+      throw new BadRequestException("Authenticated user ID is required.");
+    }
+    return await this.paymentsService.verifyPayment({
+      ...body,
+      userId: user.id,
     });
   }
 
@@ -48,7 +88,7 @@ export class PaymentsController {
   }
 
   @Post("sandbox-complete")
-  @ApiOperation({ summary: "Simulate Payment Completion (Sandbox Only, Disabled in Production)" })
+  @ApiOperation({ summary: "Simulate Payment Completion" })
   async sandboxComplete(@Body() body: { gatewayOrderId: string }) {
     if (process.env.NODE_ENV === "production" && process.env.ALLOW_SIMULATED_PAYMENTS !== "true") {
       throw new NotFoundException("Sandbox completion endpoint is disabled in production.");
@@ -68,4 +108,3 @@ export class PaymentsController {
     return await this.paymentsService.findAll(effectiveUserId, role);
   }
 }
-
