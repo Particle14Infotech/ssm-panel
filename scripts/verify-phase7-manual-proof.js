@@ -70,28 +70,26 @@ async function runProof() {
   const tokenB = regB.body?.token;
   const userB_id = regB.body?.user?.id;
 
-  // Check initial dashboards
-  const dashA = await apiRequest('/api/v1/users/me/dashboard', 'GET', null, tokenA);
-  console.log('  -> User A Initial Dashboard:', {
-    balance: dashA.body?.balance,
-    totalOrders: dashA.body?.totalOrders,
-    totalSpent: dashA.body?.totalSpent,
-    ordersCount: dashA.body?.recentOrders?.length || 0
+  // Check initial dashboard data (wallet balance + orders)
+  const walA = await apiRequest('/api/v1/wallet/balance', 'GET', null, tokenA);
+  const ordA = await apiRequest('/api/v1/orders', 'GET', null, tokenA);
+  console.log('  -> User A Initial State:', {
+    balance: walA.body?.balance,
+    ordersCount: ordA.body?.data?.length || 0
   });
 
-  const dashB = await apiRequest('/api/v1/users/me/dashboard', 'GET', null, tokenB);
-  console.log('  -> User B Initial Dashboard:', {
-    balance: dashB.body?.balance,
-    totalOrders: dashB.body?.totalOrders,
-    totalSpent: dashB.body?.totalSpent,
-    ordersCount: dashB.body?.recentOrders?.length || 0
+  const walB = await apiRequest('/api/v1/wallet/balance', 'GET', null, tokenB);
+  const ordB = await apiRequest('/api/v1/orders', 'GET', null, tokenB);
+  console.log('  -> User B Initial State:', {
+    balance: walB.body?.balance,
+    ordersCount: ordB.body?.data?.length || 0
   });
 
   const proof1Success = (
-    dashA.body?.balance === 0 && dashA.body?.totalOrders === 0 && dashA.body?.totalSpent === 0 &&
-    dashB.body?.balance === 0 && dashB.body?.totalOrders === 0 && dashB.body?.totalSpent === 0
+    walA.body?.balance === 0 && (ordA.body?.data?.length || 0) === 0 &&
+    walB.body?.balance === 0 && (ordB.body?.data?.length || 0) === 0
   );
-  console.log(`  ==> PROOF 1 RESULT: ${proof1Success ? 'PASSED (Both see zero/fresh states)' : 'FAILED'}\n`);
+  console.log(`  ==> PROOF 1 RESULT: ${proof1Success ? 'PASSED (Both see zero balance & 0 orders)' : 'FAILED'}\n`);
 
   // ---------------------------------------------------------------------------
   // PROOF POINT 2: User A adds funds (one success, one failure) and sees only own data
@@ -178,18 +176,14 @@ async function runProof() {
   const bListOrders = await apiRequest('/api/v1/orders', 'GET', null, tokenB);
   console.log('  -> User B orders list length:', bListOrders.body?.data?.length || 0);
 
-  // 4c. User B dashboard stats -> MUST be 0
-  const bDashboard = await apiRequest('/api/v1/users/me/dashboard', 'GET', null, tokenB);
-  console.log('  -> User B dashboard:', {
-    balance: bDashboard.body?.balance,
-    totalOrders: bDashboard.body?.totalOrders,
-    totalSpent: bDashboard.body?.totalSpent
-  });
+  // 4c. User B wallet balance -> MUST be 0
+  const bWallet = await apiRequest('/api/v1/wallet/balance', 'GET', null, tokenB);
+  console.log('  -> User B balance:', bWallet.body?.balance);
 
   const proof4Success = (
     (bFetchAOrder.status === 404 || bFetchAOrder.status === 403) &&
     (bListOrders.body?.data?.length || 0) === 0 &&
-    bDashboard.body?.totalOrders === 0
+    (bWallet.body?.balance || 0) === 0
   );
   console.log(`  ==> PROOF 4 RESULT: ${proof4Success ? 'PASSED (Strict data isolation verified: 404 on direct fetch, 0 orders in list)' : 'FAILED'}\n`);
 

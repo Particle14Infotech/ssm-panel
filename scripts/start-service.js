@@ -13,15 +13,15 @@ if (service === "web") {
 } else if (service === "worker") {
   run("pnpm --filter @smm/worker start");
 } else {
-  // smm / api: synchronize prisma schema first, then start server
+  // smm / api: deploy reviewed migrations, run seed, then start server
   try {
-    console.log("[start-service] Running Prisma schema synchronization...");
-    run("pnpm exec prisma db push --skip-generate");
-    console.log("[start-service] Database schema synchronized.");
+    console.log("[start-service] Deploying reviewed Prisma migrations...");
+    run("pnpm exec prisma migrate deploy");
+    console.log("[start-service] Database migrations applied successfully.");
     console.log("[start-service] Running idempotent seed...");
     run("node scripts/seed.js");
   } catch (err) {
-    console.warn("[start-service] Note: db sync/seed warning:", err.message);
+    console.warn("[start-service] Note: db migration/seed warning:", err.message);
   }
   run("node apps/api/dist/src/main.js || node apps/api/dist/main.js || pnpm --filter @smm/api start:prod");
 }

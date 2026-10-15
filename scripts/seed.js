@@ -28,40 +28,23 @@ async function main() {
     },
   });
 
-  // 2. Admin User
+  // 2. Admin User from Environment
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@smmpanel.internal';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'ChangeThisAdminPasswordNow!';
+  
   await prisma.user.upsert({
-    where: { email: 'admin@smm-panel.io' },
+    where: { email: adminEmail },
     update: {},
     create: {
       id: 'usr_admin_001',
-      email: 'admin@smm-panel.io',
+      email: adminEmail,
       name: 'System Administrator',
       passwordHash: '$argon2id$v=19$m=65536,t=3,p=4$demo_salt$demo_hash',
       role: 'ADMIN',
       tier: 'ENTERPRISE',
       wallet: {
         create: {
-          balance: 100000.0,
-          currency: 'INR',
-        },
-      },
-    },
-  });
-
-  // 3. Customer User
-  await prisma.user.upsert({
-    where: { email: 'alex.vance@smm-panel.io' },
-    update: {},
-    create: {
-      id: 'usr_998124smm',
-      email: 'alex.vance@smm-panel.io',
-      name: 'Alex Vance',
-      passwordHash: '$argon2id$v=19$m=65536,t=3,p=4$demo_salt$demo_hash',
-      role: 'CUSTOMER',
-      tier: 'PRO_SCALE',
-      wallet: {
-        create: {
-          balance: 2450.0,
+          balance: 0,
           currency: 'INR',
         },
       },
