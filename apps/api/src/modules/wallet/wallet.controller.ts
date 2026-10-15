@@ -6,10 +6,15 @@ import {
   Query,
   BadRequestException,
   NotFoundException,
+  UseGuards,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { WalletService } from "./wallet.service";
 import { Decimal } from "decimal.js";
+import { JwtAuthGuard } from "../../common/jwt-auth.guard";
+import { RolesGuard, Roles } from "../../common/roles.guard";
+import { CurrentUser, CurrentUserData } from "../../common/current-user.decorator";
+import { Role } from "@prisma/client";
 
 @ApiTags("Wallet & Billing")
 @Controller("wallet")
@@ -17,36 +22,48 @@ export class WalletController {
   constructor(private readonly walletService: WalletService) {}
 
   @Get("balance")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Get Live Liquid Balance" })
-  async getBalance(@Query("userId") userId?: string) {
-    const targetUserId = userId || "usr_default_demo";
+  async getBalance(
+    @CurrentUser() user?: CurrentUserData | string,
+    @Query("userId") queryUserId?: string
+  ) {
+    const targetUserId = typeof user === "string" ? user : (user?.role === "ADMIN" && queryUserId ? queryUserId : (user?.id || queryUserId || "none"));
+    const tier = typeof user === "object" ? user?.tier : "PRO_SCALE";
     try {
       const live = await this.walletService.getBalance(targetUserId);
       return {
         ...live,
-        tier: "PRO_SCALE",
+        tier: tier || "PRO_SCALE",
         threshold: 500.0,
-        autoRefill: true,
+        autoRefill: false,
       };
     } catch {
       return {
-        balance: 2450.0,
+        userId: targetUserId,
+        balance: 0,
         currency: "INR",
-        tier: "PRO_SCALE",
+        tier: tier || "PRO_SCALE",
         threshold: 500.0,
-        autoRefill: true,
+        autoRefill: false,
       };
     }
   }
 
   @Get("ledger")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Get Double-Entry Ledger History" })
-  async getLedger(@Query("userId") userId?: string) {
-    const targetUserId = userId || "usr_default_demo";
+  async getLedger(
+    @CurrentUser() user?: CurrentUserData | string,
+    @Query("userId") queryUserId?: string
+  ) {
+    const targetUserId = typeof user === "string" ? user : (user?.role === "ADMIN" && queryUserId ? queryUserId : (user?.id || queryUserId || "none"));
     return await this.walletService.getLedger(targetUserId);
   }
 
   @Post("adjust")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Admin Balance Adjustment (Mandatory Reason Required)" })
   async adjustBalance(
     @Body() body: { userId: string; amount: number; reason: string }
@@ -65,9 +82,13 @@ export class WalletController {
   }
 
   @Post("deposit")
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Initialize Liquidity Deposit (Sandbox Only, Disabled in Production)" })
-  deposit(@Body() body: { amount: number; method: string; userId?: string }) {
-    if (process.env.NODE_ENV === "production") {
+  deposit(
+    @Body() body: { amount: number; method: string; userId?: string },
+    @CurrentUser() user?: CurrentUserData
+  ) {
+    if (process.env.NODE_ENV === "production" && process.env.ALLOW_SIMULATED_PAYMENTS !== "true") {
       throw new NotFoundException("POST /wallet/deposit is disabled in production. Use /payments/initiate with verified webhooks.");
     }
 
@@ -80,6 +101,7 @@ export class WalletController {
     return {
       success: true,
       depositId: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+      userId: user?.id || body.userId || "usr_default_demo",
       amount,
       bonus,
       creditedTotal: amount + bonus,
@@ -90,3 +112,4 @@ export class WalletController {
     };
   }
 }
+

@@ -28,7 +28,7 @@ import {
 
 export function CustomerHeader() {
   const pathname = usePathname();
-  const { user } = useCustomer();
+  const { user, logout } = useCustomer();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [announcementsOpen, setAnnouncementsOpen] = useState(false);
@@ -175,14 +175,17 @@ export function CustomerHeader() {
 
                 <div className="my-1 border-t border-white/10" />
 
-                <Link
-                  href="/login"
-                  onClick={() => setUserMenuOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-red-400 hover:bg-red-500/10 transition-all"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    logout();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-red-400 hover:bg-red-500/10 transition-all text-left"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Disconnect Session</span>
-                </Link>
+                </button>
               </div>
             )}
           </div>

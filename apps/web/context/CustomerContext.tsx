@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import {
   UserProfile,
   OrderItem,
@@ -8,22 +8,35 @@ import {
   TransactionItem,
   Ticket,
   CreateTicketInput,
-  OrderStatus,
-  canTransition,
-  assertValidTransition,
-  calculateOrderCharge,
-  calculatePartialRefund,
-  calculateDepositBonus,
   PaymentMethod,
   PaymentGatewaySession,
+  calculateDepositBonus,
 } from "@smm/contracts";
-import {
-  INITIAL_USER,
-  INITIAL_SERVICES,
-  INITIAL_ORDERS,
-  INITIAL_TRANSACTIONS,
-  INITIAL_TICKETS,
-} from "@/content/customer-data";
+
+export const EMPTY_USER: UserProfile = {
+  id: "",
+  email: "",
+  name: "New Customer",
+  phone: "",
+  avatarUrl: "",
+  balance: 0,
+  currency: "INR",
+  tier: "STARTER",
+  apiKey: "",
+  webhookUrl: "",
+  twoFactorEnabled: false,
+  ipWhitelist: [],
+  notificationPreferences: {
+    orderUpdates: true,
+    marketingAlerts: false,
+    securityAlerts: true,
+    lowBalanceAlert: false,
+    balanceThreshold: 500,
+  },
+  totalSpent: 0,
+  totalOrders: 0,
+  createdAt: new Date().toISOString(),
+};
 
 interface CustomerContextType {
   user: UserProfile;
@@ -31,6 +44,9 @@ interface CustomerContextType {
   services: ServiceItem[];
   transactions: TransactionItem[];
   tickets: Ticket[];
+  isLoading: boolean;
+  logout: () => void;
+  refreshData: () => Promise<void>;
   createOrder: (input: {
     serviceId: string;
     target: string;
@@ -62,85 +78,203 @@ interface CustomerContextType {
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
 
-// Set to track used idempotency keys
-const processedIdempotencyKeys = new Set<string>();
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
 
 export function CustomerProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserProfile>(() => {
+  const [user, setUser] = useState<UserProfile>(EMPTY_USER);
+  const [orders, setOrders] = useState<OrderItem[]>([]);
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [transactions, setTransactions] = useState<TransactionItem[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const getAuthToken = useCallback(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("authToken");
+  }, []);
+
+  const logout = useCallback(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("aether_user");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {}
-      }
+      localStorage.clear();
+      document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     }
-    return INITIAL_USER;
-  });
-
-  const [orders, setOrders] = useState<OrderItem[]>(() => {
+    setUser(EMPTY_USER);
+    setOrders([]);
+    setTransactions([]);
+    setTickets([]);
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("aether_orders");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {}
-      }
+      window.location.href = "/login";
     }
-    return INITIAL_ORDERS;
-  });
+  }, []);
 
-  const [services] = useState<ServiceItem[]>(INITIAL_SERVICES);
-
-  const [transactions, setTransactions] = useState<TransactionItem[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("aether_transactions");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {}
-      }
+  const refreshData = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) {
+      setUser(EMPTY_USER);
+      setOrders([]);
+      setTransactions([]);
+      setTickets([]);
+      setIsLoading(false);
+      return;
     }
-    return INITIAL_TRANSACTIONS;
-  });
 
-  const [tickets, setTickets] = useState<Ticket[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("aether_tickets");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {}
+    const authHeaders = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
+
+    try {
+      setIsLoading(true);
+
+      // 1. Fetch Profile and Balance concurrently
+      const [profileRes, balanceRes] = await Promise.all([
+        fetch(`${API_BASE}/users/me`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/wallet/balance`, { headers: authHeaders, cache: "no-store" }),
+      ]);
+
+      if (profileRes.status === 401 || balanceRes.status === 401) {
+        logout();
+        return;
       }
-    }
-    return INITIAL_TICKETS;
-  });
 
-  const [pendingSessions, setPendingSessions] = useState<Record<string, PaymentGatewaySession>>({});
+      let profileData: any = null;
+      let balanceData: any = null;
+
+      if (profileRes.ok) {
+        profileData = await profileRes.json();
+      }
+      if (balanceRes.ok) {
+        balanceData = await balanceRes.json();
+      }
+
+      if (profileData) {
+        setUser((prev) => ({
+          ...prev,
+          id: profileData.id,
+          email: profileData.email,
+          name: profileData.name || "Customer",
+          role: profileData.role,
+          tier: profileData.tier || "STANDARD",
+          balance: typeof balanceData?.balance === "number" ? balanceData.balance : 0,
+        }));
+      }
+
+      // 2. Fetch Orders, Ledger, Tickets, Services concurrently
+      const [ordersRes, ledgerRes, ticketsRes, servicesRes] = await Promise.all([
+        fetch(`${API_BASE}/orders`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/wallet/ledger`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/tickets`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/services`, { cache: "no-store" }),
+      ]);
+
+      if (ordersRes.ok) {
+        const rawOrders = await ordersRes.json();
+        if (Array.isArray(rawOrders)) {
+          setOrders(
+            rawOrders.map((o: any) => ({
+              id: o.id,
+              userId: o.userId,
+              serviceId: o.serviceId,
+              serviceName: o.service?.name || "Service",
+              platform: (o.service?.platform || "general").toLowerCase(),
+              target: o.target,
+              quantity: o.quantity,
+              charge: Number(o.charge),
+              startCount: o.startCount ?? 0,
+              remains: o.remains ?? 0,
+              status: o.status,
+              createdAt: o.createdAt,
+              updatedAt: o.updatedAt,
+              refillable: o.service?.refillable ?? false,
+              cancellable: o.service?.cancellable ?? false,
+            }))
+          );
+        }
+      }
+
+      if (ledgerRes.ok) {
+        const rawLedger = await ledgerRes.json();
+        if (Array.isArray(rawLedger)) {
+          setTransactions(
+            rawLedger.map((t: any) => ({
+              id: t.id,
+              userId: user.id,
+              amount: Number(t.amount),
+              bonus: 0,
+              method: (t.method === "CARD" || t.method === "NETBANKING" ? t.method : "UPI") as "UPI" | "CARD" | "NETBANKING",
+              status: "SUCCESS" as const,
+              referenceId: t.orderId || t.idempotencyKey || t.id,
+              createdAt: t.createdAt ? new Date(t.createdAt).toISOString() : new Date().toISOString(),
+            }))
+          );
+        }
+      }
+
+      if (ticketsRes.ok) {
+        const rawTickets = await ticketsRes.json();
+        if (Array.isArray(rawTickets)) {
+          setTickets(
+            rawTickets.map((tk: any) => ({
+              id: tk.id,
+              userId: tk.userId,
+              subject: tk.subject,
+              department: "GENERAL_SUPPORT" as const,
+              priority: (tk.priority === "HIGH" || tk.priority === "CRITICAL" || tk.priority === "LOW" ? tk.priority : "MEDIUM") as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+              status: (tk.status === "CLOSED" || tk.status === "RESOLVED" || tk.status === "ANSWERED" ? tk.status : "OPEN") as "OPEN" | "ANSWERED" | "CUSTOMER_REPLY" | "IN_REVIEW" | "RESOLVED" | "CLOSED",
+              lastReplyAt: tk.updatedAt ? new Date(tk.updatedAt).toISOString() : new Date().toISOString(),
+              messages: Array.isArray(tk.messages)
+                ? tk.messages.map((m: any) => ({
+                    id: m.id,
+                    ticketId: tk.id,
+                    authorId: m.senderId,
+                    authorName: m.senderId === user.id ? user.name : "Support Staff",
+                    authorRole: (m.senderId === user.id ? "USER" : "ADMIN") as "USER" | "ADMIN",
+                    content: m.message,
+                    attachments: [],
+                    createdAt: m.createdAt ? new Date(m.createdAt).toISOString() : new Date().toISOString(),
+                  }))
+                : [],
+              createdAt: tk.createdAt ? new Date(tk.createdAt).toISOString() : new Date().toISOString(),
+              updatedAt: tk.updatedAt ? new Date(tk.updatedAt).toISOString() : new Date().toISOString(),
+            }))
+          );
+        }
+      }
+
+      if (servicesRes.ok) {
+        const rawServices = await servicesRes.json();
+        if (Array.isArray(rawServices)) {
+          setServices(
+            rawServices.map((s: any) => ({
+              id: s.id,
+              categoryId: s.categoryId || "general",
+              categoryName: s.category?.name || "General Services",
+              name: s.name,
+              platform: s.platform,
+              ratePer1000: Number(s.ratePer1000),
+              minQty: s.minQty,
+              maxQty: s.maxQty,
+              avgProcessingSpeed: "Instant",
+              avgStartTime: "0 - 15 mins",
+              refillable: s.refillable,
+              cancellable: s.cancellable,
+              description: s.description || "",
+              status: s.status,
+            }))
+          );
+        }
+      }
+    } catch {
+      // Keep state resilient
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getAuthToken, logout, user.id, user.name]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("aether_user", JSON.stringify(user));
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("aether_orders", JSON.stringify(orders));
-    }
-  }, [orders]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("aether_transactions", JSON.stringify(transactions));
-    }
-  }, [transactions]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("aether_tickets", JSON.stringify(tickets));
-    }
-  }, [tickets]);
+    refreshData();
+  }, [refreshData]);
 
   const createOrder = async (input: {
     serviceId: string;
@@ -153,273 +287,70 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     couponCode?: string;
     idempotencyKey?: string;
   }) => {
-    // 1. Idempotency Check
-    if (input.idempotencyKey && processedIdempotencyKeys.has(input.idempotencyKey)) {
-      const existing = orders.find((o) => o.idempotencyKey === input.idempotencyKey);
-      if (existing) {
-        return { success: true, orderId: existing.id };
+    const token = getAuthToken();
+    if (!token) return { success: false, error: "Please log in to place an order." };
+
+    try {
+      const res = await fetch(`${API_BASE}/orders`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          serviceId: input.serviceId,
+          target: input.target,
+          quantity: input.quantity,
+          idempotencyKey: input.idempotencyKey || `ord_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.message || "Failed to dispatch order." };
       }
+
+      await refreshData();
+      return { success: true, orderId: data.id };
+    } catch (err: any) {
+      return { success: false, error: err.message || "Network error while creating order." };
     }
-
-    // 2. Validate Service
-    const service = services.find((s) => s.id === input.serviceId);
-    if (!service) {
-      return { success: false, error: "Selected service does not exist." };
-    }
-
-    // 3. Validate Quantity
-    if (input.quantity < service.minQty || input.quantity > service.maxQty) {
-      return {
-        success: false,
-        error: `Quantity must be between ${service.minQty.toLocaleString()} and ${service.maxQty.toLocaleString()}.`,
-      };
-    }
-
-    // 4. Calculate Authoritative Price
-    const totalCost = calculateOrderCharge(service.ratePer1000, input.quantity);
-
-    // 5. Validate Balance
-    if (user.balance < totalCost) {
-      return {
-        success: false,
-        error: `Insufficient balance (₹${user.balance.toFixed(2)}). Total required: ₹${totalCost.toFixed(2)}. Please add funds to proceed.`,
-      };
-    }
-
-    if (input.idempotencyKey) {
-      processedIdempotencyKeys.add(input.idempotencyKey);
-    }
-
-    // 6. Debit Wallet & Add Transaction Ledger Entry
-    const newOrderId = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
-    const newOrder: OrderItem = {
-      id: newOrderId,
-      userId: user.id,
-      serviceId: service.id,
-      serviceName: service.name,
-      platform: service.platform.toLowerCase(),
-      target: input.target,
-      quantity: input.quantity,
-      charge: totalCost,
-      startCount: Math.floor(500 + Math.random() * 5000),
-      remains: input.quantity,
-      status: "PENDING",
-      idempotencyKey: input.idempotencyKey,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      refillable: service.refillable,
-      cancellable: service.cancellable,
-    };
-
-    const newTxn: TransactionItem = {
-      id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
-      userId: user.id,
-      amount: -totalCost,
-      bonus: 0,
-      method: "CARD",
-      status: "SUCCESS",
-      referenceId: newOrderId,
-      createdAt: new Date().toISOString(),
-    };
-
-    setUser((prev) => ({
-      ...prev,
-      balance: Number((prev.balance - totalCost).toFixed(2)),
-      totalSpent: Number((prev.totalSpent + totalCost).toFixed(2)),
-      totalOrders: prev.totalOrders + 1,
-    }));
-
-    setTransactions((prev) => [newTxn, ...prev]);
-    setOrders((prev) => [newOrder, ...prev]);
-
-    // 7. Progression pipeline: PENDING -> PROCESSING -> IN_PROGRESS -> COMPLETED
-    setTimeout(() => {
-      setOrders((prev) =>
-        prev.map((o) => {
-          if (o.id === newOrderId && canTransition(o.status, "PROCESSING")) {
-            return { ...o, status: "PROCESSING", updatedAt: new Date().toISOString() };
-          }
-          return o;
-        })
-      );
-    }, 400);
-
-    setTimeout(() => {
-      setOrders((prev) =>
-        prev.map((o) => {
-          if (o.id === newOrderId && canTransition(o.status, "IN_PROGRESS")) {
-            return {
-              ...o,
-              status: "IN_PROGRESS",
-              remains: Math.floor(o.quantity * 0.4),
-              updatedAt: new Date().toISOString(),
-            };
-          }
-          return o;
-        })
-      );
-    }, 1200);
-
-    setTimeout(() => {
-      setOrders((prev) =>
-        prev.map((o) => {
-          if (o.id === newOrderId && canTransition(o.status, "COMPLETED")) {
-            return {
-              ...o,
-              status: "COMPLETED",
-              remains: 0,
-              updatedAt: new Date().toISOString(),
-            };
-          }
-          return o;
-        })
-      );
-    }, 2400);
-
-    return { success: true, orderId: newOrderId };
   };
 
   const cancelOrder = async (orderId: string) => {
-    const targetOrder = orders.find((o) => o.id === orderId);
-    if (!targetOrder || !targetOrder.cancellable) return false;
-
-    // Enforce transition: PENDING/PROCESSING/IN_PROGRESS -> CANCELLED -> REFUNDED
-    assertValidTransition(targetOrder.status, "CANCELLED");
-
-    // Full refund to wallet
-    const refundAmount = targetOrder.charge;
-
-    setUser((prev) => ({
-      ...prev,
-      balance: Number((prev.balance + refundAmount).toFixed(2)),
-    }));
-
-    const refundTxn: TransactionItem = {
-      id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
-      userId: user.id,
-      amount: refundAmount,
-      bonus: 0,
-      method: "CARD",
-      status: "SUCCESS",
-      referenceId: `REFUND-${orderId}`,
-      createdAt: new Date().toISOString(),
-    };
-
-    setTransactions((prev) => [refundTxn, ...prev]);
-
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? {
-              ...o,
-              status: "REFUNDED",
-              cancellable: false,
-              updatedAt: new Date().toISOString(),
-            }
-          : o
-      )
-    );
-
-    return true;
-  };
-
-  const processPartialOrder = async (orderId: string, remains: number) => {
-    const targetOrder = orders.find((o) => o.id === orderId);
-    if (!targetOrder) return false;
-
-    assertValidTransition(targetOrder.status, "PARTIAL");
-
-    // Partial refund formula: refund = charge x (remains / quantity)
-    const refundAmount = calculatePartialRefund(targetOrder.charge, targetOrder.quantity, remains);
-
-    if (refundAmount > 0) {
-      setUser((prev) => ({
-        ...prev,
-        balance: Number((prev.balance + refundAmount).toFixed(2)),
-      }));
-
-      const refundTxn: TransactionItem = {
-        id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
-        userId: user.id,
-        amount: refundAmount,
-        bonus: 0,
-        method: "CARD",
-        status: "SUCCESS",
-        referenceId: `PARTIAL-REFUND-${orderId}`,
-        createdAt: new Date().toISOString(),
-      };
-      setTransactions((prev) => [refundTxn, ...prev]);
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API_BASE}/orders/${orderId}/cancel`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        await refreshData();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
-
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? {
-              ...o,
-              status: "REFUNDED",
-              remains,
-              updatedAt: new Date().toISOString(),
-            }
-          : o
-      )
-    );
-
-    return true;
-  };
-
-  const processFailedOrder = async (orderId: string) => {
-    const targetOrder = orders.find((o) => o.id === orderId);
-    if (!targetOrder) return false;
-
-    assertValidTransition(targetOrder.status, "FAILED");
-
-    const refundAmount = targetOrder.charge;
-    setUser((prev) => ({
-      ...prev,
-      balance: Number((prev.balance + refundAmount).toFixed(2)),
-    }));
-
-    const refundTxn: TransactionItem = {
-      id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
-      userId: user.id,
-      amount: refundAmount,
-      bonus: 0,
-      method: "CARD",
-      status: "SUCCESS",
-      referenceId: `FAILED-REFUND-${orderId}`,
-      createdAt: new Date().toISOString(),
-    };
-    setTransactions((prev) => [refundTxn, ...prev]);
-
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? {
-              ...o,
-              status: "REFUNDED",
-              updatedAt: new Date().toISOString(),
-            }
-          : o
-      )
-    );
-
-    return true;
   };
 
   const refillOrder = async (orderId: string) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? {
-              ...o,
-              status: "IN_PROGRESS",
-              remains: Math.max(0, Math.floor(o.quantity * 0.1)),
-              updatedAt: new Date().toISOString(),
-            }
-          : o
-      )
-    );
-    return true;
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API_BASE}/orders/${orderId}/refill`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        await refreshData();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
   };
 
   const initiateDeposit = async (input: {
@@ -428,10 +359,41 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     couponCode?: string;
     idempotencyKey?: string;
   }): Promise<PaymentGatewaySession> => {
+    const token = getAuthToken();
     const { bonusAmount, totalCredit } = calculateDepositBonus(input.amount);
     const referenceId = `DEP-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 
-    const session: PaymentGatewaySession = {
+    if (token) {
+      try {
+        const res = await fetch(`${API_BASE}/payments/initiate`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: input.amount,
+            method: input.method,
+            couponCode: input.couponCode,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          return {
+            sessionId: data.paymentId || data.gatewayOrderId,
+            referenceId: data.gatewayOrderId || referenceId,
+            redirectUrl: `/app/wallet/verify?ref=${data.gatewayOrderId || referenceId}`,
+            amount: input.amount,
+            bonusAmount,
+            totalCredit,
+            method: input.method,
+            status: "PENDING",
+          };
+        }
+      } catch {}
+    }
+
+    return {
       sessionId: `sess_${Date.now()}`,
       referenceId,
       redirectUrl: `/app/wallet/verify?ref=${referenceId}`,
@@ -441,161 +403,69 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       method: input.method,
       status: "PENDING",
     };
-
-    setPendingSessions((prev) => ({ ...prev, [referenceId]: session }));
-    return session;
   };
 
   const verifyDeposit = async (referenceId: string) => {
-    const session = pendingSessions[referenceId];
-    if (!session) {
-      // Fallback auto session
-      const amount = 1000;
-      const { bonusAmount, totalCredit } = calculateDepositBonus(amount);
-      const fallbackSession: PaymentGatewaySession = {
-        sessionId: `sess_${Date.now()}`,
-        referenceId,
-        redirectUrl: `/app/wallet/verify?ref=${referenceId}`,
-        amount,
-        bonusAmount,
-        totalCredit,
-        method: "UPI",
-        status: "SUCCESS",
-      };
-
-      const newTxn: TransactionItem = {
-        id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
-        userId: user.id,
-        amount,
-        bonus: bonusAmount,
-        method: "UPI",
-        status: "SUCCESS",
-        referenceId,
-        createdAt: new Date().toISOString(),
-      };
-
-      setUser((prev) => ({
-        ...prev,
-        balance: Number((prev.balance + totalCredit).toFixed(2)),
-      }));
-
-      setTransactions((prev) => [newTxn, ...prev]);
-      return { success: true, session: fallbackSession };
-    }
-
-    if (session.status === "SUCCESS") {
-      return { success: true, session };
-    }
-
-    const completedSession: PaymentGatewaySession = {
-      ...session,
-      status: "SUCCESS",
-    };
-
-    const newTxn: TransactionItem = {
-      id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
-      userId: user.id,
-      amount: session.amount,
-      bonus: session.bonusAmount,
-      method: session.method,
-      status: "SUCCESS",
-      referenceId,
-      createdAt: new Date().toISOString(),
-    };
-
-    setUser((prev) => ({
-      ...prev,
-      balance: Number((prev.balance + session.totalCredit).toFixed(2)),
-    }));
-
-    setTransactions((prev) => [newTxn, ...prev]);
-    setPendingSessions((prev) => ({ ...prev, [referenceId]: completedSession }));
-
-    return { success: true, session: completedSession };
+    await refreshData();
+    return { success: true };
   };
 
   const depositFunds = async (amount: number, method: PaymentMethod) => {
     const { bonusAmount, totalCredit } = calculateDepositBonus(amount);
-    const referenceId = `DEP-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-
-    const newTxn: TransactionItem = {
-      id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
-      userId: user.id,
-      amount,
-      bonus: bonusAmount,
-      method,
-      status: "SUCCESS",
-      referenceId,
-      createdAt: new Date().toISOString(),
-    };
-
-    setUser((prev) => ({
-      ...prev,
-      balance: Number((prev.balance + totalCredit).toFixed(2)),
-    }));
-
-    setTransactions((prev) => [newTxn, ...prev]);
-
+    await refreshData();
     return { success: true, bonus: bonusAmount, total: totalCredit };
   };
 
-  const createTicket = async (input: CreateTicketInput) => {
-    const newTicketId = `TCK-${Math.floor(1000 + Math.random() * 9000)}`;
-    const newTicket: Ticket = {
-      id: newTicketId,
-      userId: user.id,
-      subject: input.subject,
-      department: input.department,
-      priority: input.priority || "MEDIUM",
-      status: "OPEN",
-      orderId: input.orderId,
-      lastReplyAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      messages: [
-        {
-          id: `msg_${Date.now()}`,
-          ticketId: newTicketId,
-          authorId: user.id,
-          authorName: user.name,
-          authorRole: "USER",
-          content: input.message,
-          attachments: input.attachments || [],
-          createdAt: new Date().toISOString(),
-        },
-      ],
-    };
+  const processPartialOrder = async () => false;
+  const processFailedOrder = async () => false;
 
-    setTickets((prev) => [newTicket, ...prev]);
-    return { success: true, ticketId: newTicketId };
+  const createTicket = async (input: CreateTicketInput) => {
+    const token = getAuthToken();
+    if (!token) return { success: false };
+    try {
+      const res = await fetch(`${API_BASE}/tickets`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          subject: input.subject,
+          message: input.message,
+          priority: input.priority || "NORMAL",
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        await refreshData();
+        return { success: true, ticketId: data.ticketId || data.id };
+      }
+      return { success: false };
+    } catch {
+      return { success: false };
+    }
   };
 
   const replyTicket = async (ticketId: string, message: string) => {
-    setTickets((prev) =>
-      prev.map((t) => {
-        if (t.id === ticketId) {
-          const userMsg = {
-            id: `msg_${Date.now()}`,
-            ticketId,
-            authorId: user.id,
-            authorName: user.name,
-            authorRole: "USER" as const,
-            content: message,
-            attachments: [],
-            createdAt: new Date().toISOString(),
-          };
-          return {
-            ...t,
-            status: "CUSTOMER_REPLY",
-            lastReplyAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            messages: [...t.messages, userMsg],
-          };
-        }
-        return t;
-      })
-    );
-    return true;
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API_BASE}/tickets/${ticketId}/reply`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message }),
+      });
+      if (res.ok) {
+        await refreshData();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
   };
 
   const updateProfile = (updates: Partial<UserProfile>) => {
@@ -603,7 +473,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   };
 
   const regenerateApiKey = () => {
-    const newKey = `aeth_live_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+    const newKey = `smm_live_${Math.random().toString(36).substring(2, 15)}`;
     setUser((prev) => ({ ...prev, apiKey: newKey }));
     return newKey;
   };
@@ -616,6 +486,9 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         services,
         transactions,
         tickets,
+        isLoading,
+        logout,
+        refreshData,
         createOrder,
         cancelOrder,
         refillOrder,

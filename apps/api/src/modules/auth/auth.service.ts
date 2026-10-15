@@ -4,7 +4,7 @@ import * as argon2 from "argon2";
 import * as jwt from "jsonwebtoken";
 import crypto from "crypto";
 
-const JWT_SECRET = process.env.JWT_SECRET || "smm_panel_jwt_secret_dev_environment_key_32bytes";
+const JWT_SECRET = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || "smm_panel_jwt_secret_dev_environment_key_32bytes";
 const JWT_EXPIRES_IN = "15m";
 const REFRESH_EXPIRES_DAYS = 7;
 

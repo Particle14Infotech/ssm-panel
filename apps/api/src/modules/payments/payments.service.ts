@@ -16,6 +16,9 @@ export class PaymentsService {
   ) {}
 
   async initiate(body: { userId: string; amount: number; method?: string; couponCode?: string }) {
+    if (!body.userId) {
+      throw new BadRequestException("Authenticated user ID is required.");
+    }
     if (!body.amount || body.amount <= 0) {
       throw new BadRequestException("Valid positive amount required.");
     }
@@ -31,7 +34,7 @@ export class PaymentsService {
       const paymentId = `pay_sbx_${Date.now()}`;
       const payment = {
         id: paymentId,
-        userId: body.userId || "usr_default_demo",
+        userId: body.userId,
         gatewayOrderId,
         amount: amt,
         bonusAmount: bonus,
@@ -53,7 +56,7 @@ export class PaymentsService {
 
     const payment = await this.prisma.payment.create({
       data: {
-        userId: body.userId || "usr_default_demo",
+        userId: body.userId,
         gatewayOrderId,
         amount: amt,
         bonusAmount: bonus,
@@ -188,11 +191,20 @@ export class PaymentsService {
     };
   }
 
-  async findAll(userId?: string) {
+  async findAll(userId?: string, requesterRole?: string) {
+    if (!this.prisma.isConnected) {
+      const all = Array.from(this.sandboxPayments.values());
+      if (requesterRole === "ADMIN") {
+        return userId ? all.filter((p) => p.userId === userId) : all;
+      }
+      return userId ? all.filter((p) => p.userId === userId) : [];
+    }
+    const where = requesterRole === "ADMIN" ? (userId ? { userId } : {}) : (userId ? { userId } : { userId: "none" });
     return await this.prisma.payment.findMany({
-      where: userId ? { userId } : {},
+      where,
       orderBy: { createdAt: "desc" },
       take: 50,
     });
   }
 }
+

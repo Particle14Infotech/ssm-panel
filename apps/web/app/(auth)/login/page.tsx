@@ -50,12 +50,26 @@ export default function LoginPage() {
 
       const json = await res.json();
       if (json.token && typeof window !== "undefined") {
+        // Clear old customer/admin cache
+        localStorage.clear();
         localStorage.setItem("authToken", json.token);
         if (json.user) {
           localStorage.setItem("authUser", JSON.stringify(json.user));
         }
+
+        // Set secure cookies for SSR / middleware
+        const role = json.user?.role || "CUSTOMER";
+        document.cookie = `authToken=${encodeURIComponent(json.token)}; path=/; max-age=604800; SameSite=Lax`;
+        document.cookie = `userRole=${encodeURIComponent(role)}; path=/; max-age=604800; SameSite=Lax`;
+
+        if (role === "ADMIN") {
+          window.location.href = "/admin/dashboard";
+        } else {
+          window.location.href = "/app/dashboard";
+        }
+        return;
       }
-      window.location.href = "/app";
+      window.location.href = "/app/dashboard";
     } catch (err: any) {
       setServerError(err.message || "Invalid credentials or server unavailable.");
     }

@@ -14,7 +14,7 @@ export class WalletService {
    */
   async getBalance(userId: string) {
     if (!this.prisma.isConnected) {
-      const bal = this.sandboxBalances.get(userId) ?? new Decimal(2450.0);
+      const bal = this.sandboxBalances.get(userId) ?? new Decimal(0);
       return {
         userId,
         balance: bal.toNumber(),
@@ -44,7 +44,7 @@ export class WalletService {
     } catch {
       return {
         userId,
-        balance: 2450.0,
+        balance: 0,
         currency: "INR",
       };
     }
@@ -267,20 +267,7 @@ export class WalletService {
   async getLedger(userId: string) {
     if (!this.prisma.isConnected) {
       const entries = this.sandboxLedger.get(userId);
-      if (entries && entries.length > 0) {
-        return entries;
-      }
-      return [
-        {
-          id: "ldg-benchmark-001",
-          amount: 500,
-          type: "DEPOSIT",
-          orderId: null,
-          referenceId: "ref-001",
-          description: "Initial Balance",
-          createdAt: new Date(),
-        },
-      ];
+      return entries || [];
     }
     try {
       const wallet = await this.prisma.wallet.findUnique({

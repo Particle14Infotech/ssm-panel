@@ -1,20 +1,46 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 
 @Injectable()
 export class TicketsService {
+  private sandboxTickets = new Map<string, any>();
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, body: { subject: string; message: string; priority?: string }) {
+    if (!userId) {
+      throw new BadRequestException("Authenticated user ID is required to create a ticket.");
+    }
+    if (!this.prisma.isConnected) {
+      const ticketId = `TCK-${Date.now()}`;
+      const ticket = {
+        id: ticketId,
+        userId,
+        subject: body.subject,
+        priority: body.priority || "NORMAL",
+        status: "OPEN",
+        messages: [
+          {
+            id: `msg-${Date.now()}`,
+            senderId: userId,
+            message: body.message,
+            createdAt: new Date(),
+          },
+        ],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      this.sandboxTickets.set(ticketId, ticket);
+      return { success: true, ticketId, ticket };
+    }
     const ticket = await this.prisma.ticket.create({
       data: {
-        userId: userId || "usr_default_demo",
+        userId,
         subject: body.subject,
         priority: body.priority || "NORMAL",
         status: "OPEN",
         messages: {
           create: {
-            senderId: userId || "usr_default_demo",
+            senderId: userId,
             message: body.message,
           },
         },
@@ -24,71 +50,67 @@ export class TicketsService {
     return { success: true, ticketId: ticket.id, ticket };
   }
 
-  async findAll(userId?: string) {
+  async findAll(userId?: string, requesterRole?: string) {
     if (!this.prisma.isConnected) {
-      return [
-        {
-          id: "TCK-1001",
-          subject: "Order Speed Inquiry",
-          priority: "NORMAL",
-          status: "OPEN",
-          messages: [{ id: "msg-1", message: "Initial inquiry", createdAt: new Date() }],
-        },
-      ];
+      const tickets = Array.from(this.sandboxTickets.values());
+      if (requesterRole === "ADMIN") {
+        return userId ? tickets.filter((t) => t.userId === userId) : tickets;
+      }
+      return userId ? tickets.filter((t) => t.userId === userId) : [];
     }
     try {
+      const where = requesterRole === "ADMIN" ? (userId ? { userId } : {}) : (userId ? { userId } : { userId: "none" });
       return await this.prisma.ticket.findMany({
-        where: userId ? { userId } : {},
+        where,
         include: { messages: true },
         orderBy: { updatedAt: "desc" },
       });
     } catch {
-      return [
-        {
-          id: "TCK-1001",
-          subject: "Order Speed Inquiry",
-          priority: "NORMAL",
-          status: "OPEN",
-          messages: [{ id: "msg-1", message: "Initial inquiry", createdAt: new Date() }],
-        },
-      ];
+      return [];
     }
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, requesterUserId?: string, requesterRole?: string) {
     if (!this.prisma.isConnected) {
-      return {
-        id,
-        subject: "Order Speed Inquiry",
-        priority: "NORMAL",
-        status: "OPEN",
-        messages: [{ id: "msg-1", message: "Initial inquiry", createdAt: new Date() }],
-      };
-    }
-    try {
-      const ticket = await this.prisma.ticket.findUnique({
-        where: { id },
-        include: { messages: { orderBy: { createdAt: "asc" } } },
-      });
+      const ticket = this.sandboxTickets.get(id);
       if (!ticket) throw new NotFoundException(`Ticket #${id} not found.`);
+      if (requesterRole !== "ADMIN" && requesterUserId && ticket.userId !== requesterUserId) {
+        throw new NotFoundException(`Ticket #${id} not found.`);
+      }
       return ticket;
-    } catch {
-      return {
-        id,
-        subject: "Order Speed Inquiry",
-        priority: "NORMAL",
-        status: "OPEN",
-        messages: [{ id: "msg-1", message: "Initial inquiry", createdAt: new Date() }],
-      };
     }
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    });
+    if (!ticket) throw new NotFoundException(`Ticket #${id} not found.`);
+
+    if (requesterRole !== "ADMIN" && requesterUserId && ticket.userId !== requesterUserId) {
+      throw new NotFoundException(`Ticket #${id} not found.`);
+    }
+
+    return ticket;
   }
 
-  async reply(id: string, senderId: string, message: string) {
-    await this.findOne(id);
+  async reply(id: string, senderId: string, message: string, requesterRole?: string) {
+    const existing = await this.findOne(id, senderId, requesterRole);
+    if (!this.prisma.isConnected) {
+      const msg = {
+        id: `msg-${Date.now()}`,
+        senderId,
+        message,
+        createdAt: new Date(),
+      };
+      existing.messages = existing.messages || [];
+      existing.messages.push(msg);
+      existing.status = "ANSWERED";
+      existing.updatedAt = new Date();
+      return { success: true, message: msg };
+    }
     const msg = await this.prisma.ticketMessage.create({
       data: {
         ticketId: id,
-        senderId: senderId || "usr_default_demo",
+        senderId,
         message,
       },
     });
@@ -99,8 +121,13 @@ export class TicketsService {
     return { success: true, message: msg };
   }
 
-  async close(id: string) {
-    await this.findOne(id);
+  async close(id: string, requesterUserId?: string, requesterRole?: string) {
+    const existing = await this.findOne(id, requesterUserId, requesterRole);
+    if (!this.prisma.isConnected) {
+      existing.status = "CLOSED";
+      existing.updatedAt = new Date();
+      return { success: true, message: `Ticket #${id} closed.`, ticket: existing };
+    }
     const updated = await this.prisma.ticket.update({
       where: { id },
       data: { status: "CLOSED" },
@@ -117,3 +144,4 @@ export class TicketsService {
     return { success: true, ticket: updated };
   }
 }
+

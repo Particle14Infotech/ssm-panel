@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 
 export interface NotificationItem {
   id: string;
@@ -11,33 +11,33 @@ export interface NotificationItem {
 
 @Injectable()
 export class NotificationsService {
-  private notifications: NotificationItem[] = [
-    {
-      id: "notif_1",
-      userId: "usr_default_demo",
-      title: "Order Fulfilled",
-      message: "Order #ORD-98421 Instagram High-Retention has successfully completed.",
-      isRead: false,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: "notif_2",
-      userId: "usr_default_demo",
-      title: "Deposit Confirmed",
-      message: "Wallet deposit of INR 2,500.00 confirmed with +10% bonus credit.",
-      isRead: true,
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
-    },
-  ];
+  private notifications: NotificationItem[] = [];
 
-  findAll(userId?: string) {
-    if (!userId) return this.notifications;
+  findAll(userId: string) {
+    if (!userId) return [];
     return this.notifications.filter((n) => n.userId === userId);
   }
 
-  markAsRead(id: string) {
-    const notif = this.notifications.find((n) => n.id === id);
-    if (notif) notif.isRead = true;
+  markAsRead(id: string, userId: string) {
+    const notif = this.notifications.find((n) => n.id === id && n.userId === userId);
+    if (!notif) {
+      throw new NotFoundException(`Notification #${id} not found.`);
+    }
+    notif.isRead = true;
     return { success: true, notification: notif };
   }
+
+  addNotification(userId: string, title: string, message: string) {
+    const item: NotificationItem = {
+      id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      userId,
+      title,
+      message,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    };
+    this.notifications.unshift(item);
+    return item;
+  }
 }
+

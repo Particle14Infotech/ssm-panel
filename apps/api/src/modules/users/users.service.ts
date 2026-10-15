@@ -8,18 +8,7 @@ export class UsersService {
 
   async getProfile(userId?: string) {
     if (!userId) {
-      return {
-        id: "usr_998124aether",
-        email: "growth.lead@nexusmedia.io",
-        name: "Alex Vance",
-        balance: 2450.0,
-        currency: "INR",
-        tier: "PRO_SCALE",
-        apiKey: "aeth_live_9f81a7b3c4d5e6f7a8b9c0d1e2f3a4b5",
-        twoFactorEnabled: true,
-        totalSpent: 48920.0,
-        totalOrders: 125,
-      };
+      throw new NotFoundException("User ID is required.");
     }
 
     const user = await this.prisma.user.findUnique({

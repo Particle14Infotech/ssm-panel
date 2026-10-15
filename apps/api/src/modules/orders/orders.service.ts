@@ -21,34 +21,14 @@ export class OrdersService {
     private readonly walletService: WalletService
   ) {}
 
-  async findAll(userId?: string) {
+  async findAll(userId?: string, requesterRole?: string) {
     if (!this.prisma.isConnected) {
       const orders = Array.from(this.sandboxOrders.values());
-      if (orders.length > 0) return orders;
-      return [
-        {
-          id: "ORD-DEMO-1001",
-          userId: userId || "usr_default_demo",
-          serviceId: "1042",
-          target: "https://instagram.com/p/demo",
-          quantity: 1000,
-          charge: new Decimal(180.0),
-          status: OrderStatus.COMPLETED,
-          startCount: 1500,
-          remains: 0,
-          createdAt: new Date(),
-          service: {
-            id: "1042",
-            name: "High Retention Views",
-            platform: "YOUTUBE",
-            refillable: true,
-            cancellable: true,
-          },
-        },
-      ];
+      if (userId) return orders.filter(o => o.userId === userId);
+      return requesterRole === "ADMIN" ? orders : [];
     }
     try {
-      const where = userId ? { userId } : {};
+      const where = requesterRole === "ADMIN" ? (userId ? { userId } : {}) : (userId ? { userId } : { userId: "none" });
       return await this.prisma.order.findMany({
         where,
         include: {
@@ -65,79 +45,34 @@ export class OrdersService {
         orderBy: { createdAt: "desc" },
       });
     } catch {
-      return [
-        {
-          id: "ORD-DEMO-1001",
-          userId: userId || "usr_default_demo",
-          serviceId: "1042",
-          target: "https://instagram.com/p/demo",
-          quantity: 1000,
-          charge: new Decimal(180.0),
-          status: OrderStatus.COMPLETED,
-          startCount: 1500,
-          remains: 0,
-          createdAt: new Date(),
-        },
-      ];
+      return [];
     }
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, requesterUserId?: string, requesterRole?: string) {
     if (!this.prisma.isConnected) {
-      if (this.sandboxOrders.has(id)) {
-        return this.sandboxOrders.get(id);
+      const sandboxOrder = this.sandboxOrders.get(id);
+      if (sandboxOrder) {
+        if (requesterRole !== "ADMIN" && requesterUserId && sandboxOrder.userId !== requesterUserId) {
+          throw new NotFoundException(`Order #${id} not found.`);
+        }
+        return sandboxOrder;
       }
-      return {
-        id,
-        userId: "usr_default_demo",
-        serviceId: "1042",
-        target: "https://instagram.com/p/demo",
-        quantity: 1000,
-        charge: new Decimal(180.0),
-        status: OrderStatus.COMPLETED,
-        startCount: 1500,
-        remains: 0,
-        createdAt: new Date(),
-        service: {
-          id: "1042",
-          refillable: true,
-          cancellable: true,
-        },
-      };
+      throw new NotFoundException(`Order #${id} not found.`);
     }
-    try {
-      const order = await this.prisma.order.findUnique({
-        where: { id },
-        include: {
-          service: true,
-        },
-      });
-      if (order) return order;
-    } catch {
-      // In sandbox mode without postgres connection
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        service: true,
+      },
+    });
+    if (!order) {
+      throw new NotFoundException(`Order #${id} not found.`);
     }
-    if (id === "ORD-DEMO-1001" || id.startsWith("ord_") || id.startsWith("ORD-")) {
-      return {
-        id,
-        userId: "usr_default_demo",
-        serviceId: "1042",
-        target: "https://instagram.com/p/demo",
-        quantity: 1000,
-        charge: new Decimal(180.0),
-        status: OrderStatus.COMPLETED,
-        startCount: 1500,
-        remains: 0,
-        service: {
-          id: "1042",
-          name: "Instagram Followers",
-          platform: "INSTAGRAM",
-          refillable: true,
-          cancellable: true,
-        } as any,
-        createdAt: new Date(),
-      };
+    if (requesterRole !== "ADMIN" && requesterUserId && order.userId !== requesterUserId) {
+      throw new NotFoundException(`Order #${id} not found.`);
     }
-    throw new NotFoundException(`Order #${id} not found.`);
+    return order;
   }
 
   /**
@@ -152,7 +87,10 @@ export class OrdersService {
       throw new BadRequestException("Quantity must be a positive integer.");
     }
 
-    const userId = input.userId || "usr_998124aether";
+    const userId = input.userId;
+    if (!userId) {
+      throw new BadRequestException("Authenticated user ID is required to dispatch orders.");
+    }
 
     // 2. Fetch service safely
     let service: any = null;
@@ -297,8 +235,8 @@ export class OrdersService {
     return result;
   }
 
-  async refill(id: string) {
-    const order = await this.findOne(id);
+  async refill(id: string, requesterUserId?: string, requesterRole?: string) {
+    const order = await this.findOne(id, requesterUserId, requesterRole);
     if (!order.service?.refillable) {
       throw new BadRequestException("This service does not support refills.");
     }
@@ -309,8 +247,8 @@ export class OrdersService {
     return { success: true, message: `Refill daemon attached to order #${id}`, order: updated };
   }
 
-  async cancel(id: string) {
-    const order = await this.findOne(id);
+  async cancel(id: string, requesterUserId?: string, requesterRole?: string) {
+    const order = await this.findOne(id, requesterUserId, requesterRole);
     if (!order.service?.cancellable) {
       throw new BadRequestException("This service cannot be cancelled.");
     }

@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import * as jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "smm_panel_jwt_secret_dev_environment_key_32bytes";
+const JWT_SECRET = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || "smm_panel_jwt_secret_dev_environment_key_32bytes";
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
