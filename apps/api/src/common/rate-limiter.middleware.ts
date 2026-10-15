@@ -19,17 +19,29 @@ export class RateLimiterMiddleware implements NestMiddleware {
 
   constructor() {
     try {
-      const host = process.env.REDIS_HOST || "localhost";
-      const port = parseInt(process.env.REDIS_PORT || "6379", 10);
-      this.redis = new Redis({
-        host,
-        port,
-        maxRetriesPerRequest: 1,
-        connectTimeout: 500,
-        enableOfflineQueue: false,
-        lazyConnect: true,
-        retryStrategy: () => null,
-      });
+      const redisUrl = process.env.REDIS_URL;
+      if (redisUrl) {
+        this.redis = new Redis(redisUrl, {
+          family: 0,
+          maxRetriesPerRequest: 1,
+          connectTimeout: 2000,
+          enableOfflineQueue: false,
+          lazyConnect: true,
+          retryStrategy: () => null,
+        });
+      } else {
+        const host = process.env.REDIS_HOST || "localhost";
+        const port = parseInt(process.env.REDIS_PORT || "6379", 10);
+        this.redis = new Redis({
+          host,
+          port,
+          maxRetriesPerRequest: 1,
+          connectTimeout: 500,
+          enableOfflineQueue: false,
+          lazyConnect: true,
+          retryStrategy: () => null,
+        });
+      }
       this.redis.on("error", () => {
         // Suppress unhandled error event and degrade to in-memory store
       });

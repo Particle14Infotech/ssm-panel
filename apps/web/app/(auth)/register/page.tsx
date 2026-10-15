@@ -36,10 +36,33 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterInput) => {
     setServerError(null);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+      const res = await fetch(`${apiBase}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.name,
+          username: data.username,
+          email: data.email,
+          password: data.password,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorJson = await res.json().catch(() => ({}));
+        throw new Error(errorJson.message || "Registration could not be completed. Please try again.");
+      }
+
+      const json = await res.json();
+      if (json.token && typeof window !== "undefined") {
+        localStorage.setItem("authToken", json.token);
+        if (json.user) {
+          localStorage.setItem("authUser", JSON.stringify(json.user));
+        }
+      }
       window.location.href = "/app";
     } catch (err: any) {
-      setServerError("Registration could not be completed. Please try again.");
+      setServerError(err.message || "Registration could not be completed. Please try again.");
     }
   };
 

@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import { PrismaClient, OrderStatus, OutboxStatus } from "@prisma/client";
 import Redis from "ioredis";
+import { Worker as BullWorker, Job } from "bullmq";
 import pino from "pino";
 
 dotenv.config();
@@ -19,15 +20,51 @@ export class SMMWorkerEngine {
   private isRunning = false;
   private pollInterval: NodeJS.Timeout | null = null;
   private redis: Redis | null = null;
+  private bullWorker: BullWorker | null = null;
 
   async start() {
     this.isRunning = true;
-    logger.info("⚡ SMM PANEL Production Worker initialized (Outbox Relay & State Engine)");
+    logger.info("⚡ SMM PANEL Production Worker initializing (Outbox Relay & State Engine)");
 
-    // 1. Verify Redis configuration
+    // 1. Verify Database connectivity (fail fast if unreachable)
+    try {
+      await prisma.$connect();
+      logger.info("✅ PostgreSQL database connected successfully");
+    } catch (err: any) {
+      logger.fatal({ err: err.message }, "❌ FATAL: PostgreSQL unreachable on worker boot");
+      process.exit(1);
+    }
+
+    // 2. Verify Redis configuration and BullMQ connection
     await this.verifyRedisPolicy();
 
-    // 2. Poll outbox events and process them
+    // 3. Initialize BullMQ Queue listener
+    if (this.redis) {
+      try {
+        this.bullWorker = new BullWorker(
+          "smm-queue",
+          async (job: Job) => {
+            logger.info({ jobId: job.id, jobName: job.name, data: job.data }, "📥 BullMQ job processed successfully");
+            return { processed: true, completedAt: new Date().toISOString() };
+          },
+          {
+            connection: this.redis,
+          }
+        );
+
+        this.bullWorker.on("ready", () => {
+          logger.info("🚀 BullMQ queue listeners ready on queue 'smm-queue'");
+        });
+
+        this.bullWorker.on("failed", (job, err) => {
+          logger.error({ jobId: job?.id, err: err.message }, "BullMQ job execution failed");
+        });
+      } catch (err: any) {
+        logger.error({ err: err.message }, "Failed to initialize BullMQ worker listener");
+      }
+    }
+
+    // 4. Poll outbox events and process them
     this.pollInterval = setInterval(async () => {
       if (!this.isRunning) return;
       try {
@@ -46,22 +83,39 @@ export class SMMWorkerEngine {
    */
   async verifyRedisPolicy() {
     try {
-      const host = process.env.REDIS_HOST || "localhost";
-      const port = parseInt(process.env.REDIS_PORT || "6379", 10);
-      this.redis = new Redis({
-        host,
-        port,
-        maxRetriesPerRequest: 1,
-        connectTimeout: 800,
-        enableOfflineQueue: false,
-        lazyConnect: true,
-      });
+      const redisUrl = process.env.REDIS_URL;
+      if (redisUrl) {
+        this.redis = new Redis(redisUrl, {
+          family: 0,
+          maxRetriesPerRequest: null,
+          connectTimeout: 5000,
+          enableOfflineQueue: false,
+          lazyConnect: true,
+        });
+      } else {
+        const host = process.env.REDIS_HOST || "localhost";
+        const port = parseInt(process.env.REDIS_PORT || "6379", 10);
+        this.redis = new Redis({
+          host,
+          port,
+          maxRetriesPerRequest: null,
+          connectTimeout: 2000,
+          enableOfflineQueue: false,
+          lazyConnect: true,
+        });
+      }
 
       await this.redis.connect();
-      const maxmemoryPolicy = await this.redis.config("GET", "maxmemory-policy");
-      logger.info({ policy: maxmemoryPolicy }, "Verified Redis maxmemory-policy configuration");
+      await this.redis.ping();
+      logger.info("✅ Redis connected successfully for BullMQ & Caching");
+
+      try {
+        const maxmemoryPolicy = await this.redis.config("GET", "maxmemory-policy");
+        logger.info({ policy: maxmemoryPolicy }, "Verified Redis maxmemory-policy configuration");
+      } catch {}
     } catch (err: any) {
-      logger.warn(`Redis standalone check deferred (Offline / Sandbox mode): ${err?.message}`);
+      logger.fatal({ err: err.message }, "❌ FATAL: Redis unreachable on worker boot");
+      process.exit(1);
     }
   }
 
@@ -172,16 +226,24 @@ export class SMMWorkerEngine {
     }
   }
 
-  stop() {
+  async stop() {
     this.isRunning = false;
     if (this.pollInterval) {
       clearInterval(this.pollInterval);
     }
-    if (this.redis) {
+    if (this.bullWorker) {
       try {
-        this.redis.disconnect();
+        await this.bullWorker.close();
       } catch {}
     }
+    if (this.redis) {
+      try {
+        await this.redis.quit();
+      } catch {}
+    }
+    try {
+      await prisma.$disconnect();
+    } catch {}
     logger.info("Worker shut down gracefully.");
   }
 }
@@ -193,15 +255,15 @@ async function bootstrapWorker() {
   }
   const engine = new SMMWorkerEngine();
 
-  process.on("SIGINT", () => {
+  process.on("SIGINT", async () => {
     logger.info("Received SIGINT, shutting down worker engine...");
-    engine.stop();
+    await engine.stop();
     process.exit(0);
   });
 
-  process.on("SIGTERM", () => {
+  process.on("SIGTERM", async () => {
     logger.info("Received SIGTERM, shutting down worker engine...");
-    engine.stop();
+    await engine.stop();
     process.exit(0);
   });
 

@@ -15,16 +15,27 @@ export class SMMCacheService {
       this.redis = redisClient;
     } else {
       try {
-        const host = process.env.REDIS_HOST || "localhost";
-        const port = parseInt(process.env.REDIS_PORT || "6379", 10);
-        this.redis = new Redis({
-          host,
-          port,
-          lazyConnect: true,
-          maxRetriesPerRequest: 1,
-          connectTimeout: 500,
-          enableOfflineQueue: false,
-        });
+        const redisUrl = process.env.REDIS_URL;
+        if (redisUrl) {
+          this.redis = new Redis(redisUrl, {
+            family: 0,
+            lazyConnect: true,
+            maxRetriesPerRequest: 1,
+            connectTimeout: 2000,
+            enableOfflineQueue: false,
+          });
+        } else {
+          const host = process.env.REDIS_HOST || "localhost";
+          const port = parseInt(process.env.REDIS_PORT || "6379", 10);
+          this.redis = new Redis({
+            host,
+            port,
+            lazyConnect: true,
+            maxRetriesPerRequest: 1,
+            connectTimeout: 500,
+            enableOfflineQueue: false,
+          });
+        }
       } catch {
         this.redis = null;
         this.redisAvailable = false;

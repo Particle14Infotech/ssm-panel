@@ -33,12 +33,31 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginInput) => {
     setServerError(null);
     try {
-      // Phase 1 preview action - connects to API in Phase 2
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      // For now redirect or show indicator
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+      const res = await fetch(`${apiBase}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: data.usernameOrEmail,
+          password: data.password,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorJson = await res.json().catch(() => ({}));
+        throw new Error(errorJson.message || "Invalid credentials or server unavailable.");
+      }
+
+      const json = await res.json();
+      if (json.token && typeof window !== "undefined") {
+        localStorage.setItem("authToken", json.token);
+        if (json.user) {
+          localStorage.setItem("authUser", JSON.stringify(json.user));
+        }
+      }
       window.location.href = "/app";
     } catch (err: any) {
-      setServerError("Invalid credentials or server unavailable.");
+      setServerError(err.message || "Invalid credentials or server unavailable.");
     }
   };
 

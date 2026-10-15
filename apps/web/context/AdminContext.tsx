@@ -211,7 +211,8 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
 
   const addProvider = async (provider: AdminProvider) => {
     try {
-      const res = await fetch("http://localhost:4000/api/v1/providers/create", {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+      const res = await fetch(`${apiBase}/providers/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -241,7 +242,8 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
 
   const syncProvider = async (providerId: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/v1/providers/${providerId}/sync`, {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+      const res = await fetch(`${apiBase}/providers/${providerId}/sync`, {
         method: "POST",
       });
       if (res.ok) {

@@ -10,9 +10,15 @@ import { validateEnvironment } from "./config/env.validation";
 async function bootstrap() {
   validateEnvironment();
 
+  const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.WEB_URL,
+    "http://localhost:3000",
+  ].filter(Boolean) as string[];
+
   const app = await NestFactory.create(AppModule, {
     cors: {
-      origin: process.env.WEB_URL || "http://localhost:3000",
+      origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
       credentials: true,
     },
     logger: ["error", "warn", "log"],
@@ -20,6 +26,16 @@ async function bootstrap() {
 
   // Enable graceful shutdown hooks for clean process termination
   app.enableShutdownHooks();
+
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set("trust proxy", 1);
+  expressApp.get("/health", (_req: any, res: any) => {
+    res.status(200).json({
+      status: "ok",
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    });
+  });
 
   app.use(helmet());
   app.setGlobalPrefix("api/v1");
@@ -48,10 +64,10 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("api/docs", app, document);
 
-  const port = process.env.PORT || 4000;
-  await app.listen(port);
-  smmLogger.info(`🚀 AETHER API running on: http://localhost:${port}/api/v1`);
-  smmLogger.info(`📚 OpenAPI Spec available at: http://localhost:${port}/api/docs`);
+  const port = Number(process.env.PORT) || 4000;
+  await app.listen(port, "0.0.0.0");
+  smmLogger.info(`🚀 AETHER API running on: http://0.0.0.0:${port}/api/v1`);
+  smmLogger.info(`📚 OpenAPI Spec available at: http://0.0.0.0:${port}/api/docs`);
 }
 
 bootstrap();
