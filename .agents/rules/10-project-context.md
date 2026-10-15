@@ -6,5 +6,5 @@
 - Dev and test databases are different (DATABASE_URL vs DATABASE_URL_TEST). Before ANY test that writes data, confirm it points at the test database (print the database name only).
 - Before using a script, open the relevant package.json and confirm it exists. Do not guess script names.
 - Before editing, read docs/GAP_REPORT.md, docs/SCREEN_MAP.md and the module you are touching.
-- Brand name, currency (rupees via Intl) and contact details come from the BRAND config. Never hard-code "AETHER" or "$".
+- Brand name, currency (rupees via Intl) and contact details come from the BRAND config. Never hard-code "SMM PANEL" or "$".
 - Copy must be plain and honest. No hype, no guarantees, no "real accounts", no invented stats, clients or testimonials.
