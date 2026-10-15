@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, ConflictException } from "@nestjs/common";
+import { Injectable, BadRequestException, NotFoundException, ConflictException, Logger } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { WalletService } from "../wallet/wallet.service";
 import { calculateOrderCharge } from "../../common/money.util";
@@ -13,22 +13,58 @@ export interface CreateOrderDto {
   idempotencyKey?: string;
 }
 
+export interface OrderFilterDto {
+  status?: string;
+  query?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
   private sandboxOrders = new Map<string, any>();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly walletService: WalletService
   ) {}
 
-  async findAll(userId?: string, requesterRole?: string) {
+  async findAll(userId?: string, requesterRole?: string, filters?: OrderFilterDto) {
     if (!this.prisma.isConnected) {
       const orders = Array.from(this.sandboxOrders.values());
-      if (userId) return orders.filter(o => o.userId === userId);
+      if (userId) return orders.filter((o) => o.userId === userId);
       return requesterRole === "ADMIN" ? orders : [];
     }
+
     try {
-      const where = requesterRole === "ADMIN" ? (userId ? { userId } : {}) : (userId ? { userId } : { userId: "none" });
+      const where: any = {};
+      if (requesterRole === "ADMIN") {
+        if (userId) where.userId = userId;
+      } else {
+        if (!userId) return [];
+        where.userId = userId;
+      }
+
+      if (filters?.status && filters.status !== "ALL") {
+        where.status = filters.status.toUpperCase();
+      }
+
+      if (filters?.query && filters.query.trim()) {
+        const q = filters.query.trim();
+        where.OR = [
+          { id: { contains: q, mode: "insensitive" } },
+          { target: { contains: q, mode: "insensitive" } },
+          { service: { name: { contains: q, mode: "insensitive" } } },
+        ];
+      }
+
+      if (filters?.startDate || filters?.endDate) {
+        where.createdAt = {};
+        if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
+        if (filters.endDate) where.createdAt.lte = new Date(filters.endDate);
+      }
+
       return await this.prisma.order.findMany({
         where,
         include: {
@@ -41,10 +77,16 @@ export class OrdersService {
               cancellable: true,
             },
           },
+          history: {
+            orderBy: { createdAt: "asc" },
+          },
+          refunds: true,
+          provider: requesterRole === "ADMIN" ? { select: { id: true, name: true } } : false,
         },
         orderBy: { createdAt: "desc" },
       });
-    } catch {
+    } catch (err: any) {
+      this.logger.error(`Error querying orders: ${err.message}`);
       return [];
     }
   }
@@ -60,18 +102,27 @@ export class OrdersService {
       }
       throw new NotFoundException(`Order #${id} not found.`);
     }
+
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: {
         service: true,
+        history: {
+          orderBy: { createdAt: "asc" },
+        },
+        refunds: true,
+        provider: requesterRole === "ADMIN" ? { select: { id: true, name: true } } : false,
       },
     });
+
     if (!order) {
       throw new NotFoundException(`Order #${id} not found.`);
     }
+
     if (requesterRole !== "ADMIN" && requesterUserId && order.userId !== requesterUserId) {
       throw new NotFoundException(`Order #${id} not found.`);
     }
+
     return order;
   }
 
@@ -105,26 +156,13 @@ export class OrdersService {
     }
 
     if (!service) {
-      if (!this.prisma.isConnected) {
-        service = {
-          id: input.serviceId || "1042",
-          name: "High Retention Views",
-          platform: "YOUTUBE",
-          ratePer1000: 180.0,
-          minQty: 100,
-          maxQty: 500000,
-          status: "ACTIVE",
-          isDeleted: false,
-          refillable: true,
-          cancellable: true,
-        };
-      } else {
-        throw new BadRequestException("Invalid service ID provided.");
-      }
+      throw new BadRequestException("Invalid service ID provided.");
     }
-    if (service.status !== "ACTIVE" || service.isDeleted) {
+
+    if (service.status !== "ACTIVE" || service.isDeleted || service.active === false) {
       throw new BadRequestException("Service is currently unavailable.");
     }
+
     if (input.quantity < service.minQty || input.quantity > service.maxQty) {
       throw new BadRequestException(
         `Quantity must be between ${service.minQty} and ${service.maxQty}.`
@@ -134,7 +172,7 @@ export class OrdersService {
     // 3. Compute accurate financial charge
     const charge = calculateOrderCharge(input.quantity, service.ratePer1000);
 
-    // 4. Atomic Execution: Debit wallet + Insert Order + Enqueue Outbox Event
+    // 4. Atomic Execution: Debit wallet + Insert Order + Record History + Write Ledger + Enqueue Outbox
     if (!this.prisma.isConnected) {
       const orderId = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
       await this.walletService.debitForOrder(
@@ -151,20 +189,31 @@ export class OrdersService {
         target: input.target,
         quantity: input.quantity,
         charge: typeof charge === "object" && "toNumber" in charge ? (charge as any).toNumber() : Number(charge),
-        status: OrderStatus.COMPLETED,
-        startCount: 1500,
-        remains: 0,
+        status: OrderStatus.PENDING,
+        startCount: 0,
+        remains: input.quantity,
         idempotencyKey: input.idempotencyKey || null,
         createdAt: new Date(),
         updatedAt: new Date(),
         service,
+        history: [
+          {
+            id: `hist_${Date.now()}`,
+            orderId,
+            status: OrderStatus.PENDING,
+            startCount: 0,
+            remains: input.quantity,
+            notes: "Order placed and queued for provider dispatch",
+            createdAt: new Date(),
+          },
+        ],
       };
       this.sandboxOrders.set(orderId, order);
       return order;
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
-      // Create order in PENDING status
+      // 4a. Create order in PENDING status
       const order = await tx.order.create({
         data: {
           userId,
@@ -173,6 +222,7 @@ export class OrdersService {
           quantity: input.quantity,
           charge,
           status: OrderStatus.PENDING,
+          providerId: service.providerId || null,
           startCount: 0,
           remains: input.quantity,
           idempotencyKey: input.idempotencyKey || null,
@@ -180,7 +230,18 @@ export class OrdersService {
         include: { service: true },
       });
 
-      // Debit wallet with row-level lock
+      // 4b. Record initial status history
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          status: OrderStatus.PENDING,
+          startCount: 0,
+          remains: input.quantity,
+          notes: "Order placed and queued for provider dispatch",
+        },
+      });
+
+      // 4c. Debit wallet with row-level lock
       const [walletRow] = await tx.$queryRawUnsafe<any[]>(
         `SELECT id, balance FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
         userId
@@ -200,7 +261,7 @@ export class OrdersService {
         data: { balance: newBalance },
       });
 
-      // Write ledger record
+      // 4d. Write immutable ledger record
       await tx.ledgerEntry.create({
         data: {
           walletId: walletRow.id,
@@ -212,7 +273,7 @@ export class OrdersService {
         },
       });
 
-      // Enqueue Outbox event
+      // 4e. Enqueue Outbox event
       await tx.outboxEvent.create({
         data: {
           aggregate: "ORDER",
@@ -240,92 +301,265 @@ export class OrdersService {
     if (!order.service?.refillable) {
       throw new BadRequestException("This service does not support refills.");
     }
-    const updated = await this.prisma.order.update({
-      where: { id },
-      data: { status: OrderStatus.IN_PROGRESS },
-    });
-    return { success: true, message: `Refill daemon attached to order #${id}`, order: updated };
+
+    if (this.prisma.isConnected) {
+      await this.prisma.orderStatusHistory.create({
+        data: {
+          orderId: id,
+          status: order.status,
+          notes: "Refill request initiated by user",
+        },
+      });
+
+      await this.prisma.outboxEvent.create({
+        data: {
+          aggregate: "ORDER",
+          eventType: "ORDER_REFILL_REQUESTED",
+          payload: {
+            orderId: id,
+            providerId: order.providerId,
+            providerOrderId: order.providerOrderId,
+          },
+          status: OutboxStatus.PENDING,
+        },
+      });
+    }
+
+    return { success: true, message: `Refill request submitted for order #${id}`, orderId: id };
   }
 
   async cancel(id: string, requesterUserId?: string, requesterRole?: string) {
     const order = await this.findOne(id, requesterUserId, requesterRole);
-    if (!order.service?.cancellable) {
+    if (!order.service?.cancellable && requesterRole !== "ADMIN") {
       throw new BadRequestException("This service cannot be cancelled.");
     }
     if (order.status === OrderStatus.CANCELLED || order.status === OrderStatus.REFUNDED) {
       throw new ConflictException("Order is already cancelled or refunded.");
     }
+    if (order.status === OrderStatus.COMPLETED && requesterRole !== "ADMIN") {
+      throw new ConflictException("Completed orders cannot be cancelled.");
+    }
 
-    // Atomic cancel and full refund
-    const refundRes = await this.walletService.refundOrder(
-      order.userId,
-      order.id,
-      new Decimal(order.charge.toString()),
-      `Full Refund for Cancelled Order #${order.id}`
-    );
+    if (!this.prisma.isConnected) {
+      order.status = OrderStatus.CANCELLED;
+      return { success: true, message: `Order #${id} cancelled and refunded.`, order };
+    }
 
-    const updated = await this.prisma.order.update({
-      where: { id },
-      data: { status: OrderStatus.CANCELLED },
+    const refundCharge = new Decimal(order.charge.toString());
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      // 1. Lock wallet
+      const [walletRow] = await tx.$queryRawUnsafe<any[]>(
+        `SELECT id, balance FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
+        order.userId
+      );
+      if (!walletRow) {
+        throw new BadRequestException("Wallet not found for refund.");
+      }
+
+      // Check if refund ledger entry already exists
+      const existingRefund = await tx.ledgerEntry.findFirst({
+        where: { orderId: order.id, type: "REFUND" },
+      });
+      if (existingRefund) {
+        throw new ConflictException("Order refund already processed.");
+      }
+
+      const currentBalance = new Decimal(walletRow.balance.toString());
+      const newBalance = currentBalance.plus(refundCharge);
+
+      // Credit wallet
+      await tx.wallet.update({
+        where: { id: walletRow.id },
+        data: { balance: newBalance },
+      });
+
+      // Write ledger entry
+      await tx.ledgerEntry.create({
+        data: {
+          walletId: walletRow.id,
+          amount: refundCharge,
+          type: "REFUND",
+          orderId: order.id,
+          description: `Full Refund for Cancelled Order #${order.id}`,
+        },
+      });
+
+      // Write Refund table row
+      await tx.refund.create({
+        data: {
+          orderId: order.id,
+          userId: order.userId,
+          amount: refundCharge,
+          reason: "Order cancellation",
+        },
+      });
+
+      // Update Order status
+      const updatedOrder = await tx.order.update({
+        where: { id },
+        data: { status: OrderStatus.CANCELLED },
+      });
+
+      // Record OrderStatusHistory
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: id,
+          status: OrderStatus.CANCELLED,
+          remains: order.remains,
+          startCount: order.startCount,
+          notes: "Order cancelled and fully refunded",
+        },
+      });
+
+      return { updatedOrder, newBalance };
     });
 
     return {
       success: true,
       message: `Order #${id} cancelled and refunded.`,
-      newBalance: refundRes.newBalance,
-      order: updated,
+      newBalance: result.newBalance,
+      order: result.updatedOrder,
     };
   }
 
-  async updateStatus(id: string, status: OrderStatus) {
+  async updateStatus(id: string, status: OrderStatus, details?: string) {
+    if (!this.prisma.isConnected) return { success: true };
+
     const updated = await this.prisma.order.update({
       where: { id },
       data: { status },
     });
+
+    await this.prisma.orderStatusHistory.create({
+      data: {
+        orderId: id,
+        status,
+        notes: details || `Status manually updated to ${status}`,
+      },
+    });
+
     return { success: true, order: updated };
   }
 
   async adminRefund(id: string, refundAmount?: number) {
     const order = await this.findOne(id);
     const amount = refundAmount ? new Decimal(refundAmount) : new Decimal(order.charge.toString());
-    const res = await this.walletService.refundOrder(
-      order.userId,
-      order.id,
-      amount,
-      `Administrative Refund for Order #${order.id}`
-    );
-    const updated = await this.prisma.order.update({
-      where: { id },
-      data: { status: OrderStatus.REFUNDED },
+
+    if (!this.prisma.isConnected) {
+      return { success: true, message: `Refund processed for #${id}` };
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const [walletRow] = await tx.$queryRawUnsafe<any[]>(
+        `SELECT id, balance FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
+        order.userId
+      );
+      if (!walletRow) throw new BadRequestException("Wallet not found.");
+
+      const currentBalance = new Decimal(walletRow.balance.toString());
+      const newBalance = currentBalance.plus(amount);
+
+      await tx.wallet.update({
+        where: { id: walletRow.id },
+        data: { balance: newBalance },
+      });
+
+      await tx.ledgerEntry.create({
+        data: {
+          walletId: walletRow.id,
+          amount,
+          type: "REFUND",
+          orderId: order.id,
+          description: `Administrative Refund for Order #${order.id}`,
+        },
+      });
+
+      await tx.refund.create({
+        data: {
+          orderId: order.id,
+          userId: order.userId,
+          amount,
+          reason: "Administrative refund",
+        },
+      });
+
+      const updated = await tx.order.update({
+        where: { id },
+        data: { status: OrderStatus.REFUNDED },
+      });
+
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: id,
+          status: OrderStatus.REFUNDED,
+          notes: `Administrative refund of ₹${amount.toFixed(2)} processed`,
+        },
+      });
+
+      return { updated, newBalance };
     });
-    return { success: true, message: `Refund processed for #${id}`, newBalance: res.newBalance, order: updated };
+
+    return { success: true, message: `Refund processed for #${id}`, newBalance: result.newBalance, order: result.updated };
   }
 
   async retry(id: string) {
+    if (!this.prisma.isConnected) return { success: true };
+
     const updated = await this.prisma.order.update({
       where: { id },
       data: { status: OrderStatus.PROCESSING },
     });
+
+    await this.prisma.orderStatusHistory.create({
+      data: {
+        orderId: id,
+        status: OrderStatus.PROCESSING,
+        notes: "Order dispatch retry queued",
+      },
+    });
+
     await this.prisma.outboxEvent.create({
       data: {
         aggregate: "ORDER",
-        eventType: "ORDER_RETRY",
+        eventType: "ORDER_CREATED",
         payload: { orderId: id },
         status: OutboxStatus.PENDING,
       },
     });
+
     return { success: true, message: `Order #${id} queued for retry dispatch.`, order: updated };
   }
 
   async changeProvider(id: string, providerId: string) {
+    if (!this.prisma.isConnected) return { success: true };
+
     const updated = await this.prisma.order.update({
       where: { id },
       data: { providerId },
     });
+
+    await this.prisma.orderStatusHistory.create({
+      data: {
+        orderId: id,
+        status: updated.status,
+        notes: `Upstream provider updated to ${providerId}`,
+      },
+    });
+
     return { success: true, message: `Upstream provider updated to ${providerId}`, order: updated };
   }
 
   async updateNotes(id: string, notes: string) {
+    if (this.prisma.isConnected) {
+      await this.prisma.orderStatusHistory.create({
+        data: {
+          orderId: id,
+          status: OrderStatus.PROCESSING,
+          notes: `Admin note: ${notes}`,
+        },
+      });
+    }
     return { success: true, orderId: id, notes, message: "Administrative audit note updated." };
   }
 }

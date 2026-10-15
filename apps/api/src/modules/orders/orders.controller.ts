@@ -5,6 +5,7 @@ import {
   Body,
   Param,
   Put,
+  Query,
   NotFoundException,
   UseGuards,
 } from "@nestjs/common";
@@ -23,8 +24,14 @@ export class OrdersController {
   @Get()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Get User Orders Stream" })
-  findAll(@CurrentUser() user: CurrentUserData) {
-    return this.ordersService.findAll(user.id, user.role);
+  findAll(
+    @CurrentUser() user: CurrentUserData,
+    @Query("status") status?: string,
+    @Query("q") query?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string
+  ) {
+    return this.ordersService.findAll(user.id, user.role, { status, query, startDate, endDate });
   }
 
   @Get(":id")

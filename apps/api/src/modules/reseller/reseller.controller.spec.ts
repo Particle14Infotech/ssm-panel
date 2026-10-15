@@ -56,11 +56,11 @@ describe("ResellerController & API B2B Endpoints", () => {
   it("rotates reseller API key securely", () => {
     const rotated = controller.rotateApiKey();
     expect(rotated.success).toBe(true);
-    expect(rotated.apiKey.startsWith("aeth_live_")).toBe(true);
+    expect(rotated.apiKey.startsWith("smm_live_")).toBe(true);
   });
 
-  it("calculates wholesale pricing with tier discount", () => {
-    const pricing = controller.getPricing();
+  it("calculates wholesale pricing with tier discount", async () => {
+    const pricing = await controller.getPricing();
     expect(pricing.length).toBe(1);
     expect(pricing[0].resellerRate).toBeLessThan(pricing[0].standardRate);
   });

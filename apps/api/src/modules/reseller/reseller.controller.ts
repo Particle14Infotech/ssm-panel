@@ -22,8 +22,8 @@ export class ResellerController {
 
   @Get("pricing")
   @ApiOperation({ summary: "Get Wholesale Tiered Pricing Matrix" })
-  getPricing() {
-    return this.resellerService.getPricing();
+  async getPricing() {
+    return await this.resellerService.getPricing();
   }
 
   @Put("pricing")
@@ -42,8 +42,8 @@ export class ResellerController {
   @ApiSecurity("reseller-api-key")
   @UseGuards(ApiKeyAuthGuard)
   @ApiOperation({ summary: "Public Reseller v1 Services Catalog" })
-  getPublicServices() {
-    return this.resellerService.getPublicServices();
+  async getPublicServices() {
+    return await this.resellerService.getPublicServices();
   }
 
   @Post("v1/orders")

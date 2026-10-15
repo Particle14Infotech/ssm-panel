@@ -8,7 +8,7 @@ const AUTH_TAG_LENGTH = 16; // 128 bits auth tag
  * Derives or validates 32-byte master encryption key from environment variable
  */
 function getMasterKey(): Buffer {
-  const secret = process.env.PROVIDER_KEY_SECRET;
+  const secret = process.env.PROVIDER_KEY_ENCRYPTION_KEY || process.env.PROVIDER_KEY_SECRET;
   if (!secret) {
     // Default fallback in local dev sandbox
     return crypto.scryptSync("smm_master_provider_key_fallback_dev", "salt_smm", 32);

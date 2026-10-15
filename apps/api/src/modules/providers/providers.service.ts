@@ -1,6 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
+import { Injectable, BadRequestException, NotFoundException, Logger } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { encryptProviderKey, decryptProviderKey } from "../../common/crypto.util";
+import { SmmProviderClient } from "./smm-provider.client";
+import { Decimal } from "decimal.js";
 
 export interface ProviderDto {
   id: string;
@@ -9,172 +11,318 @@ export interface ProviderDto {
   apiKeyMasked: string;
   balance: number;
   currency: string;
-  status: string;
+  active: boolean;
   serviceCount: number;
-  lastSyncAt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 @Injectable()
 export class ProvidersService {
-  // In-memory persistent registry with encrypted keys
-  private providers: Array<{
-    id: string;
-    name: string;
-    apiUrl: string;
-    encryptedApiKey: string;
-    balance: number;
-    currency: string;
-    status: string;
-    serviceCount: number;
-    lastSyncAt: string;
-  }> = [
-    {
-      id: "prov_smm_main",
-      name: "ApexSMM Global API",
-      apiUrl: "https://api.apexsmm.com/v2",
-      encryptedApiKey: encryptProviderKey("sk_live_apex_smm_demo_wholesaler_key"),
-      balance: 4820.5,
-      currency: "USD",
-      status: "CONNECTED",
-      serviceCount: 420,
-      lastSyncAt: new Date().toISOString(),
-    },
-    {
-      id: "prov_speed_router",
-      name: "HyperRoute High-Speed Provider",
-      apiUrl: "https://router.hyperroute.io/api/v1",
-      encryptedApiKey: encryptProviderKey("sk_live_hyper_route_fast_key"),
-      balance: 1980.25,
-      currency: "USD",
-      status: "CONNECTED",
-      serviceCount: 154,
-      lastSyncAt: new Date().toISOString(),
-    },
-  ];
+  private readonly logger = new Logger(ProvidersService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly smmClient: SmmProviderClient
+  ) {}
 
-  findAll(): ProviderDto[] {
-    return this.providers.map((p) => {
-      // Decrypt to verify integrity then mask for API response
-      const plain = decryptProviderKey(p.encryptedApiKey);
-      const masked = `${plain.substring(0, 7)}...${plain.substring(plain.length - 4)}`;
-      return {
-        id: p.id,
-        name: p.name,
-        apiUrl: p.apiUrl,
-        apiKeyMasked: masked,
-        balance: p.balance,
-        currency: p.currency,
-        status: p.status,
-        serviceCount: p.serviceCount,
-        lastSyncAt: p.lastSyncAt,
-      };
+  private maskKey(plain: string): string {
+    if (!plain || plain.length <= 8) return "••••••••";
+    return `${plain.substring(0, 4)}••••${plain.substring(plain.length - 4)}`;
+  }
+
+  async findAll(): Promise<ProviderDto[]> {
+    if (!this.prisma.isConnected) {
+      return [];
+    }
+
+    try {
+      const providers = await this.prisma.provider.findMany({
+        include: {
+          _count: {
+            select: { services: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      return providers.map((p) => {
+        let plain = "";
+        try {
+          plain = decryptProviderKey(p.apiKeyEncrypted);
+        } catch {
+          plain = "••••••••";
+        }
+
+        return {
+          id: p.id,
+          name: p.name,
+          apiUrl: p.apiUrl,
+          apiKeyMasked: this.maskKey(plain),
+          balance: Number(p.balance),
+          currency: p.currency,
+          active: p.active,
+          serviceCount: p._count.services,
+          createdAt: p.createdAt.toISOString(),
+          updatedAt: p.updatedAt.toISOString(),
+        };
+      });
+    } catch (err: any) {
+      this.logger.error(`Failed to list providers: ${err.message}`);
+      return [];
+    }
+  }
+
+  async findOne(id: string): Promise<ProviderDto> {
+    if (!this.prisma.isConnected) {
+      throw new NotFoundException(`Provider #${id} not found.`);
+    }
+
+    const p = await this.prisma.provider.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { services: true },
+        },
+      },
     });
-  }
 
-  create(input: { name: string; apiUrl: string; apiKey: string }): ProviderDto {
-    if (!input.name || !input.apiUrl || !input.apiKey) {
-      throw new BadRequestException("Name, apiUrl, and apiKey are required.");
+    if (!p) {
+      throw new NotFoundException(`Provider #${id} not found.`);
     }
 
-    const encryptedApiKey = encryptProviderKey(input.apiKey.trim());
-    const newProv = {
-      id: `prov_${Math.random().toString(36).substring(2, 8)}`,
-      name: input.name.trim(),
-      apiUrl: input.apiUrl.trim(),
-      encryptedApiKey,
-      balance: 1000.0,
-      currency: "USD",
-      status: "CONNECTED",
-      serviceCount: 100,
-      lastSyncAt: new Date().toISOString(),
-    };
-
-    this.providers.unshift(newProv);
-
-    const masked = `${input.apiKey.substring(0, 7)}...${input.apiKey.substring(input.apiKey.length - 4)}`;
-    return {
-      id: newProv.id,
-      name: newProv.name,
-      apiUrl: newProv.apiUrl,
-      apiKeyMasked: masked,
-      balance: newProv.balance,
-      currency: newProv.currency,
-      status: newProv.status,
-      serviceCount: newProv.serviceCount,
-      lastSyncAt: newProv.lastSyncAt,
-    };
-  }
-
-  async sync(id: string) {
-    const prov = this.providers.find((p) => p.id === id);
-    if (!prov) throw new NotFoundException(`Provider #${id} not found.`);
-
-    // Decrypt key to simulate upstream authentication
-    const decryptedKey = decryptProviderKey(prov.encryptedApiKey);
-    if (!decryptedKey) {
-      throw new BadRequestException("Decryption of provider key failed.");
+    let plain = "";
+    try {
+      plain = decryptProviderKey(p.apiKeyEncrypted);
+    } catch {
+      plain = "••••••••";
     }
 
-    prov.lastSyncAt = new Date().toISOString();
-    prov.balance = Number((prov.balance + (Math.random() * 50 - 20)).toFixed(2));
-
-    return {
-      success: true,
-      providerId: prov.id,
-      name: prov.name,
-      balance: prov.balance,
-      currency: prov.currency,
-      syncedServices: prov.serviceCount,
-      latencyMs: 14.2,
-      timestamp: prov.lastSyncAt,
-    };
-  }
-
-  findOne(id: string): ProviderDto {
-    const p = this.providers.find((prov) => prov.id === id);
-    if (!p) throw new NotFoundException(`Provider #${id} not found.`);
-    const plain = decryptProviderKey(p.encryptedApiKey);
-    const masked = `${plain.substring(0, 7)}...${plain.substring(plain.length - 4)}`;
     return {
       id: p.id,
       name: p.name,
       apiUrl: p.apiUrl,
-      apiKeyMasked: masked,
-      balance: p.balance,
+      apiKeyMasked: this.maskKey(plain),
+      balance: Number(p.balance),
       currency: p.currency,
-      status: p.status,
-      serviceCount: p.serviceCount,
-      lastSyncAt: p.lastSyncAt,
+      active: p.active,
+      serviceCount: p._count.services,
+      createdAt: p.createdAt.toISOString(),
+      updatedAt: p.updatedAt.toISOString(),
     };
   }
 
-  update(id: string, input: { name?: string; apiUrl?: string; apiKey?: string; status?: string }): ProviderDto {
-    const p = this.providers.find((prov) => prov.id === id);
-    if (!p) throw new NotFoundException(`Provider #${id} not found.`);
-    if (input.name) p.name = input.name;
-    if (input.apiUrl) p.apiUrl = input.apiUrl;
-    if (input.status) p.status = input.status;
-    if (input.apiKey) p.encryptedApiKey = encryptProviderKey(input.apiKey);
+  async create(input: { name: string; apiUrl: string; apiKey: string; currency?: string }): Promise<ProviderDto> {
+    if (!input.name || !input.apiUrl || !input.apiKey) {
+      throw new BadRequestException("Name, apiUrl, and apiKey are required.");
+    }
+
+    const encryptedKey = encryptProviderKey(input.apiKey.trim());
+
+    if (!this.prisma.isConnected) {
+      const mockId = `prov_${Date.now()}`;
+      return {
+        id: mockId,
+        name: input.name.trim(),
+        apiUrl: input.apiUrl.trim(),
+        apiKeyMasked: this.maskKey(input.apiKey.trim()),
+        balance: 0,
+        currency: input.currency || "INR",
+        active: true,
+        serviceCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    const created = await this.prisma.provider.create({
+      data: {
+        name: input.name.trim(),
+        apiUrl: input.apiUrl.trim(),
+        apiKeyEncrypted: encryptedKey,
+        currency: input.currency || "INR",
+        balance: 0,
+        active: true,
+      },
+    });
+
+    return {
+      id: created.id,
+      name: created.name,
+      apiUrl: created.apiUrl,
+      apiKeyMasked: this.maskKey(input.apiKey.trim()),
+      balance: Number(created.balance),
+      currency: created.currency,
+      active: created.active,
+      serviceCount: 0,
+      createdAt: created.createdAt.toISOString(),
+      updatedAt: created.updatedAt.toISOString(),
+    };
+  }
+
+  async update(id: string, input: { name?: string; apiUrl?: string; apiKey?: string; active?: boolean }): Promise<ProviderDto> {
+    const existing = await this.prisma.provider.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Provider #${id} not found.`);
+    }
+
+    const data: any = {};
+    if (input.name) data.name = input.name.trim();
+    if (input.apiUrl) data.apiUrl = input.apiUrl.trim();
+    if (typeof input.active === "boolean") data.active = input.active;
+    if (input.apiKey && input.apiKey.trim()) {
+      data.apiKeyEncrypted = encryptProviderKey(input.apiKey.trim());
+    }
+
+    await this.prisma.provider.update({
+      where: { id },
+      data,
+    });
+
     return this.findOne(id);
   }
 
-  remove(id: string) {
-    const idx = this.providers.findIndex((prov) => prov.id === id);
-    if (idx === -1) throw new NotFoundException(`Provider #${id} not found.`);
-    this.providers.splice(idx, 1);
+  async remove(id: string) {
+    const existing = await this.prisma.provider.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException(`Provider #${id} not found.`);
+    }
+
+    await this.prisma.provider.delete({ where: { id } });
     return { success: true, message: `Provider #${id} deleted.` };
   }
 
-  getBalance(id: string) {
-    const p = this.findOne(id);
+  async getBalance(id: string) {
+    const p = await this.prisma.provider.findUnique({ where: { id } });
+    if (!p) throw new NotFoundException(`Provider #${id} not found.`);
+
+    const decryptedKey = decryptProviderKey(p.apiKeyEncrypted);
+    try {
+      const upstream = await this.smmClient.getBalance(p.apiUrl, decryptedKey);
+      const balanceNum = parseFloat(String(upstream.balance || "0"));
+
+      await this.prisma.provider.update({
+        where: { id },
+        data: { balance: new Decimal(balanceNum) },
+      });
+
+      return {
+        providerId: p.id,
+        name: p.name,
+        balance: balanceNum,
+        currency: upstream.currency || p.currency,
+        status: "CONNECTED",
+      };
+    } catch (err: any) {
+      return {
+        providerId: p.id,
+        name: p.name,
+        balance: Number(p.balance),
+        currency: p.currency,
+        status: "ERROR",
+        error: err.message,
+      };
+    }
+  }
+
+  async sync(id: string) {
+    const balanceRes = await this.getBalance(id);
     return {
+      success: true,
+      ...balanceRes,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Import services from upstream provider and apply margin %
+   */
+  async importServices(id: string, options: { marginPercent?: number }) {
+    const p = await this.prisma.provider.findUnique({ where: { id } });
+    if (!p) throw new NotFoundException(`Provider #${id} not found.`);
+
+    const margin = typeof options.marginPercent === "number" ? options.marginPercent : 20; // default 20%
+    const decryptedKey = decryptProviderKey(p.apiKeyEncrypted);
+    const upstreamServices = await this.smmClient.getServices(p.apiUrl, decryptedKey);
+
+    let importedCount = 0;
+    for (const item of upstreamServices) {
+      // Find or create category
+      const catName = item.category || "General";
+      const catSlug = catName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      
+      const category = await this.prisma.category.upsert({
+        where: { slug: catSlug },
+        update: {},
+        create: {
+          name: catName,
+          slug: catSlug,
+        },
+      });
+
+      const providerCost = parseFloat(String(item.rate || "100"));
+      // Rate = provider cost + margin %
+      const sellingRate = Number((providerCost * (1 + margin / 100)).toFixed(2));
+
+      // Platform detection
+      let platform = "OTHER";
+      const nameUpper = (item.name + " " + catName).toUpperCase();
+      if (nameUpper.includes("INSTAGRAM")) platform = "INSTAGRAM";
+      else if (nameUpper.includes("YOUTUBE")) platform = "YOUTUBE";
+      else if (nameUpper.includes("TIKTOK")) platform = "TIKTOK";
+      else if (nameUpper.includes("TELEGRAM")) platform = "TELEGRAM";
+      else if (nameUpper.includes("TWITTER") || nameUpper.includes(" X ")) platform = "X_TWITTER";
+      else if (nameUpper.includes("FACEBOOK")) platform = "FACEBOOK";
+
+      const existingService = await this.prisma.service.findFirst({
+        where: {
+          providerId: p.id,
+          providerServiceId: String(item.service),
+        },
+      });
+
+      if (existingService) {
+        await this.prisma.service.update({
+          where: { id: existingService.id },
+          data: {
+            name: item.name,
+            categoryId: category.id,
+            ratePer1000: new Decimal(sellingRate),
+            minQty: parseInt(String(item.min || 10), 10),
+            maxQty: parseInt(String(item.max || 100000), 10),
+            refillable: Boolean(item.refill),
+            cancellable: Boolean(item.cancel),
+            description: item.description || existingService.description,
+            active: true,
+            isDeleted: false,
+          },
+        });
+      } else {
+        await this.prisma.service.create({
+          data: {
+            name: item.name,
+            categoryId: category.id,
+            platform,
+            ratePer1000: new Decimal(sellingRate),
+            minQty: parseInt(String(item.min || 10), 10),
+            maxQty: parseInt(String(item.max || 100000), 10),
+            providerId: p.id,
+            providerServiceId: String(item.service),
+            refillable: Boolean(item.refill),
+            cancellable: Boolean(item.cancel),
+            description: item.description || "",
+            active: true,
+          },
+        });
+      }
+      importedCount++;
+    }
+
+    return {
+      success: true,
       providerId: p.id,
-      name: p.name,
-      balance: p.balance,
-      currency: p.currency,
-      status: p.status,
+      importedCount,
+      marginPercent: margin,
     };
   }
 }

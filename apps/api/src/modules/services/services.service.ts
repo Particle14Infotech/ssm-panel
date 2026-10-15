@@ -1,200 +1,261 @@
-import { Injectable } from "@nestjs/common";
-import { ServiceItem } from "@smm/contracts";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../../common/prisma.service";
+import { ServiceItem, ServicePlatform } from "@smm/contracts";
+import { Decimal } from "decimal.js";
 
 @Injectable()
 export class ServicesService {
-  private services: ServiceItem[] = [
-    {
-      id: "1042",
-      categoryId: "cat_ig",
-      categoryName: "Followers",
-      name: "Instagram High-Retention Followers [Real Active • 0% Drop • 30D Refill]",
-      platform: "INSTAGRAM",
-      ratePer1000: 180.0,
-      minQty: 100,
-      maxQty: 500000,
-      avgProcessingSpeed: "10k - 50k / Day",
-      avgStartTime: "0 - 15 mins",
-      refillable: true,
-      cancellable: true,
-      description: "Premium algorithmic node distribution with organic drip ramp.",
-      status: "ACTIVE",
-      badge: "0% Drop Guarantee",
-    },
-    {
-      id: "1045",
-      categoryId: "cat_ig",
-      categoryName: "Views",
-      name: "Instagram Reel Views [Instant Delivery • Ultra Fast • Explore Push]",
-      platform: "INSTAGRAM",
-      ratePer1000: 22.0,
-      minQty: 500,
-      maxQty: 5000000,
-      avgProcessingSpeed: "500k / Hour",
-      avgStartTime: "Instant",
-      refillable: false,
-      cancellable: true,
-      description: "Ultra low-latency dispatch. Triggers high watch-time signals.",
-      status: "ACTIVE",
-      badge: "Explore Push",
-    },
-    {
-      id: "2015",
-      categoryId: "cat_yt",
-      categoryName: "Views",
-      name: "YouTube High Retention Views [Suggested Videos & Search Traffic]",
-      platform: "YOUTUBE",
-      ratePer1000: 160.0,
-      minQty: 1000,
-      maxQty: 10000000,
-      avgProcessingSpeed: "50k / Day",
-      avgStartTime: "0 - 30 mins",
-      refillable: true,
-      cancellable: true,
-      description: "Multi-geographic organic traffic blending suggested videos.",
-      status: "ACTIVE",
-      badge: "Organic Search",
-    },
-    {
-      id: "3001",
-      categoryId: "cat_tt",
-      categoryName: "Views",
-      name: "TikTok FYP Targeted Views [Instant Start • Viral Algorithm Trigger]",
-      platform: "TIKTOK",
-      ratePer1000: 18.0,
-      minQty: 1000,
-      maxQty: 20000000,
-      avgProcessingSpeed: "1M / Hour",
-      avgStartTime: "Instant",
-      refillable: false,
-      cancellable: true,
-      description: "Direct FYP simulated traffic vectors. High completion rates.",
-      status: "ACTIVE",
-      badge: "Viral Push",
-    },
-    {
-      id: "4010",
-      categoryId: "cat_tg",
-      categoryName: "Members",
-      name: "Telegram Channel Members [Non-Drop • 0% Ban • 60D Auto-Refill]",
-      platform: "TELEGRAM",
-      ratePer1000: 110.0,
-      minQty: 100,
-      maxQty: 1000000,
-      avgProcessingSpeed: "50k / Day",
-      avgStartTime: "Instant",
-      refillable: true,
-      cancellable: true,
-      description: "High speed member expansion with organic online status simulators.",
-      status: "ACTIVE",
-      badge: "60D Refill",
-    },
-    {
-      id: "5001",
-      categoryId: "cat_tw",
-      categoryName: "Followers",
-      name: "X / Twitter Verified NFT/Premium Followers [Organic Boosted]",
-      platform: "X_TWITTER",
-      ratePer1000: 420.0,
-      minQty: 50,
-      maxQty: 50000,
-      avgProcessingSpeed: "2k / Day",
-      avgStartTime: "0 - 30 mins",
-      refillable: true,
-      cancellable: true,
-      description: "Premium X followers with profile bios, avatars, and tweet history.",
-      status: "ACTIVE",
-      badge: "Crypto / Web3",
-    },
-  ];
+  private readonly logger = new Logger(ServicesService.name);
 
-  private categories = [
-    { id: "cat_ig", name: "Followers", slug: "instagram-followers" },
-    { id: "cat_yt", name: "Views", slug: "youtube-views" },
-    { id: "cat_tt", name: "Views", slug: "tiktok-views" },
-    { id: "cat_tg", name: "Members", slug: "telegram-members" },
-    { id: "cat_tw", name: "Followers", slug: "twitter-followers" },
-  ];
+  constructor(private readonly prisma: PrismaService) {}
 
-  getPlatforms(): string[] {
-    return Array.from(new Set(this.services.map((s) => s.platform)));
+  async getPlatforms(): Promise<string[]> {
+    if (!this.prisma.isConnected) {
+      return ["INSTAGRAM", "YOUTUBE", "TIKTOK", "TELEGRAM", "X_TWITTER", "FACEBOOK", "SPOTIFY"];
+    }
+
+    try {
+      const distinctPlatforms = await this.prisma.service.findMany({
+        where: { isDeleted: false, active: true },
+        select: { platform: true },
+        distinct: ["platform"],
+      });
+      const platforms = distinctPlatforms.map((p) => p.platform);
+      return platforms.length > 0
+        ? platforms
+        : ["INSTAGRAM", "YOUTUBE", "TIKTOK", "TELEGRAM", "X_TWITTER", "FACEBOOK", "SPOTIFY"];
+    } catch {
+      return ["INSTAGRAM", "YOUTUBE", "TIKTOK", "TELEGRAM", "X_TWITTER", "FACEBOOK", "SPOTIFY"];
+    }
   }
 
-  getCategories() {
-    return this.categories;
+  async getCategories() {
+    if (!this.prisma.isConnected) {
+      return [];
+    }
+
+    try {
+      const categories = await this.prisma.category.findMany({
+        include: {
+          _count: {
+            select: { services: { where: { isDeleted: false, active: true } } },
+          },
+        },
+        orderBy: { sortOrder: "asc" },
+      });
+
+      return categories.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        sortOrder: cat.sortOrder,
+        serviceCount: cat._count.services,
+      }));
+    } catch (err: any) {
+      this.logger.error(`Error fetching categories: ${err.message}`);
+      return [];
+    }
   }
 
-  createCategory(input: { name: string; slug?: string }) {
-    const newCat = {
-      id: `cat_${Math.random().toString(36).substring(2, 7)}`,
-      name: input.name,
-      slug: input.slug || input.name.toLowerCase().replace(/\s+/g, "-"),
+  async createCategory(input: { name: string; slug?: string; sortOrder?: number }) {
+    const slug = input.slug || input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    if (!this.prisma.isConnected) {
+      return { success: true, category: { id: `cat_${Date.now()}`, name: input.name, slug } };
+    }
+
+    const category = await this.prisma.category.upsert({
+      where: { slug },
+      update: { name: input.name, sortOrder: input.sortOrder || 0 },
+      create: { name: input.name, slug, sortOrder: input.sortOrder || 0 },
+    });
+
+    return { success: true, category };
+  }
+
+  async findAll(platform?: string, query?: string, categoryId?: string, sortBy?: string): Promise<ServiceItem[]> {
+    if (!this.prisma.isConnected) {
+      return [];
+    }
+
+    try {
+      const where: any = {
+        isDeleted: false,
+        active: true,
+      };
+
+      if (platform && platform !== "ALL") {
+        where.platform = platform.toUpperCase();
+      }
+
+      if (categoryId) {
+        where.categoryId = categoryId;
+      }
+
+      if (query && query.trim()) {
+        const q = query.trim();
+        where.OR = [
+          { name: { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
+        ];
+      }
+
+      const orderBy: any = {};
+      if (sortBy === "price_asc") {
+        orderBy.ratePer1000 = "asc";
+      } else if (sortBy === "price_desc") {
+        orderBy.ratePer1000 = "desc";
+      } else {
+        orderBy.createdAt = "desc";
+      }
+
+      const services = await this.prisma.service.findMany({
+        where,
+        include: {
+          category: true,
+          provider: {
+            select: { id: true, name: true },
+          },
+        },
+        orderBy,
+      });
+
+      return services.map((s) => ({
+        id: s.id,
+        name: s.name,
+        categoryId: s.categoryId,
+        categoryName: s.category?.name || "General",
+        platform: s.platform as ServicePlatform,
+        ratePer1000: Number(s.ratePer1000),
+        minQty: s.minQty,
+        maxQty: s.maxQty,
+        description: s.description || "",
+        refillable: s.refillable,
+        cancellable: s.cancellable,
+        avgStartTime: s.avgTime || "Instant",
+        avgProcessingSpeed: "High Speed",
+        status: (s.status === "ACTIVE" ? "ACTIVE" : "DISABLED") as any,
+      }));
+    } catch (err: any) {
+      this.logger.error(`Error querying services: ${err.message}`);
+      return [];
+    }
+  }
+
+  async findOne(id: string): Promise<ServiceItem | null> {
+    if (!this.prisma.isConnected) {
+      return null;
+    }
+
+    const s = await this.prisma.service.findUnique({
+      where: { id },
+      include: {
+        category: true,
+        provider: { select: { id: true, name: true } },
+      },
+    });
+
+    if (!s || s.isDeleted) return null;
+
+    return {
+      id: s.id,
+      name: s.name,
+      categoryId: s.categoryId,
+      categoryName: s.category?.name || "General",
+      platform: s.platform as ServicePlatform,
+      ratePer1000: Number(s.ratePer1000),
+      minQty: s.minQty,
+      maxQty: s.maxQty,
+      description: s.description || "",
+      refillable: s.refillable,
+      cancellable: s.cancellable,
+      avgStartTime: s.avgTime || "Instant",
+      avgProcessingSpeed: "High Speed",
+      status: (s.status === "ACTIVE" ? "ACTIVE" : "DISABLED") as any,
     };
-    this.categories.push(newCat);
-    return { success: true, category: newCat };
   }
 
-  findAll(platform?: string, query?: string, categoryId?: string, sortBy?: string) {
-    let result = [...this.services];
-    if (platform && platform !== "ALL") {
-      result = result.filter(
-        (s) => s.platform.toLowerCase() === platform.toLowerCase()
-      );
+  async create(input: any) {
+    if (!this.prisma.isConnected) {
+      return { success: true, service: { id: `srv_${Date.now()}`, ...input } };
     }
-    if (categoryId) {
-      result = result.filter((s) => s.categoryId === categoryId);
+
+    // Ensure category exists
+    let categoryId = input.categoryId;
+    if (!categoryId) {
+      const defaultCat = await this.prisma.category.upsert({
+        where: { slug: "general" },
+        update: {},
+        create: { name: "General", slug: "general" },
+      });
+      categoryId = defaultCat.id;
     }
-    if (query) {
-      const q = query.toLowerCase();
-      result = result.filter(
-        (s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q)
-      );
+
+    const created = await this.prisma.service.create({
+      data: {
+        name: input.name,
+        categoryId,
+        platform: (input.platform || "INSTAGRAM").toUpperCase(),
+        ratePer1000: new Decimal(Number(input.ratePer1000 || 100)),
+        minQty: parseInt(String(input.minQty || 10), 10),
+        maxQty: parseInt(String(input.maxQty || 100000), 10),
+        description: input.description || "",
+        avgTime: input.avgTime || input.avgStartTime || "Instant",
+        refillable: Boolean(input.refillable),
+        cancellable: Boolean(input.cancellable),
+        active: input.active !== false,
+        status: input.status || "ACTIVE",
+        providerId: input.providerId || null,
+        providerServiceId: input.providerServiceId || null,
+      },
+      include: { category: true },
+    });
+
+    return { success: true, service: created };
+  }
+
+  async update(id: string, input: any) {
+    if (!this.prisma.isConnected) {
+      return { success: true, service: { id, ...input } };
     }
-    if (sortBy === "price_asc") {
-      result.sort((a, b) => a.ratePer1000 - b.ratePer1000);
-    } else if (sortBy === "price_desc") {
-      result.sort((a, b) => b.ratePer1000 - a.ratePer1000);
+
+    const data: any = {};
+    if (input.name) data.name = input.name;
+    if (input.categoryId) data.categoryId = input.categoryId;
+    if (input.platform) data.platform = input.platform.toUpperCase();
+    if (input.ratePer1000 !== undefined) data.ratePer1000 = new Decimal(Number(input.ratePer1000));
+    if (input.minQty !== undefined) data.minQty = parseInt(String(input.minQty), 10);
+    if (input.maxQty !== undefined) data.maxQty = parseInt(String(input.maxQty), 10);
+    if (input.description !== undefined) data.description = input.description;
+    if (input.avgTime !== undefined) data.avgTime = input.avgTime;
+    if (input.refillable !== undefined) data.refillable = Boolean(input.refillable);
+    if (input.cancellable !== undefined) data.cancellable = Boolean(input.cancellable);
+    if (input.active !== undefined) data.active = Boolean(input.active);
+    if (input.status !== undefined) data.status = input.status;
+    if (input.providerId !== undefined) data.providerId = input.providerId;
+    if (input.providerServiceId !== undefined) data.providerServiceId = input.providerServiceId;
+
+    const updated = await this.prisma.service.update({
+      where: { id },
+      data,
+      include: { category: true },
+    });
+
+    return { success: true, service: updated };
+  }
+
+  async remove(id: string) {
+    if (!this.prisma.isConnected) {
+      return true;
     }
-    return result;
-  }
 
-  findOne(id: string) {
-    return this.services.find((s) => s.id === id);
-  }
-
-  create(input: any) {
-    const newService: ServiceItem = {
-      id: input.id || String(Math.floor(1000 + Math.random() * 9000)),
-      categoryId: input.categoryId || "cat_ig",
-      categoryName: input.categoryName || "General",
-      name: input.name,
-      platform: input.platform || "INSTAGRAM",
-      ratePer1000: Number(input.ratePer1000) || 100,
-      minQty: Number(input.minQty) || 50,
-      maxQty: Number(input.maxQty) || 100000,
-      avgProcessingSpeed: input.avgProcessingSpeed || "Standard",
-      avgStartTime: input.avgStartTime || "Instant",
-      refillable: Boolean(input.refillable),
-      cancellable: Boolean(input.cancellable),
-      description: input.description || "",
-      status: "ACTIVE",
-      badge: input.badge,
-    };
-    this.services.unshift(newService);
-    return { success: true, service: newService };
-  }
-
-  update(id: string, input: any) {
-    const idx = this.services.findIndex((s) => s.id === id);
-    if (idx === -1) return null;
-    this.services[idx] = { ...this.services[idx], ...input };
-    return { success: true, service: this.services[idx] };
-  }
-
-  remove(id: string) {
-    const idx = this.services.findIndex((s) => s.id === id);
-    if (idx === -1) return false;
-    this.services.splice(idx, 1);
-    return true;
+    try {
+      await this.prisma.service.update({
+        where: { id },
+        data: { isDeleted: true, deletedAt: new Date(), active: false },
+      });
+      return true;
+    } catch {
+      return false;
+    }
   }
 }

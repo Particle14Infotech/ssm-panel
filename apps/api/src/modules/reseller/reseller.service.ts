@@ -29,8 +29,8 @@ export class ResellerService {
     ];
   }
 
-  getPricing() {
-    const services = this.servicesService.findAll();
+  async getPricing() {
+    const services = await this.servicesService.findAll();
     return services.map((s) => ({
       serviceId: s.id,
       name: s.name,
@@ -46,7 +46,7 @@ export class ResellerService {
   }
 
   rotateApiKey(userId?: string) {
-    const newKey = `aeth_live_${crypto.randomBytes(16).toString("hex")}`;
+    const newKey = `smm_live_${crypto.randomBytes(16).toString("hex")}`;
     return {
       success: true,
       apiKey: newKey,
@@ -54,8 +54,8 @@ export class ResellerService {
     };
   }
 
-  getPublicServices() {
-    const pricing = this.getPricing();
+  async getPublicServices() {
+    const pricing = await this.getPricing();
     return pricing.map((p) => ({
       service: p.serviceId,
       name: p.name,

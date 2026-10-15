@@ -46,7 +46,7 @@ describe("TicketsController Unit Tests", () => {
   it("lists tickets for customer", async () => {
     const list = await controller.findAll("usr_1");
     expect(list.length).toBe(1);
-    expect(mockTicketsService.findAll).toHaveBeenCalledWith("usr_1");
+    expect(mockTicketsService.findAll).toHaveBeenCalledWith("usr_1", undefined);
   });
 
   it("creates ticket with canonical endpoint", async () => {

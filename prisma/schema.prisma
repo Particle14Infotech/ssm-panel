@@ -65,6 +65,7 @@ model User {
 
   wallet    Wallet?
   orders    Order[]
+  refunds   Refund[]
   tickets   Ticket[]
   sessions  Session[]
   auditLogs AuditLog[]
@@ -136,14 +137,18 @@ model Service {
   categoryId        String
   category          Category  @relation(fields: [categoryId], references: [id])
   name              String
+  description       String?
   platform          String // INSTAGRAM, YOUTUBE, TIKTOK, etc.
   ratePer1000       Decimal   @db.Decimal(10, 2)
   minQty            Int
   maxQty            Int
+  avgTime           String?
   providerId        String?
+  provider          Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
   providerServiceId String?
   refillable        Boolean   @default(false)
   cancellable       Boolean   @default(false)
+  active            Boolean   @default(true)
   status            String    @default("ACTIVE") // ACTIVE, INACTIVE
   isDeleted         Boolean   @default(false)
   deletedAt         DateTime?
@@ -154,29 +159,78 @@ model Service {
 
   @@index([platform, categoryId, status])
   @@index([isDeleted])
+  @@index([providerId])
+}
+
+model Provider {
+  id              String    @id @default(uuid())
+  name            String
+  apiUrl          String
+  apiKeyEncrypted String
+  balance         Decimal   @default(0.00) @db.Decimal(12, 2)
+  currency        String    @default("INR")
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  services Service[]
+  orders   Order[]
+
+  @@index([active])
 }
 
 model Order {
-  id              String      @id @default(uuid())
+  id              String               @id @default(uuid())
   userId          String
-  user            User        @relation(fields: [userId], references: [id])
+  user            User                 @relation(fields: [userId], references: [id])
   serviceId       String
-  service         Service     @relation(fields: [serviceId], references: [id])
+  service         Service              @relation(fields: [serviceId], references: [id])
   target          String
   quantity        Int
-  charge          Decimal     @db.Decimal(10, 2)
-  status          OrderStatus @default(PENDING)
+  charge          Decimal              @db.Decimal(10, 2)
+  status          OrderStatus          @default(PENDING)
   providerId      String?
+  provider        Provider?            @relation(fields: [providerId], references: [id], onDelete: SetNull)
   providerOrderId String?
-  startCount      Int         @default(0)
-  remains         Int         @default(0)
+  startCount      Int                  @default(0)
+  remains         Int                  @default(0)
   idempotencyKey  String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  history OrderStatusHistory[]
+  refunds Refund[]
 
   @@unique([userId, idempotencyKey], name: "unique_order_idempotency_per_user")
   @@index([userId, status, createdAt])
   @@index([providerId, status])
+}
+
+model OrderStatusHistory {
+  id         String      @id @default(uuid())
+  orderId    String
+  order      Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status     OrderStatus
+  startCount Int?
+  remains    Int?
+  notes      String?
+  createdAt  DateTime    @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+model Refund {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Decimal  @db.Decimal(12, 2)
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([orderId])
 }
 
 model Payment {

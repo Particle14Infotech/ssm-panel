@@ -2,14 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { ServiceItem, OrderItem, TransactionItem } from "@smm/contracts";
-import {
-  AdminUser,
-  AdminProvider,
-  AdminCoupon,
-  INITIAL_ADMIN_USERS,
-  INITIAL_ADMIN_PROVIDERS,
-  INITIAL_ADMIN_COUPONS,
-} from "@/content/admin-data";
+import { AdminUser, AdminProvider, AdminCoupon } from "@/content/admin-data";
 
 interface AdminContextType {
   users: AdminUser[];
@@ -23,13 +16,14 @@ interface AdminContextType {
   updateUserBalance: (userId: string, newBalance: number) => void;
   adjustUserBalance: (userId: string, delta: number, reason?: string) => Promise<boolean>;
   updateUserStatus: (userId: string, status: "ACTIVE" | "SUSPENDED" | "FLAGGED") => Promise<boolean>;
-  addService: (service: ServiceItem) => void;
-  updateService: (id: string, updates: Partial<ServiceItem>) => void;
-  deleteService: (id: string) => void;
+  addService: (service: any) => Promise<boolean>;
+  updateService: (id: string, updates: Partial<ServiceItem>) => Promise<boolean>;
+  deleteService: (id: string) => Promise<boolean>;
   updateOrderStatus: (orderId: string, status: any) => Promise<boolean>;
   resendOrderToProvider: (orderId: string) => Promise<boolean>;
-  addProvider: (provider: AdminProvider) => void;
+  addProvider: (provider: { name: string; apiUrl: string; apiKey: string }) => Promise<boolean>;
   syncProvider: (providerId: string) => Promise<boolean>;
+  importFromProvider: (providerId: string, marginPercent?: number) => Promise<{ success: boolean; importedCount?: number }>;
   addCoupon: (coupon: AdminCoupon) => void;
   toggleCoupon: (couponId: string) => void;
   approvePayment: (txnId: string) => void;
@@ -40,11 +34,11 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined);
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
 
 export function AdminProviderWrapper({ children }: { children: React.ReactNode }) {
-  const [users, setUsers] = useState<AdminUser[]>(INITIAL_ADMIN_USERS);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [orders, setOrders] = useState<OrderItem[]>([]);
-  const [providers, setProviders] = useState<AdminProvider[]>(INITIAL_ADMIN_PROVIDERS);
-  const [coupons, setCoupons] = useState<AdminCoupon[]>(INITIAL_ADMIN_COUPONS);
+  const [providers, setProviders] = useState<AdminProvider[]>([]);
+  const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -101,7 +95,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
               id: o.id,
               userId: o.userId,
               serviceId: o.serviceId,
-              serviceName: o.service?.name || "Service",
+              serviceName: o.service?.name || "Service Item",
               platform: (o.service?.platform || "general").toLowerCase(),
               target: o.target,
               quantity: o.quantity,
@@ -125,7 +119,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
             rawServices.map((s: any) => ({
               id: s.id,
               categoryId: s.categoryId || "general",
-              categoryName: s.category?.name || "General",
+              categoryName: s.categoryName || s.category?.name || "General",
               name: s.name,
               platform: s.platform,
               ratePer1000: Number(s.ratePer1000),
@@ -150,18 +144,18 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
               id: p.id,
               name: p.name,
               apiUrl: p.apiUrl,
-              apiKey: "••••••••",
+              apiKey: p.apiKeyMasked || "••••••••",
               balance: Number(p.balance || 0),
-              currency: p.currency || "USD",
-              status: p.status === "ACTIVE" ? "CONNECTED" : "ERROR",
+              currency: p.currency || "INR",
+              status: p.active !== false ? "CONNECTED" : "ERROR",
               serviceCount: p.serviceCount || 0,
-              lastSyncAt: p.lastSyncAt || new Date().toISOString(),
+              lastSyncAt: p.updatedAt || p.lastSyncAt || new Date().toISOString(),
             }))
           );
         }
       }
     } catch {
-      // Keep state resilient
+      // Resilient fallback
     } finally {
       setIsLoading(false);
     }
@@ -221,18 +215,66 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
     }
   };
 
-  const addService = (service: ServiceItem) => {
-    setServices((prev) => [service, ...prev]);
+  const addService = async (service: any) => {
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API_BASE}/services`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(service),
+      });
+      if (res.ok) {
+        await refreshAdminData();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
   };
 
-  const updateService = (id: string, updates: Partial<ServiceItem>) => {
-    setServices((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
-    );
+  const updateService = async (id: string, updates: Partial<ServiceItem>) => {
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API_BASE}/services/${id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        await refreshAdminData();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
   };
 
-  const deleteService = (id: string) => {
-    setServices((prev) => prev.filter((s) => s.id !== id));
+  const deleteService = async (id: string) => {
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API_BASE}/services/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        await refreshAdminData();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
   };
 
   const updateOrderStatus = async (orderId: string, status: any) => {
@@ -271,11 +313,68 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
     }
   };
 
-  const addProvider = (provider: AdminProvider) => {
-    setProviders((prev) => [provider, ...prev]);
+  const addProvider = async (provider: { name: string; apiUrl: string; apiKey: string }) => {
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API_BASE}/providers`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(provider),
+      });
+      if (res.ok) {
+        await refreshAdminData();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
   };
 
-  const syncProvider = async () => true;
+  const syncProvider = async (providerId: string) => {
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API_BASE}/providers/${providerId}/sync`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        await refreshAdminData();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  const importFromProvider = async (providerId: string, marginPercent: number = 20) => {
+    const token = getAuthToken();
+    if (!token) return { success: false };
+    try {
+      const res = await fetch(`${API_BASE}/providers/${providerId}/import`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ marginPercent }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await refreshAdminData();
+        return { success: true, importedCount: data.importedCount };
+      }
+      return { success: false };
+    } catch {
+      return { success: false };
+    }
+  };
 
   const addCoupon = (coupon: AdminCoupon) => {
     setCoupons((prev) => [coupon, ...prev]);
@@ -314,6 +413,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
         resendOrderToProvider,
         addProvider,
         syncProvider,
+        importFromProvider,
         addCoupon,
         toggleCoupon,
         approvePayment,

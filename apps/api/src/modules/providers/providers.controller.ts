@@ -54,4 +54,10 @@ export class ProvidersController {
   sync(@Param("id") id: string) {
     return this.providersService.sync(id);
   }
+
+  @Post(":id/import")
+  @ApiOperation({ summary: "Import services from upstream provider with margin" })
+  importServices(@Param("id") id: string, @Body() body: { marginPercent?: number }) {
+    return this.providersService.importServices(id, body || {});
+  }
 }
