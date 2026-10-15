@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { CustomerLayoutWrapper } from "@/components/customer/CustomerLayoutWrapper";
 
 export const metadata: Metadata = {
-  title: "Dashboard | AETHER SMM Architecture",
+  title: "Dashboard | SMM PANEL",
   description: "Next-generation high-frequency social media marketing command center and real-time execution ledger.",
 };
 

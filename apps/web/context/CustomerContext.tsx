@@ -8,6 +8,14 @@ import {
   TransactionItem,
   Ticket,
   CreateTicketInput,
+  OrderStatus,
+  canTransition,
+  assertValidTransition,
+  calculateOrderCharge,
+  calculatePartialRefund,
+  calculateDepositBonus,
+  PaymentMethod,
+  PaymentGatewaySession,
 } from "@smm/contracts";
 import {
   INITIAL_USER,
@@ -31,10 +39,21 @@ interface CustomerContextType {
     runs?: number;
     interval?: number;
     comments?: string;
+    couponCode?: string;
+    idempotencyKey?: string;
   }) => Promise<{ success: boolean; orderId?: string; error?: string }>;
   cancelOrder: (orderId: string) => Promise<boolean>;
   refillOrder: (orderId: string) => Promise<boolean>;
-  depositFunds: (amount: number, method: string) => Promise<{ success: boolean; bonus: number; total: number }>;
+  initiateDeposit: (input: {
+    amount: number;
+    method: PaymentMethod;
+    couponCode?: string;
+    idempotencyKey?: string;
+  }) => Promise<PaymentGatewaySession>;
+  verifyDeposit: (referenceId: string) => Promise<{ success: boolean; session?: PaymentGatewaySession }>;
+  depositFunds: (amount: number, method: PaymentMethod) => Promise<{ success: boolean; bonus: number; total: number }>;
+  processPartialOrder: (orderId: string, remains: number) => Promise<boolean>;
+  processFailedOrder: (orderId: string) => Promise<boolean>;
   createTicket: (input: CreateTicketInput) => Promise<{ success: boolean; ticketId?: string }>;
   replyTicket: (ticketId: string, message: string) => Promise<boolean>;
   updateProfile: (updates: Partial<UserProfile>) => void;
@@ -42,6 +61,9 @@ interface CustomerContextType {
 }
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
+
+// Set to track used idempotency keys
+const processedIdempotencyKeys = new Set<string>();
 
 export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile>(() => {
@@ -94,6 +116,8 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     return INITIAL_TICKETS;
   });
 
+  const [pendingSessions, setPendingSessions] = useState<Record<string, PaymentGatewaySession>>({});
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("aether_user", JSON.stringify(user));
@@ -126,13 +150,35 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     runs?: number;
     interval?: number;
     comments?: string;
+    couponCode?: string;
+    idempotencyKey?: string;
   }) => {
+    // 1. Idempotency Check
+    if (input.idempotencyKey && processedIdempotencyKeys.has(input.idempotencyKey)) {
+      const existing = orders.find((o) => o.idempotencyKey === input.idempotencyKey);
+      if (existing) {
+        return { success: true, orderId: existing.id };
+      }
+    }
+
+    // 2. Validate Service
     const service = services.find((s) => s.id === input.serviceId);
     if (!service) {
       return { success: false, error: "Selected service does not exist." };
     }
 
-    const totalCost = Number(((input.quantity / 1000) * service.ratePer1000).toFixed(2));
+    // 3. Validate Quantity
+    if (input.quantity < service.minQty || input.quantity > service.maxQty) {
+      return {
+        success: false,
+        error: `Quantity must be between ${service.minQty.toLocaleString()} and ${service.maxQty.toLocaleString()}.`,
+      };
+    }
+
+    // 4. Calculate Authoritative Price
+    const totalCost = calculateOrderCharge(service.ratePer1000, input.quantity);
+
+    // 5. Validate Balance
     if (user.balance < totalCost) {
       return {
         success: false,
@@ -140,6 +186,11 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
+    if (input.idempotencyKey) {
+      processedIdempotencyKeys.add(input.idempotencyKey);
+    }
+
+    // 6. Debit Wallet & Add Transaction Ledger Entry
     const newOrderId = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
     const newOrder: OrderItem = {
       id: newOrderId,
@@ -152,11 +203,23 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       charge: totalCost,
       startCount: Math.floor(500 + Math.random() * 5000),
       remains: input.quantity,
-      status: "PROCESSING",
+      status: "PENDING",
+      idempotencyKey: input.idempotencyKey,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       refillable: service.refillable,
       cancellable: service.cancellable,
+    };
+
+    const newTxn: TransactionItem = {
+      id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+      userId: user.id,
+      amount: -totalCost,
+      bonus: 0,
+      method: "CARD",
+      status: "SUCCESS",
+      referenceId: newOrderId,
+      createdAt: new Date().toISOString(),
     };
 
     setUser((prev) => ({
@@ -166,7 +229,52 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       totalOrders: prev.totalOrders + 1,
     }));
 
+    setTransactions((prev) => [newTxn, ...prev]);
     setOrders((prev) => [newOrder, ...prev]);
+
+    // 7. Progression pipeline: PENDING -> PROCESSING -> IN_PROGRESS -> COMPLETED
+    setTimeout(() => {
+      setOrders((prev) =>
+        prev.map((o) => {
+          if (o.id === newOrderId && canTransition(o.status, "PROCESSING")) {
+            return { ...o, status: "PROCESSING", updatedAt: new Date().toISOString() };
+          }
+          return o;
+        })
+      );
+    }, 400);
+
+    setTimeout(() => {
+      setOrders((prev) =>
+        prev.map((o) => {
+          if (o.id === newOrderId && canTransition(o.status, "IN_PROGRESS")) {
+            return {
+              ...o,
+              status: "IN_PROGRESS",
+              remains: Math.floor(o.quantity * 0.4),
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return o;
+        })
+      );
+    }, 1200);
+
+    setTimeout(() => {
+      setOrders((prev) =>
+        prev.map((o) => {
+          if (o.id === newOrderId && canTransition(o.status, "COMPLETED")) {
+            return {
+              ...o,
+              status: "COMPLETED",
+              remains: 0,
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return o;
+        })
+      );
+    }, 2400);
 
     return { success: true, orderId: newOrderId };
   };
@@ -175,18 +283,120 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     const targetOrder = orders.find((o) => o.id === orderId);
     if (!targetOrder || !targetOrder.cancellable) return false;
 
+    // Enforce transition: PENDING/PROCESSING/IN_PROGRESS -> CANCELLED -> REFUNDED
+    assertValidTransition(targetOrder.status, "CANCELLED");
+
+    // Full refund to wallet
+    const refundAmount = targetOrder.charge;
+
     setUser((prev) => ({
       ...prev,
-      balance: Number((prev.balance + targetOrder.charge).toFixed(2)),
+      balance: Number((prev.balance + refundAmount).toFixed(2)),
     }));
+
+    const refundTxn: TransactionItem = {
+      id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+      userId: user.id,
+      amount: refundAmount,
+      bonus: 0,
+      method: "CARD",
+      status: "SUCCESS",
+      referenceId: `REFUND-${orderId}`,
+      createdAt: new Date().toISOString(),
+    };
+
+    setTransactions((prev) => [refundTxn, ...prev]);
 
     setOrders((prev) =>
       prev.map((o) =>
         o.id === orderId
           ? {
               ...o,
-              status: "CANCELLED",
+              status: "REFUNDED",
               cancellable: false,
+              updatedAt: new Date().toISOString(),
+            }
+          : o
+      )
+    );
+
+    return true;
+  };
+
+  const processPartialOrder = async (orderId: string, remains: number) => {
+    const targetOrder = orders.find((o) => o.id === orderId);
+    if (!targetOrder) return false;
+
+    assertValidTransition(targetOrder.status, "PARTIAL");
+
+    // Partial refund formula: refund = charge x (remains / quantity)
+    const refundAmount = calculatePartialRefund(targetOrder.charge, targetOrder.quantity, remains);
+
+    if (refundAmount > 0) {
+      setUser((prev) => ({
+        ...prev,
+        balance: Number((prev.balance + refundAmount).toFixed(2)),
+      }));
+
+      const refundTxn: TransactionItem = {
+        id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+        userId: user.id,
+        amount: refundAmount,
+        bonus: 0,
+        method: "CARD",
+        status: "SUCCESS",
+        referenceId: `PARTIAL-REFUND-${orderId}`,
+        createdAt: new Date().toISOString(),
+      };
+      setTransactions((prev) => [refundTxn, ...prev]);
+    }
+
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              status: "REFUNDED",
+              remains,
+              updatedAt: new Date().toISOString(),
+            }
+          : o
+      )
+    );
+
+    return true;
+  };
+
+  const processFailedOrder = async (orderId: string) => {
+    const targetOrder = orders.find((o) => o.id === orderId);
+    if (!targetOrder) return false;
+
+    assertValidTransition(targetOrder.status, "FAILED");
+
+    const refundAmount = targetOrder.charge;
+    setUser((prev) => ({
+      ...prev,
+      balance: Number((prev.balance + refundAmount).toFixed(2)),
+    }));
+
+    const refundTxn: TransactionItem = {
+      id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+      userId: user.id,
+      amount: refundAmount,
+      bonus: 0,
+      method: "CARD",
+      status: "SUCCESS",
+      referenceId: `FAILED-REFUND-${orderId}`,
+      createdAt: new Date().toISOString(),
+    };
+    setTransactions((prev) => [refundTxn, ...prev]);
+
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              status: "REFUNDED",
               updatedAt: new Date().toISOString(),
             }
           : o
@@ -212,32 +422,121 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     return true;
   };
 
-  const depositFunds = async (amount: number, method: string) => {
-    let bonus = 0;
-    if (amount >= 5000) bonus = amount * 0.15;
-    else if (amount >= 1000) bonus = amount * 0.1;
-    else if (amount >= 500) bonus = amount * 0.05;
+  const initiateDeposit = async (input: {
+    amount: number;
+    method: PaymentMethod;
+    couponCode?: string;
+    idempotencyKey?: string;
+  }): Promise<PaymentGatewaySession> => {
+    const { bonusAmount, totalCredit } = calculateDepositBonus(input.amount);
+    const referenceId = `DEP-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
 
-    const totalAdded = amount + bonus;
+    const session: PaymentGatewaySession = {
+      sessionId: `sess_${Date.now()}`,
+      referenceId,
+      redirectUrl: `/app/wallet/verify?ref=${referenceId}`,
+      amount: input.amount,
+      bonusAmount,
+      totalCredit,
+      method: input.method,
+      status: "PENDING",
+    };
+
+    setPendingSessions((prev) => ({ ...prev, [referenceId]: session }));
+    return session;
+  };
+
+  const verifyDeposit = async (referenceId: string) => {
+    const session = pendingSessions[referenceId];
+    if (!session) {
+      // Fallback auto session
+      const amount = 1000;
+      const { bonusAmount, totalCredit } = calculateDepositBonus(amount);
+      const fallbackSession: PaymentGatewaySession = {
+        sessionId: `sess_${Date.now()}`,
+        referenceId,
+        redirectUrl: `/app/wallet/verify?ref=${referenceId}`,
+        amount,
+        bonusAmount,
+        totalCredit,
+        method: "UPI",
+        status: "SUCCESS",
+      };
+
+      const newTxn: TransactionItem = {
+        id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+        userId: user.id,
+        amount,
+        bonus: bonusAmount,
+        method: "UPI",
+        status: "SUCCESS",
+        referenceId,
+        createdAt: new Date().toISOString(),
+      };
+
+      setUser((prev) => ({
+        ...prev,
+        balance: Number((prev.balance + totalCredit).toFixed(2)),
+      }));
+
+      setTransactions((prev) => [newTxn, ...prev]);
+      return { success: true, session: fallbackSession };
+    }
+
+    if (session.status === "SUCCESS") {
+      return { success: true, session };
+    }
+
+    const completedSession: PaymentGatewaySession = {
+      ...session,
+      status: "SUCCESS",
+    };
+
     const newTxn: TransactionItem = {
       id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
       userId: user.id,
-      amount,
-      bonus,
-      method,
+      amount: session.amount,
+      bonus: session.bonusAmount,
+      method: session.method,
       status: "SUCCESS",
-      referenceId: `REF-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+      referenceId,
       createdAt: new Date().toISOString(),
     };
 
     setUser((prev) => ({
       ...prev,
-      balance: Number((prev.balance + totalAdded).toFixed(2)),
+      balance: Number((prev.balance + session.totalCredit).toFixed(2)),
+    }));
+
+    setTransactions((prev) => [newTxn, ...prev]);
+    setPendingSessions((prev) => ({ ...prev, [referenceId]: completedSession }));
+
+    return { success: true, session: completedSession };
+  };
+
+  const depositFunds = async (amount: number, method: PaymentMethod) => {
+    const { bonusAmount, totalCredit } = calculateDepositBonus(amount);
+    const referenceId = `DEP-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+
+    const newTxn: TransactionItem = {
+      id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+      userId: user.id,
+      amount,
+      bonus: bonusAmount,
+      method,
+      status: "SUCCESS",
+      referenceId,
+      createdAt: new Date().toISOString(),
+    };
+
+    setUser((prev) => ({
+      ...prev,
+      balance: Number((prev.balance + totalCredit).toFixed(2)),
     }));
 
     setTransactions((prev) => [newTxn, ...prev]);
 
-    return { success: true, bonus, total: totalAdded };
+    return { success: true, bonus: bonusAmount, total: totalCredit };
   };
 
   const createTicket = async (input: CreateTicketInput) => {
@@ -320,7 +619,11 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         createOrder,
         cancelOrder,
         refillOrder,
+        initiateDeposit,
+        verifyDeposit,
         depositFunds,
+        processPartialOrder,
+        processFailedOrder,
         createTicket,
         replyTicket,
         updateProfile,

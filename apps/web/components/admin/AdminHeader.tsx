@@ -29,7 +29,9 @@ export function AdminHeader() {
     { name: "Dashboard", href: "/admin/dashboard", icon: Layers },
     { name: "Orders Ledger", href: "/admin/orders", icon: ListOrdered },
     { name: "Service Matrix", href: "/admin/services", icon: Zap },
+    { name: "Categories", href: "/admin/categories", icon: Tag },
     { name: "User Directory", href: "/admin/users", icon: Users },
+    { name: "Wallets & Liability", href: "/admin/wallets", icon: CreditCard },
     { name: "API Providers", href: "/admin/providers", icon: Server },
     { name: "Payment Audits", href: "/admin/payments", icon: CreditCard },
     { name: "Coupons & Promos", href: "/admin/coupons", icon: Tag },
@@ -43,21 +45,21 @@ export function AdminHeader() {
           <div className="flex items-center gap-4">
             <Link href="/admin/dashboard" className="flex items-center gap-2 group">
               <div className="w-8 h-8 rounded-full bg-surface-container-high border border-white/15 flex items-center justify-center">
-                <span className="text-[#DBEF90] text-base font-bold">✦</span>
+                <Zap className="w-4 h-4 text-[#D8EC8D]" />
               </div>
               <div className="flex items-baseline">
                 <span className="font-headline-lg text-lg uppercase tracking-wider text-white font-bold">
                   AETHER
                 </span>
-                <span className="text-[#DBEF90] text-lg font-light leading-none">*</span>
+                <span className="text-[#D8EC8D] text-lg font-light leading-none">*</span>
               </div>
             </Link>
 
             <div className="h-4 w-px bg-white/15 hidden sm:block" />
 
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high/60 border border-white/5 text-on-surface-variant text-xs">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full liquid-glass-pill text-zinc-300 text-xs font-mono">
               <span className="w-1.5 h-1.5 rounded-full bg-[#DBEF90] animate-pulse" />
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#DBEF90] font-bold">
+              <span className="text-[10px] uppercase tracking-widest text-[#DBEF90] font-bold">
                 ROOT ADMIN CONSOLE
               </span>
               <span className="text-white/20">•</span>
@@ -66,7 +68,7 @@ export function AdminHeader() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-low border border-white/10 text-xs font-mono">
+            <div className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full liquid-glass-pill text-xs font-mono">
               <RefreshCw className="w-3 h-3 text-[#DBEF90]" />
               <span className="text-[#DBEF90] font-bold">Live Sync</span>
               <span className="text-white">14ms</span>
@@ -74,7 +76,7 @@ export function AdminHeader() {
 
             <Link
               href="/dashboard"
-              className="px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-semibold flex items-center gap-1.5 transition-all"
+              className="px-3.5 py-1.5 rounded-full liquid-glass-pill text-white text-xs font-semibold flex items-center gap-1.5 transition-all hover:border-[#DBEF90]/40"
             >
               <span>Customer View</span>
               <ExternalLink className="w-3.5 h-3.5 text-[#DBEF90]" />

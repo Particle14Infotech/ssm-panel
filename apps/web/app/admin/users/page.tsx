@@ -49,7 +49,7 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="w-full bg-[#0e0e0e] min-h-screen pb-24 text-on-surface">
+    <div className="w-full bg-transparent min-h-screen pb-24 text-on-surface">
       <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-6 space-y-6">
         {/* Header Telemetry */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -68,7 +68,7 @@ export default function AdminUsersPage() {
         </div>
 
         {/* Search Bar */}
-        <div className="bg-[#1c1b1b]/80 border border-white/10 rounded-3xl p-4 backdrop-blur-2xl flex items-center gap-4">
+        <div className="glass-panel rounded-3xl p-4 flex items-center gap-4">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-on-surface-variant absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
@@ -82,7 +82,7 @@ export default function AdminUsersPage() {
         </div>
 
         {/* Users Table */}
-        <div className="bg-[#1c1b1b]/80 border border-white/10 rounded-3xl p-4 md:p-6 backdrop-blur-2xl shadow-2xl overflow-hidden">
+        <div className="glass-panel rounded-3xl p-4 md:p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
@@ -161,7 +161,7 @@ export default function AdminUsersPage() {
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <form
             onSubmit={handleAdjustSubmit}
-            className="bg-[#1c1b1b] border border-white/15 rounded-3xl p-6 md:p-8 max-w-md w-full space-y-4 shadow-2xl relative text-xs"
+            className="glass-panel rounded-3xl p-6 md:p-8 max-w-md w-full space-y-4 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] relative text-xs"
           >
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="text-base font-semibold text-white">

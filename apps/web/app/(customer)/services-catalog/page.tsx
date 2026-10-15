@@ -17,6 +17,7 @@ import {
   Sparkles,
   ArrowRight,
 } from "lucide-react";
+import { GlassCard } from "@/components/shared/GlassCard";
 
 export default function ServicesCatalogPage() {
   const { services } = useCustomer();
@@ -127,7 +128,7 @@ export default function ServicesCatalogPage() {
         </div>
 
         {/* Search & Category Chips */}
-        <div className="bg-[#1c1b1b]/80 border border-white/10 rounded-3xl p-4 backdrop-blur-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <div className="glass-panel p-4 rounded-3xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-on-surface-variant absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
@@ -171,9 +172,10 @@ export default function ServicesCatalogPage() {
         {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredServices.map((service) => (
-            <div
+            <GlassCard
               key={service.id}
-              className="bg-[#1c1b1b]/80 border border-white/10 hover:border-[#DBEF90]/40 rounded-3xl p-6 backdrop-blur-2xl shadow-xl hover:shadow-2xl transition-all flex flex-col justify-between group space-y-4"
+              variant="squircle"
+              className="p-6 flex flex-col justify-between group space-y-4 hover:border-[#DBEF90]/40"
             >
               <div className="space-y-3">
                 {/* Top Badge & Service ID */}
@@ -249,7 +251,7 @@ export default function ServicesCatalogPage() {
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
-            </div>
+            </GlassCard>
           ))}
         </div>
       </div>

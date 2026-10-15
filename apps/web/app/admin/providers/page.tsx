@@ -55,7 +55,7 @@ export default function AdminProvidersPage() {
   };
 
   return (
-    <div className="w-full bg-[#0e0e0e] min-h-screen pb-24 text-on-surface">
+    <div className="w-full bg-transparent min-h-screen pb-24 text-on-surface">
       <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-6 space-y-6">
         {/* Header Telemetry */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -85,7 +85,7 @@ export default function AdminProvidersPage() {
         {isAdding && (
           <form
             onSubmit={handleCreate}
-            className="bg-[#1c1b1b] border border-white/15 rounded-3xl p-6 md:p-8 backdrop-blur-2xl shadow-2xl space-y-4"
+            className="glass-panel rounded-3xl p-6 md:p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-4"
           >
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="text-base font-semibold text-white">Connect Upstream SMM Provider</h3>
@@ -158,7 +158,7 @@ export default function AdminProvidersPage() {
           {providers.map((p) => (
             <div
               key={p.id}
-              className="bg-[#1c1b1b]/80 border border-white/10 hover:border-[#DBEF90]/40 rounded-3xl p-6 backdrop-blur-2xl shadow-xl space-y-4 flex flex-col justify-between"
+              className="glass-panel rounded-3xl p-6 hover:border-[#DBEF90]/40 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-4 flex flex-col justify-between transition-all"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -186,6 +186,12 @@ export default function AdminProvidersPage() {
                   <div className="flex justify-between text-on-surface-variant truncate">
                     <span>API Endpoint</span>
                     <span className="text-white truncate max-w-[140px]">{p.apiUrl}</span>
+                  </div>
+                  <div className="flex justify-between text-on-surface-variant">
+                    <span>Secret Key</span>
+                    <span className="text-white font-mono text-[11px] truncate max-w-[140px]">
+                      {p.apiKey ? (p.apiKey.startsWith("sk_live") ? p.apiKey.substring(0, 7) + "••••••••" : p.apiKey) : "sk_live_••••••••"}
+                    </span>
                   </div>
                 </div>
               </div>

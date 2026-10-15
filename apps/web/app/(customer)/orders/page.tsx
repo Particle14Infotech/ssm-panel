@@ -175,25 +175,25 @@ export default function OrdersPage() {
 
           {/* Real-time Cluster SLA Metrics */}
           <div className="flex flex-wrap items-center gap-3">
-            <div className="bg-surface-container-low/90 border border-white/10 px-4 py-2.5 rounded-2xl flex items-center gap-4 text-xs font-mono">
+            <div className="liquid-glass-pill px-4 py-2.5 rounded-2xl flex items-center gap-4 text-xs font-mono">
               <div>
-                <span className="text-[10px] uppercase text-on-surface-variant block">Active Vectors</span>
+                <span className="text-[10px] uppercase text-zinc-400 block">Active Vectors</span>
                 <span className="text-white font-bold">{orders.length} Vectors • 99.8% SLA</span>
               </div>
               <div className="w-[1px] h-6 bg-white/10" />
               <div>
-                <span className="text-[10px] uppercase text-on-surface-variant block">Dispatch Latency</span>
+                <span className="text-[10px] uppercase text-zinc-400 block">Dispatch Latency</span>
                 <span className="text-[#DBEF90] font-bold">18.4ms</span>
               </div>
             </div>
 
-            <div className="bg-surface-container-low/90 border border-white/10 px-4 py-2.5 rounded-2xl flex items-center gap-2 text-xs font-mono">
+            <div className="liquid-glass-pill px-4 py-2.5 rounded-2xl flex items-center gap-2 text-xs font-mono">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#DBEF90] opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#DBEF90]" />
               </span>
               <span className="text-[#DBEF90] font-bold">Live Sync</span>
-              <span className="text-on-surface-variant">4s poller</span>
+              <span className="text-zinc-400">4s poller</span>
             </div>
           </div>
         </div>
@@ -227,16 +227,16 @@ export default function OrdersPage() {
         </div>
 
         {/* Search, Platform Filters & Export Action Bar */}
-        <div className="bg-[#1c1b1b]/80 border border-white/10 rounded-3xl p-4 backdrop-blur-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <div className="glass-panel p-4 rounded-3xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
           {/* Search Box */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-on-surface-variant absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-zinc-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by Order ID (e.g. ORD-98421), Target URL, or Service Name..."
-              className="w-full bg-surface-container-highest/80 border border-white/5 focus:border-[#DBEF90] rounded-2xl pl-11 pr-4 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all font-mono"
+              className="w-full bg-[#161616]/80 border border-white/10 focus:border-[#DBEF90] rounded-2xl pl-11 pr-4 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all font-mono"
             />
           </div>
 
@@ -245,7 +245,7 @@ export default function OrdersPage() {
             <select
               value={selectedPlatform}
               onChange={(e) => setSelectedPlatform(e.target.value)}
-              className="bg-surface-container-highest/80 border border-white/10 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none font-medium cursor-pointer"
+              className="bg-[#161616]/80 border border-white/10 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none font-medium cursor-pointer"
             >
               <option value="ALL">All Platforms</option>
               <option value="instagram">Instagram</option>
@@ -260,7 +260,7 @@ export default function OrdersPage() {
             {/* Export CSV Button */}
             <button
               onClick={exportCSV}
-              className="px-4 py-2.5 rounded-2xl bg-surface-container-high border border-white/10 hover:bg-white/10 text-xs font-semibold text-white flex items-center gap-2 transition-all shrink-0"
+              className="px-4 py-2.5 rounded-2xl liquid-glass-pill hover:border-[#DBEF90]/40 text-xs font-semibold text-white flex items-center gap-2 transition-all shrink-0"
               title="Export Current Table as CSV"
             >
               <Download className="w-3.5 h-3.5" />
@@ -270,7 +270,7 @@ export default function OrdersPage() {
             {/* New Order CTA */}
             <Link
               href="/new-order"
-              className="px-4 py-2.5 rounded-2xl bg-[#DBEF90] text-[#2a3400] text-xs font-bold hover:brightness-110 flex items-center gap-1.5 shadow-[0_0_15px_rgba(219,239,144,0.25)] shrink-0"
+              className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#DBEF90] to-[#bccf74] text-[#171e00] text-xs font-bold hover:brightness-110 flex items-center gap-1.5 shadow-[0_0_15px_rgba(219,239,144,0.25)] shrink-0"
             >
               <span>+ New Order</span>
             </Link>
@@ -278,7 +278,7 @@ export default function OrdersPage() {
         </div>
 
         {/* Master Orders Table */}
-        <div className="bg-[#1c1b1b]/80 border border-white/10 rounded-3xl p-4 md:p-6 backdrop-blur-2xl shadow-2xl overflow-hidden">
+        <div className="glass-panel p-4 md:p-6 rounded-3xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>

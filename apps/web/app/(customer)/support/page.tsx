@@ -101,7 +101,7 @@ function SupportContent() {
   };
 
   return (
-    <div className="w-full bg-[#0e0e0e] min-h-screen pb-24 text-on-surface">
+    <div className="w-full bg-transparent min-h-screen pb-24 text-on-surface">
       <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-8 space-y-8">
         {/* Header Telemetry */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
@@ -133,7 +133,7 @@ function SupportContent() {
         {/* 2-Column Split: Ticket List (4 cols) and Chat Timeline (8 cols) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Tickets Sidebar (4 cols) */}
-          <div className="lg:col-span-4 bg-[#1c1b1b]/80 border border-white/10 rounded-3xl p-4 md:p-6 backdrop-blur-2xl shadow-2xl space-y-4">
+          <div className="lg:col-span-4 glass-panel rounded-[2rem] p-4 md:p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-4">
             <div className="relative">
               <Search className="w-4 h-4 text-on-surface-variant absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -191,7 +191,7 @@ function SupportContent() {
           </div>
 
           {/* Right Column: Chat Timeline or Ticket Creator Form (8 cols) */}
-          <div className="lg:col-span-8 bg-[#1c1b1b]/80 border border-white/10 rounded-3xl p-6 md:p-8 backdrop-blur-2xl shadow-2xl space-y-6">
+          <div className="lg:col-span-8 glass-panel rounded-[2rem] p-6 md:p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-6">
             {isCreatingTicket ? (
               /* Ticket Creation Form */
               <form onSubmit={handleCreateSubmit} className="space-y-6">
@@ -404,7 +404,7 @@ function SupportContent() {
               </div>
             ) : (
               <div className="py-20 text-center text-on-surface-variant">
-                No ticket selected. Click "Open New Ticket" to create one.
+                No ticket selected. Click &quot;Open New Ticket&quot; to create one.
               </div>
             )}
           </div>

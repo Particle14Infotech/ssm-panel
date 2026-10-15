@@ -7,6 +7,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { RegisterInputSchema, RegisterInput } from "@smm/contracts";
 import { Zap, ArrowRight, Lock, User, Mail, AlertCircle, ShieldCheck } from "lucide-react";
 
+import dynamic from "next/dynamic";
+
+const DynamicAuthCrown = dynamic(
+  () => import("@/components/three/AuthCrown3D").then((m) => m.AuthCrown3D),
+  { ssr: false }
+);
+
 export default function RegisterPage() {
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -37,32 +44,54 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 py-32 relative overflow-hidden bg-[#131313]">
-      <div className="absolute top-1/4 -left-20 w-96 h-96 rounded-full bg-[#bd0183]/15 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-20 w-96 h-96 rounded-full bg-[#d8ec8d]/15 blur-[120px] pointer-events-none" />
+    <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 lg:p-12 py-12 md:py-20 relative overflow-hidden bg-[#131313]">
+      <div className="absolute top-1/4 -left-20 w-96 h-96 rounded-full bg-[#bd0183]/15 blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-1/4 -right-20 w-96 h-96 rounded-full bg-[#d8ec8d]/15 blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-[#243100]/20 blur-[160px] pointer-events-none -z-10" />
 
-      <div className="w-full max-w-lg relative z-10">
-        <div className="text-center mb-8">
+      {/* Unified Outer Frame with Clean Boundaries */}
+      <div className="w-full max-w-6xl rounded-3xl p-6 sm:p-10 lg:p-12 bg-[#191919]/60 border border-white/[0.08] backdrop-blur-2xl shadow-[0_32px_64px_rgba(0,0,0,0.7)] relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+        {/* Left Column: 3D Rotating Crown & Benefits showcase on desktop */}
+        <div className="lg:col-span-5 flex flex-col items-center lg:items-start text-center lg:text-left justify-center px-2">
           <Link href="/" className="inline-flex items-center gap-2 mb-4 group">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#bd0183] to-[#d8ec8d] p-[1.5px] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#bd0183] to-[#d8ec8d] p-[1.5px] flex items-center justify-center shadow-lg">
               <div className="w-full h-full bg-[#131313] rounded-full flex items-center justify-center">
-                <Zap className="w-5 h-5 text-[#d8ec8d] group-hover:scale-110 transition-transform" />
+                <Zap className="w-4 h-4 text-[#d8ec8d] group-hover:scale-110 transition-transform" />
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <span className="font-heading font-bold text-2xl tracking-wider text-white">
-                AETHER SMM
+              <span className="font-heading font-bold text-xl tracking-wider text-white">
+                SMM PANEL
               </span>
-              <span className="text-[#d8ec8d] font-bold text-2xl">*</span>
+              <span className="text-[#d8ec8d] font-bold text-xl">*</span>
             </div>
           </Link>
-          <h1 className="font-heading text-2xl font-light text-white">Create New Account</h1>
-          <p className="text-xs text-[#c7c8b6] mt-1 font-mono">
-            Direct Access • Instant Wallet Generation
-          </p>
+
+          {/* Real 3D Rotating Crown Showcase */}
+          <div className="w-full max-w-[280px] sm:max-w-[320px] aspect-square relative my-1 flex items-center justify-center">
+            <DynamicAuthCrown className="w-full h-full" size="md" />
+          </div>
+
+          <div className="mt-3">
+            <span className="text-[11px] uppercase tracking-widest font-mono text-[#D8EC8D] font-semibold block mb-0.5">
+              Institutional Infrastructure
+            </span>
+            <p className="text-xs text-zinc-400 font-light max-w-xs leading-relaxed">
+              Instant double-entry wallet generation, live order queue tracking, and access to over 500+ verified service endpoints.
+            </p>
+          </div>
         </div>
 
-        <div className="rounded-3xl p-8 bg-[#1c1b1b]/90 border border-white/10 backdrop-blur-2xl shadow-2xl">
+        {/* Right Column: Register Card */}
+        <div className="lg:col-span-7 w-full max-w-xl mx-auto">
+          <div className="text-center lg:text-left mb-6">
+            <h1 className="font-heading text-2xl sm:text-3xl font-light text-white">Create New Account</h1>
+            <p className="text-xs text-[#c7c8b6] mt-1 font-mono">
+              Direct Access • Instant Wallet Generation
+            </p>
+          </div>
+
+          <div className="rounded-3xl p-6 sm:p-8 bg-[#1c1b1b]/90 border border-white/10 backdrop-blur-2xl shadow-[0_24px_50px_rgba(0,0,0,0.6)]">
           {serverError && (
             <div className="mb-6 p-4 rounded-xl bg-[#ffb4ab]/10 border border-[#ffb4ab]/20 text-[#ffb4ab] text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -211,6 +240,8 @@ export default function RegisterPage() {
           </div>
         </div>
       </div>
+      </div>
     </div>
   );
 }
+
