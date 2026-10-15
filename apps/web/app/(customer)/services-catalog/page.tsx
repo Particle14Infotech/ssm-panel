@@ -12,10 +12,16 @@ import {
   Check,
   ShieldCheck,
   Clock,
-  Flame,
   Sparkles,
   ArrowRight,
   Layers,
+  Globe,
+  Share2,
+  Video,
+  Send,
+  Music,
+  PlusCircle,
+  Inbox,
 } from "lucide-react";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -28,14 +34,14 @@ export default function ServicesCatalogPage() {
   const [copiedServiceId, setCopiedServiceId] = useState<string | null>(null);
 
   const platforms = [
-    { id: "ALL", name: "All Networks", icon: "🌐" },
-    { id: "instagram", name: "Instagram", icon: "📸" },
-    { id: "youtube", name: "YouTube", icon: "▶️" },
-    { id: "tiktok", name: "TikTok", icon: "🎵" },
-    { id: "telegram", name: "Telegram", icon: "✈️" },
-    { id: "twitter", name: "X (Twitter)", icon: "🐦" },
-    { id: "spotify", name: "Spotify", icon: "🎧" },
-    { id: "linkedin", name: "LinkedIn", icon: "💼" },
+    { id: "ALL", name: "All Networks", icon: Globe },
+    { id: "instagram", name: "Instagram", icon: Share2 },
+    { id: "youtube", name: "YouTube", icon: Video },
+    { id: "tiktok", name: "TikTok", icon: Music },
+    { id: "telegram", name: "Telegram", icon: Send },
+    { id: "twitter", name: "X (Twitter)", icon: Globe },
+    { id: "spotify", name: "Spotify", icon: Music },
+    { id: "general", name: "General", icon: Layers },
   ];
 
   const categories = Array.from(
@@ -43,7 +49,7 @@ export default function ServicesCatalogPage() {
       services
         .filter((s) => {
           if (selectedPlatform === "ALL") return true;
-          const p = s.platform.toLowerCase().replace("_", "");
+          const p = (s.platform || "general").toLowerCase().replace("_", "");
           const selectedP = selectedPlatform.toLowerCase().replace("_", "");
           return p === selectedP || (selectedP === "twitter" && p === "xtwitter");
         })
@@ -52,16 +58,20 @@ export default function ServicesCatalogPage() {
   );
 
   const filteredServices = services.filter((service) => {
-    const p = service.platform.toLowerCase().replace("_", "");
+    const p = (service.platform || "general").toLowerCase().replace("_", "");
     const selectedP = selectedPlatform.toLowerCase().replace("_", "");
-    const matchesPlatform = selectedPlatform === "ALL" || p === selectedP || (selectedP === "twitter" && p === "xtwitter");
-    const matchesCategory = selectedCategory === "ALL" || service.categoryName === selectedCategory;
+    const matchesPlatform =
+      selectedPlatform === "ALL" ||
+      p === selectedP ||
+      (selectedP === "twitter" && p === "xtwitter");
+    const matchesCategory =
+      selectedCategory === "ALL" || service.categoryName === selectedCategory;
     const query = searchQuery.toLowerCase().trim();
     const matchesSearch =
       query === "" ||
       service.id.toLowerCase().includes(query) ||
       service.name.toLowerCase().includes(query) ||
-      service.description.toLowerCase().includes(query);
+      (service.description && service.description.toLowerCase().includes(query));
 
     return matchesPlatform && matchesCategory && matchesSearch;
   });
@@ -73,211 +83,188 @@ export default function ServicesCatalogPage() {
   };
 
   return (
-    <div className="w-full bg-[#0e0e0e] min-h-screen pb-24 text-on-surface">
-      <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-8 space-y-8">
-        {/* Header Telemetry */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-mono text-[#DBEF90]">
-              <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
-              <span className="uppercase tracking-widest font-semibold">
-                Algorithmic Service Catalog / High-Frequency Dispatch
-              </span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <h1 className="text-3xl md:text-4xl font-light text-white tracking-tight">Services Matrix</h1>
-              <span className="text-[#DBEF90] text-3xl font-light leading-none">*</span>
-            </div>
-            <p className="text-xs text-on-surface-variant">
-              Live automated cluster routing rates per 1,000 units with non-drop telemetry guarantees.
-            </p>
+    <div className="space-y-8 pb-16">
+      {/* Header Telemetry */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            <span className="uppercase tracking-widest font-semibold">Live Service Catalog</span>
           </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/new-order"
-              className="px-5 py-2.5 rounded-full bg-[#DBEF90] text-[#2a3400] text-xs font-bold hover:brightness-110 flex items-center gap-2 shadow-[0_0_20px_rgba(219,239,144,0.3)]"
-            >
-              <Zap className="w-4 h-4" />
-              <span>Launch Order</span>
-            </Link>
-          </div>
+          <h1 className="text-3xl font-semibold text-white tracking-tight">Services Matrix</h1>
+          <p className="text-xs text-slate-400">
+            Transparent pricing per 1,000 units with non-drop telemetry and warranty refills.
+          </p>
         </div>
 
-        {/* Platform Filter Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {platforms.map((p) => {
-            const isSelected = selectedPlatform === p.id;
+        <Link
+          href="/new-order"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white text-xs font-semibold shadow-md shadow-blue-600/30 transition-all self-start sm:self-auto"
+        >
+          <PlusCircle className="w-3.5 h-3.5" />
+          <span>Place New Order</span>
+        </Link>
+      </div>
+
+      {/* Filter and Search Container */}
+      <div className="glass-panel p-4 space-y-4">
+        {/* Platforms Ribbon */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {platforms.map((plat) => {
+            const isSelected = selectedPlatform === plat.id;
+            const Icon = plat.icon;
             return (
               <button
-                key={p.id}
+                key={plat.id}
+                type="button"
                 onClick={() => {
-                  setSelectedPlatform(p.id);
+                  setSelectedPlatform(plat.id);
                   setSelectedCategory("ALL");
                 }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold shrink-0 transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 flex items-center gap-2 ${
                   isSelected
-                    ? "bg-[#d8ec8d] text-[#2a3400] shadow-[0_0_15px_rgba(219,239,144,0.25)] font-bold scale-[1.02]"
-                    : "bg-surface-container-low border border-white/5 text-on-surface hover:bg-surface-container-high"
+                    ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
+                    : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
                 }`}
               >
-                <span>{p.icon}</span>
-                <span>{p.name}</span>
+                <Icon className="w-3.5 h-3.5" />
+                <span>{plat.name}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Search & Category Chips */}
-        <div className="glass-panel p-4 rounded-3xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-on-surface-variant absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+        {/* Search & Category Filter Row */}
+        <div className="flex flex-col sm:flex-row items-center gap-3 pt-1 border-t border-white/5">
+          <div className="relative flex-1 w-full">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search service by name, ID (e.g. 1042), keyword..."
-              className="w-full bg-surface-container-highest/80 border border-white/5 focus:border-[#DBEF90] rounded-2xl pl-11 pr-4 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all font-mono"
+              placeholder="Search by service name, ID, or description..."
+              className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none"
             />
           </div>
 
           {categories.length > 0 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto">
-              <button
-                onClick={() => setSelectedCategory("ALL")}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 ${
-                  selectedCategory === "ALL"
-                    ? "bg-white/20 text-white"
-                    : "bg-surface-container-high/60 text-on-surface-variant hover:text-white"
-                }`}
-              >
-                All Types
-              </button>
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 ${
-                    selectedCategory === cat
-                      ? "bg-white/20 text-white"
-                      : "bg-surface-container-high/60 text-on-surface-variant hover:text-white"
-                  }`}
-                >
-                  {cat}
-                </button>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full sm:w-56 bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-sans"
+            >
+              <option value="ALL" className="bg-[#070B16]">All Categories ({categories.length})</option>
+              {categories.map((c) => (
+                <option key={c} value={c} className="bg-[#070B16]">
+                  {c}
+                </option>
               ))}
-            </div>
+            </select>
           )}
         </div>
+      </div>
 
-        {/* Services Grid */}
-        {filteredServices.length === 0 ? (
-          <div className="py-8">
-            <EmptyState
-              icon={Layers}
-              title={services.length === 0 ? "No services available" : "No matching services"}
-              description={
-                services.length === 0
-                  ? "The service catalog is currently empty. Please check back later or reach out to support."
-                  : "No services found matching the active filters or search query."
-              }
-              actionText={services.length === 0 ? "Contact support" : "Reset filters"}
-              actionHref={services.length === 0 ? "/support" : undefined}
-              onActionClick={
-                services.length === 0
-                  ? undefined
-                  : () => {
-                      setSelectedPlatform("ALL");
-                      setSelectedCategory("ALL");
-                      setSearchQuery("");
-                    }
-              }
-            />
+      {/* Services Table */}
+      <div className="glass-panel p-4 md:p-6 rounded-3xl overflow-hidden space-y-4">
+        {services.length === 0 ? (
+          <EmptyState
+            icon={Inbox}
+            title="Catalog empty"
+            description="The services catalog is currently being updated by the administrator. Please check back shortly."
+          />
+        ) : filteredServices.length === 0 ? (
+          <div className="py-12 text-center text-slate-400 text-xs font-mono">
+            No services match the current filter criteria.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredServices.map((service) => (
-            <GlassCard
-              key={service.id}
-              variant="squircle"
-              className="p-6 flex flex-col justify-between group space-y-4 hover:border-[#DBEF90]/40"
-            >
-              <div className="space-y-3">
-                {/* Top Badge & Service ID */}
-                <div className="flex items-center justify-between">
-                  <span className="px-3 py-1 rounded-full bg-surface-container-high border border-white/5 text-[10px] uppercase tracking-wider font-mono text-on-surface-variant">
-                    {service.platform} • {service.categoryName}
-                  </span>
-                  <button
-                    onClick={() => handleCopyId(service.id)}
-                    className="inline-flex items-center gap-1 text-[11px] font-mono text-on-surface-variant hover:text-[#DBEF90] transition-colors"
-                    title="Copy API Service ID"
-                  >
-                    <span>ID: #{service.id}</span>
-                    {copiedServiceId === service.id ? (
-                      <Check className="w-3 h-3 text-emerald-400" />
-                    ) : (
-                      <Copy className="w-3 h-3 opacity-60" />
-                    )}
-                  </button>
-                </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-white/10 text-[11px] uppercase tracking-wider text-slate-400 font-mono">
+                  <th className="py-3 px-3">ID</th>
+                  <th className="py-3 px-3">Service Name</th>
+                  <th className="py-3 px-3">Rate / 1k</th>
+                  <th className="py-3 px-3">Min / Max</th>
+                  <th className="py-3 px-3">Warranty</th>
+                  <th className="py-3 px-3 text-right">Order</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-xs">
+                {filteredServices.map((service) => (
+                  <tr key={service.id} className="hover:bg-white/[0.02] transition-colors">
+                    {/* ID */}
+                    <td className="py-3.5 px-3 font-mono font-medium text-slate-400 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-blue-400">#</span>
+                        <span>{service.id}</span>
+                        <button
+                          onClick={() => handleCopyId(service.id)}
+                          className="hover:text-white"
+                          title="Copy ID"
+                        >
+                          {copiedServiceId === service.id ? (
+                            <Check className="w-3 h-3 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-3 h-3 text-slate-400" />
+                          )}
+                        </button>
+                      </div>
+                    </td>
 
-                {/* Title */}
-                <h3 className="text-sm font-semibold text-white leading-snug group-hover:text-[#DBEF90] transition-colors">
-                  {service.name}
-                </h3>
+                    {/* Name & Platform */}
+                    <td className="py-3.5 px-3">
+                      <div className="font-medium text-white max-w-md">{service.name}</div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] text-blue-400 uppercase font-mono">
+                          {service.platform}
+                        </span>
+                        <span className="text-white/20">•</span>
+                        <span className="text-[10px] text-slate-400">
+                          {service.categoryName}
+                        </span>
+                      </div>
+                    </td>
 
-                {/* Description */}
-                <p className="text-xs text-on-surface-variant leading-relaxed line-clamp-2">
-                  {service.description}
-                </p>
+                    {/* Rate per 1000 */}
+                    <td className="py-3.5 px-3 font-mono font-semibold text-white whitespace-nowrap">
+                      ₹{service.ratePer1000.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </td>
 
-                {/* Specs Grid */}
-                <div className="grid grid-cols-2 gap-2 pt-2 text-[11px] font-mono">
-                  <div className="bg-white/5 rounded-xl p-2.5">
-                    <span className="text-[10px] text-on-surface-variant block">Min / Max Capacity</span>
-                    <span className="text-white font-bold">
-                      {service.minQty.toLocaleString()} – {service.maxQty.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="bg-white/5 rounded-xl p-2.5">
-                    <span className="text-[10px] text-on-surface-variant block">Velocity Speed</span>
-                    <span className="text-[#DBEF90] font-bold">{service.avgProcessingSpeed || "Fast"}</span>
-                  </div>
-                  <div className="bg-white/5 rounded-xl p-2.5">
-                    <span className="text-[10px] text-on-surface-variant block">Drop Rate SLA</span>
-                    <span className="text-emerald-400 font-bold">{service.badge || "0% Drop Guarantee"}</span>
-                  </div>
-                  <div className="bg-white/5 rounded-xl p-2.5">
-                    <span className="text-[10px] text-on-surface-variant block">Refill Period</span>
-                    <span className="text-purple-300 font-bold">
-                      {service.refillable ? "30 Days Warranty" : "Instant Non-Drop"}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                    {/* Min / Max */}
+                    <td className="py-3.5 px-3 font-mono text-slate-400 whitespace-nowrap">
+                      <span>{service.minQty.toLocaleString()}</span>
+                      <span className="mx-1 text-slate-600">/</span>
+                      <span>{service.maxQty.toLocaleString()}</span>
+                    </td>
 
-              {/* Bottom Price & Order Trigger */}
-              <div className="pt-3 border-t border-white/10 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] uppercase font-mono tracking-wider text-on-surface-variant block">
-                    Rate per 1,000
-                  </span>
-                  <div className="text-lg font-bold text-[#DBEF90] font-mono">
-                    ₹{service.ratePer1000.toFixed(2)}
-                  </div>
-                </div>
+                    {/* Warranty */}
+                    <td className="py-3.5 px-3 whitespace-nowrap">
+                      {service.refillable ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                          <ShieldCheck className="w-3 h-3" />
+                          <span>30d Refill</span>
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-mono text-slate-400">
+                          Non-Drop
+                        </span>
+                      )}
+                    </td>
 
-                <Link
-                  href={`/new-order?serviceId=${service.id}`}
-                  className="px-4 py-2 rounded-full bg-white/10 hover:bg-[#DBEF90] text-white hover:text-[#2a3400] text-xs font-bold transition-all flex items-center gap-1.5 shadow-md"
-                >
-                  <span>Dispatch</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            </GlassCard>
-            ))}
+                    {/* Order CTA */}
+                    <td className="py-3.5 px-3 text-right whitespace-nowrap">
+                      <Link
+                        href={`/new-order?serviceId=${service.id}`}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-600/15 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 text-xs font-semibold transition-all"
+                      >
+                        <span>Select</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

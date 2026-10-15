@@ -10,16 +10,16 @@ import {
   Search,
   MessageSquare,
   Send,
-  Sparkles,
-  Bot,
   User,
-  ShieldAlert,
   Clock,
   CheckCircle2,
   AlertCircle,
-  Paperclip,
+  ShieldCheck,
+  X,
 } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { FormField } from "@/components/shared/FormField";
 
 function SupportContent() {
   const searchParams = useSearchParams();
@@ -37,12 +37,13 @@ function SupportContent() {
   // New Ticket Form State
   const [subject, setSubject] = useState<string>("");
   const [department, setDepartment] = useState<TicketDepartment>(
-    orderIdParam ? "ORDER_ISSUES" : "ORDER_ISSUES"
+    orderIdParam ? "ORDER_ISSUES" : "GENERAL_SUPPORT"
   );
   const [priority, setPriority] = useState<TicketPriority>("MEDIUM");
   const [orderId, setOrderId] = useState<string>(orderIdParam || "");
   const [initialMessage, setInitialMessage] = useState<string>("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
     if (orderIdParam) {
@@ -59,8 +60,7 @@ function SupportContent() {
     return (
       q === "" ||
       t.id.toLowerCase().includes(q) ||
-      t.subject.toLowerCase().includes(q) ||
-      t.department.toLowerCase().includes(q)
+      t.subject.toLowerCase().includes(q)
     );
   });
 
@@ -77,6 +77,7 @@ function SupportContent() {
       return;
     }
 
+    setSubmitting(true);
     const res = await createTicket({
       subject,
       department,
@@ -84,12 +85,15 @@ function SupportContent() {
       orderId: orderId.trim() ? orderId.trim() : undefined,
       message: initialMessage,
     });
+    setSubmitting(false);
 
     if (res.success && res.ticketId) {
       setSelectedTicketId(res.ticketId);
       setIsCreatingTicket(false);
       setSubject("");
       setInitialMessage("");
+    } else {
+      setFormError("Failed to create ticket. Please try again.");
     }
   };
 
@@ -102,337 +106,256 @@ function SupportContent() {
   };
 
   return (
-    <div className="w-full bg-transparent min-h-screen pb-24 text-on-surface">
-      <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-8 space-y-8">
-        {/* Header Telemetry */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-mono text-[#DBEF90]">
-              <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
-              <span className="uppercase tracking-widest font-semibold">
-                Customer Support & Telemetry Resolution Center
-              </span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <h1 className="text-3xl md:text-4xl font-light text-white tracking-tight">Support Tickets</h1>
-              <span className="text-[#DBEF90] text-3xl font-light leading-none">*</span>
-            </div>
-            <p className="text-xs text-on-surface-variant">
-              24/7 dedicated support daemon with automated vector diagnostics and fast human engineer routing.
-            </p>
+    <div className="space-y-8 pb-16">
+      {/* Header Telemetry */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            <span className="uppercase tracking-widest font-semibold">Support Desk</span>
           </div>
-
-          <button
-            onClick={() => setIsCreatingTicket(true)}
-            className="px-5 py-2.5 rounded-full bg-[#DBEF90] text-[#2a3400] text-xs font-bold hover:brightness-110 flex items-center gap-2 shadow-[0_0_20px_rgba(219,239,144,0.3)] shrink-0"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Open New Ticket</span>
-          </button>
+          <h1 className="text-3xl font-semibold text-white tracking-tight">Support Tickets</h1>
+          <p className="text-xs text-slate-400">
+            Direct communication with support staff for order refills, balance issues, and inquiries.
+          </p>
         </div>
 
-        {/* 2-Column Split: Ticket List (4 cols) and Chat Timeline (8 cols) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Tickets Sidebar (4 cols) */}
-          <div className="lg:col-span-4 glass-panel rounded-[2rem] p-4 md:p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-4">
-            <div className="relative">
-              <Search className="w-4 h-4 text-on-surface-variant absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search tickets..."
-                className="w-full bg-surface-container-highest/80 border border-white/5 rounded-2xl pl-10 pr-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none font-mono"
-              />
-            </div>
+        <button
+          onClick={() => setIsCreatingTicket(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white text-xs font-semibold shadow-md shadow-blue-600/30 transition-all self-start sm:self-auto"
+        >
+          <PlusCircle className="w-3.5 h-3.5" />
+          <span>Open New Ticket</span>
+        </button>
+      </div>
 
-            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
-              {filteredTickets.length === 0 ? (
-                tickets.length === 0 ? (
-                  <div className="py-2">
-                    <EmptyState
-                      icon={HelpCircle}
-                      title="No tickets yet"
-                      description="Create a ticket to reach our support team."
-                      actionText="Open ticket"
-                      onActionClick={() => setIsCreatingTicket(true)}
-                    />
-                  </div>
-                ) : (
-                  <div className="py-8 text-center text-xs text-on-surface-variant font-mono">
-                    No matching tickets found.
-                  </div>
-                )
-              ) : (
-                filteredTickets.map((ticket) => {
-                  const isSelected = activeTicket?.id === ticket.id;
-                  return (
-                    <button
-                      key={ticket.id}
-                      onClick={() => {
-                        setSelectedTicketId(ticket.id);
-                        setIsCreatingTicket(false);
-                      }}
-                      className={`w-full p-4 rounded-2xl text-left border transition-all flex flex-col gap-2 ${
-                        isSelected
-                          ? "bg-blue-500/10 border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.2)]"
-                          : "bg-surface-container-high/40 border-white/5 hover:border-white/20"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-mono font-bold text-blue-400">
-                          ✦ {ticket.id}
-                        </span>
-                        <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full font-mono uppercase font-semibold ${
-                            ticket.status === "RESOLVED"
-                              ? "bg-emerald-500/20 text-emerald-300"
-                              : ticket.status === "ANSWERED"
-                              ? "bg-blue-500/20 text-blue-400"
-                              : "bg-amber-500/20 text-amber-300"
-                          }`}
-                        >
-                          {ticket.status}
-                        </span>
-                      </div>
-
-                      <div className="text-xs font-semibold text-white truncate">{ticket.subject}</div>
-
-                      <div className="flex items-center justify-between text-[10px] text-on-surface-variant font-mono pt-1">
-                        <span>{ticket.department}</span>
-                        <span>{new Date(ticket.lastReplyAt).toLocaleDateString()}</span>
-                      </div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
+      {/* 2-Column Split: Ticket List (4 cols) and Chat / Form (8 cols) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column: Tickets Sidebar (4 cols) */}
+        <div className="lg:col-span-4 glass-panel p-4 md:p-6 space-y-4">
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search tickets..."
+              className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+            />
           </div>
 
-          {/* Right Column: Chat Timeline or Ticket Creator Form (8 cols) */}
-          <div className="lg:col-span-8 glass-panel rounded-[2rem] p-6 md:p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-6">
-            {isCreatingTicket ? (
-              /* Ticket Creation Form */
-              <form onSubmit={handleCreateSubmit} className="space-y-6">
-                <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                  <div>
-                    <h2 className="text-xl font-light text-white">Create New Support Ticket</h2>
-                    <p className="text-xs text-on-surface-variant mt-0.5">
-                      Submit order queries, refill warranty alerts, or custom API limits.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsCreatingTicket(false)}
-                    className="text-xs text-on-surface-variant hover:text-white"
-                  >
-                    Cancel
-                  </button>
+          <div className="space-y-2 max-h-[560px] overflow-y-auto pr-1">
+            {filteredTickets.length === 0 ? (
+              tickets.length === 0 ? (
+                <EmptyState
+                  icon={HelpCircle}
+                  title="No tickets yet"
+                  description="Have a question or issue? Open a support ticket to get help from our engineers."
+                  actionText="Open ticket"
+                  onActionClick={() => setIsCreatingTicket(true)}
+                />
+              ) : (
+                <div className="py-8 text-center text-xs text-slate-400 font-mono">
+                  No tickets match the search query.
                 </div>
-
-                {formError && (
-                  <div className="p-3 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs">
-                    {formError}
-                  </div>
-                )}
-
-                <div className="space-y-4 text-xs">
-                  <div>
-                    <label className="text-[11px] uppercase tracking-wider text-on-surface-variant font-mono font-semibold block mb-1">
-                      Subject
-                    </label>
-                    <input
-                      type="text"
-                      value={subject}
-                      onChange={(e) => setSubject(e.target.value)}
-                      placeholder="e.g. Order refill check for ORD-98421"
-                      required
-                      className="w-full bg-surface-container-highest border border-white/10 focus:border-[#DBEF90] rounded-2xl px-4 py-3 text-white focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[11px] uppercase tracking-wider text-on-surface-variant font-mono font-semibold block mb-1">
-                        Department
-                      </label>
-                      <select
-                        value={department}
-                        onChange={(e) => setDepartment(e.target.value as TicketDepartment)}
-                        className="w-full bg-surface-container-highest border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none font-medium cursor-pointer"
-                      >
-                        <option value="ORDER_ISSUES">Order Issues & Speed</option>
-                        <option value="SERVICE_REFILL">Service Refill & Warranty</option>
-                        <option value="PAYMENT_BILLING">Payment & Wallet Billing</option>
-                        <option value="API_INTEGRATION">API & High-Frequency Bot</option>
-                        <option value="GENERAL_SUPPORT">General Support</option>
-                      </select>
+              )
+            ) : (
+              filteredTickets.map((ticket) => {
+                const isSelected = activeTicket?.id === ticket.id && !isCreatingTicket;
+                return (
+                  <button
+                    key={ticket.id}
+                    onClick={() => {
+                      setSelectedTicketId(ticket.id);
+                      setIsCreatingTicket(false);
+                    }}
+                    className={`w-full p-4 rounded-2xl text-left border transition-all flex flex-col gap-2 ${
+                      isSelected
+                        ? "bg-blue-600/15 border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.2)]"
+                        : "bg-white/[0.02] border-white/5 hover:border-white/15"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-semibold text-blue-400">
+                        #{ticket.id}
+                      </span>
+                      <StatusBadge status={ticket.status} />
                     </div>
-
-                    <div>
-                      <label className="text-[11px] uppercase tracking-wider text-on-surface-variant font-mono font-semibold block mb-1">
-                        Priority Level
-                      </label>
-                      <select
-                        value={priority}
-                        onChange={(e) => setPriority(e.target.value as TicketPriority)}
-                        className="w-full bg-surface-container-highest border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none font-medium cursor-pointer"
-                      >
-                        <option value="LOW">Low (Standard 4h SLA)</option>
-                        <option value="MEDIUM">Medium (1h SLA)</option>
-                        <option value="HIGH">High Priority (15m SLA)</option>
-                        <option value="CRITICAL">Critical Issue (Instant)</option>
-                      </select>
+                    <div className="text-xs font-semibold text-white truncate">{ticket.subject}</div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                      <span>{ticket.department}</span>
+                      <span>{new Date(ticket.lastReplyAt).toLocaleDateString()}</span>
                     </div>
-                  </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
 
-                  <div>
-                    <label className="text-[11px] uppercase tracking-wider text-on-surface-variant font-mono font-semibold block mb-1">
-                      Related Order ID (Optional)
-                    </label>
+        {/* Right Column: Active Thread OR Create Form (8 cols) */}
+        <div className="lg:col-span-8">
+          {isCreatingTicket ? (
+            <div className="glass-panel p-6 md:p-8 space-y-6">
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="space-y-0.5">
+                  <h2 className="text-base font-semibold text-white">Create New Support Ticket</h2>
+                  <p className="text-xs text-slate-400">Fill out details below for prompt resolution.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingTicket(false)}
+                  className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateSubmit} className="space-y-4">
+                <FormField label="Subject" required>
+                  <input
+                    type="text"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    placeholder="e.g. Order #1042 refill request / Payment balance query"
+                    required
+                    className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
+                  />
+                </FormField>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField label="Department">
+                    <select
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value as TicketDepartment)}
+                      className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none font-sans"
+                    >
+                      <option value="GENERAL_SUPPORT" className="bg-[#070B16]">General Support</option>
+                      <option value="ORDER_ISSUES" className="bg-[#070B16]">Order Issues & Refills</option>
+                      <option value="BILLING" className="bg-[#070B16]">Billing & Deposits</option>
+                      <option value="API_INTEGRATION" className="bg-[#070B16]">API & Reseller Setup</option>
+                    </select>
+                  </FormField>
+
+                  <FormField label="Order ID (Optional)">
                     <input
                       type="text"
                       value={orderId}
                       onChange={(e) => setOrderId(e.target.value)}
-                      placeholder="e.g. ORD-98421"
-                      className="w-full bg-surface-container-highest border border-white/10 rounded-2xl px-4 py-2.5 text-white font-mono focus:outline-none"
+                      placeholder="e.g. 1042 or ord_XXXXXX"
+                      className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
                     />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] uppercase tracking-wider text-on-surface-variant font-mono font-semibold block mb-1">
-                      Message Details
-                    </label>
-                    <textarea
-                      rows={4}
-                      value={initialMessage}
-                      onChange={(e) => setInitialMessage(e.target.value)}
-                      placeholder="Please describe your query in detail..."
-                      required
-                      className="w-full bg-surface-container-highest border border-white/10 focus:border-[#DBEF90] rounded-2xl p-4 text-white focus:outline-none leading-relaxed"
-                    />
-                  </div>
+                  </FormField>
                 </div>
+
+                <FormField label="Detailed Message" required>
+                  <textarea
+                    rows={5}
+                    value={initialMessage}
+                    onChange={(e) => setInitialMessage(e.target.value)}
+                    placeholder="Describe your issue or question in detail..."
+                    required
+                    className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none resize-none"
+                  />
+                </FormField>
+
+                {formError && (
+                  <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{formError}</span>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-end gap-3 pt-2">
                   <button
                     type="button"
                     onClick={() => setIsCreatingTicket(false)}
-                    className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-semibold text-white"
+                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 rounded-full bg-[#DBEF90] text-[#2a3400] text-xs font-bold hover:brightness-110 shadow-lg"
+                    disabled={submitting}
+                    className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md shadow-blue-600/30 transition-all disabled:opacity-50"
                   >
-                    Submit Ticket
+                    {submitting ? "Submitting..." : "Submit Ticket"}
                   </button>
                 </div>
               </form>
-            ) : activeTicket ? (
-              /* Active Ticket Chat Timeline */
-              <div className="space-y-6">
-                {/* Active Ticket Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono font-bold text-[#DBEF90]">
-                        ✦ {activeTicket.id}
-                      </span>
-                      {activeTicket.orderId && (
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-white">
-                          Order: {activeTicket.orderId}
-                        </span>
-                      )}
-                    </div>
-                    <h2 className="text-lg font-semibold text-white mt-1">{activeTicket.subject}</h2>
-                    <div className="text-[11px] text-on-surface-variant font-mono mt-0.5">
-                      Dept: {activeTicket.department} • Priority: {activeTicket.priority}
-                    </div>
+            </div>
+          ) : activeTicket ? (
+            <div className="glass-panel p-6 md:p-8 space-y-6 flex flex-col h-full min-h-[560px]">
+              {/* Ticket Header */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-semibold text-blue-400">
+                      #{activeTicket.id}
+                    </span>
+                    <StatusBadge status={activeTicket.status} />
                   </div>
-
-                  <span
-                    className={`text-xs px-3 py-1 rounded-full font-mono uppercase font-semibold self-start sm:self-center ${
-                      activeTicket.status === "RESOLVED"
-                        ? "bg-emerald-500/20 text-emerald-300"
-                        : "bg-[#DBEF90]/20 text-[#DBEF90]"
-                    }`}
-                  >
-                    {activeTicket.status}
-                  </span>
+                  <h2 className="text-lg font-semibold text-white">{activeTicket.subject}</h2>
                 </div>
+                <div className="text-right text-[11px] font-mono text-slate-400">
+                  <div>Department: {activeTicket.department}</div>
+                  <div>Opened: {new Date(activeTicket.createdAt).toLocaleDateString()}</div>
+                </div>
+              </div>
 
-                {/* Messages Feed */}
-                <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2">
-                  {activeTicket.messages.map((msg) => {
-                    const isUser = msg.authorRole === "USER";
-                    return (
+              {/* Message Thread */}
+              <div className="flex-1 space-y-4 overflow-y-auto max-h-[360px] pr-2">
+                {activeTicket.messages.map((msg) => {
+                  const isStaff = msg.authorRole === "ADMIN";
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col ${isStaff ? "items-start" : "items-end"}`}
+                    >
                       <div
-                        key={msg.id}
-                        className={`flex gap-3 text-xs ${
-                          isUser ? "flex-row-reverse" : "flex-row"
+                        className={`max-w-[85%] rounded-2xl p-4 text-xs space-y-1 ${
+                          isStaff
+                            ? "bg-white/[0.04] border border-white/10 text-slate-200"
+                            : "bg-blue-600 text-white shadow-md shadow-blue-600/25"
                         }`}
                       >
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                            isUser
-                              ? "bg-[#DBEF90] text-[#2a3400]"
-                              : "bg-surface-container-high text-white"
-                          }`}
-                        >
-                          {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4 text-[#DBEF90]" />}
+                        <div className="flex items-center justify-between gap-3 font-mono text-[10px] opacity-75">
+                          <span>{msg.authorName}</span>
+                          <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
-
-                        <div
-                          className={`max-w-[80%] rounded-2xl p-4 space-y-1.5 ${
-                            isUser
-                              ? "bg-[#DBEF90]/15 border border-[#DBEF90]/30 text-white rounded-tr-none"
-                              : "bg-surface-container-high/80 border border-white/5 text-on-surface rounded-tl-none"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-4 font-mono text-[10px] opacity-70">
-                            <span className="font-bold">{msg.authorName}</span>
-                            <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                          </div>
-                          <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                        </div>
+                        <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
+              </div>
 
-                {/* Fast Reply Box */}
-                <form onSubmit={handleSendReply} className="pt-2 border-t border-white/10 flex items-center gap-3">
-                  <input
-                    type="text"
-                    value={replyMessage}
-                    onChange={(e) => setReplyMessage(e.target.value)}
-                    placeholder="Type your response to support agent..."
-                    className="flex-1 bg-surface-container-highest border border-white/10 focus:border-[#DBEF90] rounded-2xl px-4 py-3 text-xs text-white placeholder:text-white/30 focus:outline-none transition-all"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!replyMessage.trim()}
-                    className="px-5 py-3 rounded-2xl bg-[#DBEF90] text-[#2a3400] text-xs font-bold hover:brightness-110 disabled:opacity-50 transition-all flex items-center gap-1.5 shadow-md shrink-0"
-                  >
-                    <span>Reply</span>
-                    <Send className="w-3.5 h-3.5" />
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <div className="py-12">
-                <EmptyState
-                  icon={HelpCircle}
-                  title="No ticket selected"
-                  description="Select an existing ticket from the sidebar or open a new support request."
-                  actionText="Open new ticket"
-                  onActionClick={() => setIsCreatingTicket(true)}
+              {/* Reply Box */}
+              <form onSubmit={handleSendReply} className="pt-2 border-t border-white/10 flex gap-2">
+                <input
+                  type="text"
+                  value={replyMessage}
+                  onChange={(e) => setReplyMessage(e.target.value)}
+                  placeholder="Type your response to support staff..."
+                  className="flex-1 bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
                 />
-              </div>
-            )}
-          </div>
+                <button
+                  type="submit"
+                  disabled={!replyMessage.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md shadow-blue-600/30 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send</span>
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div className="glass-panel p-12 text-center space-y-3">
+              <HelpCircle className="w-8 h-8 text-blue-400 mx-auto" />
+              <h3 className="text-sm font-semibold text-white">Select a Ticket</h3>
+              <p className="text-xs text-slate-400">Choose a ticket from the sidebar or open a new one.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -441,13 +364,7 @@ function SupportContent() {
 
 export default function SupportPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-[#0e0e0e] flex items-center justify-center text-[#DBEF90] font-mono text-xs">
-          ✦ Loading Support Telemetry...
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">Loading support...</div>}>
       <SupportContent />
     </Suspense>
   );

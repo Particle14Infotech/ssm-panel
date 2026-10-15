@@ -7,7 +7,6 @@ import {
   TrendingUp,
   Activity,
   Users,
-  DollarSign,
   Server,
   Zap,
   CheckCircle2,
@@ -18,18 +17,22 @@ import {
   Sparkles,
   RefreshCw,
   ExternalLink,
-  Sliders,
-  RotateCcw,
 } from "lucide-react";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { StatCard } from "@/components/shared/StatCard";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 export default function AdminDashboardPage() {
   const { users, services, orders, providers, transactions, syncProvider, updateOrderStatus } = useAdmin();
   const [syncingId, setSyncingId] = useState<string | null>(null);
 
-  const totalRevenue = orders.reduce((acc, o) => acc + o.charge, 0) + 1428450;
-  const upstreamCost = Math.round(totalRevenue * 0.624);
+  // Real calculations only — no hardcoded placeholder amounts
+  const totalRevenue = orders.reduce((acc, o) => acc + (o.charge || 0), 0);
+  const upstreamCost = Math.round(totalRevenue * 0.65);
   const netProfit = totalRevenue - upstreamCost;
+  const customerBalances = users.reduce((acc, u) => acc + (u.balance || 0), 0);
+  const activeOrdersCount = orders.filter((o) => o.status === "IN_PROGRESS" || o.status === "PROCESSING").length;
 
   const handleSync = async (providerId: string) => {
     setSyncingId(providerId);
@@ -38,312 +41,217 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="w-full bg-[#0e0e0e] min-h-screen pb-24 text-[#e5e2e1]">
+    <div className="w-full bg-[#02040A] min-h-screen pb-24 text-slate-100">
       <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-6 space-y-8">
-        {/* System Protocol Banner */}
-        <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full liquid-glass-pill shadow-sm text-xs font-mono">
-            <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
-            <span className="text-zinc-300 uppercase tracking-widest text-[11px]">
-              SYSTEM PROTOCOL: Node cluster AP-S1 operating at 99.98% throughput • High-frequency provider synchronization active
-            </span>
+        {/* Header Telemetry */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-white/10">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+              <span className="uppercase tracking-widest font-semibold">
+                Administrative Control Matrix
+              </span>
+            </div>
+            <h1 className="text-3xl font-semibold text-white tracking-tight">Admin Overview</h1>
+            <p className="text-xs text-slate-400">
+              Real-time platform metrics, upstream provider balances, and global order queues.
+            </p>
           </div>
-          <div className="hidden md:flex items-center gap-3 text-xs font-mono text-zinc-400">
-            <span>SHARD: 0x9AF4 • KERNEL v8.4.1</span>
-            <span className="text-[#DBEF90] font-bold">✦ AUTO RE-ROUTE ON</span>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href="/admin/services"
+              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-semibold border border-white/10 transition-all"
+            >
+              Services ({services.length})
+            </Link>
+            <Link
+              href="/admin/providers"
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md shadow-blue-600/30 transition-all"
+            >
+              Providers ({providers.length})
+            </Link>
           </div>
         </div>
 
-        {/* 1. DARK GLASSMORPHIC ADMIN TELEMETRY CORE */}
-        <section className="w-full relative space-y-6">
-          {/* Header */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/10">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs uppercase tracking-widest font-bold text-[#DBEF90] font-mono">
-                  Telemetry Core
-                </span>
-                <span className="text-[#DBEF90] text-xl font-bold">*</span>
-              </div>
-              <h1 className="text-2xl md:text-3xl font-light text-white tracking-tight">
-                Admin Master Dashboard
-              </h1>
-            </div>
+        {/* 4 Core Operational Stat Cards (12-col grid, equal height) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Registered Users"
+            value={users.length.toLocaleString()}
+            subtitle="Scoped real database accounts"
+            icon={Users}
+          />
+          <StatCard
+            title="Total Platform Orders"
+            value={orders.length.toLocaleString()}
+            subtitle={`${activeOrdersCount} active in processing queue`}
+            icon={Activity}
+          />
+          <StatCard
+            title="Active Services"
+            value={services.length.toLocaleString()}
+            subtitle="Catalog offerings online"
+            icon={Layers}
+          />
+          <StatCard
+            title="Connected Providers"
+            value={providers.length.toLocaleString()}
+            subtitle="Upstream API dispatch hubs"
+            icon={Server}
+          />
+        </div>
 
-            <div className="flex items-center gap-2">
-              <div className="inline-flex p-1 rounded-full liquid-glass-pill text-xs font-semibold">
-                <button className="px-4 py-1.5 rounded-full bg-[#DBEF90] text-[#131313] font-bold shadow-sm">
-                  Realtime (30D)
-                </button>
-                <button className="px-4 py-1.5 rounded-full text-zinc-400 hover:text-white transition-colors">
-                  Q3 Rolling
-                </button>
-                <button className="px-4 py-1.5 rounded-full text-zinc-400 hover:text-white transition-colors">
-                  Fiscal YTD
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* 4 Real Financial Metrics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Gross Revenue"
+            value={`₹${totalRevenue.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`}
+            subtitle="Real order volume cleared"
+            icon={TrendingUp}
+            highlight={true}
+          />
+          <StatCard
+            title="Estimated Upstream Cost"
+            value={`₹${upstreamCost.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`}
+            subtitle="Approx. 65% provider baseline"
+            icon={Server}
+          />
+          <StatCard
+            title="Net Margin (Yield)"
+            value={`₹${netProfit.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`}
+            subtitle="Estimated net surplus"
+            icon={Sparkles}
+          />
+          <StatCard
+            title="Total Customer Vault"
+            value={`₹${customerBalances.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`}
+            subtitle="Backed wallet liquidity"
+            icon={Shield}
+          />
+        </div>
 
-          {/* 4 Operational Metrics Row in Frosted Glass Squircle */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <GlassCard variant="squircle" className="p-4 flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold font-mono">Registered Users</span>
-                <span className="text-[11px] font-bold text-[#171e00] bg-[#DBEF90] px-2 py-0.5 rounded-full">+12.4%</span>
-              </div>
-              <div className="my-2">
-                <span className="text-2xl font-light text-white font-mono">48,290</span>
-              </div>
-              <div className="text-[10px] text-zinc-400 font-mono">14,810 Active This Week</div>
-            </GlassCard>
-
-            <GlassCard variant="squircle" className="p-4 flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold font-mono">Total Orders</span>
-                <Activity className="w-3.5 h-3.5 text-[#DBEF90]" />
-              </div>
-              <div className="my-2">
-                <span className="text-2xl font-light text-white font-mono">642,850</span>
-              </div>
-              <div className="text-[10px] text-zinc-400 font-mono">3,420 Today (↑ 8.2%)</div>
-            </GlassCard>
-
-            <GlassCard variant="squircle" className="p-4 flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold font-mono">Active Services</span>
-                <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse" />
-              </div>
-              <div className="my-2">
-                <span className="text-2xl font-light text-white font-mono">{services.length}</span>
-              </div>
-              <div className="text-[10px] text-zinc-400 font-mono">Across 7 Social Networks</div>
-            </GlassCard>
-
-            <GlassCard variant="squircle" className="p-4 flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase tracking-wider text-zinc-400 font-semibold font-mono">Connected Providers</span>
-                <Server className="w-3.5 h-3.5 text-[#DBEF90]" />
-              </div>
-              <div className="my-2">
-                <span className="text-2xl font-light text-white font-mono">{providers.length}</span>
-              </div>
-              <div className="text-[10px] text-[#DBEF90] font-mono font-semibold">100% Health Status</div>
-            </GlassCard>
-          </div>
-
-          {/* 4 Highlight Financial Cards in Frosted Glass Squircle */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Card 1: Gross Ingress */}
-            <GlassCard variant="squircle" className="p-5 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">Gross Ingress</span>
-                  <span className="text-[10px] font-mono bg-white/10 text-[#DBEF90] px-2 py-0.5 rounded-full font-bold">+18.2% MoM</span>
-                </div>
-                <span className="text-3xl font-light text-white tracking-tight block font-mono">
-                  ₹{totalRevenue.toLocaleString("en-IN")}
-                </span>
-                <span className="text-[10px] text-zinc-400 font-mono">.00 INR GROSS</span>
-              </div>
-              <div className="pt-3">
-                <svg className="w-full h-7 text-[#DBEF90]" fill="none" viewBox="0 0 160 28">
-                  <path
-                    d="M0 24 C20 20, 40 26, 60 14 C80 6, 100 16, 120 8 C140 3, 150 6, 160 2"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeWidth="2"
-                  />
-                </svg>
-                <div className="flex justify-between text-[10px] text-zinc-400 font-mono pt-1">
-                  <span>Day 01</span>
-                  <span className="text-[#DBEF90]">Peak Ingress</span>
-                </div>
-              </div>
-            </GlassCard>
-
-            {/* Card 2: Upstream Expenditure */}
-            <GlassCard variant="squircle" className="p-5 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">Upstream Cost</span>
-                  <span className="text-[10px] text-zinc-400 font-mono">62.4% ratio</span>
-                </div>
-                <span className="text-3xl font-light text-white tracking-tight block font-mono">
-                  ₹{upstreamCost.toLocaleString("en-IN")}
-                </span>
-                <span className="text-[10px] text-zinc-400 font-mono">.00 INR PROVIDERS</span>
-              </div>
-              <div className="pt-3 space-y-1.5">
-                <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden flex">
-                  <div className="bg-[#DBEF90] h-full" style={{ width: "62.4%" }} />
-                </div>
-                <div className="flex justify-between text-[10px] text-zinc-400 font-mono">
-                  <span>Direct API Sinks</span>
-                  <span className="text-[#DBEF90]">Buffer Safe</span>
-                </div>
-              </div>
-            </GlassCard>
-
-            {/* Card 3: Signature Magenta Net Profit Card */}
-            <GlassCard variant="squircle" className="p-5 flex flex-col justify-between text-white relative overflow-hidden bg-gradient-to-br from-[#BD0183]/30 via-[#d80064]/25 to-[#161616]">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs uppercase tracking-wider text-zinc-300 font-semibold font-mono">Net Profit / Margin</span>
-                  <Sparkles className="w-4 h-4 text-[#DBEF90]" />
-                </div>
-                <span className="text-3xl font-light text-white tracking-tight block font-mono">
-                  ₹{netProfit.toLocaleString("en-IN")}
-                </span>
-                <span className="text-[10px] text-[#DBEF90] font-mono">+37.6% NET YIELD</span>
-              </div>
-              <div className="pt-3">
-                <div className="text-[10px] text-zinc-300 font-mono flex items-center justify-between">
-                  <span>Auto-Sweep to Treasury</span>
-                  <span className="font-bold text-[#DBEF90]">Active</span>
-                </div>
-              </div>
-            </GlassCard>
-
-            {/* Card 4: Liquidity Pool */}
-            <GlassCard variant="squircle" className="p-5 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold font-mono">Customer Balances</span>
-                  <span className="text-[10px] text-[#DBEF90] font-bold font-mono">100% Backed</span>
-                </div>
-                <span className="text-3xl font-light text-white tracking-tight block font-mono">
-                  ₹4,12,000
-                </span>
-                <span className="text-[10px] text-zinc-400 font-mono">.00 INR IN VAULTS</span>
-              </div>
-              <div className="pt-3">
-                <div className="text-[10px] text-zinc-400 font-mono flex items-center justify-between">
-                  <span>Multi-Sig Treasury Vault</span>
-                  <span className="text-white font-bold">Cold Secure</span>
-                </div>
-              </div>
-            </GlassCard>
-          </div>
-        </section>
-
-        {/* 2. LOWER DARK COMMAND CENTER (PROVIDERS & INGRESS STREAM) */}
+        {/* 2-Column Split: Upstream Providers Status (5 cols) & Recent Platform Orders (7 cols) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: API Providers Status (5 cols) */}
-          <GlassCard variant="squircle" className="lg:col-span-5 p-6 space-y-4">
+          {/* Left: Providers Status (5 cols) */}
+          <GlassCard className="lg:col-span-5 p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
-                <Server className="w-4 h-4 text-[#DBEF90]" />
+                <Server className="w-4 h-4 text-blue-400" />
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-white">
                   Upstream API Providers
                 </h2>
               </div>
-              <Link href="/admin/providers" className="text-xs text-[#DBEF90] hover:underline">
-                Manage Providers
+              <Link href="/admin/providers" className="text-xs text-blue-400 hover:underline">
+                Manage All
               </Link>
             </div>
 
-            <div className="space-y-3">
-              {providers.map((p) => (
-                <div
-                  key={p.id}
-                  className="bg-surface-container-high/40 border border-white/5 rounded-2xl p-4 space-y-2 text-xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-white">{p.name}</span>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 font-mono text-[10px]">
-                      {p.status}
-                    </span>
-                  </div>
+            {providers.length === 0 ? (
+              <EmptyState
+                icon={Server}
+                title="No providers configured"
+                description="Add an external SMM provider to import catalog services and enable automated fulfillment."
+                actionText="Add Provider"
+                actionHref="/admin/providers"
+              />
+            ) : (
+              <div className="space-y-3">
+                {providers.map((p) => (
+                  <div
+                    key={p.id}
+                    className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 space-y-2 text-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold text-white">{p.name}</div>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        {p.status || "ACTIVE"}
+                      </span>
+                    </div>
 
-                  <div className="flex items-center justify-between font-mono text-[11px] text-on-surface-variant">
-                    <span>Balance: ${p.balance.toFixed(2)} USD</span>
-                    <span>{p.serviceCount} Services</span>
-                  </div>
+                    <div className="text-[11px] font-mono text-slate-400 truncate">
+                      {p.apiUrl}
+                    </div>
 
-                  <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[10px] font-mono">
-                    <span className="text-on-surface-variant">Last sync: {new Date(p.lastSyncAt).toLocaleTimeString()}</span>
-                    <button
-                      onClick={() => handleSync(p.id)}
-                      disabled={syncingId === p.id}
-                      className="text-[#DBEF90] hover:underline inline-flex items-center gap-1"
-                    >
-                      <RefreshCw className={`w-3 h-3 ${syncingId === p.id ? "animate-spin" : ""}`} />
-                      <span>Sync</span>
-                    </button>
+                    <div className="flex items-center justify-between pt-2 border-t border-white/5 font-mono text-[11px]">
+                      <div>
+                        <span className="text-slate-400">Balance: </span>
+                        <span className="text-white font-semibold">
+                          ₹{p.balance ? p.balance.toFixed(2) : "0.00"}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleSync(p.id)}
+                        disabled={syncingId === p.id}
+                        className="px-3 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 text-[10px] font-semibold transition-all flex items-center gap-1"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${syncingId === p.id ? "animate-spin" : ""}`} />
+                        <span>{syncingId === p.id ? "Syncing..." : "Sync Balance"}</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </GlassCard>
 
-          {/* Right Column: Global Orders Control Table (7 cols) */}
-          <GlassCard variant="squircle" className="lg:col-span-7 p-6 space-y-4">
+          {/* Right: Recent Global Orders (7 cols) */}
+          <GlassCard className="lg:col-span-7 p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-[#DBEF90]" />
+                <Activity className="w-4 h-4 text-blue-400" />
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-white">
-                  Real-Time Orders Ingress
+                  Global Orders Dispatch Queue
                 </h2>
               </div>
-              <Link href="/admin/orders" className="text-xs text-[#DBEF90] hover:underline">
-                View All {orders.length} Orders
+              <Link href="/admin/orders" className="text-xs text-blue-400 hover:underline">
+                View All ({orders.length})
               </Link>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-white/10 text-[10px] uppercase font-mono text-on-surface-variant">
-                    <th className="py-2.5 px-2">Order ID</th>
-                    <th className="py-2.5 px-2">Service</th>
-                    <th className="py-2.5 px-2">Quantity</th>
-                    <th className="py-2.5 px-2">Status</th>
-                    <th className="py-2.5 px-2 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {orders.slice(0, 6).map((o) => (
-                    <tr key={o.id} className="hover:bg-white/[0.02]">
-                      <td className="py-3 px-2 font-mono font-bold text-white whitespace-nowrap">
-                        {o.id}
-                      </td>
-                      <td className="py-3 px-2 max-w-[180px] truncate text-white">
-                        {o.serviceName}
-                      </td>
-                      <td className="py-3 px-2 font-mono text-on-surface-variant">
-                        {o.quantity.toLocaleString()}
-                      </td>
-                      <td className="py-3 px-2">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono uppercase bg-white/10 text-white font-semibold">
-                          {o.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center gap-1">
-                          {o.status !== "COMPLETED" && (
-                            <button
-                              onClick={() => updateOrderStatus(o.id, "COMPLETED")}
-                              className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold"
-                            >
-                              Complete
-                            </button>
-                          )}
-                          {o.status !== "CANCELLED" && (
-                            <button
-                              onClick={() => updateOrderStatus(o.id, "CANCELLED")}
-                              className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[10px] font-bold"
-                            >
-                              Cancel
-                            </button>
-                          )}
-                        </div>
-                      </td>
+            {orders.length === 0 ? (
+              <EmptyState
+                icon={Activity}
+                title="No orders yet"
+                description="Orders placed across the entire platform will appear in this real-time stream."
+              />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10 text-[11px] uppercase tracking-wider text-slate-400 font-mono">
+                      <th className="py-2.5 px-3">Order ID</th>
+                      <th className="py-2.5 px-3">Service</th>
+                      <th className="py-2.5 px-3">Qty</th>
+                      <th className="py-2.5 px-3">Charge</th>
+                      <th className="py-2.5 px-3 text-right">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-xs">
+                    {orders.slice(0, 8).map((o) => (
+                      <tr key={o.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="py-3 px-3 font-mono font-semibold text-white whitespace-nowrap">
+                          #{o.id}
+                        </td>
+                        <td className="py-3 px-3 max-w-[180px] truncate text-slate-300">
+                          {o.serviceName}
+                        </td>
+                        <td className="py-3 px-3 font-mono text-white">
+                          {o.quantity.toLocaleString()}
+                        </td>
+                        <td className="py-3 px-3 font-mono font-semibold text-white">
+                          ₹{o.charge.toFixed(2)}
+                        </td>
+                        <td className="py-3 px-3 text-right whitespace-nowrap">
+                          <StatusBadge status={o.status} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </GlassCard>
         </div>
       </div>
