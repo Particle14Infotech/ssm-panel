@@ -5,7 +5,7 @@
     "buildCommand": "pnpm --filter @smm/contracts build && pnpm exec prisma generate && pnpm --filter @smm/api build"
   },
   "deploy": {
-    "startCommand": "pnpm --filter @smm/api start:prod",
+    "startCommand": "node apps/api/dist/src/main.js || node apps/api/dist/main.js || pnpm --filter @smm/api start:prod",
     "preDeployCommand": "pnpm exec prisma db push",
     "healthcheckPath": "/api/v1/health/live",
     "healthcheckTimeout": 120,

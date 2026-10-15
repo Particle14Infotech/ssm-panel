@@ -12,4 +12,4 @@ cmds = [
 ]
 
 [start]
-cmd = "pnpm exec prisma db push && pnpm --filter @smm/api start:prod"
+cmd = "pnpm exec prisma db push && (node apps/api/dist/src/main.js || node apps/api/dist/main.js || pnpm --filter @smm/api start:prod)"
