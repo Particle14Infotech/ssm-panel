@@ -11,6 +11,7 @@
     "check:externals": "node scripts/check-externals.js",
     "check:contracts": "node scripts/check-contract-diff.js",
     "verify:backend": "node scripts/verify-backend.js",
+    "smoke": "node scripts/smoke.js",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""
   },
   "devDependencies": {

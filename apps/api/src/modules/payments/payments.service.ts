@@ -9,6 +9,7 @@ const WEBHOOK_SECRET = process.env.PAYMENT_WEBHOOK_SECRET || "smm_panel_webhook_
 
 @Injectable()
 export class PaymentsService {
+  private sandboxPayments = new Map<string, any>();
   constructor(
     private readonly prisma: PrismaService,
     private readonly walletService: WalletService
@@ -25,6 +26,30 @@ export class PaymentsService {
     if (amt.greaterThanOrEqualTo(5000)) bonus = amt.times(0.15);
     else if (amt.greaterThanOrEqualTo(1000)) bonus = amt.times(0.1);
     else if (amt.greaterThanOrEqualTo(500)) bonus = amt.times(0.05);
+
+    if (!this.prisma.isConnected) {
+      const paymentId = `pay_sbx_${Date.now()}`;
+      const payment = {
+        id: paymentId,
+        userId: body.userId || "usr_default_demo",
+        gatewayOrderId,
+        amount: amt,
+        bonusAmount: bonus,
+        method: body.method || "RAZORPAY",
+        status: PaymentStatus.PENDING,
+      };
+      this.sandboxPayments.set(gatewayOrderId, payment);
+      return {
+        success: true,
+        paymentId,
+        gatewayOrderId,
+        amount: amt.toNumber(),
+        bonusAmount: bonus.toNumber(),
+        currency: "INR",
+        method: payment.method,
+        status: payment.status,
+      };
+    }
 
     const payment = await this.prisma.payment.create({
       data: {
@@ -104,6 +129,30 @@ export class PaymentsService {
   async sandboxComplete(gatewayOrderId: string) {
     if (process.env.NODE_ENV === "production") {
       throw new NotFoundException("Sandbox completion endpoint is disabled in production.");
+    }
+
+    if (!this.prisma.isConnected) {
+      const payment = this.sandboxPayments.get(gatewayOrderId);
+      if (!payment) {
+        throw new NotFoundException("Payment record not found.");
+      }
+      if (payment.status === PaymentStatus.SUCCESS) {
+        return { success: true, message: "Payment already processed." };
+      }
+      const totalCredit = payment.amount.plus(payment.bonusAmount);
+      await this.walletService.creditFunds(
+        payment.userId,
+        totalCredit,
+        TransactionType.DEPOSIT,
+        `SANDBOX-${payment.id}`,
+        `Sandbox simulated payment deposit (#${gatewayOrderId})`
+      );
+      payment.status = PaymentStatus.SUCCESS;
+      return {
+        success: true,
+        message: "Sandbox payment completed successfully.",
+        creditedAmount: totalCredit.toNumber(),
+      };
     }
 
     const payment = await this.prisma.payment.findUnique({

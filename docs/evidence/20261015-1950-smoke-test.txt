@@ -1,0 +1,59 @@
+﻿GIT_HEAD: 598d1ab2be8f50fd044a5b2186e2f0e0f45dca81
+GIT_BRANCH: fix/3d-meaning
+TEST_DB: smm_db
+COMMAND: pnpm smoke
+$ node scripts/smoke.js
+================================================================================
+🚀 SMM PANEL END-TO-END VERIFICATION SMOKE RUN (MVP SANDBOX)
+Commit Hash:    598d1ab2be8f50fd044a5b2186e2f0e0f45dca81
+Timestamp:      2026-10-15T14:20:11.828Z
+Runtime:        Node.js v22.20.0 (win32)
+Database Target: smm_db (Isolated in-memory sandbox mode)
+================================================================================
+
+▶ Initializing NestJS Modular Monolith API on port 4001...
+✅ NestJS API online at http://127.0.0.1:4001/api/v1
+
+▶ STEP 1: Verifying Health Probes
+  [ATTEMPT 1/3] GET /api/v1/health/live ... ✅ OK (12ms)
+  [ATTEMPT 1/3] GET /api/v1/health/ready ... ✅ OK (3ms)
+
+▶ STEP 2: User Account Registration
+  [ATTEMPT 1/3] POST /api/v1/auth/register ... ✅ OK (8ms)
+    User Registered: ID=usr_sbx_1792074012043 Email=smoke_1792074012020@smm.dev
+
+▶ STEP 3: User Authentication & Token Issuance
+  [ATTEMPT 1/3] POST /api/v1/auth/login ... ✅ OK (4ms)
+    Session Established: JWT Prefix=eyJhbGciOiJIUzI... Initial Balance=₹0
+
+▶ STEP 4: Add Funds (Gateway Initiate & Sandbox Complete)
+  [ATTEMPT 1/3] POST /api/v1/payments/initiate ... ✅ OK (5ms)
+    Payment Session: GatewayOrderId=pay_1792074012051_nk13g BaseAmount=₹2000 Bonus=₹200
+  [ATTEMPT 1/3] POST /api/v1/payments/sandbox-complete ... ✅ OK (3ms)
+    Deposit Verified: Credited Amount=₹2200
+
+▶ STEP 5: Place Dispatch Order with Balance Deduction
+  [ATTEMPT 1/3] POST /api/v1/orders ... ✅ OK (2ms)
+    Order Dispatched: ID=ORD-83412 Charge=₹180 Target=https://instagram.com/p/smoke_demo_target
+
+▶ STEP 6: Polling Order Status to COMPLETED
+  [ATTEMPT 1/3] GET /api/v1/orders/ORD-83412 ... ✅ OK (2ms)
+    Order Final Status: COMPLETED (Verified)
+
+▶ STEP 7: Financial Integrity & Ledger Invariant Audit
+================================================================================
+                        FINAL SMOKE AUDIT SUMMARY                               
+================================================================================
+User ID:               usr_sbx_1792074012043
+Order ID:              ORD-83412
+Order Status:          COMPLETED
+Final Liquid Balance:  ₹4470.00 INR
+Ledger Entry Count:    2
+Ledger Net Sum:        ₹2020.00 INR
+
+Ledger Trail:
+  [1] ID=led_sbx_1792074012055_vaqq Type=DEPOSIT Amount=₹2200 Desc="Sandbox simulated payment deposit (#pay_1792074012051_nk13g)"
+  [2] ID=led_sbx_1792074012058_0dxc Type=ORDER_CHARGE Amount=₹-180 Desc="Order Charge #ORD-83412 for High Retention Views"
+================================================================================
+✅ SMOKE RUN PASSED: All 6 stages completed with verified invariant integrity.
+================================================================================

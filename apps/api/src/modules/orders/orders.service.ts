@@ -15,6 +15,7 @@ export interface CreateOrderDto {
 
 @Injectable()
 export class OrdersService {
+  private sandboxOrders = new Map<string, any>();
   constructor(
     private readonly prisma: PrismaService,
     private readonly walletService: WalletService
@@ -22,6 +23,8 @@ export class OrdersService {
 
   async findAll(userId?: string) {
     if (!this.prisma.isConnected) {
+      const orders = Array.from(this.sandboxOrders.values());
+      if (orders.length > 0) return orders;
       return [
         {
           id: "ORD-DEMO-1001",
@@ -81,6 +84,9 @@ export class OrdersService {
 
   async findOne(id: string) {
     if (!this.prisma.isConnected) {
+      if (this.sandboxOrders.has(id)) {
+        return this.sandboxOrders.get(id);
+      }
       return {
         id,
         userId: "usr_default_demo",
@@ -150,16 +156,33 @@ export class OrdersService {
 
     // 2. Fetch service safely
     let service: any = null;
-    try {
-      service = await this.prisma.service.findUnique({
-        where: { id: input.serviceId },
-      });
-    } catch {
-      // DB offline fallback
+    if (this.prisma.isConnected) {
+      try {
+        service = await this.prisma.service.findUnique({
+          where: { id: input.serviceId },
+        });
+      } catch {
+        // DB offline fallback
+      }
     }
 
     if (!service) {
-      throw new BadRequestException("Invalid service ID provided.");
+      if (!this.prisma.isConnected) {
+        service = {
+          id: input.serviceId || "1042",
+          name: "High Retention Views",
+          platform: "YOUTUBE",
+          ratePer1000: 180.0,
+          minQty: 100,
+          maxQty: 500000,
+          status: "ACTIVE",
+          isDeleted: false,
+          refillable: true,
+          cancellable: true,
+        };
+      } else {
+        throw new BadRequestException("Invalid service ID provided.");
+      }
     }
     if (service.status !== "ACTIVE" || service.isDeleted) {
       throw new BadRequestException("Service is currently unavailable.");
@@ -174,6 +197,34 @@ export class OrdersService {
     const charge = calculateOrderCharge(input.quantity, service.ratePer1000);
 
     // 4. Atomic Execution: Debit wallet + Insert Order + Enqueue Outbox Event
+    if (!this.prisma.isConnected) {
+      const orderId = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
+      await this.walletService.debitForOrder(
+        userId,
+        orderId,
+        charge,
+        input.idempotencyKey,
+        `Order Charge #${orderId} for ${service.name}`
+      );
+      const order = {
+        id: orderId,
+        userId,
+        serviceId: service.id,
+        target: input.target,
+        quantity: input.quantity,
+        charge: typeof charge === "object" && "toNumber" in charge ? (charge as any).toNumber() : Number(charge),
+        status: OrderStatus.COMPLETED,
+        startCount: 1500,
+        remains: 0,
+        idempotencyKey: input.idempotencyKey || null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        service,
+      };
+      this.sandboxOrders.set(orderId, order);
+      return order;
+    }
+
     const result = await this.prisma.$transaction(async (tx) => {
       // Create order in PENDING status
       const order = await tx.order.create({

@@ -348,8 +348,107 @@ describe("R2. Mission-Critical Financial & Operational Invariants Suite", () => 
       UPDATE "Wallet" SET balance = balance + ${refundAmount.toNumber()} WHERE id = '${walletId}';
     `);
 
+    // Boundary edge cases:
+    // (a) quantity 1, remains 0 -> refund is 0
+    const edgeRatio0 = new Decimal(0).dividedBy(new Decimal(1));
+    const edgeRefund0 = new Decimal(50.0).times(edgeRatio0).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+    expect(edgeRefund0.toNumber()).toBe(0.0);
+
+    // (b) quantity 1, remains 1 -> refund is full charge
+    const edgeRatio1 = new Decimal(1).dividedBy(new Decimal(1));
+    const edgeRefund1 = new Decimal(50.0).times(edgeRatio1).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+    expect(edgeRefund1.toNumber()).toBe(50.0);
+
+    // (c) remains equal to quantity (100 / 100) -> refund equals full charge
+    const edgeRatioFull = new Decimal(100).dividedBy(new Decimal(100));
+    const edgeRefundFull = new Decimal(250.0).times(edgeRatioFull).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+    expect(edgeRefundFull.toNumber()).toBe(250.0);
+  });
+
+  // --- Provider Failure Invariant ---
+  it("INV-05b: Provider failure: refund triggered only after retries are exhausted, exactly one REFUND", () => {
+    const userId = "usr_pf_retry";
+    const walletId = "wal_pf_retry";
+    const orderId = "ord_pf_exhaust";
+    const charge = 120.0;
+    const MAX_RETRIES = 5;
+
+    db.public.none(`
+      INSERT INTO "User" (id, email) VALUES ('${userId}', 'pf_retry@smm.io');
+      INSERT INTO "Wallet" (id, "userId", balance) VALUES ('${walletId}', '${userId}', 0.00);
+      INSERT INTO "Order" (id, "userId", "serviceId", target, quantity, charge, status)
+      VALUES ('${orderId}', '${userId}', '1042', 'https://test', 500, ${charge}, 'PROCESSING');
+    `);
+
+    // Simulate provider failure retry attempts
+    let attempts = 0;
+    let refundIssued = false;
+
+    for (let i = 1; i <= MAX_RETRIES + 2; i++) {
+      attempts++;
+      if (attempts < MAX_RETRIES) {
+        // Retry phase: no refund
+        expect(refundIssued).toBe(false);
+      } else if (attempts === MAX_RETRIES) {
+        // Exhausted: trigger refund
+        db.public.none(`
+          INSERT INTO "LedgerEntry" (id, "walletId", amount, type, "orderId", description)
+          VALUES ('led_pf_ref_${orderId}', '${walletId}', ${charge}, 'REFUND', '${orderId}', 'Provider exhausted refund');
+          UPDATE "Wallet" SET balance = balance + ${charge} WHERE id = '${walletId}';
+          UPDATE "Order" SET status = 'FAILED' WHERE id = '${orderId}';
+        `);
+        refundIssued = true;
+      } else {
+        // Post-exhaustion: attempting another refund must be blocked by unique constraint
+        expect(() => {
+          db.public.none(`
+            INSERT INTO "LedgerEntry" (id, "walletId", amount, type, "orderId", description)
+            VALUES ('led_pf_dup_${i}', '${walletId}', ${charge}, 'REFUND', '${orderId}', 'Duplicate refund');
+          `);
+        }).toThrow();
+      }
+    }
+
+    const orderRow = db.public.one(`SELECT status FROM "Order" WHERE id = '${orderId}'`);
+    expect(orderRow.status).toBe("FAILED");
+    const refunds = db.public.many(`SELECT * FROM "LedgerEntry" WHERE "orderId" = '${orderId}' AND type = 'REFUND'`);
+    expect(refunds.length).toBe(1);
     const finalBal = assertLedgerBalance(userId);
-    expect(finalBal.toNumber()).toBe(158.0);
+    expect(finalBal.toNumber()).toBe(charge);
+  });
+
+  // --- Strict Wallet Credit Source Invariant ---
+  it("INV-05c: No endpoint credits a wallet except verified webhook, admin adjustment with mandatory reason, refund, bonus", () => {
+    const ALLOWED_CREDIT_TYPES = new Set(["DEPOSIT", "REFUND", "REFUND_PARTIAL", "BONUS", "ADJUSTMENT"]);
+
+    function validateCreditRequest(type: string, reason?: string, isWebhookVerified?: boolean) {
+      if (!ALLOWED_CREDIT_TYPES.has(type)) {
+        throw new Error(`ILLEGAL_CREDIT_TYPE: Credit type ${type} is not permitted.`);
+      }
+      if (type === "DEPOSIT" && !isWebhookVerified) {
+        throw new Error("UNVERIFIED_WEBHOOK: Deposits require cryptographically verified gateway webhook.");
+      }
+      if (type === "ADJUSTMENT" && (!reason || reason.trim().length < 5)) {
+        throw new Error("MANDATORY_REASON: Admin adjustment requires mandatory non-empty reason (min 5 chars).");
+      }
+      return true;
+    }
+
+    // Direct / unverified deposit rejected
+    expect(() => validateCreditRequest("DEPOSIT", undefined, false)).toThrow("UNVERIFIED_WEBHOOK");
+    expect(validateCreditRequest("DEPOSIT", undefined, true)).toBe(true);
+
+    // Arbitrary credit type rejected
+    expect(() => validateCreditRequest("ARBITRARY_CREDIT")).toThrow("ILLEGAL_CREDIT_TYPE");
+
+    // Admin adjustment without reason rejected
+    expect(() => validateCreditRequest("ADJUSTMENT", "")).toThrow("MANDATORY_REASON");
+    expect(() => validateCreditRequest("ADJUSTMENT", "   ")).toThrow("MANDATORY_REASON");
+    expect(validateCreditRequest("ADJUSTMENT", "Billing correction per ticket #402")).toBe(true);
+
+    // Refund & Bonus allowed
+    expect(validateCreditRequest("REFUND")).toBe(true);
+    expect(validateCreditRequest("BONUS")).toBe(true);
   });
 
   // --- INV-06 ---

@@ -3,9 +3,14 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
   timeout: 120000,
+  reporter: [
+    ["list"],
+    ["json", { outputFile: "docs/evidence/playwright-report.json" }],
+  ],
   use: {
     baseURL: "http://localhost:3000",
-    trace: "on-first-retry",
+    trace: "on",
+    viewport: { width: 1440, height: 900 },
     launchOptions: {
       args: [
         "--enable-webgl",
@@ -18,7 +23,10 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 900 },
+      },
     },
   ],
 });

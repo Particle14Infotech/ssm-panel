@@ -5,6 +5,8 @@ import { TransactionType } from "@prisma/client";
 
 @Injectable()
 export class WalletService {
+  private sandboxBalances = new Map<string, Decimal>();
+  private sandboxLedger = new Map<string, any[]>();
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -12,9 +14,10 @@ export class WalletService {
    */
   async getBalance(userId: string) {
     if (!this.prisma.isConnected) {
+      const bal = this.sandboxBalances.get(userId) ?? new Decimal(2450.0);
       return {
         userId,
-        balance: 2450.0,
+        balance: bal.toNumber(),
         currency: "INR",
       };
     }
@@ -58,6 +61,34 @@ export class WalletService {
     idempotencyKey?: string,
     description: string = "Order Charge"
   ) {
+    if (!this.prisma.isConnected) {
+      const current = this.sandboxBalances.get(userId) ?? new Decimal(2450.0);
+      if (current.lessThan(charge)) {
+        throw new BadRequestException("Insufficient wallet balance.");
+      }
+      const newBalance = current.minus(charge);
+      this.sandboxBalances.set(userId, newBalance);
+      const ledgerId = `led_sbx_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const entries = this.sandboxLedger.get(userId) || [];
+      entries.push({
+        id: ledgerId,
+        walletId: `wal_${userId}`,
+        amount: new Decimal(charge).negated().toNumber(),
+        type: "ORDER_CHARGE",
+        orderId,
+        idempotencyKey,
+        description,
+        createdAt: new Date(),
+      });
+      this.sandboxLedger.set(userId, entries);
+      return {
+        walletId: `wal_${userId}`,
+        previousBalance: current,
+        newBalance,
+        ledgerId,
+      };
+    }
+
     return await this.prisma.$transaction(async (tx) => {
       // 1. Lock wallet row with FOR UPDATE using raw query
       const [walletRow] = await tx.$queryRawUnsafe<any[]>(
@@ -175,6 +206,29 @@ export class WalletService {
     referenceId?: string,
     description: string = "Funds Deposit"
   ) {
+    if (!this.prisma.isConnected) {
+      const current = this.sandboxBalances.get(userId) ?? new Decimal(2450.0);
+      const newBalance = current.plus(amount);
+      this.sandboxBalances.set(userId, newBalance);
+      const ledgerId = `led_sbx_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const entries = this.sandboxLedger.get(userId) || [];
+      entries.push({
+        id: ledgerId,
+        walletId: `wal_${userId}`,
+        amount: new Decimal(amount).toNumber(),
+        type,
+        referenceId,
+        description,
+        createdAt: new Date(),
+      });
+      this.sandboxLedger.set(userId, entries);
+      return {
+        success: true,
+        newBalance,
+        ledgerId,
+      };
+    }
+
     return await this.prisma.$transaction(async (tx) => {
       const [walletRow] = await tx.$queryRawUnsafe<any[]>(
         `SELECT id, balance FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
@@ -212,6 +266,10 @@ export class WalletService {
    */
   async getLedger(userId: string) {
     if (!this.prisma.isConnected) {
+      const entries = this.sandboxLedger.get(userId);
+      if (entries && entries.length > 0) {
+        return entries;
+      }
       return [
         {
           id: "ldg-benchmark-001",

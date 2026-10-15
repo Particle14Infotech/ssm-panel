@@ -24,6 +24,7 @@ export default function AdminUsersPage() {
   const [balanceModalUser, setBalanceModalUser] = useState<AdminUser | null>(null);
   const [adjustAmount, setAdjustAmount] = useState<number>(500);
   const [adjustType, setAdjustType] = useState<"ADD" | "DEDUCT">("ADD");
+  const [adjustReason, setAdjustReason] = useState<string>("");
 
   const filteredUsers = users.filter((u) => {
     const q = searchQuery.toLowerCase().trim();
@@ -35,8 +36,8 @@ export default function AdminUsersPage() {
     );
   });
 
-  const handleAdjustSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAdjustSubmit = (e?: React.FormEvent) => {
+    if (e && e.preventDefault) e.preventDefault();
     if (!balanceModalUser) return;
 
     const newBalance =
@@ -46,6 +47,7 @@ export default function AdminUsersPage() {
 
     updateUserBalance(balanceModalUser.id, Number(newBalance.toFixed(2)));
     setBalanceModalUser(null);
+    setAdjustReason("");
   };
 
   return (
@@ -220,6 +222,20 @@ export default function AdminUsersPage() {
                   className="w-full bg-surface-container-highest border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-sm"
                 />
               </div>
+
+              <div>
+                <label className="text-[10px] uppercase font-mono text-on-surface-variant block mb-1">
+                  Mandatory Reason
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. VIP onboarding credit, refund correction"
+                  value={adjustReason}
+                  onChange={(e) => setAdjustReason(e.target.value)}
+                  className="w-full bg-surface-container-highest border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-sm"
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
@@ -232,6 +248,7 @@ export default function AdminUsersPage() {
               </button>
               <button
                 type="submit"
+                onClick={handleAdjustSubmit}
                 className="px-5 py-2 rounded-full bg-[#DBEF90] text-[#2a3400] text-xs font-bold hover:brightness-110"
               >
                 Confirm Adjustment
