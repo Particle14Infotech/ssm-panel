@@ -5,11 +5,7 @@ nixPkgs = ["nodejs_22", "pnpm-9_x", "python3", "gcc"]
 cmds = ["pnpm install --no-frozen-lockfile"]
 
 [phases.build]
-cmds = [
-  "pnpm --filter @smm/contracts build",
-  "pnpm exec prisma generate",
-  "pnpm --filter @smm/api build"
-]
+cmds = ["node scripts/build-service.js"]
 
 [start]
-cmd = "pnpm exec prisma db push && (node apps/api/dist/src/main.js || node apps/api/dist/main.js || pnpm --filter @smm/api start:prod)"
+cmd = "node scripts/start-service.js"
