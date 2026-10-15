@@ -1,0 +1,2382 @@
+﻿=== GIT HEAD ===
+c34704b1b38ea0823d03a2239743f9238f44465f
+=== GIT STATUS ===
+ M .env.example  M .github/workflows/ci.yml  M apps/api/package.json  M apps/api/src/app.module.ts  M apps/api/src/main.ts  M apps/api/src/modules/auth/auth.controller.ts  M apps/api/src/modules/auth/auth.module.ts  M apps/api/src/modules/orders/orders.controller.ts  M apps/api/src/modules/orders/orders.module.ts  M apps/api/src/modules/orders/orders.service.ts  M apps/api/src/modules/providers/providers.controller.ts  M apps/api/src/modules/providers/providers.module.ts  M apps/api/src/modules/services/services.controller.ts  M apps/api/src/modules/services/services.service.ts  M apps/api/src/modules/tickets/tickets.controller.ts  M apps/api/src/modules/tickets/tickets.module.ts  M apps/api/src/modules/users/users.controller.ts  M apps/api/src/modules/users/users.module.ts  M apps/api/src/modules/wallet/wallet.controller.ts  M apps/api/src/modules/wallet/wallet.module.ts  M apps/web/app/(auth)/forgot-password/page.tsx  M apps/web/app/(auth)/login/page.tsx  M apps/web/app/(auth)/register/page.tsx  M apps/web/app/(auth)/verify/page.tsx  M apps/web/app/(customer)/layout.tsx  M apps/web/app/(customer)/new-order/page.tsx  M apps/web/app/(customer)/support/page.tsx  M apps/web/app/(customer)/wallet/page.tsx  M apps/web/app/(marketing)/contact/page.tsx  M apps/web/app/(marketing)/faq/page.tsx  M apps/web/app/(marketing)/legal/privacy/page.tsx  M apps/web/app/(marketing)/legal/refund/page.tsx  M apps/web/app/(marketing)/legal/terms/page.tsx  M apps/web/app/(marketing)/pricing/page.tsx  M apps/web/app/(marketing)/services/page.tsx  M apps/web/app/(marketing)/work/page.tsx  M apps/web/app/admin/layout.tsx  M apps/web/app/admin/providers/page.tsx  M apps/web/app/layout.tsx  D apps/web/app/page.tsx  M apps/web/app/robots.ts  M apps/web/app/sitemap.ts  M apps/web/components/admin/AdminHeader.tsx  M apps/web/components/customer/CustomerHeader.tsx  M apps/web/components/landing/BenefitsSection.tsx  M apps/web/components/landing/ContactSection.tsx  M apps/web/components/landing/FaqSection.tsx  M apps/web/components/landing/HeroSection.tsx  M apps/web/components/landing/PricingSection.tsx  M apps/web/components/landing/ServicesPreviewSection.tsx  M apps/web/components/landing/SocialProofSection.tsx  M apps/web/components/landing/WorkWalkthroughSection.tsx  M apps/web/components/shared/Footer.tsx  M apps/web/components/shared/Navbar.tsx  M apps/web/content/customer-data.ts  M apps/web/content/landing.ts  M apps/web/context/AdminContext.tsx  M apps/web/context/CustomerContext.tsx  M apps/web/lib/utils.ts  M apps/web/next.config.js  M apps/web/package.json  M apps/web/styles/globals.css  M apps/worker/package.json  M apps/worker/src/main.ts  M package.json  M packages/config/tailwind-preset.js  M packages/contracts/src/orders.ts  M packages/contracts/src/pricing.ts  M packages/contracts/src/wallet.ts  M pnpm-lock.yaml  M pnpm-workspace.yaml ?? .agents/ ?? .github/dependabot.yml ?? AGENTS.md ?? apps/api/.eslintrc.json ?? apps/api/scripts/ ?? apps/api/src/common/ ?? apps/api/src/config/ ?? apps/api/src/modules/announcements/ ?? apps/api/src/modules/auth/auth.service.ts ?? apps/api/src/modules/coupons/ ?? apps/api/src/modules/notifications/ ?? apps/api/src/modules/orders/m1-correctness.spec.ts ?? apps/api/src/modules/payments/ ?? apps/api/src/modules/providers/providers.service.ts ?? apps/api/src/modules/reports/ ?? apps/api/src/modules/reseller/ ?? apps/api/src/modules/services/services.controller.spec.ts ?? apps/api/src/modules/settings/ ?? apps/api/src/modules/tickets/tickets.controller.spec.ts ?? apps/api/src/modules/tickets/tickets.service.ts ?? apps/api/src/modules/users/users.controller.spec.ts ?? apps/api/src/modules/users/users.service.ts ?? apps/api/src/modules/wallet/wallet.controller.spec.ts ?? apps/api/src/modules/wallet/wallet.service.ts ?? apps/api/test/ ?? apps/web/.eslintrc.json ?? apps/web/app/(customer)/orders/[id]/ ?? apps/web/app/(customer)/transactions/ ?? apps/web/app/(customer)/wallet/verify/ ?? apps/web/app/(marketing)/layout.tsx ?? apps/web/app/(marketing)/page.tsx ?? apps/web/app/admin/categories/ ?? apps/web/app/admin/page.tsx ?? apps/web/app/admin/wallets/ ?? apps/web/app/app/ ?? apps/web/app/apple-icon.tsx ?? apps/web/app/dev/ ?? apps/web/app/icon.tsx ?? apps/web/app/not-found.tsx ?? apps/web/app/opengraph-image.tsx ?? apps/web/components/motion/ ?? apps/web/components/shared/Breadcrumb.tsx ?? apps/web/components/three/ ?? apps/web/lib/motion.ts ?? apps/web/public/ ?? apps/web/src/ ?? apps/web/test-svgs.mjs ?? artifacts/ ?? bin/ ?? build_crown.py ?? check_browser.js ?? crown-preview.png ?? crown.glb ?? docs/ ?? e2e/ ?? infra/nginx/ ?? infra/pm2/ ?? playwright.config.ts ?? prisma/ ?? scripts/ ?? test-svgs.mjs ?? tests/
+=== COMMAND: node scripts/benchmark-backend.js ===
+================================================================================
+⚡ AUTHORITATIVE BACKEND REST API BENCHMARK & PERFORMANCE AUDIT
+Commit Hash: c34704b1b38ea0823d03a2239743f9238f44465f
+Timestamp:   2026-10-13T09:48:06.694Z
+Runtime:     Node.js v22.20.0 on win32 (x64)
+================================================================================
+
+▶ Initializing NestJS Modular Monolith API server on port 4001...
+✅ NestJS API online at http://127.0.0.1:4001/api/v1
+
+Starting benchmark suite: 20 endpoints | 15 concurrent workers | 100 reqs per endpoint
+
+Benchmarking 1. Health Liveness Probe            ... [DONE] 1114.3 req/s | avg: 12.24ms | p95: 16.27ms | p99: 16.32ms | 0 errors
+Benchmarking 2. Health Readiness Probe           ... [DONE] 1263.6 req/s | avg: 10.68ms | p95: 12.62ms | p99: 12.63ms | 0 errors
+Benchmarking 3. Service Platforms Catalog        ... [DONE] 1160.8 req/s | avg: 12.03ms | p95: 16.76ms | p99: 16.82ms | 0 errors
+Benchmarking 4. Service Categories Catalog       ... [DONE] 1571.0 req/s | avg: 8.74ms | p95: 9.64ms | p99: 9.65ms | 0 errors
+Benchmarking 5. Services Full Catalog Listing    ... [DONE] 1415.9 req/s | avg: 9.66ms | p95: 12.70ms | p99: 14.00ms | 0 errors
+Benchmarking 6. Service Single Item Lookup       ... [DONE] 1485.1 req/s | avg: 9.32ms | p95: 11.97ms | p99: 11.98ms | 0 errors
+Benchmarking 7. User Wallet Balance              ... [DONE] 1573.5 req/s | avg: 8.74ms | p95: 10.65ms | p99: 10.67ms | 0 errors
+Benchmarking 8. User Double-Entry Ledger         ... [DONE] 1670.8 req/s | avg: 8.14ms | p95: 10.06ms | p99: 10.27ms | 0 errors
+Benchmarking 9. Customer Orders History          ... [DONE] 1764.9 req/s | avg: 7.62ms | p95: 8.63ms | p99: 8.64ms | 0 errors
+Benchmarking 10. Single Order Detail             ... [DONE] 1496.4 req/s | avg: 9.13ms | p95: 12.33ms | p99: 12.40ms | 0 errors
+Benchmarking 11. Support Tickets Listing         ... [DONE] 1626.7 req/s | avg: 8.49ms | p95: 8.93ms | p99: 8.94ms | 0 errors
+Benchmarking 12. Admin Support Tickets All       ... [DONE] 1714.7 req/s | avg: 8.02ms | p95: 9.50ms | p99: 9.52ms | 0 errors
+Benchmarking 13. Announcements Broadcast         ... [DONE] 1723.5 req/s | avg: 8.00ms | p95: 9.05ms | p99: 9.36ms | 0 errors
+Benchmarking 14. System Configuration            ... [DONE] 1769.1 req/s | avg: 7.82ms | p95: 10.18ms | p99: 10.19ms | 0 errors
+Benchmarking 15. Operations & Summary Analytics  ... [DONE] 1433.0 req/s | avg: 9.74ms | p95: 16.51ms | p99: 16.60ms | 0 errors
+Benchmarking 16. B2B Reseller Wholesale Pricing  ... [DONE] 1802.8 req/s | avg: 7.69ms | p95: 9.93ms | p99: 9.93ms | 0 errors
+Benchmarking 17. B2B Reseller Reports            ... [DONE] 2052.0 req/s | avg: 6.70ms | p95: 7.93ms | p99: 7.96ms | 0 errors
+Benchmarking 18. B2B Reseller Public Services    ... prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+[DONE] 3.5 req/s | avg: 4115.75ms | p95: 4136.62ms | p99: 4136.68ms | 0 errors
+Benchmarking 19. B2B Reseller Balance Check      ... prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+prisma:error 
+Invalid `this.prisma.user.findFirst()` invocation in
+D:\projects\internship projects\SMM\apps\api\dist\src\common\api-key-auth.guard.js:32:49
+
+  29 }
+  30 const keyHash = crypto_1.default.createHash("sha256").update(apiKeyHeader.trim()).digest("hex");
+  31 try {
+→ 32     const user = await this.prisma.user.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+[DONE] 3.5 req/s | avg: 4102.14ms | p95: 4127.86ms | p99: 4127.98ms | 0 errors
+Benchmarking 20. Promotional Coupons List        ... [DONE] 1304.5 req/s | avg: 10.41ms | p95: 14.03ms | p99: 14.16ms | 0 errors
+
+✅ NestJS API server shut down gracefully.
+
+==========================================================================================================================
+                                       EMPIRICAL BACKEND API BENCHMARK AUDIT TABLE                                        
+==========================================================================================================================
+ENDPOINT CATEGORY                  METHOD  THROUGHPUT    AVG (ms)  P50 (ms)  P95 (ms)  P99 (ms)  MAX (ms)  SLA TARGET    STATUS
+--------------------------------------------------------------------------------------------------------------------------
+1. Health Liveness Probe           GET     1114.3 req/s  12.24     12.24     16.27     16.32     16.37     < 50ms        PASS (MEETS SLA)
+2. Health Readiness Probe          GET     1263.6 req/s  10.68     10.6      12.62     12.63     12.69     < 100ms       PASS (MEETS SLA)
+3. Service Platforms Catalog       GET     1160.8 req/s  12.03     11.96     16.76     16.82     16.83     < 100ms       PASS (MEETS SLA)
+4. Service Categories Catalog      GET     1571 req/s    8.74      9.06      9.64      9.65      9.65      < 100ms       PASS (MEETS SLA)
+5. Services Full Catalog Listing   GET     1415.9 req/s  9.66      9.15      12.7      14        14.05     < 150ms       PASS (MEETS SLA)
+6. Service Single Item Lookup      GET     1485.1 req/s  9.32      9.31      11.97     11.98     12.08     < 100ms       PASS (MEETS SLA)
+7. User Wallet Balance             GET     1573.5 req/s  8.74      8.58      10.65     10.67     10.73     < 100ms       PASS (MEETS SLA)
+8. User Double-Entry Ledger        GET     1670.8 req/s  8.14      7.96      10.06     10.27     10.49     < 100ms       PASS (MEETS SLA)
+9. Customer Orders History         GET     1764.9 req/s  7.62      7.55      8.63      8.64      8.64      < 100ms       PASS (MEETS SLA)
+10. Single Order Detail            GET     1496.4 req/s  9.13      8.67      12.33     12.4      12.45     < 100ms       PASS (MEETS SLA)
+11. Support Tickets Listing        GET     1626.7 req/s  8.49      8.65      8.93      8.94      8.97      < 100ms       PASS (MEETS SLA)
+12. Admin Support Tickets All      GET     1714.7 req/s  8.02      7.63      9.5       9.52      9.55      < 100ms       PASS (MEETS SLA)
+13. Announcements Broadcast        GET     1723.5 req/s  8         8.3       9.05      9.36      9.49      < 100ms       PASS (MEETS SLA)
+14. System Configuration           GET     1769.1 req/s  7.82      7.63      10.18     10.19     10.19     < 100ms       PASS (MEETS SLA)
+15. Operations & Summary Analytics GET     1433 req/s    9.74      8.03      16.51     16.6      16.73     < 100ms       PASS (MEETS SLA)
+16. B2B Reseller Wholesale Pricing GET     1802.8 req/s  7.69      7.41      9.93      9.93      9.97      < 100ms       PASS (MEETS SLA)
+17. B2B Reseller Reports           GET     2052 req/s    6.7       6.46      7.93      7.96      8.01      < 100ms       PASS (MEETS SLA)
+18. B2B Reseller Public Services   GET     3.5 req/s     4115.75   4116.02   4136.62   4136.68   4136.95   < 100ms       FAIL (BREACHED)
+19. B2B Reseller Balance Check     GET     3.5 req/s     4102.14   4096.76   4127.86   4127.98   4128.11   < 100ms       FAIL (BREACHED)
+20. Promotional Coupons List       GET     1304.5 req/s  10.41     10.17     14.03     14.16     14.19     < 100ms       PASS (MEETS SLA)
+--------------------------------------------------------------------------------------------------------------------------
+TOTAL BENCHMARK TRANSACTIONS:  2000 requests
+GLOBAL SUCCESS RATE:           100.00% (0 HTTP 5xx errors)
+AVERAGE P95 LATENCY:           423.61 ms
+AVERAGE ENDPOINT THROUGHPUT:   1397.5 req/s
+==========================================================================================================================
+

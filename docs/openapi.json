@@ -1,0 +1,1812 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/health/live": {
+      "get": {
+        "operationId": "HealthController_getLiveness",
+        "summary": "Liveness probe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Process is alive"
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/api/v1/health/ready": {
+      "get": {
+        "operationId": "HealthController_getReadiness",
+        "summary": "Readiness probe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Process is ready to receive traffic"
+          },
+          "503": {
+            "description": "The Health Check is not successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "info": {
+                      "type": "object",
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "status"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      },
+                      "nullable": true
+                    },
+                    "error": {
+                      "type": "object",
+                      "example": {
+                        "redis": {
+                          "status": "down",
+                          "message": "Could not connect"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "status"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      },
+                      "nullable": true
+                    },
+                    "details": {
+                      "type": "object",
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        },
+                        "redis": {
+                          "status": "down",
+                          "message": "Could not connect"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "status"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "summary": "Customer & Admin Login",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Authentication & Security"
+        ]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "summary": "Register New Account",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Authentication & Security"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "summary": "Rotate Session Token",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Authentication & Security"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "summary": "Revoke Current Session or User Sessions",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Authentication & Security"
+        ]
+      }
+    },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "operationId": "AuthController_forgotPassword",
+        "summary": "Request Password Reset",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Authentication & Security"
+        ]
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "operationId": "AuthController_resetPassword",
+        "summary": "Reset Password via Verified Token",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Authentication & Security"
+        ]
+      }
+    },
+    "/api/v1/auth/2fa/setup": {
+      "post": {
+        "operationId": "AuthController_setup2fa",
+        "summary": "Initiate Two-Factor Authentication Setup",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Authentication & Security"
+        ]
+      }
+    },
+    "/api/v1/auth/2fa/verify": {
+      "post": {
+        "operationId": "AuthController_verify2fa",
+        "summary": "Verify and Enable Two-Factor Authentication",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Authentication & Security"
+        ]
+      }
+    },
+    "/api/v1/auth/sessions": {
+      "get": {
+        "operationId": "AuthController_listSessions",
+        "summary": "List User Active Sessions",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Authentication & Security"
+        ]
+      }
+    },
+    "/api/v1/auth/sessions/revoke": {
+      "post": {
+        "operationId": "AuthController_revokeSession",
+        "summary": "Revoke Specific Session",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Authentication & Security"
+        ]
+      }
+    },
+    "/api/v1/auth/verify-key": {
+      "get": {
+        "operationId": "AuthController_verifyKey",
+        "summary": "Verify Bearer API Token",
+        "parameters": [
+          {
+            "name": "authorization",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Authentication & Security"
+        ]
+      }
+    },
+    "/api/v1/services/platforms": {
+      "get": {
+        "operationId": "ServicesController_getPlatforms",
+        "summary": "Get Supported Social Media Platforms",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Services Catalog"
+        ]
+      }
+    },
+    "/api/v1/services/categories": {
+      "get": {
+        "operationId": "ServicesController_getCategories",
+        "summary": "Get Catalog Categories",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Services Catalog"
+        ]
+      },
+      "post": {
+        "operationId": "ServicesController_createCategory",
+        "summary": "Admin Create Category",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Services Catalog"
+        ]
+      }
+    },
+    "/api/v1/services": {
+      "get": {
+        "operationId": "ServicesController_findAll",
+        "summary": "Get All Active Services with Search/Filter/Sort",
+        "parameters": [
+          {
+            "name": "platform",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Services Catalog"
+        ]
+      },
+      "post": {
+        "operationId": "ServicesController_create",
+        "summary": "Admin Create Service",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Services Catalog"
+        ]
+      }
+    },
+    "/api/v1/services/{id}": {
+      "get": {
+        "operationId": "ServicesController_findOne",
+        "summary": "Get Service by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Services Catalog"
+        ]
+      },
+      "put": {
+        "operationId": "ServicesController_update",
+        "summary": "Admin Update Service",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Services Catalog"
+        ]
+      },
+      "delete": {
+        "operationId": "ServicesController_remove",
+        "summary": "Admin Delete Service",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Services Catalog"
+        ]
+      }
+    },
+    "/api/v1/orders": {
+      "get": {
+        "operationId": "OrdersController_findAll",
+        "summary": "Get User Orders Stream",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Orders Dispatch Terminal"
+        ]
+      },
+      "post": {
+        "operationId": "OrdersController_createCanonical",
+        "summary": "Dispatch New Order Vector (Canonical)",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Orders Dispatch Terminal"
+        ]
+      }
+    },
+    "/api/v1/orders/{id}": {
+      "get": {
+        "operationId": "OrdersController_findOne",
+        "summary": "Inspect Specific Order by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Orders Dispatch Terminal"
+        ]
+      }
+    },
+    "/api/v1/orders/create": {
+      "post": {
+        "operationId": "OrdersController_create",
+        "summary": "Dispatch New Order Vector (Legacy)",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Orders Dispatch Terminal"
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/refill": {
+      "post": {
+        "operationId": "OrdersController_refill",
+        "summary": "Trigger Auto Refill Daemon",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Orders Dispatch Terminal"
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/cancel": {
+      "post": {
+        "operationId": "OrdersController_cancel",
+        "summary": "Cancel and Refund Order",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Orders Dispatch Terminal"
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/status": {
+      "put": {
+        "operationId": "OrdersController_updateStatus",
+        "summary": "Admin Update Order Status",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Orders Dispatch Terminal"
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/refund": {
+      "post": {
+        "operationId": "OrdersController_adminRefund",
+        "summary": "Admin Manual Order Refund",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Orders Dispatch Terminal"
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/retry": {
+      "post": {
+        "operationId": "OrdersController_retry",
+        "summary": "Admin Retry Order Provider Dispatch",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Orders Dispatch Terminal"
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/provider": {
+      "put": {
+        "operationId": "OrdersController_changeProvider",
+        "summary": "Admin Change Upstream Provider",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Orders Dispatch Terminal"
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/notes": {
+      "put": {
+        "operationId": "OrdersController_updateNotes",
+        "summary": "Admin Update Order Notes",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Orders Dispatch Terminal"
+        ]
+      }
+    },
+    "/api/v1/wallet/balance": {
+      "get": {
+        "operationId": "WalletController_getBalance",
+        "summary": "Get Live Liquid Balance",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Wallet & Billing"
+        ]
+      }
+    },
+    "/api/v1/wallet/ledger": {
+      "get": {
+        "operationId": "WalletController_getLedger",
+        "summary": "Get Double-Entry Ledger History",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Wallet & Billing"
+        ]
+      }
+    },
+    "/api/v1/wallet/adjust": {
+      "post": {
+        "operationId": "WalletController_adjustBalance",
+        "summary": "Admin Balance Adjustment (Mandatory Reason Required)",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Wallet & Billing"
+        ]
+      }
+    },
+    "/api/v1/wallet/deposit": {
+      "post": {
+        "operationId": "WalletController_deposit",
+        "summary": "Initialize Liquidity Deposit (Sandbox Only, Disabled in Production)",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Wallet & Billing"
+        ]
+      }
+    },
+    "/api/v1/providers": {
+      "get": {
+        "operationId": "ProvidersController_findAll",
+        "summary": "Get Upstream Wholesalers with Masked Keys",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Provider Node Sync"
+        ]
+      },
+      "post": {
+        "operationId": "ProvidersController_createCanonical",
+        "summary": "Connect and Encrypt Upstream Wholesaler (Canonical)",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Provider Node Sync"
+        ]
+      }
+    },
+    "/api/v1/providers/create": {
+      "post": {
+        "operationId": "ProvidersController_create",
+        "summary": "Connect and Encrypt Upstream Wholesaler (Legacy)",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Provider Node Sync"
+        ]
+      }
+    },
+    "/api/v1/providers/{id}": {
+      "get": {
+        "operationId": "ProvidersController_findOne",
+        "summary": "Inspect Specific Upstream Provider",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Provider Node Sync"
+        ]
+      },
+      "put": {
+        "operationId": "ProvidersController_update",
+        "summary": "Admin Update Upstream Provider",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Provider Node Sync"
+        ]
+      },
+      "delete": {
+        "operationId": "ProvidersController_remove",
+        "summary": "Admin Delete Upstream Provider",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Provider Node Sync"
+        ]
+      }
+    },
+    "/api/v1/providers/{id}/balance": {
+      "get": {
+        "operationId": "ProvidersController_getBalance",
+        "summary": "Fetch Live Upstream Provider Balance",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Provider Node Sync"
+        ]
+      }
+    },
+    "/api/v1/providers/{id}/sync": {
+      "post": {
+        "operationId": "ProvidersController_sync",
+        "summary": "Trigger Upstream Provider Sync & Balance Fetch",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Provider Node Sync"
+        ]
+      }
+    },
+    "/api/v1/users/me": {
+      "get": {
+        "operationId": "UsersController_getProfile",
+        "summary": "Get Current Authenticated Profile",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "User Management"
+        ]
+      },
+      "put": {
+        "operationId": "UsersController_updateProfile",
+        "summary": "Update Current Profile & Settings",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "User Management"
+        ]
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "operationId": "UsersController_findAll",
+        "summary": "Admin List All Users",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "User Management"
+        ]
+      }
+    },
+    "/api/v1/users/{id}": {
+      "get": {
+        "operationId": "UsersController_findOne",
+        "summary": "Admin Inspect User Detail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "User Management"
+        ]
+      },
+      "put": {
+        "operationId": "UsersController_update",
+        "summary": "Admin Update User",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "User Management"
+        ]
+      },
+      "delete": {
+        "operationId": "UsersController_remove",
+        "summary": "Admin Soft-Delete User",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "User Management"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/status": {
+      "put": {
+        "operationId": "UsersController_updateStatus",
+        "summary": "Admin Update User Role/Tier Status",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "User Management"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/reset-password": {
+      "post": {
+        "operationId": "UsersController_resetPassword",
+        "summary": "Admin Reset User Password",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "User Management"
+        ]
+      }
+    },
+    "/api/v1/tickets": {
+      "get": {
+        "operationId": "TicketsController_findAll",
+        "summary": "Get User Support Tickets",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Support & Ticketing"
+        ]
+      },
+      "post": {
+        "operationId": "TicketsController_createCanonical",
+        "summary": "Open New Support Ticket (Canonical)",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Support & Ticketing"
+        ]
+      }
+    },
+    "/api/v1/tickets/admin/all": {
+      "get": {
+        "operationId": "TicketsController_adminAll",
+        "summary": "Admin List All Support Tickets",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Support & Ticketing"
+        ]
+      }
+    },
+    "/api/v1/tickets/{id}": {
+      "get": {
+        "operationId": "TicketsController_findOne",
+        "summary": "Get Support Ticket Detail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Support & Ticketing"
+        ]
+      }
+    },
+    "/api/v1/tickets/create": {
+      "post": {
+        "operationId": "TicketsController_create",
+        "summary": "Open New Support Ticket (Legacy)",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Support & Ticketing"
+        ]
+      }
+    },
+    "/api/v1/tickets/{id}/reply": {
+      "post": {
+        "operationId": "TicketsController_reply",
+        "summary": "Post Reply to Ticket",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Support & Ticketing"
+        ]
+      }
+    },
+    "/api/v1/tickets/{id}/close": {
+      "post": {
+        "operationId": "TicketsController_close",
+        "summary": "Close Support Ticket",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Support & Ticketing"
+        ]
+      }
+    },
+    "/api/v1/tickets/{id}/status": {
+      "put": {
+        "operationId": "TicketsController_updateStatus",
+        "summary": "Admin Update Ticket Status",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Support & Ticketing"
+        ]
+      }
+    },
+    "/api/v1/payments/initiate": {
+      "post": {
+        "operationId": "PaymentsController_initiate",
+        "summary": "Initiate Liquidity Deposit Session",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments & Webhooks"
+        ]
+      }
+    },
+    "/api/v1/payments/webhook": {
+      "post": {
+        "operationId": "PaymentsController_webhook",
+        "summary": "Process Verified Payment Gateway Webhook",
+        "parameters": [
+          {
+            "name": "x-razorpay-signature",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-webhook-signature",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments & Webhooks"
+        ]
+      }
+    },
+    "/api/v1/payments/sandbox-complete": {
+      "post": {
+        "operationId": "PaymentsController_sandboxComplete",
+        "summary": "Simulate Payment Completion (Sandbox Only, Disabled in Production)",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments & Webhooks"
+        ]
+      }
+    },
+    "/api/v1/payments": {
+      "get": {
+        "operationId": "PaymentsController_findAll",
+        "summary": "List User or System Payments",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments & Webhooks"
+        ]
+      }
+    },
+    "/api/v1/coupons": {
+      "get": {
+        "operationId": "CouponsController_findAll",
+        "summary": "List Active Coupons",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Coupons & Bonus Rules"
+        ]
+      },
+      "post": {
+        "operationId": "CouponsController_create",
+        "summary": "Admin Create Coupon",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Coupons & Bonus Rules"
+        ]
+      }
+    },
+    "/api/v1/coupons/apply": {
+      "post": {
+        "operationId": "CouponsController_apply",
+        "summary": "Validate and Apply Coupon Code",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Coupons & Bonus Rules"
+        ]
+      }
+    },
+    "/api/v1/bonuses": {
+      "get": {
+        "operationId": "CouponsController_findAllBonuses",
+        "summary": "List Deposit Bonus Incentive Tiers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Coupons & Bonus Rules"
+        ]
+      },
+      "post": {
+        "operationId": "CouponsController_createBonus",
+        "summary": "Admin Create Bonus Incentive Tier",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Coupons & Bonus Rules"
+        ]
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "operationId": "NotificationsController_findAll",
+        "summary": "Get User Notifications",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-user-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Notifications Stream"
+        ]
+      }
+    },
+    "/api/v1/notifications/{id}/read": {
+      "put": {
+        "operationId": "NotificationsController_markAsRead",
+        "summary": "Mark Notification as Read",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Notifications Stream"
+        ]
+      }
+    },
+    "/api/v1/announcements": {
+      "get": {
+        "operationId": "AnnouncementsController_findAll",
+        "summary": "Get Active Platform Announcements",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform Announcements"
+        ]
+      },
+      "post": {
+        "operationId": "AnnouncementsController_create",
+        "summary": "Admin Publish Announcement",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform Announcements"
+        ]
+      }
+    },
+    "/api/v1/settings": {
+      "get": {
+        "operationId": "SettingsController_getSettings",
+        "summary": "Get System Settings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform Settings"
+        ]
+      },
+      "put": {
+        "operationId": "SettingsController_updateSettings",
+        "summary": "Admin Update System Settings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform Settings"
+        ]
+      }
+    },
+    "/api/v1/reports/summary": {
+      "get": {
+        "operationId": "ReportsController_getSummary",
+        "summary": "Get Operational & Financial Analytics Summary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reports & Analytics"
+        ]
+      }
+    },
+    "/api/v1/reports/export-csv": {
+      "get": {
+        "operationId": "ReportsController_exportCsv",
+        "summary": "Export Transactions and Orders to CSV",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reports & Analytics"
+        ]
+      }
+    },
+    "/api/v1/reseller/reports": {
+      "get": {
+        "operationId": "ResellerController_getReports",
+        "summary": "Get Reseller Performance Reports",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reseller Portal & API"
+        ]
+      }
+    },
+    "/api/v1/reseller/clients": {
+      "get": {
+        "operationId": "ResellerController_getClients",
+        "summary": "Get Downstream Reseller Clients",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reseller Portal & API"
+        ]
+      }
+    },
+    "/api/v1/reseller/pricing": {
+      "get": {
+        "operationId": "ResellerController_getPricing",
+        "summary": "Get Wholesale Tiered Pricing Matrix",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reseller Portal & API"
+        ]
+      },
+      "put": {
+        "operationId": "ResellerController_updatePricing",
+        "summary": "Set Custom Reseller Margin Pricing",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reseller Portal & API"
+        ]
+      }
+    },
+    "/api/v1/reseller/api-key/rotate": {
+      "post": {
+        "operationId": "ResellerController_rotateApiKey",
+        "summary": "Rotate Wholesale API Key",
+        "parameters": [
+          {
+            "name": "x-user-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reseller Portal & API"
+        ]
+      }
+    },
+    "/api/v1/reseller/v1/services": {
+      "get": {
+        "operationId": "ResellerController_getPublicServices",
+        "summary": "Public Reseller v1 Services Catalog",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reseller Portal & API"
+        ],
+        "security": [
+          {
+            "reseller-api-key": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reseller/v1/orders": {
+      "post": {
+        "operationId": "ResellerController_createPublicOrder",
+        "summary": "Public Reseller v1 Place Order",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reseller Portal & API"
+        ],
+        "security": [
+          {
+            "reseller-api-key": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reseller/v1/orders/{id}": {
+      "get": {
+        "operationId": "ResellerController_getPublicOrderStatus",
+        "summary": "Public Reseller v1 Order Status",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reseller Portal & API"
+        ],
+        "security": [
+          {
+            "reseller-api-key": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reseller/v1/balance": {
+      "get": {
+        "operationId": "ResellerController_getPublicBalance",
+        "summary": "Public Reseller v1 Account Balance",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reseller Portal & API"
+        ],
+        "security": [
+          {
+            "reseller-api-key": []
+          }
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "SMM PANEL Platform API",
+    "description": "Modular Monolith REST API for SMM Services, Orders, Ledger & Resellers",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      },
+      "reseller-api-key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-KEY"
+      }
+    },
+    "schemas": {}
+  }
+}

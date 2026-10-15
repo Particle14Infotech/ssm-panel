@@ -1,0 +1,397 @@
+﻿=== GIT HEAD ===
+c34704b1b38ea0823d03a2239743f9238f44465f
+=== GIT STATUS ===
+ M .env.example  M .github/workflows/ci.yml  M apps/api/package.json  M apps/api/src/app.module.ts  M apps/api/src/main.ts  M apps/api/src/modules/auth/auth.controller.ts  M apps/api/src/modules/auth/auth.module.ts  M apps/api/src/modules/orders/orders.controller.ts  M apps/api/src/modules/orders/orders.module.ts  M apps/api/src/modules/orders/orders.service.ts  M apps/api/src/modules/providers/providers.controller.ts  M apps/api/src/modules/providers/providers.module.ts  M apps/api/src/modules/services/services.controller.ts  M apps/api/src/modules/services/services.service.ts  M apps/api/src/modules/tickets/tickets.controller.ts  M apps/api/src/modules/tickets/tickets.module.ts  M apps/api/src/modules/users/users.controller.ts  M apps/api/src/modules/users/users.module.ts  M apps/api/src/modules/wallet/wallet.controller.ts  M apps/api/src/modules/wallet/wallet.module.ts  M apps/web/app/(auth)/forgot-password/page.tsx  M apps/web/app/(auth)/login/page.tsx  M apps/web/app/(auth)/register/page.tsx  M apps/web/app/(auth)/verify/page.tsx  M apps/web/app/(customer)/layout.tsx  M apps/web/app/(customer)/new-order/page.tsx  M apps/web/app/(customer)/support/page.tsx  M apps/web/app/(customer)/wallet/page.tsx  M apps/web/app/(marketing)/contact/page.tsx  M apps/web/app/(marketing)/faq/page.tsx  M apps/web/app/(marketing)/legal/privacy/page.tsx  M apps/web/app/(marketing)/legal/refund/page.tsx  M apps/web/app/(marketing)/legal/terms/page.tsx  M apps/web/app/(marketing)/pricing/page.tsx  M apps/web/app/(marketing)/services/page.tsx  M apps/web/app/(marketing)/work/page.tsx  M apps/web/app/admin/layout.tsx  M apps/web/app/admin/providers/page.tsx  M apps/web/app/layout.tsx  D apps/web/app/page.tsx  M apps/web/app/robots.ts  M apps/web/app/sitemap.ts  M apps/web/components/admin/AdminHeader.tsx  M apps/web/components/customer/CustomerHeader.tsx  M apps/web/components/landing/BenefitsSection.tsx  M apps/web/components/landing/ContactSection.tsx  M apps/web/components/landing/FaqSection.tsx  M apps/web/components/landing/HeroSection.tsx  M apps/web/components/landing/PricingSection.tsx  M apps/web/components/landing/ServicesPreviewSection.tsx  M apps/web/components/landing/SocialProofSection.tsx  M apps/web/components/landing/WorkWalkthroughSection.tsx  M apps/web/components/shared/Footer.tsx  M apps/web/components/shared/Navbar.tsx  M apps/web/content/customer-data.ts  M apps/web/content/landing.ts  M apps/web/context/AdminContext.tsx  M apps/web/context/CustomerContext.tsx  M apps/web/lib/utils.ts  M apps/web/next.config.js  M apps/web/package.json  M apps/web/styles/globals.css  M apps/worker/package.json  M apps/worker/src/main.ts  M package.json  M packages/config/tailwind-preset.js  M packages/contracts/src/orders.ts  M packages/contracts/src/pricing.ts  M packages/contracts/src/wallet.ts  M pnpm-lock.yaml  M pnpm-workspace.yaml ?? .agents/ ?? .github/dependabot.yml ?? AGENTS.md ?? apps/api/.eslintrc.json ?? apps/api/scripts/ ?? apps/api/src/common/ ?? apps/api/src/config/ ?? apps/api/src/modules/announcements/ ?? apps/api/src/modules/auth/auth.service.ts ?? apps/api/src/modules/coupons/ ?? apps/api/src/modules/notifications/ ?? apps/api/src/modules/orders/m1-correctness.spec.ts ?? apps/api/src/modules/payments/ ?? apps/api/src/modules/providers/providers.service.ts ?? apps/api/src/modules/reports/ ?? apps/api/src/modules/reseller/ ?? apps/api/src/modules/services/services.controller.spec.ts ?? apps/api/src/modules/settings/ ?? apps/api/src/modules/tickets/tickets.controller.spec.ts ?? apps/api/src/modules/tickets/tickets.service.ts ?? apps/api/src/modules/users/users.controller.spec.ts ?? apps/api/src/modules/users/users.service.ts ?? apps/api/src/modules/wallet/wallet.controller.spec.ts ?? apps/api/src/modules/wallet/wallet.service.ts ?? apps/api/test/ ?? apps/web/.eslintrc.json ?? apps/web/app/(customer)/orders/[id]/ ?? apps/web/app/(customer)/transactions/ ?? apps/web/app/(customer)/wallet/verify/ ?? apps/web/app/(marketing)/layout.tsx ?? apps/web/app/(marketing)/page.tsx ?? apps/web/app/admin/categories/ ?? apps/web/app/admin/page.tsx ?? apps/web/app/admin/wallets/ ?? apps/web/app/app/ ?? apps/web/app/apple-icon.tsx ?? apps/web/app/dev/ ?? apps/web/app/icon.tsx ?? apps/web/app/not-found.tsx ?? apps/web/app/opengraph-image.tsx ?? apps/web/components/motion/ ?? apps/web/components/shared/Breadcrumb.tsx ?? apps/web/components/three/ ?? apps/web/lib/motion.ts ?? apps/web/public/ ?? apps/web/src/ ?? apps/web/test-svgs.mjs ?? artifacts/ ?? bin/ ?? build_crown.py ?? check_browser.js ?? crown-preview.png ?? crown.glb ?? docs/ ?? e2e/ ?? infra/nginx/ ?? infra/pm2/ ?? playwright.config.ts ?? prisma/ ?? scripts/ ?? test-svgs.mjs ?? tests/
+=== COMMAND: pnpm audit --audit-level high ===
+┌─────────────────────┬──────────────────────────────────────────────────────────────────────────┐
+│ critical            │ Next.js: Unauthenticated Remote Code Execution on windows-hosted servers │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ Package             │ next                                                                     │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=13.4.0 <15.5.24                                                        │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=15.5.24                                                                │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__web>next                                                           │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-p293-qw3h-jr36                        │
+└─────────────────────┴──────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ critical            │ Next.js: Unauthenticated Remote Code Execution in Image Optimization API when AVIF files are used │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Package             │ next                                                                                              │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=10.0.0 <15.5.24                                                                                 │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=15.5.24                                                                                         │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__web>next                                                                                    │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-2xp9-vwfh-vxw4                                                 │
+└─────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬───────────────────────────────────────────────────────────────────────────┐
+│ high                │ glob CLI: Command injection via -c/--cmd executes matches with shell:true │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────┤
+│ Package             │ glob                                                                      │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=10.2.0 <10.5.0                                                          │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=12.0.0                                                                  │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__web>eslint-config-next>@next/eslint-plugin-next>glob                │
+│                     │                                                                           │
+│                     │ apps__api>@nestjs/cli>glob                                                │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-5j98-mcp5-4vw2                         │
+└─────────────────────┴───────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ high                │ Next.js HTTP request deserialization can lead to DoS when using insecure React Server Components │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Package             │ next                                                                                             │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=13.0.0 <15.0.8                                                                                 │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=15.0.8                                                                                         │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__web>next                                                                                   │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-h25m-26qc-wcjf                                                │
+└─────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬─────────────────────────────────────────────────────────────────────────┐
+│ high                │ Multer vulnerable to Denial of Service via incomplete cleanup           │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Package             │ multer                                                                  │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ <2.1.0                                                                  │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=2.1.0                                                                 │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__api>@nestjs/core>@nestjs/platform-express>multer                  │
+│                     │                                                                         │
+│                     │ apps__api>@nestjs/platform-express>multer                               │
+│                     │                                                                         │
+│                     │ apps__api>@nestjs/terminus>@nestjs/core>@nestjs/platform-express>multer │
+│                     │                                                                         │
+│                     │ ... Found 6 paths, run `pnpm why multer` for more information           │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-xf7r-hgr6-v32p                       │
+└─────────────────────┴─────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬─────────────────────────────────────────────────────────────────────────┐
+│ high                │ Multer vulnerable to Denial of Service via resource exhaustion          │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Package             │ multer                                                                  │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ <2.1.0                                                                  │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=2.1.0                                                                 │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__api>@nestjs/core>@nestjs/platform-express>multer                  │
+│                     │                                                                         │
+│                     │ apps__api>@nestjs/platform-express>multer                               │
+│                     │                                                                         │
+│                     │ apps__api>@nestjs/terminus>@nestjs/core>@nestjs/platform-express>multer │
+│                     │                                                                         │
+│                     │ ... Found 6 paths, run `pnpm why multer` for more information           │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-v52c-386h-88mc                       │
+└─────────────────────┴─────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬─────────────────────────────────────────────────────────────────────────┐
+│ high                │ Multer Vulnerable to Denial of Service via Uncontrolled Recursion       │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Package             │ multer                                                                  │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ <2.1.1                                                                  │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=2.1.1                                                                 │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__api>@nestjs/core>@nestjs/platform-express>multer                  │
+│                     │                                                                         │
+│                     │ apps__api>@nestjs/platform-express>multer                               │
+│                     │                                                                         │
+│                     │ apps__api>@nestjs/terminus>@nestjs/core>@nestjs/platform-express>multer │
+│                     │                                                                         │
+│                     │ ... Found 6 paths, run `pnpm why multer` for more information           │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-5528-5vmv-3xc2                       │
+└─────────────────────┴─────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ high                │ Picomatch has a ReDoS vulnerability via extglob quantifiers                                        │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Package             │ picomatch                                                                                          │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=4.0.0 <4.0.4                                                                                     │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=4.0.4                                                                                            │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/core>picomatch                            │
+│                     │                                                                                                    │
+│                     │ apps__api>@nestjs/cli>@nestjs/schematics>@angular-devkit/schematics>@angular-devkit/core>picomatch │
+│                     │                                                                                                    │
+│                     │ apps__api>@nestjs/cli>@angular-devkit/core>picomatch                                               │
+│                     │                                                                                                    │
+│                     │ ... Found 8 paths, run `pnpm why picomatch` for more information                                   │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-c2c7-rcm5-vvqj                                                  │
+└─────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────────────────────┐
+│ high                │ lodash vulnerable to Code Injection via `_.template` imports key names │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────┤
+│ Package             │ lodash                                                                 │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=4.0.0 <=4.17.23                                                      │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=4.18.1                                                               │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__api>@nestjs/swagger>lodash                                       │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-r5fr-rjxr-66jc                      │
+└─────────────────────┴────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────┐
+│ high                │ Next.js has a Denial of Service with Server Components │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Package             │ next                                                   │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=13.0.0 <15.5.15                                      │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=15.5.15                                              │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Paths               │ apps__web>next                                         │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-q4gf-8mx6-v5v3      │
+└─────────────────────┴────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────────────┐
+│ high                │ Next.js Vulnerable to Denial of Service with Server Components │
+├─────────────────────┼────────────────────────────────────────────────────────────────┤
+│ Package             │ next                                                           │
+├─────────────────────┼────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=13.0.0 <15.5.16                                              │
+├─────────────────────┼────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=15.5.16                                                      │
+├─────────────────────┼────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__web>next                                                 │
+├─────────────────────┼────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-8h8q-6873-q5fj              │
+└─────────────────────┴────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────┐
+│ high                │ Next.js vulnerable to server-side request forgery in applications using WebSocket upgrades │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Package             │ next                                                                                       │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=13.4.13 <15.5.16                                                                         │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=15.5.16                                                                                  │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__web>next                                                                             │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-c4j6-fc7j-m34r                                          │
+└─────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬─────────────────────────────────────────────────────────────────────────────────┐
+│ high                │ Next.js has a Middleware / Proxy bypass in Pages Router applications using i18n │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ Package             │ next                                                                            │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=12.2.0 <15.5.16                                                               │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=15.5.16                                                                       │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__web>next                                                                  │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-36qx-fr4f-26g5                               │
+└─────────────────────┴─────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬─────────────────────────────────────────────────────────────────────────────────────┐
+│ high                │ tmp has Path Traversal via unsanitized prefix/postfix that enables directory escape │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤
+│ Package             │ tmp                                                                                 │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ <0.2.6                                                                              │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=0.2.6                                                                             │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__api>@nestjs/cli>inquirer>external-editor>tmp                                  │
+│                     │                                                                                     │
+│                     │ apps__api>@nestjs/cli>@angular-devkit/schematics-cli>inquirer>external-editor>tmp   │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-ph9p-34f9-6g65                                   │
+└─────────────────────┴─────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬─────────────────────────────────────────────────────────────────────────┐
+│ high                │ Multer vulnerable to Denial of Service via deeply nested field names    │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Package             │ multer                                                                  │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=1.0.0 <2.2.0                                                          │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=2.2.0                                                                 │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__api>@nestjs/core>@nestjs/platform-express>multer                  │
+│                     │                                                                         │
+│                     │ apps__api>@nestjs/platform-express>multer                               │
+│                     │                                                                         │
+│                     │ apps__api>@nestjs/terminus>@nestjs/core>@nestjs/platform-express>multer │
+│                     │                                                                         │
+│                     │ ... Found 6 paths, run `pnpm why multer` for more information           │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-72gw-mp4g-v24j                       │
+└─────────────────────┴─────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────────────────┐
+│ high                │ js-yaml: YAML merge-key chains can force quadratic CPU consumption │
+├─────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ Package             │ js-yaml                                                            │
+├─────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=4.0.0 <4.3.0                                                     │
+├─────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=4.3.0                                                            │
+├─────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__api>@nestjs/swagger>js-yaml                                  │
+├─────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-52cp-r559-cp3m                  │
+└─────────────────────┴────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬───────────────────────────────────────────────────────────────┐
+│ high                │ Next.js: Denial of Service in App Router using Server Actions │
+├─────────────────────┼───────────────────────────────────────────────────────────────┤
+│ Package             │ next                                                          │
+├─────────────────────┼───────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=13.0.0 <15.5.21                                             │
+├─────────────────────┼───────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=15.5.21                                                     │
+├─────────────────────┼───────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__web>next                                                │
+├─────────────────────┼───────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-m99w-x7hq-7vfj             │
+└─────────────────────┴───────────────────────────────────────────────────────────────┘
+┌─────────────────────┬──────────────────────────────────────────────────────────────────────────┐
+│ high                │ Next.js: Server-Side Request Forgery in Server Actions on custom servers │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ Package             │ next                                                                     │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=14.1.1 <15.5.21                                                        │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=15.5.21                                                                │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__web>next                                                           │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-89xv-2m56-2m9x                        │
+└─────────────────────┴──────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────┐
+│ high                │ Next.js: Server-Side Request Forgery in rewrites via attacker-controlled destination hostname │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Package             │ next                                                                                          │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=12.0.0 <15.5.21                                                                             │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=15.5.21                                                                                     │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__web>next                                                                                │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-p9j2-gv94-2wf4                                             │
+└─────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ high                │ PostCSS: Arbitrary file read and information disclosure via attacker-controlled sourceMappingURL in CSS comments │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Package             │ postcss                                                                                                          │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ <=8.5.11                                                                                                         │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=8.5.12                                                                                                         │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__web>next>postcss                                                                                           │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-6g55-p6wh-862q                                                                │
+└─────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ high                │ JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) — CVE-2026-59870 fix not backported │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Package             │ js-yaml                                                                                                   │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=4.0.0 <4.3.1                                                                                            │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=4.3.1                                                                                                   │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__api>@nestjs/swagger>js-yaml                                                                         │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-5p4m-2wfm-xmqj                                                         │
+└─────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ high                │ PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Package             │ postcss                                                                                                                │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ <=8.5.17                                                                                                               │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=8.5.18                                                                                                               │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__web>next>postcss                                                                                                 │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-r28c-9q8g-f849                                                                      │
+└─────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬───────────────────────────────────────────────────────────────────────────┐
+│ high                │ js-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────┤
+│ Package             │ js-yaml                                                                   │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=4.0.0 <4.3.2                                                            │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=4.3.2                                                                   │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__api>@nestjs/swagger>js-yaml                                         │
+├─────────────────────┼───────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-2883-xcg3-v3hh                         │
+└─────────────────────┴───────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬──────────────────────────────────────────────────────────────────────────┐
+│ high                │ multer vulnerable to Denial of Service via crafted multipart field names │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ Package             │ multer                                                                   │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ <2.3.0                                                                   │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=2.3.0                                                                  │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__api>@nestjs/core>@nestjs/platform-express>multer                   │
+│                     │                                                                          │
+│                     │ apps__api>@nestjs/platform-express>multer                                │
+│                     │                                                                          │
+│                     │ apps__api>@nestjs/terminus>@nestjs/core>@nestjs/platform-express>multer  │
+│                     │                                                                          │
+│                     │ ... Found 6 paths, run `pnpm why multer` for more information            │
+├─────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-wc9g-mqfw-jrwm                        │
+└─────────────────────┴──────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬─────────────────────────────────────────────────────────────────────────────────┐
+│ high                │ multer vulnerable to Denial of Service via oversized array index in field names │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ Package             │ multer                                                                          │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ <2.3.0                                                                          │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=2.3.0                                                                         │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__api>@nestjs/core>@nestjs/platform-express>multer                          │
+│                     │                                                                                 │
+│                     │ apps__api>@nestjs/platform-express>multer                                       │
+│                     │                                                                                 │
+│                     │ apps__api>@nestjs/terminus>@nestjs/core>@nestjs/platform-express>multer         │
+│                     │                                                                                 │
+│                     │ ... Found 6 paths, run `pnpm why multer` for more information                   │
+├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-535w-7cp7-47q4                               │
+└─────────────────────┴─────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────────────────────────────────────┐
+│ high                │ braces vulnerable to stack-exhaustion denial of service through deeply nested patterns │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+│ Package             │ braces                                                                                 │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ <=3.0.3                                                                                │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+│ Patched versions    │ None                                                                                   │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+│ Paths               │ apps__api>ts-jest>jest>@jest/core>jest-resolve>jest-haste-map>micromatch>braces        │
+│                     │                                                                                        │
+│                     │ apps__api>ts-jest>jest>@jest/core>jest-message-util>micromatch>braces                  │
+│                     │                                                                                        │
+│                     │ apps__api>ts-jest>jest>@jest/core>micromatch>braces                                    │
+│                     │                                                                                        │
+│                     │ ... Found 101 paths, run `pnpm why braces` for more information                        │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-vfj7-8cjw-p6xm                                      │
+└─────────────────────┴────────────────────────────────────────────────────────────────────────────────────────┘
+61 vulnerabilities found
+Severity: 7 low | 28 moderate | 24 high | 2 critical
