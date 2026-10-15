@@ -1,4 +1,4 @@
-﻿GIT_HEAD: 598d1ab2be8f50fd044a5b2186e2f0e0f45dca81
+GIT_HEAD: 598d1ab2be8f50fd044a5b2186e2f0e0f45dca81
 GIT_BRANCH: fix/3d-meaning
 TEST_DB: smm_db
 COMMAND: pnpm smoke
@@ -37,7 +37,7 @@ Database Target: smm_db (Isolated in-memory sandbox mode)
 Invalid `this.prisma.service.findUnique()` invocation in
 D:\projects\internship projects\SMM\apps\api\dist\src\modules\orders\orders.service.js:157:49
 
-  154 const userId = input.userId || "usr_998124aether";
+  154 const userId = input.userId || "usr_998124smmpanel";
   155 let service = null;
   156 try {
 → 157     service = await this.prisma.service.findUnique(

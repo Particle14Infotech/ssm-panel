@@ -53,6 +53,11 @@ graph TD
 | `JWT_REFRESH_SECRET` | *(Generated random 32-byte secret)* | Refresh token rotation signing |
 | `PASSWORD_PEPPER` | *(Generated random 32-byte secret)* | Argon2id pepper |
 | `PROVIDER_KEY_SECRET` | *(Generated random 32-byte secret)* | Provider API encryption key |
+| `PROVIDER_KEY_ENCRYPTION_KEY` | *(Alias for PROVIDER_KEY_SECRET)* | 32-byte hex AES encryption key |
+| `PAYMENT_PROVIDER` | `simulated` \| `razorpay` | Payment provider engine (default: simulated) |
+| `ALLOW_SIMULATED_PAYMENTS`| `true` \| `false` | Required in production if PAYMENT_PROVIDER=simulated |
+| `ADMIN_EMAIL` | `admin@smmpanel.internal` | Bootstrap admin account email |
+| `ADMIN_PASSWORD` | *(Secure admin password)* | Bootstrap admin account password |
 
 ### 3.2 `worker` (Worker Service)
 | Variable | Value / Reference | Purpose |
@@ -68,6 +73,7 @@ graph TD
 | `NODE_ENV` | `production` | Production runtime flags |
 | `PORT` | `3000` | Application bind port |
 | `NEXT_PUBLIC_API_URL` | `https://smm-production-bca7.up.railway.app` | Public API endpoint for browser calls |
+| `NEXT_PUBLIC_SITE_NAME`| `SMM Panel` | Brand constant used across navbar, sidebar, titles, invoices |
 
 ---
 
