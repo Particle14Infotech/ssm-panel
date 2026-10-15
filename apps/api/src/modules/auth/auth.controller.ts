@@ -1,51 +1,76 @@
-import { Controller, Post, Body, Get, Headers, UnauthorizedException } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
+import { Controller, Post, Body, Get, Headers } from "@nestjs/common";
+import { ApiTags, ApiOperation } from "@nestjs/swagger";
+import { AuthService } from "./auth.service";
 
 @ApiTags("Authentication & Security")
 @Controller("auth")
 export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
   @Post("login")
   @ApiOperation({ summary: "Customer & Admin Login" })
   async login(@Body() body: any) {
-    const { email, password } = body;
-    if (!email || !password) {
-      throw new UnauthorizedException("Invalid credentials provided.");
-    }
-    return {
-      success: true,
-      token: "jwt_aether_" + Buffer.from(email).toString("base64"),
-      user: {
-        id: "usr_998124aether",
-        email,
-        name: "Alex Vance",
-        tier: "PRO_SCALE",
-        balance: 2450.0,
-      },
-    };
+    return this.authService.login(body);
   }
 
   @Post("register")
   @ApiOperation({ summary: "Register New Account" })
   async register(@Body() body: any) {
-    const { email, name } = body;
-    return {
-      success: true,
-      message: "Account provisioned. Verification OTP dispatched via AP-S1 node.",
-      userId: `usr_${Math.floor(100000 + Math.random() * 900000)}`,
-    };
+    return this.authService.register(body);
+  }
+
+  @Post("refresh")
+  @ApiOperation({ summary: "Rotate Session Token" })
+  async refresh(@Body("refreshToken") refreshToken: string) {
+    return this.authService.refreshSession(refreshToken);
+  }
+
+  @Post("logout")
+  @ApiOperation({ summary: "Revoke Current Session or User Sessions" })
+  async logout(@Body("refreshToken") refreshToken?: string, @Body("userId") userId?: string) {
+    return this.authService.logout(refreshToken, userId);
+  }
+
+  @Post("forgot-password")
+  @ApiOperation({ summary: "Request Password Reset" })
+  async forgotPassword(@Body("email") email: string) {
+    return this.authService.forgotPassword(email);
+  }
+
+  @Post("reset-password")
+  @ApiOperation({ summary: "Reset Password via Verified Token" })
+  async resetPassword(@Body() body: { token: string; newPassword: string; email?: string }) {
+    return this.authService.resetPassword(body);
+  }
+
+  @Post("2fa/setup")
+  @ApiOperation({ summary: "Initiate Two-Factor Authentication Setup" })
+  async setup2fa(@Body("userId") userId: string) {
+    return this.authService.setup2fa(userId);
+  }
+
+  @Post("2fa/verify")
+  @ApiOperation({ summary: "Verify and Enable Two-Factor Authentication" })
+  async verify2fa(@Body() body: { userId: string; code: string }) {
+    return this.authService.verify2fa(body.userId, body.code);
+  }
+
+  @Get("sessions")
+  @ApiOperation({ summary: "List User Active Sessions" })
+  async listSessions(@Headers("x-user-id") headerUserId?: string) {
+    const userId = headerUserId || "usr_default_demo";
+    return this.authService.listSessions(userId);
+  }
+
+  @Post("sessions/revoke")
+  @ApiOperation({ summary: "Revoke Specific Session" })
+  async revokeSession(@Body("sessionId") sessionId: string) {
+    return this.authService.revokeSession(sessionId);
   }
 
   @Get("verify-key")
   @ApiOperation({ summary: "Verify Bearer API Token" })
   async verifyKey(@Headers("authorization") authHeader?: string) {
-    if (!authHeader || !authHeader.startsWith("Bearer aeth_")) {
-      throw new UnauthorizedException("Invalid or revoked API Key.");
-    }
-    return {
-      valid: true,
-      nodeZone: "AP-S1_MUMBAI",
-      rateLimitPerSec: 150,
-      clusterHealth: "OPTIMAL",
-    };
+    return this.authService.verifyKey(authHeader);
   }
 }
