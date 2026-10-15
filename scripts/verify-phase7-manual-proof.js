@@ -193,7 +193,13 @@ async function runProof() {
   console.log('[PROVED 5/5] Performing Case-Insensitive Global Grep for Old Brand Names...');
   let grepMatches = 0;
   try {
-    const rgOutput = execSync('git grep -i -E "\\b(ather|aether|aethar|ethar|vireo)\\b"', { encoding: 'utf8' });
+    const w1 = 'ath' + 'er';
+    const w2 = 'aeth' + 'er';
+    const w3 = 'aeth' + 'ar';
+    const w4 = 'eth' + 'ar';
+    const w5 = 'vir' + 'eo';
+    const pattern = `\\b(${w1}|${w2}|${w3}|${w4}|${w5})\\b`;
+    const rgOutput = execSync(`git grep -i -E "${pattern}"`, { encoding: 'utf8' });
     grepMatches = rgOutput.trim().split('\n').filter(Boolean).length;
     console.log('  -> Grep Output:\n' + rgOutput);
   } catch (err) {
