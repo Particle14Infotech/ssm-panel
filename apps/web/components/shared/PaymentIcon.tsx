@@ -114,17 +114,17 @@ export function PaymentIcon({
 
   // Generic card fallback
   if (norm === "card") {
-    return <CreditCard className={`shrink-0 text-blue-400 ${className}`} style={{ width: dim, height: dim }} />;
+    return <CreditCard className={`shrink-0 text-[#D8EC8D] ${className}`} style={{ width: dim, height: dim }} />;
   }
 
   // Netbanking fallback
   if (norm === "netbanking") {
-    return <Building2 className={`shrink-0 text-blue-400 ${className}`} style={{ width: dim, height: dim }} />;
+    return <Building2 className={`shrink-0 text-[#D8EC8D] ${className}`} style={{ width: dim, height: dim }} />;
   }
 
   // Wallet fallback
   if (norm === "wallets" || norm === "wallet") {
-    return <Wallet className={`shrink-0 text-blue-400 ${className}`} style={{ width: dim, height: dim }} />;
+    return <Wallet className={`shrink-0 text-[#D8EC8D] ${className}`} style={{ width: dim, height: dim }} />;
   }
 
   const data = PAYMENT_REGISTRY[norm];

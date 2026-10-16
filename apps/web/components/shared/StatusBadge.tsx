@@ -44,14 +44,14 @@ export function StatusBadge({ status, className = "" }: StatusBadgeProps) {
     case "PROCESSING":
     case "IN_PROGRESS":
     case "ANSWERED":
-      colorClasses = "bg-blue-500/15 text-blue-300 border-blue-500/30";
-      dotColor = "bg-blue-400";
+      colorClasses = "bg-[#D8EC8D]/15 text-[#D8EC8D] border-[#D8EC8D]/30";
+      dotColor = "bg-[#D8EC8D]";
       label = norm === "IN_PROGRESS" ? "In Progress" : norm === "ANSWERED" ? "Staff Reply" : "Processing";
       break;
 
     case "PARTIAL":
-      colorClasses = "bg-sky-500/15 text-sky-300 border-sky-500/30";
-      dotColor = "bg-sky-400";
+      colorClasses = "bg-amber-500/15 text-amber-300 border-amber-500/30";
+      dotColor = "bg-amber-400";
       label = "Partial";
       break;
 

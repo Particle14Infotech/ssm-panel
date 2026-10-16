@@ -12,9 +12,9 @@ export function ParticleField({ count = 350 }: { count?: number }) {
     const col = new Float32Array(count * 3);
     const sca = new Float32Array(count);
 
-    const color1 = new THREE.Color("#2563EB");
-    const color2 = new THREE.Color("#3B82F6");
-    const color3 = new THREE.Color("#60A5FA");
+    const color1 = new THREE.Color("#FF4D8D");
+    const color2 = new THREE.Color("#D8EC8D");
+    const color3 = new THREE.Color("#BEF264");
     const color4 = new THREE.Color("#FFFFFF");
 
     for (let i = 0; i < count; i++) {

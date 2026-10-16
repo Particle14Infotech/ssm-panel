@@ -71,8 +71,8 @@ export default function AdminProvidersPage() {
         {/* Header Telemetry */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            <div className="flex items-center gap-2 text-xs font-mono text-[#D8EC8D]">
+              <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
               <span className="uppercase tracking-widest font-semibold">
                 Upstream Provider Aggregator / API Balance Telemetry
               </span>
@@ -85,7 +85,7 @@ export default function AdminProvidersPage() {
 
           <button
             onClick={() => setIsAdding(true)}
-            className="px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-bold hover:brightness-110 flex items-center gap-2 shadow-[0_0_20px_rgba(37,99,235,0.3)] shrink-0"
+            className="px-5 py-2.5 rounded-full btn-primary-gradient text-[#171e00] text-xs font-bold hover:brightness-110 flex items-center gap-2 shadow-[0_0_20px_rgba(216,236,141,0.25)] shrink-0"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Connect New Provider</span>
@@ -94,14 +94,14 @@ export default function AdminProvidersPage() {
 
         {/* Global Import Notice */}
         {importNotice && (
-          <div className="p-4 rounded-2xl bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs flex items-center justify-between">
+          <div className="p-4 rounded-2xl bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 text-[#D8EC8D] text-xs flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-blue-400" />
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#D8EC8D]" />
               <span>{importNotice}</span>
             </div>
             <button
               onClick={() => setImportNotice(null)}
-              className="text-blue-200 hover:text-white p-1 rounded-md"
+              className="text-[#D8EC8D]/80 hover:text-white p-1 rounded-md"
               aria-label="Dismiss notice"
             >
               <X className="w-4 h-4" />
@@ -113,7 +113,7 @@ export default function AdminProvidersPage() {
         {isAdding && (
           <form
             onSubmit={handleCreate}
-            className="bg-[#070B16] border border-white/10 rounded-3xl p-6 md:p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-4"
+            className="bg-[#131313] border border-white/10 rounded-3xl p-6 md:p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-4"
           >
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="text-base font-semibold text-white">Connect Upstream SMM Provider</h3>
@@ -173,7 +173,7 @@ export default function AdminProvidersPage() {
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="submit"
-                className="px-6 py-2 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-md"
+                className="px-6 py-2 rounded-full btn-primary-gradient text-[#171e00] text-xs font-bold transition-all shadow-md"
               >
                 Verify & Connect Node
               </button>
@@ -182,10 +182,10 @@ export default function AdminProvidersPage() {
         )}
 
         {/* Margin setting bar */}
-        <div className="flex items-center justify-between p-4 rounded-2xl bg-[#070B16] border border-white/10 text-xs">
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-[#131313] border border-white/10 text-xs">
           <div className="flex items-center gap-2 text-slate-300">
             <span>Global Selling Rate Formula:</span>
-            <span className="font-mono text-blue-400 font-semibold">Selling Rate = Provider Cost + Margin %</span>
+            <span className="font-mono text-[#D8EC8D] font-semibold">Selling Rate = Provider Cost + Margin %</span>
           </div>
           <div className="flex items-center gap-2">
             <label className="text-slate-400 font-mono">Import Margin %:</label>
@@ -214,7 +214,7 @@ export default function AdminProvidersPage() {
             {providers.map((p) => (
               <div
                 key={p.id}
-                className="bg-[#070B16] border border-white/10 rounded-3xl p-6 hover:border-blue-500/40 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-4 flex flex-col justify-between transition-all"
+                className="bg-[#1c1b1b] border border-white/10 rounded-3xl p-6 hover:border-[#D8EC8D]/40 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-4 flex flex-col justify-between transition-all"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -231,7 +231,7 @@ export default function AdminProvidersPage() {
                   <div className="bg-white/[0.03] rounded-2xl p-3.5 space-y-2 text-xs font-mono">
                     <div className="flex justify-between text-slate-400">
                       <span>Account Balance</span>
-                      <span className="text-blue-400 font-bold text-sm">
+                      <span className="text-[#D8EC8D] font-bold text-sm">
                         ₹{p.balance.toFixed(2)} {p.currency}
                       </span>
                     </div>
@@ -256,7 +256,7 @@ export default function AdminProvidersPage() {
                   <button
                     onClick={() => handleImport(p.id)}
                     disabled={importingId === p.id}
-                    className="px-3 py-1 rounded-full bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white text-xs font-semibold transition-all inline-flex items-center gap-1.5 border border-blue-500/30"
+                    className="px-3 py-1 rounded-full bg-[#D8EC8D]/15 hover:bg-[#D8EC8D] text-[#D8EC8D] hover:text-[#171e00] text-xs font-bold transition-all inline-flex items-center gap-1.5 border border-[#D8EC8D]/30"
                   >
                     <DownloadCloud className={`w-3.5 h-3.5 ${importingId === p.id ? "animate-bounce" : ""}`} />
                     <span>{importingId === p.id ? "Importing..." : "Import Catalog"}</span>

@@ -95,13 +95,13 @@ export default function WalletPage() {
   };
 
   return (
-    <div className="w-full bg-[#02040A] min-h-screen pb-24 text-slate-100">
+    <div className="w-full bg-[#131313] min-h-screen pb-24 text-slate-100">
       <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-8 space-y-8">
         {/* Header Telemetry */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            <div className="flex items-center gap-2 text-xs font-mono text-[#D8EC8D]">
+              <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
               <span className="uppercase tracking-widest font-semibold">
                 Financial Operations & Liquidity
               </span>
@@ -159,7 +159,7 @@ export default function WalletPage() {
         {/* Dual Column: Balance Overview & Deposit Form */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Top Up Gateway Selector (7 cols) */}
-          <div className="lg:col-span-7 bg-[#070B16] border border-white/10 rounded-3xl p-6 md:p-8 space-y-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
+          <div className="lg:col-span-7 bg-[#1c1b1b] border border-white/10 rounded-3xl p-6 md:p-8 space-y-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -185,7 +185,7 @@ export default function WalletPage() {
                     onClick={() => setSelectedMethod(gw.id)}
                     className={`p-4 rounded-2xl text-left border transition-all flex flex-col justify-between gap-3 ${
                       isSelected
-                        ? "bg-blue-600/15 border-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.2)]"
+                        ? "bg-[#D8EC8D]/15 border-[#D8EC8D]/40 shadow-[0_0_20px_rgba(216,236,141,0.15)]"
                         : "bg-white/[0.02] border-white/5 hover:border-white/15"
                     }`}
                   >
@@ -193,7 +193,7 @@ export default function WalletPage() {
                       <PaymentIcon method={gw.id} size={24} />
                       <span
                         className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-semibold ${
-                          isSelected ? "bg-blue-600 text-white" : "bg-white/10 text-slate-400"
+                          isSelected ? "bg-[#D8EC8D] text-[#131313] font-bold" : "bg-white/10 text-slate-400"
                         }`}
                       >
                         {gw.badge}
@@ -223,7 +223,7 @@ export default function WalletPage() {
                   step={100}
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}
-                  className="w-full bg-white/5 border border-white/10 focus:border-blue-500 text-white font-mono text-2xl font-light pl-10 pr-4 py-3 rounded-2xl focus:outline-none transition-all"
+                  className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 text-white font-mono text-2xl font-light pl-10 pr-4 py-3 rounded-2xl focus:outline-none transition-all"
                 />
               </div>
 
@@ -236,7 +236,7 @@ export default function WalletPage() {
                     onClick={() => setAmount(preset)}
                     className={`px-4 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all shrink-0 ${
                       amount === preset
-                        ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                        ? "bg-[#D8EC8D] text-[#131313] shadow-md shadow-[#D8EC8D]/20 font-bold"
                         : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
                     }`}
                   >
@@ -247,9 +247,9 @@ export default function WalletPage() {
             </div>
 
             {/* Dynamic Bonus Banner */}
-            <div className="bg-gradient-to-r from-blue-600/20 via-blue-500/10 to-transparent border border-blue-500/30 rounded-2xl p-4 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-[#243100]/40 via-[#D8EC8D]/10 to-transparent border border-[#D8EC8D]/30 rounded-2xl p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Sparkles className="w-5 h-5 text-blue-400 shrink-0" />
+                <Sparkles className="w-5 h-5 text-[#D8EC8D] shrink-0" />
                 <div>
                   <div className="text-xs font-semibold text-white">
                     {bonusPercent > 0 ? `${bonusPercent}% Tier Bonus Applied!` : "Deposit ₹500+ to unlock 5% Bonus!"}
@@ -259,7 +259,7 @@ export default function WalletPage() {
                   </div>
                 </div>
               </div>
-              <span className="text-sm font-bold text-blue-400 font-mono">+₹{bonusAmount.toFixed(2)}</span>
+              <span className="text-sm font-bold text-[#D8EC8D] font-mono">+₹{bonusAmount.toFixed(2)}</span>
             </div>
 
             {/* Error Display */}
@@ -276,7 +276,7 @@ export default function WalletPage() {
               data-testid="deposit-submit-btn"
               onClick={handleOpenCheckout}
               disabled={isProcessing || amount <= 0}
-              className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(37,99,235,0.4)] disabled:opacity-50"
+              className="w-full py-4 px-6 rounded-2xl btn-primary-gradient hover:brightness-105 text-[#171e00] font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(216,236,141,0.25)] disabled:opacity-50"
             >
               {isProcessing ? (
                 <>
@@ -296,15 +296,15 @@ export default function WalletPage() {
           {/* Right Column: Balance Summary & Tier Card (5 cols) */}
           <div className="lg:col-span-5 space-y-6">
             {/* Wallet Balance Hero Card */}
-            <div className="bg-[#070B16] border border-white/10 rounded-3xl p-6 md:p-8 space-y-6 relative overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
-              <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-blue-600/10 blur-3xl pointer-events-none" />
+            <div className="bg-[#1c1b1b] border border-white/10 rounded-3xl p-6 md:p-8 space-y-6 relative overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
+              <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-[#243100]/40 blur-3xl pointer-events-none" />
 
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-2">
-                  <Wallet className="w-5 h-5 text-blue-400" />
+                  <Wallet className="w-5 h-5 text-[#D8EC8D]" />
                   <h3 className="text-base font-medium text-white">Current Balance</h3>
                 </div>
-                <span className="px-3 py-1 rounded-full bg-blue-500/15 text-blue-400 text-[10px] font-mono font-bold">
+                <span className="px-3 py-1 rounded-full bg-[#D8EC8D]/15 text-[#D8EC8D] text-[10px] font-mono font-bold">
                   INR WALLET
                 </span>
               </div>
@@ -317,7 +317,7 @@ export default function WalletPage() {
                   <span className="text-4xl font-extralight text-white font-mono tracking-tight">
                     ₹{user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
-                  <span className="text-xs font-mono text-blue-400">INR</span>
+                  <span className="text-xs font-mono text-[#D8EC8D]">INR</span>
                 </div>
               </div>
 
@@ -343,7 +343,7 @@ export default function WalletPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Security</span>
-                  <span className="text-blue-400 font-mono font-semibold">256-bit SSL Encrypted</span>
+                  <span className="text-[#D8EC8D] font-mono font-semibold">256-bit SSL Encrypted</span>
                 </div>
               </div>
             </div>
@@ -351,7 +351,7 @@ export default function WalletPage() {
         </div>
 
         {/* Transactions Statements Table */}
-        <div className="bg-[#070B16] border border-white/10 rounded-3xl p-4 md:p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] overflow-hidden space-y-4">
+        <div className="bg-[#1c1b1b] border border-white/10 rounded-3xl p-4 md:p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] overflow-hidden space-y-4">
           <div className="flex items-center justify-between px-2">
             <div>
               <h2 className="text-sm font-semibold uppercase tracking-wider text-white">
@@ -388,7 +388,7 @@ export default function WalletPage() {
                   {transactions.map((txn) => (
                     <tr key={txn.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="py-4 px-3 font-mono font-semibold text-white whitespace-nowrap">
-                        <span className="text-blue-400 mr-1.5 font-bold">#</span>
+                        <span className="text-[#D8EC8D] mr-1.5 font-bold">#</span>
                         {txn.id}
                       </td>
                       <td className="py-4 px-3 font-mono text-[11px] text-slate-400 whitespace-nowrap">
@@ -422,7 +422,7 @@ export default function WalletPage() {
                           onClick={() => setInvoiceModalTxn(txn)}
                           className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-medium transition-all inline-flex items-center gap-1.5 border border-white/5"
                         >
-                          <FileText className="w-3.5 h-3.5 text-blue-400" />
+                          <FileText className="w-3.5 h-3.5 text-[#D8EC8D]" />
                           <span>View Receipt</span>
                         </button>
                       </td>
@@ -450,11 +450,11 @@ export default function WalletPage() {
       {/* Invoice Modal */}
       {invoiceModalTxn && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#070B16] border border-white/15 rounded-3xl p-6 md:p-8 max-w-lg w-full space-y-6 shadow-2xl relative text-xs">
+          <div className="bg-[#1c1b1b] border border-white/15 rounded-3xl p-6 md:p-8 max-w-lg w-full space-y-6 shadow-2xl relative text-xs">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
-                  <Lock className="w-4 h-4 text-blue-400" />
+                <div className="w-7 h-7 rounded-lg bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 flex items-center justify-center">
+                  <Lock className="w-4 h-4 text-[#D8EC8D]" />
                 </div>
                 <div>
                   <h3 className="text-base font-semibold text-white">{BRAND_NAME} Tax Invoice</h3>
@@ -503,7 +503,7 @@ export default function WalletPage() {
                   <span>Base Amount</span>
                   <span>₹{invoiceModalTxn.amount.toFixed(2)}</span>
                 </div>
-                <div className="border-t border-white/10 pt-2 flex justify-between text-blue-400 text-sm font-bold">
+                <div className="border-t border-white/10 pt-2 flex justify-between text-[#D8EC8D] text-sm font-bold">
                   <span>Total Wallet Credit</span>
                   <span>₹{invoiceModalTxn.amount.toFixed(2)}</span>
                 </div>
@@ -515,7 +515,7 @@ export default function WalletPage() {
                 onClick={() => {
                   window.print();
                 }}
-                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-blue-600/30"
+                className="px-5 py-2.5 rounded-xl btn-primary-gradient text-[#171e00] font-bold text-xs flex items-center gap-1.5 shadow-md shadow-[#D8EC8D]/20"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Print / Download Receipt</span>

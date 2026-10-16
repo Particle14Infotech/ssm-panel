@@ -19,7 +19,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-[#02040A] text-slate-300 flex flex-col justify-between">
+    <div className="min-h-screen bg-[#131313] text-zinc-300 flex flex-col justify-between">
       <Navbar />
 
       <main className="flex-1 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 pt-36 pb-24 flex flex-col items-center text-center justify-center">
@@ -27,22 +27,22 @@ export default function GlobalError({
           <AlertTriangle className="w-7 h-7" />
         </div>
 
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-mono text-blue-400 uppercase tracking-widest mb-4">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] text-xs font-mono text-[#D8EC8D] uppercase tracking-widest mb-4">
           <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
           HTTP 500 • Server Execution Error
         </div>
 
         <h1 className="font-heading text-3xl sm:text-5xl font-light text-white tracking-tight mb-4">
-          Unexpected <span className="text-[#3B82F6] font-normal">System Anomaly</span>
+          Unexpected <span className="text-[#D8EC8D] font-normal">System Anomaly</span>
         </h1>
 
-        <p className="text-slate-400 text-sm sm:text-base max-w-lg mb-8 leading-relaxed font-light">
+        <p className="text-zinc-400 text-sm sm:text-base max-w-lg mb-8 leading-relaxed font-light">
           An unhandled fault occurred while processing your request. Our telemetry logging service has flagged this incident for review.
         </p>
 
         {error?.digest && (
-          <div className="mb-8 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/10 font-mono text-xs text-slate-400">
-            Error Reference Digest: <span className="text-blue-400">{error.digest}</span>
+          <div className="mb-8 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/10 font-mono text-xs text-zinc-400">
+            Error Reference Digest: <span className="text-[#D8EC8D]">{error.digest}</span>
           </div>
         )}
 
@@ -50,7 +50,7 @@ export default function GlobalError({
           <button
             type="button"
             onClick={() => reset()}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all shadow-lg shadow-blue-600/25"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#D8EC8D] to-[#BEF264] text-[#171e00] font-bold text-sm transition-all shadow-lg shadow-[#D8EC8D]/25 hover:brightness-105"
           >
             <RefreshCw className="w-4 h-4" />
             <span>Retry Operation</span>

@@ -32,7 +32,7 @@ export function DataTable<T>({
   return (
     <div className={`overflow-x-auto ${className}`}>
       <table className="w-full text-left border-collapse">
-        <thead className="sticky top-0 bg-[#070B16]/95 backdrop-blur-md z-10 border-b border-white/10">
+        <thead className="sticky top-0 bg-[#131313]/95 backdrop-blur-md z-10 border-b border-white/10">
           <tr className="text-[11px] uppercase tracking-wider text-slate-400 font-mono">
             {columns.map((col, idx) => (
               <th

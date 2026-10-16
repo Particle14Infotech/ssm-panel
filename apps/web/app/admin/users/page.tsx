@@ -57,8 +57,8 @@ export default function AdminUsersPage() {
         {/* Header Telemetry */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
-              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+            <div className="flex items-center gap-2 text-xs font-mono text-[#D8EC8D]">
+              <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
               <span className="uppercase tracking-widest font-semibold">
                 Customer Directory & Ledger Adjustments
               </span>
@@ -79,7 +79,7 @@ export default function AdminUsersPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search user by name, email, or user ID..."
-              className="w-full bg-surface-container-highest/80 border border-white/5 focus:border-blue-500 rounded-2xl pl-11 pr-4 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none font-mono"
+              className="w-full bg-surface-container-highest/80 border border-white/5 focus:border-[#D8EC8D]/50 rounded-2xl pl-11 pr-4 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none font-mono"
             />
           </div>
         </div>
@@ -110,7 +110,7 @@ export default function AdminUsersPage() {
                       <div className="font-semibold text-white">{user.name}</div>
                       <div className="text-[11px] text-on-surface-variant font-mono">{user.email}</div>
                     </td>
-                    <td className="py-4 px-3 font-mono font-bold text-blue-400 whitespace-nowrap">
+                    <td className="py-4 px-3 font-mono font-bold text-[#D8EC8D] whitespace-nowrap">
                       ₹{user.balance.toFixed(2)}
                     </td>
                     <td className="py-4 px-3 font-mono text-white whitespace-nowrap">
@@ -120,7 +120,7 @@ export default function AdminUsersPage() {
                       {user.totalOrders}
                     </td>
                     <td className="py-4 px-3 whitespace-nowrap">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#D8EC8D]/15 text-[#D8EC8D] border border-[#D8EC8D]/30">
                         {user.tier}
                       </span>
                     </td>
@@ -144,7 +144,7 @@ export default function AdminUsersPage() {
                     <td className="py-4 px-3 text-right whitespace-nowrap">
                       <button
                         onClick={() => setBalanceModalUser(user)}
-                        className="px-3 py-1 rounded-full bg-white/5 hover:bg-blue-600 text-white hover:text-white text-[11px] font-semibold transition-all inline-flex items-center gap-1"
+                        className="px-3 py-1 rounded-full bg-white/5 hover:bg-[#D8EC8D] text-white hover:text-[#171e00] text-[11px] font-semibold transition-all inline-flex items-center gap-1"
                       >
                         <CreditCard className="w-3 h-3" />
                         <span>Adjust Balance</span>
@@ -182,7 +182,7 @@ export default function AdminUsersPage() {
             <div className="space-y-3 font-mono">
               <div className="bg-surface-container-high/40 rounded-2xl p-3.5 flex justify-between text-on-surface-variant">
                 <span>Current Balance:</span>
-                <span className="text-blue-400 font-bold">₹{balanceModalUser.balance.toFixed(2)}</span>
+                <span className="text-[#D8EC8D] font-bold">₹{balanceModalUser.balance.toFixed(2)}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -250,7 +250,7 @@ export default function AdminUsersPage() {
               <button
                 type="submit"
                 onClick={handleAdjustSubmit}
-                className="px-5 py-2 rounded-full bg-blue-600 text-white text-xs font-bold hover:brightness-110"
+                className="px-5 py-2 rounded-full btn-primary-gradient text-[#171e00] text-xs font-bold hover:brightness-110"
               >
                 Confirm Adjustment
               </button>

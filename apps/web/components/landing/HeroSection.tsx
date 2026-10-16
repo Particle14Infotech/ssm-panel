@@ -16,8 +16,8 @@ export function HeroSection() {
       data-crown="right"
       className="relative w-full pt-28 pb-20 md:pt-36 md:pb-28 overflow-hidden"
     >
-      {/* Single subtle, static blue radial light behind hero visual */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-blue-600/10 blur-[140px] pointer-events-none rounded-full" />
+      {/* Single subtle, static lime/olive radial light behind hero visual */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-[#243100]/25 blur-[140px] pointer-events-none rounded-full" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Two-Column Hero on Desktop (Text left, Crown 3D stage right); Centred on Mobile */}
@@ -30,13 +30,13 @@ export function HeroSection() {
               transition={{ duration: 0.5, ease: "easeOut" }}
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full liquid-glass-pill shadow-lg mb-6"
             >
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-xs uppercase tracking-widest font-mono text-blue-400 font-medium">
+              <span className="w-2 h-2 rounded-full bg-[#d8ec8d] animate-pulse shadow-[0_0_8px_#d8ec8d]" />
+              <span className="text-xs uppercase tracking-widest font-mono text-[#d8ec8d] font-semibold">
                 {landingContent.hero.badge}
               </span>
             </motion.div>
 
-            {/* Main Headline: Plain white with solid blue accent word */}
+            {/* Main Headline */}
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -44,7 +44,7 @@ export function HeroSection() {
               className="font-heading text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-light tracking-tight text-white leading-[1.12] mb-6 max-w-2xl"
             >
               Order social growth services.{" "}
-              <span className="text-[#3B82F6] font-normal">
+              <span className="bg-gradient-to-r from-white via-[#ffd5e6] to-[#dbef90] bg-clip-text text-transparent font-normal">
                 Track every order.
               </span>
             </motion.h1>
@@ -55,7 +55,7 @@ export function HeroSection() {
               initial="hidden"
               animate="visible"
               transition={{ delay: 0.2 }}
-              className="text-lg sm:text-xl text-slate-300 font-light max-w-xl leading-relaxed mb-8"
+              className="text-lg sm:text-xl text-zinc-300 font-light max-w-xl leading-relaxed mb-8"
             >
               {landingContent.hero.support}
             </motion.p>
@@ -71,7 +71,7 @@ export function HeroSection() {
               <MagneticButton>
                 <Link
                   href={landingContent.hero.primaryCta.href}
-                  className="w-full sm:w-auto px-8 py-4 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-medium text-base shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center gap-2 group"
+                  className="w-full sm:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-[#d8ec8d] to-[#bef264] text-[#171e00] font-bold text-base hover:shadow-[0_0_32px_rgba(216,236,141,0.5)] transition-all flex items-center justify-center gap-2 group shadow-xl"
                 >
                   <span>{landingContent.hero.primaryCta.label}</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
@@ -81,10 +81,10 @@ export function HeroSection() {
               <MagneticButton>
                 <Link
                   href={landingContent.hero.secondaryCta.href}
-                  className="w-full sm:w-auto px-8 py-4 rounded-full bg-white/[0.06] text-white hover:bg-white/[0.12] border border-white/[0.08] font-medium text-base transition-all flex items-center justify-center gap-2 hover:border-white/20 backdrop-blur-md"
+                  className="w-full sm:w-auto px-8 py-4 rounded-full bg-white/[0.08] text-white hover:bg-white/[0.14] border border-white/[0.08] font-medium text-base transition-all flex items-center justify-center gap-2 hover:border-white/20 backdrop-blur-md"
                 >
                   <span>{landingContent.hero.secondaryCta.label}</span>
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </Link>
               </MagneticButton>
             </motion.div>
@@ -100,16 +100,16 @@ export function HeroSection() {
           <div className="lg:col-span-6">
             <TiltCard
               maxTilt={4}
-              glowColor="rgba(37, 99, 235, 0.2)"
+              glowColor="rgba(219, 239, 144, 0.25)"
               className="h-full rounded-2xl p-6 md:p-8 liquid-glass flex flex-col justify-between"
             >
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs uppercase tracking-widest font-mono text-slate-400 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_#3B82F6]" />
+                  <span className="text-xs uppercase tracking-widest font-mono text-zinc-300 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#dbef90] shadow-[0_0_8px_#dbef90]" />
                     Wallet & Balance
                   </span>
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 font-mono border border-blue-500/20 backdrop-blur-md">
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-white/[0.08] text-[#dbef90] font-mono border border-white/10 backdrop-blur-md">
                     Double-Entry
                   </span>
                 </div>
@@ -120,16 +120,16 @@ export function HeroSection() {
                   </div>
                 </div>
 
-                <p className="text-sm text-slate-300 font-light leading-relaxed">
+                <p className="text-sm text-zinc-300 font-light leading-relaxed">
                   Funds are credited directly to your balance. Any partial delivery or cancellation automatically returns unspent funds to your wallet.
                 </p>
               </div>
 
-              <div className="pt-6 mt-6 border-t border-white/[0.08] relative z-10 flex items-center justify-between text-xs text-slate-300 font-mono">
-                <span className="text-blue-400">Transparent Balance</span>
+              <div className="pt-6 mt-6 border-t border-white/[0.08] relative z-10 flex items-center justify-between text-xs text-zinc-300 font-mono">
+                <span className="text-[#dbef90]">Transparent Balance</span>
                 <Link
                   href="/pricing"
-                  className="font-medium text-blue-400 hover:text-white flex items-center gap-1 group/btn"
+                  className="font-bold text-[#dbef90] hover:text-white flex items-center gap-1 group/btn"
                 >
                   <span>Deposit Rules</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
@@ -142,16 +142,16 @@ export function HeroSection() {
           <div className="lg:col-span-6">
             <TiltCard
               maxTilt={4}
-              glowColor="rgba(37, 99, 235, 0.2)"
+              glowColor="rgba(219, 239, 144, 0.25)"
               className="h-full rounded-2xl p-6 md:p-8 liquid-glass flex flex-col justify-between"
             >
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs uppercase tracking-widest font-mono text-slate-400 flex items-center gap-1.5">
-                    <Activity className="w-3.5 h-3.5 text-blue-400" />
+                  <span className="text-xs uppercase tracking-widest font-mono text-zinc-300 flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5 text-[#dbef90]" />
                     Service Catalog
                   </span>
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 font-medium border border-blue-500/20 backdrop-blur-md">
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-white/[0.08] text-[#dbef90] font-semibold border border-white/10 backdrop-blur-md">
                     500+ Active Services
                   </span>
                 </div>
@@ -162,19 +162,19 @@ export function HeroSection() {
                   </div>
                 </div>
 
-                <p className="text-sm text-slate-300 font-light leading-relaxed">
+                <p className="text-sm text-zinc-300 font-light leading-relaxed">
                   Real-time status updates and order tracking across Instagram, TikTok, YouTube, Telegram, and X with dedicated API endpoints.
                 </p>
               </div>
 
               <div className="pt-6 mt-6 border-t border-white/[0.08] relative z-10 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_#3B82F6]" />
-                  <span className="text-xs font-mono text-slate-400">Live Status Sync</span>
+                  <span className="w-2 h-2 rounded-full bg-[#dbef90] animate-pulse shadow-[0_0_8px_#dbef90]" />
+                  <span className="text-xs font-mono text-zinc-300">Live Status Sync</span>
                 </div>
                 <Link
                   href="/services"
-                  className="text-xs font-medium text-blue-400 hover:text-white flex items-center gap-1 group/btn"
+                  className="text-xs font-bold text-[#dbef90] hover:text-white flex items-center gap-1 group/btn"
                 >
                   <span>View Services</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />

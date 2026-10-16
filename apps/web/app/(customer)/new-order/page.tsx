@@ -152,8 +152,8 @@ function NewOrderContent() {
       {/* Header Telemetry */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          <div className="flex items-center gap-2 text-xs font-mono text-[#D8EC8D]">
+            <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
             <span className="uppercase tracking-widest font-semibold">Order Dispatch Console</span>
           </div>
           <h1 className="text-3xl font-semibold text-white tracking-tight">New Order</h1>
@@ -169,7 +169,7 @@ function NewOrderContent() {
           </div>
           <Link
             href="/wallet"
-            className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-sm transition-all"
+            className="px-3.5 py-1.5 rounded-xl btn-primary-gradient text-[#171e00] text-xs font-bold shadow-[0_0_15px_rgba(216,236,141,0.25)] transition-all"
           >
             + Add Funds
           </Link>
@@ -233,11 +233,11 @@ function NewOrderContent() {
                     }}
                     className={`p-3 rounded-xl border text-left transition-all flex items-center gap-2.5 ${
                       isSelected
-                        ? "bg-blue-600/15 border-blue-500 text-white shadow-sm"
+                        ? "bg-[#D8EC8D]/15 border-[#D8EC8D] text-[#D8EC8D] shadow-sm"
                         : "bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
                     }`}
                   >
-                    <Icon className={`w-4 h-4 ${isSelected ? "text-blue-400" : "text-slate-400"}`} />
+                    <Icon className={`w-4 h-4 ${isSelected ? "text-[#D8EC8D]" : "text-slate-400"}`} />
                     <span className="text-xs font-medium truncate">{plat.name}</span>
                   </button>
                 );
@@ -256,11 +256,11 @@ function NewOrderContent() {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
+                  className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
                 >
-                  <option value="ALL" className="bg-[#070B16]">All Categories ({categories.length})</option>
+                  <option value="ALL" className="bg-[#131313]">All Categories ({categories.length})</option>
                   {categories.map((c) => (
-                    <option key={c} value={c} className="bg-[#070B16]">
+                    <option key={c} value={c} className="bg-[#131313]">
                       {c}
                     </option>
                   ))}
@@ -272,15 +272,15 @@ function NewOrderContent() {
               <select
                 value={activeService?.id || ""}
                 onChange={(e) => setSelectedServiceId(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none font-sans"
+                className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none font-sans"
               >
                 {availableServices.length === 0 ? (
-                  <option value="" disabled className="bg-[#070B16]">
+                  <option value="" disabled className="bg-[#131313]">
                     No services available for this selection
                   </option>
                 ) : (
                   availableServices.map((s) => (
-                    <option key={s.id} value={s.id} className="bg-[#070B16]">
+                    <option key={s.id} value={s.id} className="bg-[#131313]">
                       {s.name} — ₹{s.ratePer1000.toFixed(2)}/1k
                     </option>
                   ))
@@ -298,7 +298,7 @@ function NewOrderContent() {
                       {activeService.description || "High-speed algorithmic fulfillment with auto-dispatch."}
                     </span>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-400 font-mono font-bold text-xs shrink-0">
+                  <span className="px-2.5 py-1 rounded-full bg-[#D8EC8D]/15 text-[#D8EC8D] font-mono font-bold text-xs shrink-0">
                     ₹{activeService.ratePer1000.toFixed(2)} / 1k
                   </span>
                 </div>
@@ -336,7 +336,7 @@ function NewOrderContent() {
                 onChange={(e) => setTargetUrl(e.target.value)}
                 placeholder="https://instagram.com/yourhandle or post link"
                 required
-                className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
+                className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
               />
             </FormField>
 
@@ -348,7 +348,7 @@ function NewOrderContent() {
                   max={activeService?.maxQty || 1000000}
                   value={quantity}
                   onChange={(e) => setQuantity(Number(e.target.value))}
-                  className="w-full bg-white/5 border border-white/10 focus:border-blue-500 text-white font-mono text-xl pl-4 pr-16 py-2.5 rounded-xl focus:outline-none"
+                  className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 text-white font-mono text-xl pl-4 pr-16 py-2.5 rounded-xl focus:outline-none"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400 uppercase">
                   Units
@@ -365,7 +365,7 @@ function NewOrderContent() {
                   onClick={() => setQuantity(preset)}
                   className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all shrink-0 ${
                     quantity === preset
-                      ? "bg-blue-600 text-white shadow-sm"
+                      ? "bg-[#D8EC8D] text-[#131313] font-bold shadow-sm"
                       : "bg-white/5 text-slate-400 hover:text-white"
                   }`}
                 >
@@ -389,7 +389,7 @@ function NewOrderContent() {
           <GlassCard className="p-6 md:p-8 space-y-6">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <h3 className="text-base font-semibold text-white">Order Summary</h3>
-              <span className="px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 text-[10px] font-mono font-semibold">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#D8EC8D]/15 text-[#D8EC8D] text-[10px] font-mono font-semibold">
                 Live Calculation
               </span>
             </div>
@@ -402,7 +402,7 @@ function NewOrderContent() {
                 <span className="text-4xl font-extralight text-white font-mono tracking-tight">
                   ₹{totalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                 </span>
-                <span className="text-xs font-mono text-blue-400">INR</span>
+                <span className="text-xs font-mono text-[#D8EC8D]">INR</span>
               </div>
               <div className="text-[11px] text-slate-400 font-mono">
                 ₹{unitRate.toFixed(2)}/1k × {quantity.toLocaleString()} units
@@ -437,7 +437,7 @@ function NewOrderContent() {
                   type="button"
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white font-semibold text-sm shadow-[0_0_25px_rgba(37,99,235,0.4)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-3.5 px-6 rounded-2xl btn-primary-gradient text-[#171e00] font-bold text-sm shadow-[0_0_25px_rgba(216,236,141,0.3)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {submitting ? (
                     <>
@@ -459,7 +459,7 @@ function NewOrderContent() {
                   </div>
                   <Link
                     href="/wallet"
-                    className="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30"
+                    className="w-full py-3.5 px-6 rounded-2xl btn-primary-gradient text-[#171e00] font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(216,236,141,0.25)]"
                   >
                     <PlusCircle className="w-4 h-4" />
                     <span>Add Funds to Continue</span>
@@ -474,7 +474,7 @@ function NewOrderContent() {
                 <span>Instant transaction locking with refund guarantee</span>
               </div>
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-400 shrink-0" />
+                <Clock className="w-4 h-4 text-[#D8EC8D] shrink-0" />
                 <span>Immediate automated dispatch to provider queue</span>
               </div>
             </div>

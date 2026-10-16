@@ -43,8 +43,8 @@ export default function AdminWalletsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-xs uppercase tracking-widest font-mono text-blue-400">
+              <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
+              <span className="text-xs uppercase tracking-widest font-mono text-[#D8EC8D]">
                 Liquidity & Ledger Operations
               </span>
             </div>
@@ -55,12 +55,12 @@ export default function AdminWalletsPage() {
           </div>
 
           <div className="liquid-glass-pill px-5 py-3 flex items-center gap-3">
-            <Wallet className="w-6 h-6 text-blue-400" />
+            <Wallet className="w-6 h-6 text-[#D8EC8D]" />
             <div>
               <span className="text-[10px] uppercase tracking-wider font-mono text-[#c7c8b6] block">
                 Total Platform Liability
               </span>
-              <span className="text-lg font-bold font-mono text-blue-400">
+              <span className="text-lg font-bold font-mono text-[#D8EC8D]">
                 ₹{totalLiability.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </span>
             </div>
@@ -74,7 +74,7 @@ export default function AdminWalletsPage() {
               <h2 className="text-sm font-bold text-white uppercase tracking-wider">
                 Audited Wallet Adjustment: {selectedUser.name} ({selectedUser.id})
               </h2>
-              <span className="text-xs font-mono text-blue-400">
+              <span className="text-xs font-mono text-[#D8EC8D]">
                 Current Balance: ₹{selectedUser.balance.toFixed(2)}
               </span>
             </div>
@@ -108,7 +108,7 @@ export default function AdminWalletsPage() {
                   type="number"
                   value={adjustAmount}
                   onChange={(e) => setAdjustAmount(Number(e.target.value))}
-                  className="w-full bg-[#131313] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-[#131313] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#D8EC8D]/50"
                 />
               </div>
 
@@ -119,7 +119,7 @@ export default function AdminWalletsPage() {
                   placeholder="e.g. Manual VIP promotional bonus or goodwill refund"
                   value={adjustReason}
                   onChange={(e) => setAdjustReason(e.target.value)}
-                  className="w-full bg-[#131313] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-[#131313] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#D8EC8D]/50"
                 />
               </div>
             </div>
@@ -134,7 +134,7 @@ export default function AdminWalletsPage() {
               <button
                 onClick={handleAdjust}
                 disabled={!adjustReason}
-                className="px-4 py-1.5 rounded-full bg-blue-600 text-white font-bold text-xs disabled:opacity-50"
+                className="px-4 py-1.5 rounded-full btn-primary-gradient text-[#171e00] font-bold text-xs disabled:opacity-50"
               >
                 Confirm Ledger Entry
               </button>
@@ -150,7 +150,7 @@ export default function AdminWalletsPage() {
             placeholder="Search users by name, email, ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-full bg-[#1c1b1b] border border-white/10 text-xs text-white placeholder:text-[#c7c8b6]/50 focus:outline-none focus:border-blue-500/40"
+            className="w-full pl-9 pr-4 py-2 rounded-full bg-[#1c1b1b] border border-white/10 text-xs text-white placeholder:text-[#c7c8b6]/50 focus:outline-none focus:border-[#D8EC8D]/50"
           />
         </div>
 
@@ -174,7 +174,7 @@ export default function AdminWalletsPage() {
                   <td className="py-3 px-4 text-[#c7c8b6]">{u.id}</td>
                   <td className="py-3 px-4 text-white font-medium">{u.name}</td>
                   <td className="py-3 px-4 text-[#c7c8b6]">{u.email}</td>
-                  <td className="py-3 px-4 text-blue-400">{u.tier}</td>
+                  <td className="py-3 px-4 text-[#D8EC8D]">{u.tier}</td>
                   <td className="py-3 px-4 text-right font-bold text-white">
                     ₹{u.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </td>
@@ -186,7 +186,7 @@ export default function AdminWalletsPage() {
                   <td className="py-3 px-4 text-right">
                     <button
                       onClick={() => setSelectedUser(u)}
-                      className="px-3 py-1 rounded-full bg-[#201f1f] hover:bg-blue-600 hover:text-black text-[11px] text-white transition-all"
+                      className="px-3 py-1 rounded-full bg-[#201f1f] hover:bg-[#D8EC8D] hover:text-[#171e00] text-[11px] text-white transition-all font-semibold"
                     >
                       Adjust Balance
                     </button>

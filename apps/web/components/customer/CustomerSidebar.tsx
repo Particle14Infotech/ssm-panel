@@ -53,18 +53,18 @@ export function CustomerSidebar() {
   ];
 
   return (
-    <aside className="w-64 shrink-0 hidden lg:flex flex-col justify-between bg-[#070B16]/95 backdrop-blur-xl border-r border-white/10 min-h-screen sticky top-0 z-40">
+    <aside className="w-64 shrink-0 hidden lg:flex flex-col justify-between bg-[#131313]/95 backdrop-blur-xl border-r border-white/10 min-h-screen sticky top-0 z-40">
       <div>
         {/* Brand Header */}
         <div className="h-16 px-6 flex items-center gap-3 border-b border-white/10">
-          <div className="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+          <div className="w-8 h-8 rounded-xl bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 flex items-center justify-center text-[#D8EC8D]">
             <Zap className="w-4 h-4" />
           </div>
           <div className="flex items-center gap-1.5">
             <span className="font-semibold text-white tracking-tight text-base font-sans">
               {BRAND_NAME}
             </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#D8EC8D] animate-pulse" />
           </div>
         </div>
 
@@ -87,18 +87,18 @@ export function CustomerSidebar() {
                       href={item.href}
                       className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group ${
                         isActive
-                          ? "bg-blue-600/15 text-white shadow-sm"
+                          ? "bg-[#D8EC8D]/15 text-white shadow-sm"
                           : "text-slate-400 hover:text-white hover:bg-white/[0.03]"
                       }`}
                     >
-                      {/* Left blue indicator for active item */}
+                      {/* Left indicator for active item */}
                       {isActive && (
-                        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-blue-500 rounded-r" />
+                        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#D8EC8D] rounded-r" />
                       )}
                       <item.icon
                         className={`w-4 h-4 shrink-0 transition-colors ${
                           isActive
-                            ? "text-blue-400"
+                            ? "text-[#D8EC8D]"
                             : "text-slate-400 group-hover:text-white"
                         }`}
                       />

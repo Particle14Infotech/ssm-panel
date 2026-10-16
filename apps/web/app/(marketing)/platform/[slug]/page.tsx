@@ -270,14 +270,14 @@ export default function PlatformPage({ params }: { params: { slug: string } }) {
         />
 
         {/* Hero Banner */}
-        <div className="mb-14 rounded-3xl p-8 md:p-12 bg-[#070B16]/80 border border-white/10 backdrop-blur-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none" />
+        <div className="mb-14 rounded-3xl p-8 md:p-12 bg-[#1c1b1b]/80 border border-white/10 backdrop-blur-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-[#D8EC8D]/10 rounded-full blur-[100px] pointer-events-none" />
 
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-[#D8EC8D]/20 border border-[#D8EC8D]/30 flex items-center justify-center">
               <PlatformIcon platform={p.slug} size={20} />
             </div>
-            <span className="text-xs uppercase tracking-widest font-mono text-blue-400 font-semibold">
+            <span className="text-xs uppercase tracking-widest font-mono text-[#D8EC8D] font-semibold">
               {p.name} Service Catalog • From {p.minPrice} / 1K
             </span>
           </div>
@@ -286,14 +286,14 @@ export default function PlatformPage({ params }: { params: { slug: string } }) {
             {p.headline}
           </h1>
 
-          <p className="text-base sm:text-lg text-slate-300 font-light max-w-2xl leading-relaxed mb-8">
+          <p className="text-base sm:text-lg text-zinc-300 font-light max-w-2xl leading-relaxed mb-8">
             {p.subheadline}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <Link
               href="/register"
-              className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25"
+              className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-gradient-to-r from-[#D8EC8D] to-[#BEF264] text-[#171e00] font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#D8EC8D]/25 hover:brightness-105"
             >
               <span>Create Free Account</span>
               <ArrowRight className="w-4 h-4" />
@@ -310,27 +310,27 @@ export default function PlatformPage({ params }: { params: { slug: string } }) {
         {/* Detailed Operational Overview (> 300 words total content requirement) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-14">
           <div className="lg:col-span-7 space-y-6">
-            <div className="rounded-2xl p-6 sm:p-8 bg-[#070B16]/60 border border-white/10 backdrop-blur-md">
+            <div className="rounded-2xl p-6 sm:p-8 bg-[#1c1b1b]/60 border border-white/10 backdrop-blur-md">
               <h2 className="font-heading text-xl font-medium text-white mb-3">
                 How Delivery & Automation Works
               </h2>
-              <p className="text-sm text-slate-300 font-light leading-relaxed mb-4">
+              <p className="text-sm text-zinc-300 font-light leading-relaxed mb-4">
                 {p.overview}
               </p>
-              <p className="text-sm text-slate-300 font-light leading-relaxed">
+              <p className="text-sm text-zinc-300 font-light leading-relaxed">
                 Orders are validated for correct syntax and immediately synchronized with high-availability API providers. All monetary movements adhere to our double-entry ledger invariant: your balance never decrements without a corresponding recorded transaction, ensuring zero leakage and automated refunds on order cancellations.
               </p>
             </div>
 
-            <div className="rounded-2xl p-6 sm:p-8 bg-[#070B16]/60 border border-white/10 backdrop-blur-md">
+            <div className="rounded-2xl p-6 sm:p-8 bg-[#1c1b1b]/60 border border-white/10 backdrop-blur-md">
               <h2 className="font-heading text-xl font-medium text-white mb-4 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-blue-400" />
+                <Shield className="w-5 h-5 text-[#D8EC8D]" />
                 <span>Account & Order Guidelines</span>
               </h2>
               <ul className="space-y-3">
                 {p.orderNotes.map((note, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-300 font-light">
-                    <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                  <li key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-zinc-300 font-light">
+                    <CheckCircle2 className="w-4 h-4 text-[#D8EC8D] shrink-0 mt-0.5" />
                     <span>{note}</span>
                   </li>
                 ))}
@@ -342,15 +342,15 @@ export default function PlatformPage({ params }: { params: { slug: string } }) {
             {p.features.map((feat, idx) => (
               <div
                 key={idx}
-                className="rounded-2xl p-6 bg-[#070B16]/60 border border-white/10 backdrop-blur-md"
+                className="rounded-2xl p-6 bg-[#1c1b1b]/60 border border-white/10 backdrop-blur-md"
               >
-                <div className="w-8 h-8 rounded-lg bg-blue-600/15 border border-blue-500/20 flex items-center justify-center mb-3">
-                  <Zap className="w-4 h-4 text-blue-400" />
+                <div className="w-8 h-8 rounded-lg bg-[#D8EC8D]/15 border border-[#D8EC8D]/20 flex items-center justify-center mb-3">
+                  <Zap className="w-4 h-4 text-[#D8EC8D]" />
                 </div>
                 <h3 className="font-heading text-base font-medium text-white mb-1.5">
                   {feat.title}
                 </h3>
-                <p className="text-xs text-slate-400 font-light leading-relaxed">
+                <p className="text-xs text-zinc-400 font-light leading-relaxed">
                   {feat.desc}
                 </p>
               </div>
@@ -359,8 +359,8 @@ export default function PlatformPage({ params }: { params: { slug: string } }) {
         </div>
 
         {/* Platform-Specific FAQ */}
-        <div className="rounded-3xl p-8 sm:p-10 bg-[#070B16]/80 border border-white/10 backdrop-blur-xl mb-14">
-          <div className="flex items-center gap-2 mb-6 text-xs uppercase tracking-widest font-mono text-blue-400">
+        <div className="rounded-3xl p-8 sm:p-10 bg-[#1c1b1b]/80 border border-white/10 backdrop-blur-xl mb-14">
+          <div className="flex items-center gap-2 mb-6 text-xs uppercase tracking-widest font-mono text-[#D8EC8D]">
             <HelpCircle className="w-4 h-4" />
             <span>Frequently Asked Questions • {p.name}</span>
           </div>
@@ -371,7 +371,7 @@ export default function PlatformPage({ params }: { params: { slug: string } }) {
                 <h3 className="text-base font-medium text-white mb-2">
                   {faq.q}
                 </h3>
-                <p className="text-sm text-slate-300 font-light leading-relaxed">
+                <p className="text-sm text-zinc-300 font-light leading-relaxed">
                   {faq.a}
                 </p>
               </div>
@@ -384,12 +384,12 @@ export default function PlatformPage({ params }: { params: { slug: string } }) {
           <h2 className="font-heading text-2xl sm:text-3xl font-light text-white mb-3">
             Ready to order {p.name} services?
           </h2>
-          <p className="text-sm text-slate-400 font-light mb-6 max-w-md mx-auto">
+          <p className="text-sm text-zinc-400 font-light mb-6 max-w-md mx-auto">
             Fund your wallet instantly using UPI, Cards, or Netbanking and dispatch your first order in under 60 seconds.
           </p>
           <Link
             href="/register"
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all shadow-lg shadow-blue-600/30"
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-gradient-to-r from-[#D8EC8D] to-[#BEF264] text-[#171e00] font-bold text-sm transition-all shadow-lg shadow-[#D8EC8D]/30 hover:brightness-105"
           >
             <span>Get Started with SMM Panel</span>
             <ArrowRight className="w-4 h-4" />

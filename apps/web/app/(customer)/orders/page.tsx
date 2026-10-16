@@ -83,8 +83,8 @@ export default function OrdersPage() {
       {/* Header Telemetry */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          <div className="flex items-center gap-2 text-xs font-mono text-[#D8EC8D]">
+            <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
             <span className="uppercase tracking-widest font-semibold">Fulfillment Ledger</span>
           </div>
           <h1 className="text-3xl font-semibold text-white tracking-tight">Orders History</h1>
@@ -95,7 +95,7 @@ export default function OrdersPage() {
 
         <Link
           href="/new-order"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white text-xs font-semibold shadow-md shadow-blue-600/30 transition-all self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl btn-primary-gradient hover:brightness-105 text-[#171e00] text-xs font-bold shadow-md transition-all self-start sm:self-auto"
         >
           <PlusCircle className="w-3.5 h-3.5" />
           <span>New Order</span>
@@ -116,14 +116,14 @@ export default function OrdersPage() {
                 onClick={() => setSelectedStatus(st.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 flex items-center gap-1.5 ${
                   isSelected
-                    ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
+                    ? "bg-[#D8EC8D] text-[#131313] font-bold shadow-sm shadow-[#D8EC8D]/20"
                     : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
                 }`}
               >
                 <span>{st.label}</span>
                 <span
                   className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                    isSelected ? "bg-white/20 text-white" : "bg-white/5 text-slate-400"
+                    isSelected ? "bg-white/20 text-[#131313] font-bold" : "bg-white/5 text-slate-400"
                   }`}
                 >
                   {count}
@@ -142,7 +142,7 @@ export default function OrdersPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter by Order ID, service name, or target link..."
-              className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none"
+              className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none"
             />
           </div>
 
@@ -150,15 +150,15 @@ export default function OrdersPage() {
             <select
               value={selectedPlatform}
               onChange={(e) => setSelectedPlatform(e.target.value)}
-              className="w-full sm:w-44 bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-sans"
+              className="w-full sm:w-44 bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-sans"
             >
-              <option value="ALL" className="bg-[#070B16]">All Platforms</option>
-              <option value="instagram" className="bg-[#070B16]">Instagram</option>
-              <option value="youtube" className="bg-[#070B16]">YouTube</option>
-              <option value="tiktok" className="bg-[#070B16]">TikTok</option>
-              <option value="telegram" className="bg-[#070B16]">Telegram</option>
-              <option value="twitter" className="bg-[#070B16]">X (Twitter)</option>
-              <option value="spotify" className="bg-[#070B16]">Spotify</option>
+              <option value="ALL" className="bg-[#131313]">All Platforms</option>
+              <option value="instagram" className="bg-[#131313]">Instagram</option>
+              <option value="youtube" className="bg-[#131313]">YouTube</option>
+              <option value="tiktok" className="bg-[#131313]">TikTok</option>
+              <option value="telegram" className="bg-[#131313]">Telegram</option>
+              <option value="twitter" className="bg-[#131313]">X (Twitter)</option>
+              <option value="spotify" className="bg-[#131313]">Spotify</option>
             </select>
           </div>
         </div>
@@ -198,7 +198,7 @@ export default function OrdersPage() {
                     {/* Order ID */}
                     <td className="py-3.5 px-3 font-mono font-semibold text-white whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-blue-400">#</span>
+                        <span className="text-[#D8EC8D]">#</span>
                         <span>{order.id}</span>
                         <button
                           onClick={() => handleCopy(order.id)}
@@ -229,7 +229,7 @@ export default function OrdersPage() {
                         href={order.target}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-slate-300 hover:text-blue-400 max-w-[180px] truncate block"
+                        className="text-slate-300 hover:text-[#D8EC8D] max-w-[180px] truncate block"
                         title={order.target}
                       >
                         {order.target}
@@ -272,7 +272,7 @@ export default function OrdersPage() {
                             type="button"
                             onClick={() => handleRefill(order.id)}
                             disabled={refillingId === order.id}
-                            className="px-2.5 py-1 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 text-xs font-medium transition-all flex items-center gap-1"
+                            className="px-2.5 py-1 rounded-lg bg-[#D8EC8D]/15 hover:bg-[#D8EC8D]/25 text-[#D8EC8D] text-xs font-medium transition-all flex items-center gap-1"
                           >
                             <RefreshCw className={`w-3 h-3 ${refillingId === order.id ? "animate-spin" : ""}`} />
                             <span>{refillingId === order.id ? "Refilling" : "Refill"}</span>
@@ -309,10 +309,10 @@ export default function OrdersPage() {
       {/* Details & Timeline Drawer / Modal */}
       {activeModalOrder && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#070B16] border border-white/15 rounded-3xl p-6 md:p-8 max-w-lg w-full space-y-6 shadow-2xl relative text-xs">
+          <div className="bg-[#1c1b1b] border border-white/15 rounded-3xl p-6 md:p-8 max-w-lg w-full space-y-6 shadow-2xl relative text-xs">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="space-y-0.5">
-                <span className="text-[10px] uppercase font-mono text-blue-400 font-semibold">
+                <span className="text-[10px] uppercase font-mono text-[#D8EC8D] font-semibold">
                   Order Telemetry & Execution Lifecycle
                 </span>
                 <h3 className="text-base font-semibold text-white">Order #{activeModalOrder.id}</h3>
@@ -333,20 +333,20 @@ export default function OrdersPage() {
               </div>
               <div className="flex items-center justify-between relative pt-1">
                 <div className="flex flex-col items-center gap-1 z-10">
-                  <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">
+                  <div className="w-5 h-5 rounded-full bg-[#D8EC8D] text-[#131313] flex items-center justify-center text-[10px] font-bold">
                     1
                   </div>
                   <span className="text-[10px] font-mono text-slate-300">Created</span>
                 </div>
-                <div className="flex-1 h-0.5 bg-blue-600/50 -mt-3" />
+                <div className="flex-1 h-0.5 bg-[#D8EC8D]/40 -mt-3" />
 
                 <div className="flex flex-col items-center gap-1 z-10">
-                  <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">
+                  <div className="w-5 h-5 rounded-full bg-[#D8EC8D] text-[#131313] flex items-center justify-center text-[10px] font-bold">
                     2
                   </div>
                   <span className="text-[10px] font-mono text-slate-300">Dispatched</span>
                 </div>
-                <div className="flex-1 h-0.5 bg-blue-600/50 -mt-3" />
+                <div className="flex-1 h-0.5 bg-[#D8EC8D]/40 -mt-3" />
 
                 <div className="flex flex-col items-center gap-1 z-10">
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
@@ -354,7 +354,7 @@ export default function OrdersPage() {
                       ? "bg-emerald-600 text-white"
                       : activeModalOrder.status === "FAILED" || activeModalOrder.status === "CANCELLED"
                       ? "bg-rose-600 text-white"
-                      : "bg-blue-600/40 text-blue-300 animate-pulse"
+                      : "bg-[#D8EC8D]/40 text-[#D8EC8D] animate-pulse"
                   }`}>
                     3
                   </div>
@@ -377,7 +377,7 @@ export default function OrdersPage() {
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Target Vector</span>
-                <span className="text-blue-400 truncate max-w-[200px]">{activeModalOrder.target}</span>
+                <span className="text-[#D8EC8D] truncate max-w-[200px]">{activeModalOrder.target}</span>
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Quantity</span>
@@ -406,7 +406,7 @@ export default function OrdersPage() {
               </Link>
               <button
                 onClick={() => setActiveModalOrder(null)}
-                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors"
+                className="px-5 py-2 rounded-xl btn-primary-gradient text-[#171e00] font-bold text-xs transition-colors"
               >
                 Close
               </button>

@@ -3,16 +3,15 @@ import React from "react";
 import * as THREE from "three";
 
 export const BRAND = {
-  blue: "#2563EB",
-  bright: "#3B82F6",
-  glow: "#60A5FA",
-  white: "#FFFFFF",
-  dark: "#02040A",
-  // Legacy alias redirects for safety
-  lime: "#3B82F6",
-  accent: "#60A5FA",
-  pink: "#3B82F6",
-  purple: "#2563EB",
+  lime: "#D8EC8D",
+  accent: "#BEF264",
+  pink: "#FF4D8D",
+  purple: "#7B3FF2",
+  white: "#ffffff",
+  dark: "#131313",
+  bright: "#D8EC8D",
+  glow: "#BEF264",
+  blue: "#D8EC8D", // Redirect legacy blue keys to lime
 } as const;
 
 export function Brand({

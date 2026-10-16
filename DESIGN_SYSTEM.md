@@ -4,90 +4,58 @@ This document is the **single source of truth** for all user interface, layout, 
 
 ---
 
-## 1. Visual Theme & Color Palette (Dark + Blue Only)
+## 1. Visual Theme & Color Palette (Original Lime/Green on Dark)
+
+The visual design is grounded in an ultra-premium, dark glassmorphism aesthetic with electric lime accents, warm olive undertones, and subtle magenta halo highlights for 3D elements.
 
 | Token Name | Hex / CSS Value | Role & Usage |
 |:---|:---|:---|
-| **Page Background** | `#02040A` | Global application root background (`bg-background`). |
-| **Alternate Surface** | `#070B16` | Sidebar, top header, modal backdrop base (`bg-surface`). |
-| **Glass Panel Base** | `rgba(255, 255, 255, 0.04)` | Stat cards, table containers, content panels. |
-| **Glass Border** | `1px solid rgba(255, 255, 255, 0.08)` | Outer 1px perimeter border on all glass cards. |
-| **Glass Top Highlight** | `inset 0 1px 0 0 rgba(255, 255, 255, 0.06)` | Subtle light-bounce specular highlight on upper edge. |
-| **Glass Shadow** | `0 8px 32px rgba(0, 0, 0, 0.4)` | Deep, soft ambient elevation shadow. |
-| **Primary Blue** | `#2563EB` (Tailwind blue-600) | Primary CTA buttons, active sidebar indicators, checked states. |
-| **Bright Blue** | `#3B82F6` (Tailwind blue-500) | Focus rings, text accent highlights, active pill tabs. |
-| **Subtle Glow** | `#60A5FA` (Tailwind blue-400) | Micro-indicator dots, focused card border hover accents. |
-| **Primary Gradient** | `#1D4ED8` -> `#3B82F6` | **Restricted strictly** to primary CTA buttons, active navigation, and key KPI highlights. |
-| **Primary Text** | `#FFFFFF` | Headings, card titles, monetary numbers, active labels. |
-| **Secondary Text** | `#94A3B8` (Tailwind slate-400) | Subtitles, helper text, table column headers. |
-| **Muted Text** | `#64748B` (Tailwind slate-500) | Placeholders, inactive timestamps, footer notes. |
+| **Page Background** | `#131313` | Global application root background (`bg-background`). |
+| **Surface Containers** | `#0e0e0e` (lowest), `#1c1b1b` (low), `#201f1f` (default), `#2a2a2a` (high), `#353534` (highest) | Layered elevation scale for sidebar, panels, cards, inputs. |
+| **Primary Accent (Lime)** | `#d8ec8d` / `#dbef90` (HSL `73 53% 74%`) | Headline accent words, active tabs, status pulse dots, primary borders. |
+| **Primary Dim (Olive-Lime)** | `#bccf74` | Gradient transition stop, subtle badges. |
+| **On-Primary (Dark Contrast Text)** | `#171e00` / `#2a3400` | High-contrast dark typography on lime CTA buttons and badges. |
+| **Secondary Accent (Halo)** | `#bd0183` / `#ffafd5` | Crown ambient aura, brand zap logo gradient (`from-[#bd0183] to-[#d8ec8d]`). |
+| **Primary Text** | `#FFFFFF` / `#e5e2e1` | Main headings, body text, table cells, metric values. |
+| **Secondary Text** | `#c7c8b6` | Subtitles, helper text, form labels, secondary descriptions. |
+| **Muted Text / Outline** | `#909281` / `#46483a` | Inactive controls, placeholder text, hairline borders. |
+| **Primary CTA Button** | `linear-gradient(to right, #d8ec8d, #bccf74, #d8ec8d)` | Primary interactive buttons with `text-[#171e00] font-bold` and lime shadow. |
+| **Secondary Button** | `rgba(255, 255, 255, 0.06)` | Border `rgba(255, 255, 255, 0.12)`, text white. |
 
-> **Strict Color Invariant:** Absolutely NO purple, violet, pink, magenta, or lime green elements. Semantic indicators (Emerald for Completed/Success, Amber for Pending, Rose for Failed/Cancelled) are reserved strictly for StatusBadges.
+> **Strict Color Rule:** Absolutely NO blue buttons, blue badges, or blue heading accents. Blue hex codes (`#2563EB`, `#3B82F6`, `#60A5FA`, `#1D4ED8`) and `blue-*` classes are prohibited in UI components. Real platform and payment logos keep their authentic brand colors.
 
 ---
 
 ## 2. Typography Rules
 
-- **Primary Font Family:** **Poppins**, with modern fallback stack: `system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`.
-- **Numbers, Currency & KPI Metrics:** Always use `font-sans tabular-nums tracking-tight font-semibold`.
+- **Primary Font Family:** **Poppins** (with modern fallback stack: `system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`).
+- **Numbers, Currency & KPI Metrics:** Always use `tabular-nums tracking-tight font-semibold`.
   - Format: Indian grouping (`en-IN`), prefixed with `₹` (e.g., `₹1,100.00`, `₹525.00`).
 - **Headings (`h1`, `h2`, `h3`):** Clean solid `#FFFFFF`, letter spacing `-0.02em`.
-  - No text-shadow glow, no glow beams, no rainbow gradient text.
-  - Accent words, if present, use solid `#3B82F6`.
-- **Monospace Font (`font-mono`):** Reserved exclusively for transaction IDs (`order_XXXXXXXX`, `pay_XXXXXXXX`), API tokens, cURL code blocks, and system event hashes.
+  - Accent words use solid `#d8ec8d` (lime).
+- **Monospace Font (`font-mono`):** Reserved for telemetry tags, order IDs (`order_XXXXXXXX`), API keys, and system logs.
 
 ---
 
-## 3. Spacing & Radius Scale
+## 3. Glassmorphism & Elevation System
+
+- **Glass Panels (`.glass-panel`):** `rgba(18, 18, 18, 0.72)` background, `backdrop-filter: blur(20px)`, 1px border `rgba(255, 255, 255, 0.12)`, radius `1.5rem`.
+- **Glass Cards (`.glass-card`):** Linear gradient `rgba(255, 255, 255, 0.06)` to `rgba(255, 255, 255, 0.01)` over dark surface with subtle lime refraction `rgba(219, 239, 144, 0.04)`.
+- **Liquid Glass Accents (`.liquid-glass` / `.liquid-glass-pill`):** Reserved for hero callouts, floating badges, and status pills, with 1px top highlight and light sweep effect on hover.
+
+---
+
+## 4. Spacing & Radius Scale
 
 - **Grid System:** Strict 8px dimensional grid (`8px`, `16px`, `24px`, `32px`, `40px`, `48px`).
 - **Border Radius:**
-  - Standard Cards & Modals: `20px` to `24px` (`rounded-2xl` / `rounded-[20px]`).
-  - Small Controls & Form Inputs: `12px` (`rounded-xl`).
-  - Status Badges & Buttons: `8px` (`rounded-lg`) or full pills (`rounded-full`).
+  - Standard Cards & Modals: `20px` to `24px` (`rounded-2xl` / `rounded-3xl`).
+  - Small Controls & Form Inputs: `12px` to `16px` (`rounded-xl`).
+  - Status Badges & Buttons: Full pills (`rounded-full`).
 
 ---
 
-## 4. Reusable Shared Component Inventory
+## 5. Mobile Hero Readability Invariant
 
-Every page must assemble its interface exclusively using these centralized components:
-
-1. **`GlassCard`** (`components/shared/GlassCard.tsx`): 16px blur container with 1px border and inset highlight.
-2. **`StatCard`** (`components/shared/StatCard.tsx`): Equal-height KPI card featuring title, Lucide icon, large sans tabular-nums value, and trend indicator.
-3. **`DataTable`** (`components/shared/DataTable.tsx`): Sticky header, row hover highlight, horizontal scroll container for responsive mobile layouts.
-4. **`StatusBadge`** (`components/shared/StatusBadge.tsx`): Tinted glass pills with semantic color mapping.
-5. **`EmptyState`** (`components/shared/EmptyState.tsx`): Icon + one explanatory line + single action button.
-6. **`FormField`** (`components/shared/FormField.tsx`): Accessible input with label, helper text, validation error, and blue focus-visible ring.
-7. **`PlatformIcon`** (`components/shared/PlatformIcon.tsx`): Optimized local SVG platform logo.
-8. **`PaymentIcon`** (`components/shared/PaymentIcon.tsx`): Verified local SVG payment method logo.
-9. **`Skeleton`** (`components/shared/Skeleton.tsx`): Shimmer pulse for data-fetching states.
-
----
-
-## 5. Site Map & Navigation Architecture
-
-### Public / Marketing Pages:
-- `/`: Landing page (Hero with 3D crown lazy-load, 4-step workflow, supported platforms, live pricing matrix, FAQ, CTA).
-- `/services`: Searchable platform service catalog with real rates.
-- `/pricing`: Transparent pricing and category breakdowns.
-- `/how-it-works`: Step-by-step dispatch workflow and live simulation.
-- `/faq`: Common questions regarding delivery, refill policies, API access.
-- `/contact`: Official support desk and ticketing portal.
-- `/about`: Infrastructure architecture, reliability standards, security guarantees.
-- `/legal/terms`, `/legal/privacy`, `/legal/refund`: Compliance and legal disclosures.
-
-### Authentication & Account:
-- `/login`: Secure session authentication.
-- `/register`: User onboarding with zero initial state.
-- `/forgot-password`: Verified password reset request.
-
-### Authenticated Customer Dashboard:
-- `/dashboard`: High-level operational overview, balance telemetry, 7d/30d activity velocity chart, recent orders stream.
-- `/new-order`: Multi-step dispatch console (Platform -> Category -> Service -> Target Link -> Quantity -> Live Rate Calculation).
-- `/orders`: Paginated order stream, status filters, search, and lifecycle timeline drawer.
-- `/services-catalog`: Full searchable matrix with live provider rates.
-- `/wallet`: Liquidity overview, deposit presets (₹100, ₹500, ₹1000, ₹5000), simulated Razorpay-style checkout modal.
-- `/transactions`: Double-entry ledger history with downloadable branded PDF/printable receipts.
-- `/support`: Customer support desk with ticket creation and conversation thread.
-- `/profile`: Account settings, password change, and API key generation/revocation.
-- `/app/api`: Reseller API integration documentation and cURL code snippets.
+- The 3D crown emblem / mascot visual must **never obscure** headline text on mobile viewports (< 768px).
+- On mobile viewports, the crown sits beside or below the text block or renders with lowered opacity (`opacity-25`) behind the text to guarantee WCAG 2.1 AA text contrast.

@@ -29,8 +29,8 @@ export function GenericPlatformGlyph({
       {/* Dark frosted glass backing tile */}
       <RoundedBox args={[0.9, 0.9, 0.12]} radius={0.2} smoothness={4}>
         <meshPhysicalMaterial
-          color="#070B16"
-          emissive="#1E3A8A"
+          color="#131313"
+          emissive="#243100"
           emissiveIntensity={0.2}
           roughness={0.4}
           metalness={0.2}
@@ -46,8 +46,8 @@ export function GenericPlatformGlyph({
         <mesh position={[0.04, 0, 0.08]} rotation={[0, 0, -Math.PI / 2]}>
           <coneGeometry args={[0.22, 0.38, 3]} />
           <meshStandardMaterial
-            color="#3B82F6"
-            emissive="#3B82F6"
+            color="#DBEF90"
+            emissive="#DBEF90"
             emissiveIntensity={0.4}
             roughness={0.3}
           />
@@ -60,8 +60,8 @@ export function GenericPlatformGlyph({
           <mesh>
             <sphereGeometry args={[0.22, 16, 16]} />
             <meshStandardMaterial
-              color="#3B82F6"
-              emissive="#3B82F6"
+              color="#DBEF90"
+              emissive="#DBEF90"
               emissiveIntensity={0.35}
               roughness={0.3}
             />
@@ -69,8 +69,8 @@ export function GenericPlatformGlyph({
           <mesh position={[-0.14, -0.14, 0]} rotation={[0, 0, Math.PI / 4]}>
             <coneGeometry args={[0.08, 0.18, 3]} />
             <meshStandardMaterial
-              color="#3B82F6"
-              emissive="#3B82F6"
+              color="#DBEF90"
+              emissive="#DBEF90"
               emissiveIntensity={0.35}
               roughness={0.3}
             />
@@ -84,8 +84,8 @@ export function GenericPlatformGlyph({
           <mesh>
             <torusGeometry args={[0.2, 0.045, 12, 24]} />
             <meshStandardMaterial
-              color="#3B82F6"
-              emissive="#3B82F6"
+              color="#DBEF90"
+              emissive="#DBEF90"
               emissiveIntensity={0.35}
               roughness={0.3}
             />

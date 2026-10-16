@@ -45,13 +45,13 @@ export function CustomerHeader() {
 
   return (
     <>
-      <header className="h-16 bg-[#070B16]/90 backdrop-blur-xl border-b border-white/10 sticky top-0 z-30 px-4 md:px-8 flex items-center justify-between gap-4">
+      <header className="h-16 bg-[#131313]/90 backdrop-blur-xl border-b border-white/10 sticky top-0 z-30 px-4 md:px-8 flex items-center justify-between gap-4">
         {/* Left: Mobile Menu Toggle & Search Bar */}
         <div className="flex items-center gap-3 flex-1 max-w-md">
           <button
             type="button"
             onClick={() => setMobileDrawerOpen(true)}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors lg:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors lg:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D8EC8D]"
             aria-label="Open Navigation Drawer"
           >
             <Menu className="w-5 h-5" />
@@ -63,7 +63,7 @@ export function CustomerHeader() {
             <input
               type="text"
               placeholder="Search services, orders, IDs..."
-              className="w-full bg-white/[0.03] border border-white/10 focus:border-blue-500 rounded-xl pl-9 pr-4 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
+              className="w-full bg-white/[0.03] border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl pl-9 pr-4 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
             />
           </div>
         </div>
@@ -80,7 +80,7 @@ export function CustomerHeader() {
             </div>
             <Link
               href="/wallet"
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-semibold transition-all shadow-sm"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg btn-primary-gradient hover:brightness-105 text-[#171e00] text-[11px] font-bold transition-all shadow-sm"
             >
               <Plus className="w-3 h-3" />
               <span>Add funds</span>
@@ -98,14 +98,14 @@ export function CustomerHeader() {
               className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors relative"
             >
               <Bell className="w-4 h-4" />
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 absolute top-1.5 right-1.5" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#D8EC8D] absolute top-1.5 right-1.5" />
             </button>
 
             {notificationsOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-[#070B16] border border-white/15 rounded-2xl p-4 shadow-2xl z-50 space-y-3">
+              <div className="absolute right-0 mt-2 w-80 bg-[#131313] border border-white/15 rounded-2xl p-4 shadow-2xl z-50 space-y-3">
                 <div className="flex items-center justify-between border-b border-white/10 pb-2">
                   <span className="text-xs font-semibold text-white">Notifications</span>
-                  <span className="text-[10px] font-mono text-blue-400">All caught up</span>
+                  <span className="text-[10px] font-mono text-[#D8EC8D]">All caught up</span>
                 </div>
                 <div className="py-6 text-center space-y-1">
                   <p className="text-xs text-slate-300">No new alerts</p>
@@ -125,14 +125,14 @@ export function CustomerHeader() {
               }}
               className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white/5 transition-colors"
             >
-              <div className="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xs font-semibold font-mono">
+              <div className="w-8 h-8 rounded-xl bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 flex items-center justify-center text-[#D8EC8D] text-xs font-semibold font-mono">
                 {user.name ? user.name.charAt(0).toUpperCase() : "U"}
               </div>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
             </button>
 
             {userDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-[#070B16] border border-white/15 rounded-2xl p-2 shadow-2xl z-50 space-y-1">
+              <div className="absolute right-0 mt-2 w-56 bg-[#131313] border border-white/15 rounded-2xl p-2 shadow-2xl z-50 space-y-1">
                 <div className="px-3 py-2 border-b border-white/10">
                   <div className="text-xs font-semibold text-white truncate">{user.name}</div>
                   <div className="text-[10px] text-slate-400 truncate">{user.email}</div>
@@ -183,7 +183,7 @@ export function CustomerHeader() {
           />
 
           {/* Drawer Menu */}
-          <div className="fixed top-0 bottom-0 left-0 w-72 bg-[#070B16] border-r border-white/10 p-6 flex flex-col justify-between shadow-2xl z-50">
+          <div className="fixed top-0 bottom-0 left-0 w-72 bg-[#131313] border-r border-white/10 p-6 flex flex-col justify-between shadow-2xl z-50">
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="font-semibold text-white text-base tracking-tight">
@@ -209,7 +209,7 @@ export function CustomerHeader() {
                 <Link
                   href="/wallet"
                   onClick={() => setMobileDrawerOpen(false)}
-                  className="min-h-[44px] px-3.5 flex items-center justify-center rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 transition-colors"
+                  className="min-h-[44px] px-3.5 flex items-center justify-center rounded-xl btn-primary-gradient text-[#171e00] text-xs font-bold hover:brightness-105 transition-colors"
                 >
                   Add Funds
                 </Link>
@@ -226,11 +226,11 @@ export function CustomerHeader() {
                       onClick={() => setMobileDrawerOpen(false)}
                       className={`flex items-center gap-3 px-3 py-3 min-h-[44px] rounded-xl text-xs font-medium transition-all ${
                         isActive
-                          ? "bg-blue-600/15 text-white"
+                          ? "bg-[#D8EC8D]/15 text-white"
                           : "text-slate-400 hover:text-white hover:bg-white/5"
                       }`}
                     >
-                      <item.icon className="w-4 h-4 text-blue-400" />
+                      <item.icon className="w-4 h-4 text-[#D8EC8D]" />
                       <span>{item.name}</span>
                     </Link>
                   );

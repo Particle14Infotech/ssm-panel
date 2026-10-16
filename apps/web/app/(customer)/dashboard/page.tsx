@@ -68,8 +68,8 @@ export default function CustomerDashboardPage() {
       {/* 1. Header Telemetry & Quick CTA */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-medium text-blue-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#D8EC8D]/10 border border-[#D8EC8D]/25 text-xs font-medium text-[#D8EC8D]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#D8EC8D] animate-pulse" />
             <span>Live Operational Console</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight font-sans">Overview</h1>
@@ -81,7 +81,7 @@ export default function CustomerDashboardPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/new-order"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white text-xs font-semibold shadow-lg shadow-blue-600/30 transition-all font-sans"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl btn-primary-gradient text-[#171e00] text-xs font-bold shadow-[0_0_20px_rgba(216,236,141,0.25)] transition-all font-sans"
           >
             <PlusCircle className="w-3.5 h-3.5" />
             <span>New Order</span>
@@ -139,9 +139,9 @@ export default function CustomerDashboardPage() {
             <button
               type="button"
               onClick={() => setChartRange("7d")}
-              className={`px-3 py-1 rounded-lg text-xs font-medium font-sans transition-all ${
+              className={`px-3 py-1 rounded-lg text-xs font-bold font-sans transition-all ${
                 chartRange === "7d"
-                  ? "bg-blue-600 text-white shadow-sm shadow-blue-600/40"
+                  ? "bg-[#D8EC8D] text-[#131313] shadow-sm shadow-[#D8EC8D]/30"
                   : "text-slate-400 hover:text-white"
               }`}
             >
@@ -150,9 +150,9 @@ export default function CustomerDashboardPage() {
             <button
               type="button"
               onClick={() => setChartRange("30d")}
-              className={`px-3 py-1 rounded-lg text-xs font-medium font-sans transition-all ${
+              className={`px-3 py-1 rounded-lg text-xs font-bold font-sans transition-all ${
                 chartRange === "30d"
-                  ? "bg-blue-600 text-white shadow-sm shadow-blue-600/40"
+                  ? "bg-[#D8EC8D] text-[#131313] shadow-sm shadow-[#D8EC8D]/30"
                   : "text-slate-400 hover:text-white"
               }`}
             >
@@ -175,13 +175,13 @@ export default function CustomerDashboardPage() {
                     style={{ height: `${heightPct}%` }}
                     className={`w-full max-w-[28px] rounded-t-lg transition-all relative ${
                       hasActivity
-                        ? "bg-gradient-to-t from-blue-700 to-blue-500 shadow-[0_0_12px_rgba(37,99,235,0.3)] opacity-90 group-hover:opacity-100"
-                        : "bg-white/5 group-hover:bg-blue-500/20"
+                        ? "bg-gradient-to-t from-[#8EAC11] to-[#D8EC8D] shadow-[0_0_12px_rgba(216,236,141,0.3)] opacity-90 group-hover:opacity-100"
+                        : "bg-white/5 group-hover:bg-[#D8EC8D]/20"
                     }`}
                   >
                     {/* Tooltip on Hover */}
                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center z-20 pointer-events-none">
-                      <div className="bg-[#070B16] border border-blue-500/40 px-2.5 py-1 rounded-lg shadow-xl text-[11px] font-sans tabular-nums text-white whitespace-nowrap">
+                      <div className="bg-[#131313] border border-[#D8EC8D]/40 px-2.5 py-1 rounded-lg shadow-xl text-[11px] font-sans tabular-nums text-white whitespace-nowrap">
                         {d.count} orders (₹{d.spend.toFixed(0)})
                       </div>
                     </div>
@@ -214,7 +214,7 @@ export default function CustomerDashboardPage() {
                 onClick={() => setSelectedPlatform(plat)}
                 className={`px-3 py-1 rounded-xl text-xs font-semibold capitalize transition-all shrink-0 ${
                   selectedPlatform === plat
-                    ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
+                    ? "bg-[#D8EC8D] text-[#131313] font-bold shadow-sm shadow-[#D8EC8D]/30"
                     : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
                 }`}
               >
@@ -257,7 +257,7 @@ export default function CustomerDashboardPage() {
                   filteredOrders.slice(0, 8).map((order) => (
                     <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="py-3.5 px-3 font-mono font-semibold text-white whitespace-nowrap">
-                        <span className="text-blue-400 mr-1.5 font-bold">#</span>
+                        <span className="text-[#D8EC8D] mr-1.5 font-bold">#</span>
                         {order.id}
                       </td>
                       <td className="py-3.5 px-3">
@@ -290,7 +290,7 @@ export default function CustomerDashboardPage() {
                               type="button"
                               onClick={() => handleRefill(order.id)}
                               disabled={refillingId === order.id}
-                              className="px-2.5 py-1 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 text-xs font-semibold transition-all inline-flex items-center gap-1"
+                              className="px-2.5 py-1 rounded-lg bg-[#D8EC8D]/15 hover:bg-[#D8EC8D]/25 text-[#D8EC8D] text-xs font-semibold transition-all inline-flex items-center gap-1"
                             >
                               <RefreshCw className={`w-3 h-3 ${refillingId === order.id ? "animate-spin" : ""}`} />
                               <span>{refillingId === order.id ? "Refilling" : "Refill"}</span>

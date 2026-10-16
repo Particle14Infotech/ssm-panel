@@ -100,8 +100,8 @@ export default function ProfileSecurityPage() {
       {/* Header Telemetry */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          <div className="flex items-center gap-2 text-xs font-mono text-[#D8EC8D]">
+            <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
             <span className="uppercase tracking-widest font-semibold">Account Governance</span>
           </div>
           <h1 className="text-3xl font-semibold text-white tracking-tight">Profile & API Security</h1>
@@ -125,13 +125,13 @@ export default function ProfileSecurityPage() {
           <form onSubmit={handleSaveProfile} className="glass-panel p-6 md:p-8 space-y-6">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-base font-bold font-mono">
+                <div className="w-12 h-12 rounded-2xl bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 flex items-center justify-center text-[#D8EC8D] text-base font-bold font-mono">
                   {user.name ? user.name.charAt(0).toUpperCase() : "U"}
                 </div>
                 <div>
                   <h2 className="text-base font-semibold text-white">{user.name}</h2>
                   <div className="text-xs text-slate-400 font-mono">{user.email}</div>
-                  <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 text-[10px] font-mono font-bold">
+                  <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-[#D8EC8D]/15 text-[#D8EC8D] text-[10px] font-mono font-bold">
                     TIER: {user.tier}
                   </span>
                 </div>
@@ -145,7 +145,7 @@ export default function ProfileSecurityPage() {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
+                    className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
                   />
                 </FormField>
 
@@ -155,7 +155,7 @@ export default function ProfileSecurityPage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+91 98765 43210"
-                    className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none font-mono"
+                    className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none font-mono"
                   />
                 </FormField>
               </div>
@@ -166,7 +166,7 @@ export default function ProfileSecurityPage() {
                   value={webhookUrl}
                   onChange={(e) => setWebhookUrl(e.target.value)}
                   placeholder="https://yourdomain.com/api/webhooks/smm"
-                  className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
+                  className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
                 />
               </FormField>
 
@@ -176,7 +176,7 @@ export default function ProfileSecurityPage() {
                   value={ipWhitelist}
                   onChange={(e) => setIpWhitelist(e.target.value)}
                   placeholder="127.0.0.1, 192.168.1.1"
-                  className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
+                  className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
                 />
               </FormField>
             </div>
@@ -184,7 +184,7 @@ export default function ProfileSecurityPage() {
             <div className="flex items-center justify-end pt-2 border-t border-white/10">
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md shadow-blue-600/30 transition-all"
+                className="px-6 py-2.5 rounded-xl btn-primary-gradient text-[#171e00] text-xs font-bold shadow-[0_0_15px_rgba(216,236,141,0.25)] transition-all"
               >
                 Save Preferences
               </button>
@@ -203,7 +203,7 @@ export default function ProfileSecurityPage() {
                   type="password"
                   value={currPassword}
                   onChange={(e) => setCurrPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                  className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
                 />
               </FormField>
 
@@ -212,7 +212,7 @@ export default function ProfileSecurityPage() {
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                  className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
                 />
               </FormField>
 
@@ -221,7 +221,7 @@ export default function ProfileSecurityPage() {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                  className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
                 />
               </FormField>
             </div>
@@ -259,10 +259,10 @@ export default function ProfileSecurityPage() {
           <GlassCard className="p-6 md:p-8 space-y-6">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
-                <Key className="w-4 h-4 text-blue-400" />
+                <Key className="w-4 h-4 text-[#D8EC8D]" />
                 <h3 className="text-base font-semibold text-white">Programmatic API Key</h3>
               </div>
-              <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 text-[10px] font-mono font-semibold">
+              <span className="px-2 py-0.5 rounded-full bg-[#D8EC8D]/15 text-[#D8EC8D] text-[10px] font-mono font-semibold">
                 REST v1
               </span>
             </div>
@@ -313,7 +313,7 @@ export default function ProfileSecurityPage() {
                   {copiedCurl ? "Copied!" : "Copy"}
                 </button>
               </div>
-              <pre className="p-3 rounded-xl bg-[#02040A] border border-white/5 text-[11px] font-mono text-slate-300 overflow-x-auto leading-relaxed">
+              <pre className="p-3 rounded-xl bg-[#131313] border border-white/5 text-[11px] font-mono text-slate-300 overflow-x-auto leading-relaxed">
                 {curlSnippet}
               </pre>
             </div>

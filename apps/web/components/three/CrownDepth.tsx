@@ -201,8 +201,8 @@ export function CrownDepth({ size = "hero", className = "" }: CrownDepthProps) {
         WebkitMaskImage: "radial-gradient(closest-side, #000 62%, transparent 100%)",
       }}
     >
-      {/* Soft blue radial glow behind it */}
-      <div className="absolute inset-0 bg-blue-600/15 blur-[120px] rounded-full pointer-events-none -z-10" />
+      {/* Soft lime radial glow behind it */}
+      <div className="absolute inset-0 bg-[#d8ec8d]/15 blur-[120px] rounded-full pointer-events-none -z-10" />
 
       {/* Static Image (Loaded first for 0 layout shift and instant LCP) */}
       <Image

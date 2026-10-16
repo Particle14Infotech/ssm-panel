@@ -87,8 +87,8 @@ export default function ServicesCatalogPage() {
       {/* Header Telemetry */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          <div className="flex items-center gap-2 text-xs font-mono text-[#D8EC8D]">
+            <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
             <span className="uppercase tracking-widest font-semibold">Live Service Catalog</span>
           </div>
           <h1 className="text-3xl font-semibold text-white tracking-tight">Services Matrix</h1>
@@ -99,7 +99,7 @@ export default function ServicesCatalogPage() {
 
         <Link
           href="/new-order"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white text-xs font-semibold shadow-md shadow-blue-600/30 transition-all self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl btn-primary-gradient text-[#171e00] text-xs font-bold shadow-[0_0_15px_rgba(216,236,141,0.25)] transition-all self-start sm:self-auto"
         >
           <PlusCircle className="w-3.5 h-3.5" />
           <span>Place New Order</span>
@@ -123,7 +123,7 @@ export default function ServicesCatalogPage() {
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 flex items-center gap-2 ${
                   isSelected
-                    ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30"
+                    ? "bg-[#D8EC8D] text-[#131313] font-bold shadow-sm shadow-[#D8EC8D]/30"
                     : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
                 }`}
               >
@@ -143,7 +143,7 @@ export default function ServicesCatalogPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by service name, ID, or description..."
-              className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none"
+              className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none"
             />
           </div>
 
@@ -151,11 +151,11 @@ export default function ServicesCatalogPage() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full sm:w-56 bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-sans"
+              className="w-full sm:w-56 bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-sans"
             >
-              <option value="ALL" className="bg-[#070B16]">All Categories ({categories.length})</option>
+              <option value="ALL" className="bg-[#131313]">All Categories ({categories.length})</option>
               {categories.map((c) => (
-                <option key={c} value={c} className="bg-[#070B16]">
+                <option key={c} value={c} className="bg-[#131313]">
                   {c}
                 </option>
               ))}
@@ -195,7 +195,7 @@ export default function ServicesCatalogPage() {
                     {/* ID */}
                     <td className="py-3.5 px-3 font-mono font-medium text-slate-400 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-blue-400">#</span>
+                        <span className="text-[#D8EC8D]">#</span>
                         <span>{service.id}</span>
                         <button
                           onClick={() => handleCopyId(service.id)}
@@ -215,7 +215,7 @@ export default function ServicesCatalogPage() {
                     <td className="py-3.5 px-3">
                       <div className="font-medium text-white max-w-md">{service.name}</div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-blue-400 uppercase font-mono">
+                        <span className="text-[10px] text-[#D8EC8D] uppercase font-mono">
                           {service.platform}
                         </span>
                         <span className="text-white/20">•</span>
@@ -255,7 +255,7 @@ export default function ServicesCatalogPage() {
                     <td className="py-3.5 px-3 text-right whitespace-nowrap">
                       <Link
                         href={`/new-order?serviceId=${service.id}`}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-600/15 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 text-xs font-semibold transition-all"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#D8EC8D]/15 hover:bg-[#D8EC8D] text-[#D8EC8D] hover:text-[#171e00] border border-[#D8EC8D]/30 text-xs font-bold transition-all"
                       >
                         <span>Select</span>
                         <ArrowRight className="w-3 h-3" />

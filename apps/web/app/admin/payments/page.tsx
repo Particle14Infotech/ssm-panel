@@ -35,8 +35,8 @@ export default function AdminPaymentsPage() {
         {/* Header Telemetry */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
-              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+            <div className="flex items-center gap-2 text-xs font-mono text-[#D8EC8D]">
+              <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
               <span className="uppercase tracking-widest font-semibold">
                 Financial Audit Trail & Gateway Verifications
               </span>
@@ -57,7 +57,7 @@ export default function AdminPaymentsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by Transaction ID, User ID, Reference Hash, or Gateway..."
-              className="w-full bg-surface-container-highest/80 border border-white/5 focus:border-blue-500 rounded-2xl pl-11 pr-4 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none font-mono"
+              className="w-full bg-surface-container-highest/80 border border-white/5 focus:border-[#D8EC8D]/50 rounded-2xl pl-11 pr-4 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none font-mono"
             />
           </div>
         </div>

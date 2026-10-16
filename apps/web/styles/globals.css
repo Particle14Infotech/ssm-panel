@@ -4,32 +4,35 @@
 
 @layer base {
   :root {
-    --background: #02040A;
-    --foreground: #FFFFFF;
+    --background: #131313;
+    --foreground: #e5e2e1;
     
-    --card: #070B16;
-    --card-foreground: #FFFFFF;
+    --card: #1c1b1b;
+    --card-foreground: #ffffff;
     
-    --popover: #070B16;
-    --popover-foreground: #FFFFFF;
+    --popover: #1c1b1b;
+    --popover-foreground: #ffffff;
     
-    --primary: #2563EB;
-    --primary-foreground: #FFFFFF;
+    --primary: #d8ec8d;
+    --primary-foreground: #171e00;
     
-    --muted: #070B16;
-    --muted-foreground: #94A3B8;
+    --secondary: #bd0183;
+    --secondary-foreground: #ffffff;
     
-    --accent: #3B82F6;
-    --accent-foreground: #FFFFFF;
+    --muted: #201f1f;
+    --muted-foreground: #c7c8b6;
     
-    --destructive: #EF4444;
-    --destructive-foreground: #FFFFFF;
+    --accent: #d8ec8d;
+    --accent-foreground: #171e00;
     
-    --border: rgba(255, 255, 255, 0.08);
-    --input: rgba(255, 255, 255, 0.08);
-    --ring: #3B82F6;
+    --destructive: #ffb4ab;
+    --destructive-foreground: #690005;
     
-    --radius: 1.25rem;
+    --border: rgba(255, 255, 255, 0.10);
+    --input: rgba(255, 255, 255, 0.10);
+    --ring: #d8ec8d;
+    
+    --radius: 1.5rem;
   }
 
   * {
@@ -39,12 +42,12 @@
   html {
     color-scheme: dark;
     scroll-behavior: smooth;
-    background-color: #02040A;
+    background-color: #131313;
   }
 
   body {
-    background-color: #02040A;
-    color: #FFFFFF;
+    background-color: #131313;
+    color: #e5e2e1;
     font-family: var(--font-poppins), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1, "tnum" 1;
     overflow-x: hidden;
@@ -62,28 +65,29 @@
 }
 
 /* Glassmorphism & Specialized Visual Tokens */
-/* Exact Phase 6 specification: glass rgba(255,255,255,0.04) + backdrop-blur 16px + 1px border rgba(255,255,255,0.08) + top highlight rgba(255,255,255,0.06) + shadow 0 8px 32px rgba(0,0,0,0.4) */
+/* Dark glassmorphism: frosted blur 16-24px, 1px borders at 10-15% white, subtle top highlight */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1.25rem;
+  background: rgba(18, 18, 18, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 1.5rem;
   box-shadow: 
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
-    0 8px 32px rgba(0, 0, 0, 0.4);
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+    0 16px 36px -8px rgba(0, 0, 0, 0.6);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1.25rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 100%), rgba(16, 16, 16, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 1.5rem;
   box-shadow: 
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
-    0 8px 32px rgba(0, 0, 0, 0.4);
-  transition: all 0.2s ease-in-out;
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 16px 0 rgba(219, 239, 144, 0.02),
+    0 20px 40px -10px rgba(0, 0, 0, 0.6);
+  transition: all 0.25s ease-in-out;
 }
 
 .glass-card-hover {
@@ -91,82 +95,88 @@
 }
 
 .glass-card-hover:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%), rgba(22, 22, 22, 0.85);
+  border-color: rgba(216, 236, 141, 0.35);
   box-shadow: 
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
-    0 12px 36px rgba(0, 0, 0, 0.5),
-    0 0 20px rgba(37, 99, 235, 0.15);
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.20),
+    0 24px 48px -12px rgba(0, 0, 0, 0.7),
+    0 0 20px rgba(216, 236, 141, 0.15);
 }
 
 .glass-squircle {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1.5rem;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%), rgba(16, 16, 16, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 2rem;
   box-shadow: 
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
-    0 8px 32px rgba(0, 0, 0, 0.4);
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+    0 24px 48px -12px rgba(0, 0, 0, 0.65);
   transition: all 0.25s ease;
 }
 
 .glass-squircle:hover {
-  border-color: rgba(59, 130, 246, 0.3);
+  border-color: rgba(216, 236, 141, 0.35);
   box-shadow: 
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
-    0 12px 36px rgba(0, 0, 0, 0.5),
-    0 0 24px rgba(37, 99, 235, 0.15);
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.20),
+    0 32px 64px -16px rgba(0, 0, 0, 0.75),
+    0 0 24px rgba(216, 236, 141, 0.15);
 }
 
 /* Liquid Glass accents */
 .liquid-glass {
   position: relative;
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 1.25rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%), rgba(15, 15, 15, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-top: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 1.5rem;
   box-shadow: 
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
-    0 8px 32px rgba(0, 0, 0, 0.4);
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.20),
+    inset 0 0 24px 0 rgba(219, 239, 144, 0.04),
+    0 20px 48px -12px rgba(0, 0, 0, 0.65);
   overflow: hidden;
 }
 
 .liquid-glass-pill {
   position: relative;
-  background: rgba(7, 11, 22, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(20, 20, 20, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 9999px;
   box-shadow: 
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
-    0 8px 24px rgba(0, 0, 0, 0.4);
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
+    0 12px 28px -8px rgba(0, 0, 0, 0.55);
 }
 
-/* Blue Glow and Accents */
-.glow-blue {
-  box-shadow: 0 0 28px rgba(37, 99, 235, 0.35), 0 4px 16px rgba(0, 0, 0, 0.4);
+/* Lime & Warm Halo Glow Accents */
+.glow-lime {
+  box-shadow: 0 0 28px rgba(216, 236, 141, 0.35), 0 4px 16px rgba(36, 49, 0, 0.4);
 }
 
-.glow-blue-subtle {
-  box-shadow: 0 0 16px rgba(59, 130, 246, 0.2);
+.glow-lime-subtle {
+  box-shadow: 0 0 16px rgba(216, 236, 141, 0.2);
 }
 
-/* Primary Button Gradient: #1D4ED8 -> #3B82F6 only */
+.glow-pink {
+  box-shadow: 0 0 32px rgba(189, 1, 131, 0.35), 0 4px 16px rgba(255, 175, 213, 0.25);
+}
+
+/* Primary Button Gradient: #d8ec8d -> #bccf74 -> #d8ec8d */
 .btn-primary-gradient {
-  background: linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%);
-  color: #FFFFFF;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  background: linear-gradient(to right, #d8ec8d, #bccf74, #d8ec8d);
+  color: #171e00;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(216, 236, 141, 0.35);
   transition: all 0.2s ease;
 }
 
 .btn-primary-gradient:hover {
-  filter: brightness(1.1);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+  filter: brightness(1.05);
+  box-shadow: 0 6px 24px rgba(216, 236, 141, 0.5);
 }
 
 /* Fallbacks for browsers without backdrop-filter */
@@ -176,7 +186,7 @@
   .glass-squircle,
   .liquid-glass,
   .liquid-glass-pill {
-    background-color: #070B16 !important;
+    background-color: #161616 !important;
   }
 }
 
@@ -188,7 +198,7 @@
   .liquid-glass-pill {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    background-color: #070B16 !important;
+    background-color: #161616 !important;
   }
 }
 
@@ -209,14 +219,14 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #02040A;
+  background: #131313;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.28);
 }
 
 /* Shimmer */

@@ -14,14 +14,14 @@ export default function Icon() {
       <div
         style={{
           fontSize: 20,
-          background: "#02040A",
+          background: "#131313",
           width: "100%",
           height: "100%",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           borderRadius: "8px",
-          border: "2px solid #3B82F6",
+          border: "2px solid #D8EC8D",
         }}
       >
         <svg
@@ -29,7 +29,7 @@ export default function Icon() {
           height="20"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#3B82F6"
+          stroke="#D8EC8D"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"

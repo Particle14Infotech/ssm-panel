@@ -48,10 +48,10 @@ function AnimatedMeshOrb({ isHovered }: { isHovered: boolean }) {
 function FallbackStaticVisual() {
   return (
     <div className="relative w-full h-full min-h-[380px] flex items-center justify-center pointer-events-none">
-      <div className="absolute w-72 h-72 rounded-full bg-gradient-to-tr from-blue-700 via-blue-500 to-blue-300 opacity-40 blur-3xl animate-pulse-slow" />
-      <div className="relative w-56 h-56 rounded-full bg-gradient-to-br from-blue-400/80 via-blue-600/60 to-blue-800 border border-white/30 shadow-[0_0_50px_rgba(37,99,235,0.4)] backdrop-blur-md flex items-center justify-center">
-        <div className="w-36 h-36 rounded-full bg-gradient-to-tr from-[#02040A] to-[#070B16] border border-white/20 flex items-center justify-center">
-          <span className="text-blue-400 font-bold text-xl tracking-widest font-mono">SMM PANEL</span>
+      <div className="absolute w-72 h-72 rounded-full bg-gradient-to-tr from-[#243100] via-[#D8EC8D]/25 to-[#bd0183]/20 opacity-40 blur-3xl animate-pulse-slow" />
+      <div className="relative w-56 h-56 rounded-full bg-gradient-to-br from-[#D8EC8D]/80 via-[#BEF264]/60 to-[#243100] border border-white/30 shadow-[0_0_50px_rgba(216,236,141,0.25)] backdrop-blur-md flex items-center justify-center">
+        <div className="w-36 h-36 rounded-full bg-gradient-to-tr from-[#131313] to-[#1c1b1b] border border-white/20 flex items-center justify-center">
+          <span className="text-[#D8EC8D] font-bold text-xl tracking-widest font-mono">SMM PANEL</span>
         </div>
       </div>
     </div>

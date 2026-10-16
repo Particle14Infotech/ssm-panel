@@ -72,8 +72,8 @@ export function CustomCursor() {
         }}
         animate={{
           scale: isHovered ? 1.8 : 1,
-          backgroundColor: isHovered ? "rgba(59, 130, 246, 0.15)" : "rgba(255, 255, 255, 0.05)",
-          borderColor: isHovered ? "rgba(59, 130, 246, 0.6)" : "rgba(255, 255, 255, 0.25)",
+          backgroundColor: isHovered ? "rgba(216, 236, 141, 0.15)" : "rgba(255, 255, 255, 0.05)",
+          borderColor: isHovered ? "rgba(216, 236, 141, 0.6)" : "rgba(255, 255, 255, 0.25)",
         }}
         transition={{ duration: 0.2 }}
         className="w-8 h-8 rounded-full border border-white/20 backdrop-blur-[1px] pointer-events-none"
@@ -88,9 +88,9 @@ export function CustomCursor() {
         }}
         animate={{
           scale: isHovered ? 0.6 : 1,
-          backgroundColor: isHovered ? "#3B82F6" : "#ffffff",
+          backgroundColor: isHovered ? "#d8ec8d" : "#ffffff",
         }}
-        className="w-1.5 h-1.5 rounded-full pointer-events-none shadow-[0_0_8px_rgba(59,130,246,0.8)]"
+        className="w-1.5 h-1.5 rounded-full pointer-events-none shadow-[0_0_8px_rgba(216,236,141,0.8)]"
       />
     </div>
   );

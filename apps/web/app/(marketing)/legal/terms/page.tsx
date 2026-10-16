@@ -17,7 +17,7 @@ export default function TermsPage() {
     <div className="w-full pt-32 pb-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="mb-10">
         <Breadcrumb items={[{ label: "Terms of Service", href: "/legal/terms" }]} />
-        <span className="text-xs font-mono uppercase tracking-widest text-blue-400">
+        <span className="text-xs font-mono uppercase tracking-widest text-[#D8EC8D]">
           Legal Documentation
         </span>
         <h1 className="font-heading text-4xl font-light text-white mt-2 mb-4">

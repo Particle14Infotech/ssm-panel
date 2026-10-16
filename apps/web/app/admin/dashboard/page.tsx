@@ -41,13 +41,13 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="w-full bg-[#02040A] min-h-screen pb-24 text-slate-100">
+    <div className="w-full bg-transparent min-h-screen pb-24 text-slate-100">
       <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-6 space-y-8">
         {/* Header Telemetry */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-white/10">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            <div className="flex items-center gap-2 text-xs font-mono text-[#D8EC8D]">
+              <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
               <span className="uppercase tracking-widest font-semibold">
                 Administrative Control Matrix
               </span>
@@ -67,7 +67,7 @@ export default function AdminDashboardPage() {
             </Link>
             <Link
               href="/admin/providers"
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md shadow-blue-600/30 transition-all"
+              className="px-4 py-2 rounded-xl btn-primary-gradient text-[#171e00] text-xs font-bold shadow-[0_0_15px_rgba(216,236,141,0.25)] transition-all"
             >
               Providers ({providers.length})
             </Link>
@@ -137,12 +137,12 @@ export default function AdminDashboardPage() {
           <GlassCard className="lg:col-span-5 p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
-                <Server className="w-4 h-4 text-blue-400" />
+                <Server className="w-4 h-4 text-[#D8EC8D]" />
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-white">
                   Upstream API Providers
                 </h2>
               </div>
-              <Link href="/admin/providers" className="text-xs text-blue-400 hover:underline">
+              <Link href="/admin/providers" className="text-xs text-[#D8EC8D] hover:underline">
                 Manage All
               </Link>
             </div>
@@ -184,7 +184,7 @@ export default function AdminDashboardPage() {
                         type="button"
                         onClick={() => handleSync(p.id)}
                         disabled={syncingId === p.id}
-                        className="px-3 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 text-[10px] font-semibold transition-all flex items-center gap-1"
+                        className="px-3 py-1 rounded-lg bg-[#D8EC8D]/15 hover:bg-[#D8EC8D] text-[#D8EC8D] hover:text-[#171e00] border border-[#D8EC8D]/30 text-[10px] font-bold transition-all flex items-center gap-1"
                       >
                         <RefreshCw className={`w-3 h-3 ${syncingId === p.id ? "animate-spin" : ""}`} />
                         <span>{syncingId === p.id ? "Syncing..." : "Sync Balance"}</span>
@@ -200,12 +200,12 @@ export default function AdminDashboardPage() {
           <GlassCard className="lg:col-span-7 p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4 text-blue-400" />
+                <Activity className="w-4 h-4 text-[#D8EC8D]" />
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-white">
                   Global Orders Dispatch Queue
                 </h2>
               </div>
-              <Link href="/admin/orders" className="text-xs text-blue-400 hover:underline">
+              <Link href="/admin/orders" className="text-xs text-[#D8EC8D] hover:underline">
                 View All ({orders.length})
               </Link>
             </div>

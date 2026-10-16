@@ -52,8 +52,8 @@ export default function AdminCouponsPage() {
         {/* Header Telemetry */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
-              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+            <div className="flex items-center gap-2 text-xs font-mono text-[#D8EC8D]">
+              <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
               <span className="uppercase tracking-widest font-semibold">
                 Promotional Campaign & Bonus Code Matrix
               </span>
@@ -66,7 +66,7 @@ export default function AdminCouponsPage() {
 
           <button
             onClick={() => setIsAdding(true)}
-            className="px-5 py-2.5 rounded-full bg-blue-600 text-white text-xs font-bold hover:brightness-110 flex items-center gap-2 shadow-[0_0_20px_rgba(219,239,144,0.3)] shrink-0"
+            className="px-5 py-2.5 rounded-full btn-primary-gradient text-[#171e00] text-xs font-bold hover:brightness-110 flex items-center gap-2 shadow-[0_0_20px_rgba(216,236,141,0.25)] shrink-0"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Create Promo Coupon</span>
@@ -159,7 +159,7 @@ export default function AdminCouponsPage() {
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="submit"
-                className="px-6 py-2 rounded-full bg-blue-600 text-white text-xs font-bold hover:brightness-110 shadow-md"
+                className="px-6 py-2 rounded-full btn-primary-gradient text-[#171e00] text-xs font-bold hover:brightness-110 shadow-md"
               >
                 Save & Activate Coupon
               </button>

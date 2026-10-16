@@ -52,16 +52,18 @@ export function Navbar() {
           {/* Brand Logo */}
           <Link
             href="/"
-            className="flex items-center gap-2 text-primary group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg"
+            className="flex items-center gap-2 text-primary group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d8ec8d] rounded-lg"
           >
-            <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
-              <Zap className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#bd0183] via-[#ffafd5] to-[#d8ec8d] p-[1.5px] flex items-center justify-center">
+              <div className="w-full h-full bg-[#131313] rounded-full flex items-center justify-center">
+                <Zap className="w-4 h-4 text-[#d8ec8d] group-hover:scale-110 transition-transform" />
+              </div>
             </div>
             <div className="flex items-center gap-1">
               <span className="font-heading font-bold text-xl uppercase tracking-wider text-white">
                 {landingContent.brand.name}
               </span>
-              <span className="text-blue-400 text-xl font-black leading-none select-none">*</span>
+              <span className="text-[#d8ec8d] text-xl font-black leading-none select-none">*</span>
             </div>
           </Link>
 
@@ -99,11 +101,11 @@ export function Navbar() {
           {/* Right Header Actions */}
           <div className="hidden lg:flex items-center gap-3">
             {/* Live Status Pill */}
-            <div className="flex items-center gap-2 liquid-glass-pill rounded-full px-3.5 py-1.5 text-xs text-slate-300">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              <span className="font-mono text-blue-400">System Online</span>
+            <div className="flex items-center gap-2 liquid-glass-pill rounded-full px-3.5 py-1.5 text-xs text-[#c7c8b6]">
+              <span className="w-2 h-2 rounded-full bg-[#DBEF90] animate-pulse shadow-[0_0_8px_#DBEF90]" />
+              <span className="font-mono text-[#DBEF90]">System Online</span>
               <span className="text-white/30">•</span>
-              <span className="font-mono text-slate-400">Live Status</span>
+              <span className="font-mono text-zinc-300">Live Status</span>
             </div>
 
             {/* Auth CTAs */}
@@ -117,7 +119,7 @@ export function Navbar() {
             <MagneticButton>
               <Link
                 href="/register"
-                className="px-5 py-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white text-sm font-semibold shadow-md shadow-blue-600/30 hover:brightness-110 transition-all flex items-center gap-1.5 group"
+                className="px-5 py-2 rounded-full bg-gradient-to-r from-[#d8ec8d] to-[#bccf74] text-[#171e00] text-sm font-bold shadow-md shadow-[#d8ec8d]/25 hover:brightness-105 transition-all flex items-center gap-1.5 group"
               >
                 <span>{landingContent.navigation.cta.register}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -136,7 +138,7 @@ export function Navbar() {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-full bg-[#201f1f] text-white/80 hover:text-white border border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-full bg-[#201f1f] text-white/80 hover:text-white border border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d8ec8d]"
               aria-label="Toggle navigation menu"
               aria-expanded={mobileMenuOpen}
             >
@@ -157,7 +159,7 @@ export function Navbar() {
             className="fixed inset-0 z-40 bg-[#131313]/95 backdrop-blur-2xl pt-24 px-6 flex flex-col justify-between pb-8 md:hidden"
           >
             <div className="flex flex-col gap-3">
-              <div className="text-xs uppercase tracking-widest text-blue-400 font-mono mb-2">
+              <div className="text-xs uppercase tracking-widest text-[#d8ec8d] font-mono mb-2">
                 Navigation Menu
               </div>
               {landingContent.navigation.links.map((item, i) => (
@@ -170,7 +172,7 @@ export function Navbar() {
                   <Link
                     href={item.href}
                     className={`text-lg py-3 min-h-[44px] border-b border-white/10 flex items-center justify-between ${
-                      pathname === item.href ? "text-blue-400 font-semibold" : "text-white/80"
+                      pathname === item.href ? "text-[#d8ec8d] font-semibold" : "text-white/80"
                     }`}
                   >
                     <span>{item.label}</span>
@@ -181,23 +183,23 @@ export function Navbar() {
             </div>
 
             <div className="flex flex-col gap-3 pt-6">
-              <div className="flex items-center justify-between text-xs text-slate-300 bg-white/5 p-3 rounded-2xl border border-white/10">
+              <div className="flex items-center justify-between text-xs text-[#c7c8b6] bg-[#201f1f] p-3 rounded-2xl border border-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-[#d8ec8d] animate-pulse shadow-[0_0_8px_#d8ec8d]" />
                   <span>Node 08-Alpha Live</span>
                 </div>
-                <span className="font-mono text-blue-400">99.98% SLA</span>
+                <span className="font-mono text-[#d8ec8d]">99.98% SLA</span>
               </div>
 
               <Link
                 href="/register"
-                className="w-full py-3.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold text-center shadow-lg shadow-blue-600/30"
+                className="w-full py-3.5 rounded-full bg-gradient-to-r from-[#d8ec8d] to-[#bccf74] text-[#171e00] font-bold text-center shadow-lg"
               >
                 {landingContent.navigation.cta.register}
               </Link>
               <Link
                 href="/login"
-                className="w-full py-3 rounded-full bg-white/5 text-white font-medium text-center border border-white/10"
+                className="w-full py-3 rounded-full bg-[#201f1f] text-white font-medium text-center border border-white/10"
               >
                 {landingContent.navigation.cta.login}
               </Link>

@@ -62,8 +62,8 @@ export default function AdminCategoriesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-xs uppercase tracking-widest font-mono text-blue-400">
+              <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
+              <span className="text-xs uppercase tracking-widest font-mono text-[#D8EC8D]">
                 Service Taxonomy Engine
               </span>
             </div>
@@ -75,7 +75,7 @@ export default function AdminCategoriesPage() {
 
           <button
             onClick={() => setIsAdding(!isAdding)}
-            className="px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold text-xs hover:shadow-[0_0_20px_rgba(37,99,235,0.25)] transition-all flex items-center gap-1.5 self-start sm:self-auto"
+            className="px-4 py-2 rounded-full btn-primary-gradient text-[#171e00] font-bold text-xs hover:shadow-[0_0_20px_rgba(216,236,141,0.25)] transition-all flex items-center gap-1.5 self-start sm:self-auto"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Create Category</span>
@@ -94,7 +94,7 @@ export default function AdminCategoriesPage() {
                   placeholder="e.g. Instagram — Verified Comments"
                   value={newCatName}
                   onChange={(e) => setNewCatName(e.target.value)}
-                  className="w-full bg-[#131313] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-[#131313] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#D8EC8D]/50"
                 />
               </div>
               <div>
@@ -102,7 +102,7 @@ export default function AdminCategoriesPage() {
                 <select
                   value={newPlatform}
                   onChange={(e) => setNewPlatform(e.target.value)}
-                  className="w-full bg-[#131313] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-[#131313] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#D8EC8D]/50"
                 >
                   <option value="Instagram">Instagram</option>
                   <option value="TikTok">TikTok</option>
@@ -122,7 +122,7 @@ export default function AdminCategoriesPage() {
               </button>
               <button
                 onClick={handleAddCategory}
-                className="px-4 py-1.5 rounded-full bg-blue-600 text-white font-bold text-xs"
+                className="px-4 py-1.5 rounded-full btn-primary-gradient text-[#171e00] font-bold text-xs"
               >
                 Save Category
               </button>
@@ -148,7 +148,7 @@ export default function AdminCategoriesPage() {
                 <tr key={c.id} className="hover:bg-white/[0.02] transition-colors">
                   <td className="py-3 px-4 text-[#c7c8b6]">{c.id}</td>
                   <td className="py-3 px-4 text-white font-medium">{c.name}</td>
-                  <td className="py-3 px-4 text-blue-400">{c.platform}</td>
+                  <td className="py-3 px-4 text-[#D8EC8D]">{c.platform}</td>
                   <td className="py-3 px-4 text-center text-white">{c.activeServices} Services</td>
                   <td className="py-3 px-4 text-center">
                     <button

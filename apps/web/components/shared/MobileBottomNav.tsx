@@ -34,9 +34,9 @@ export function MobileBottomNav() {
                 className="flex flex-col items-center justify-center -my-2 group"
                 aria-label={item.label}
               >
-                <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-blue-700 via-blue-600 to-blue-400 p-[1.5px] shadow-[0_0_16px_rgba(37,99,235,0.4)] group-hover:scale-105 transition-transform">
-                  <div className="w-full h-full bg-[#070B16] rounded-full flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-blue-400" />
+                <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-[#243100] via-[#5b6b1b] to-[#DBEF90] p-[1.5px] shadow-[0_0_16px_rgba(219,239,144,0.35)] group-hover:scale-105 transition-transform">
+                  <div className="w-full h-full bg-[#131313] rounded-full flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-[#DBEF90]" />
                   </div>
                 </div>
               </Link>
@@ -49,8 +49,8 @@ export function MobileBottomNav() {
               href={item.href}
               className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-full text-[10px] font-medium transition-all ${
                 isActive
-                  ? "text-blue-400 font-semibold bg-white/[0.08]"
-                  : "text-slate-400 hover:text-white"
+                  ? "text-[#DBEF90] font-semibold bg-white/[0.08]"
+                  : "text-zinc-400 hover:text-white"
               }`}
             >
               <Icon className="w-4 h-4 mb-0.5" />

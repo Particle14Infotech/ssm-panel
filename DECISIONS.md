@@ -12,18 +12,25 @@ This log documents all design and technical conflicts between legacy documentati
 ---
 
 ### 2. Color Palette & Visual Theme
-- **Legacy Stitch Export (`design-reference/futuristic_smm_architecture/DESIGN.md`):** Used `#131313` base surface, `#d8ec8d` (lime yellow-green) primary container, and `#ffafd5` (pink) secondary accent.
-- **Overriding Decision:** The color palette is strictly **Dark + Blue only**:
-  - Page Background: `#02040A`
-  - Alternate / Card Surface: `#070B16`
-  - Glass Layer: `rgba(255, 255, 255, 0.04)` with `rgba(255, 255, 255, 0.08)` border and `rgba(255, 255, 255, 0.06)` inset top highlight.
-  - Primary Blue: `#2563EB`
-  - Bright Blue Accent: `#3B82F6`
-  - Subtle Hover Glow: `#60A5FA`
-  - Text Hierarchy: `#FFFFFF` (primary), `#94A3B8` (secondary/muted), `#64748B` (subtle labels).
-  - Status Semantics only: Red/Emerald/Amber strictly for status badges (Failed, Completed, Pending).
-  - Absolutely **NO** purple, pink, rainbow, or lime accents.
-- **Rationale:** Strict Phase 6 visual identity guidelines and clean, premium enterprise appearance.
+- **CRITICAL UPDATE:** Blue palette rule revoked. The original lime/green dark theme is the source of truth.
+- **Original Canonical Palette:**
+  - Base Background: `#131313` (deep near-black with subtle warm olive undertone)
+  - Surface Scale:
+    - `surface-container-lowest`: `#0e0e0e`
+    - `surface-container-low`: `#1c1b1b`
+    - `surface-container`: `#201f1f`
+    - `surface-container-high`: `#2a2a2a`
+    - `surface-container-highest`: `#353534`
+  - Primary Accent (Lime): `#d8ec8d` / `#dbef90`, Dim: `#bccf74`
+  - Text On Primary (for lime buttons/badges): `#171e00` / `#2a3400` (high-contrast dark olive)
+  - Secondary Accent (Crown Halo & Gradient Ring): `#bd0183`
+  - Text Hierarchy: `#FFFFFF` / `#e5e2e1` (primary text), `#c7c8b6` (muted/secondary text), `#909281` (subtle labels/borders)
+  - Card & Glass Styling: Frosted glass blur 16-24px, 1px hairline border at `rgba(255, 255, 255, 0.10)`, subtle top edge highlight `rgba(255, 255, 255, 0.25)`, soft lime core refraction `rgba(219, 239, 144, 0.04)`.
+  - Buttons:
+    - Primary CTA: `bg-gradient-to-r from-[#d8ec8d] via-[#bccf74] to-[#d8ec8d] text-[#171e00] font-bold` with `hover:shadow-[0_0_24px_rgba(216,236,141,0.4)]`
+    - Secondary: `bg-white/[0.06] text-white hover:bg-white/[0.12] border border-white/[0.10]`
+  - Zero Blue Elements: All blue hex codes (`#2563EB`, `#3B82F6`, `#60A5FA`, `#1D4ED8`) and `blue-*` utility classes are removed and prohibited across components. Brand logos (Instagram, YouTube, etc.) retain their official colors.
+- **Rationale:** Restores the intended brand aesthetic, visual cohesion between desktop and mobile, and eliminates the stark desktop/mobile theme divergence.
 
 ---
 

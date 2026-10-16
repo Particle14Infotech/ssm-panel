@@ -50,8 +50,8 @@ export default function TransactionsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            <span className="text-xs uppercase tracking-widest font-mono text-blue-400">
+            <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
+            <span className="text-xs uppercase tracking-widest font-mono text-[#D8EC8D]">
               Financial Ledger & Audit Trail
             </span>
           </div>
@@ -64,13 +64,13 @@ export default function TransactionsPage() {
         <div className="flex items-center gap-3">
           <div className="px-4 py-2 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-2">
             <span className="text-xs font-mono text-slate-400">Balance:</span>
-            <span className="text-sm font-bold text-blue-400 font-mono">
+            <span className="text-sm font-bold text-[#D8EC8D] font-mono">
               ₹{user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
             </span>
           </div>
           <Link
             href="/wallet"
-            className="px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold text-xs hover:shadow-[0_0_20px_rgba(37,99,235,0.3)] transition-all flex items-center gap-1.5"
+            className="px-4 py-2 rounded-full btn-primary-gradient text-[#171e00] font-bold text-xs shadow-[0_0_20px_rgba(216,236,141,0.2)] transition-all flex items-center gap-1.5"
           >
             <PlusCircle className="w-3.5 h-3.5" />
             <span>Add Funds</span>
@@ -79,7 +79,7 @@ export default function TransactionsPage() {
       </div>
 
       {/* Filter Strip */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#070B16] border border-white/10 p-3 rounded-2xl">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#1c1b1b] border border-white/10 p-3 rounded-2xl">
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -87,7 +87,7 @@ export default function TransactionsPage() {
             placeholder="Search by Txn ID or Ref..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-white placeholder:text-slate-400/50 focus:outline-none focus:border-blue-500"
+            className="w-full pl-9 pr-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-white placeholder:text-slate-400/50 focus:outline-none focus:border-[#D8EC8D]/50"
           />
         </div>
 
@@ -98,7 +98,7 @@ export default function TransactionsPage() {
               onClick={() => setSelectedType(type)}
               className={`px-3 py-1 rounded-full text-xs font-mono transition-all ${
                 selectedType === type
-                  ? "bg-blue-600 text-white font-bold"
+                  ? "bg-[#D8EC8D] text-[#131313] font-bold"
                   : "bg-white/5 text-slate-400 hover:text-white"
               }`}
             >
@@ -109,7 +109,7 @@ export default function TransactionsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-[#070B16] border border-white/10 rounded-3xl overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
+      <div className="bg-[#1c1b1b] border border-white/10 rounded-3xl overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
         {transactions.length === 0 ? (
           <div className="py-6">
             <EmptyState
@@ -124,7 +124,7 @@ export default function TransactionsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[750px]">
               <thead>
-                <tr className="bg-[#02040A] text-slate-400 text-[11px] uppercase tracking-wider font-mono border-b border-white/10">
+                <tr className="bg-[#131313] text-slate-400 text-[11px] uppercase tracking-wider font-mono border-b border-white/10">
                   <th className="py-3 px-4">Transaction ID</th>
                   <th className="py-3 px-4">Reference ID</th>
                   <th className="py-3 px-4">Method / Channel</th>
@@ -160,7 +160,7 @@ export default function TransactionsPage() {
                         <td className="py-3 px-4 text-slate-400">
                           {new Date(tx.createdAt).toLocaleDateString()} {new Date(tx.createdAt).toLocaleTimeString()}
                         </td>
-                        <td className="py-3 px-4 text-right text-blue-400">
+                        <td className="py-3 px-4 text-right text-[#D8EC8D]">
                           {tx.bonus > 0 ? `+₹${tx.bonus.toFixed(2)}` : "—"}
                         </td>
                         <td className={`py-3 px-4 text-right font-bold tabular-nums ${isCredit ? "text-emerald-400" : "text-rose-400"}`}>
@@ -194,11 +194,11 @@ export default function TransactionsPage() {
       {/* Branded Downloadable Receipt Modal */}
       {receiptTxn && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#070B16] border border-white/15 rounded-3xl p-6 md:p-8 max-w-md w-full space-y-6 shadow-2xl relative text-left">
+          <div className="bg-[#1c1b1b] border border-white/15 rounded-3xl p-6 md:p-8 max-w-md w-full space-y-6 shadow-2xl relative text-left">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#D8EC8D]" />
                 <h3 className="text-lg font-semibold text-white tracking-tight">{BRAND_NAME}</h3>
               </div>
               <span className="text-[10px] uppercase font-mono px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold">
@@ -232,7 +232,7 @@ export default function TransactionsPage() {
                   <span className="text-white tabular-nums">₹{Math.abs(receiptTxn.amount).toFixed(2)}</span>
                 </div>
                 {receiptTxn.bonus > 0 && (
-                  <div className="flex justify-between text-blue-400">
+                  <div className="flex justify-between text-[#D8EC8D]">
                     <span>Promotional Bonus</span>
                     <span className="tabular-nums">+ ₹{receiptTxn.bonus.toFixed(2)}</span>
                   </div>
@@ -265,7 +265,7 @@ export default function TransactionsPage() {
               <button
                 type="button"
                 onClick={() => setReceiptTxn(null)}
-                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md transition-all"
+                className="px-5 py-2 rounded-xl btn-primary-gradient text-[#171e00] font-bold text-xs shadow-md transition-all"
               >
                 Close
               </button>

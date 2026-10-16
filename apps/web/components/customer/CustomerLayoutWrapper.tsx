@@ -8,7 +8,7 @@ import { CustomerHeader } from "./CustomerHeader";
 export function CustomerLayoutWrapper({ children }: { children: React.ReactNode }) {
   return (
     <CustomerProvider>
-      <div className="min-h-screen bg-[#02040A] text-slate-100 flex">
+      <div className="min-h-screen bg-[#131313] text-slate-100 flex">
         {/* Desktop Glass Sidebar */}
         <CustomerSidebar />
 

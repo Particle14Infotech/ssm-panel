@@ -188,10 +188,10 @@ export function SimulatedCheckoutModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
-      <div className="bg-[#070B16] border border-white/10 rounded-t-3xl sm:rounded-3xl rounded-b-none sm:rounded-b-3xl w-full max-w-lg max-h-[92vh] sm:max-h-none shadow-[0_24px_64px_rgba(0,0,0,0.8)] overflow-y-auto relative">
+      <div className="bg-[#131313] border border-white/10 rounded-t-3xl sm:rounded-3xl rounded-b-none sm:rounded-b-3xl w-full max-w-lg max-h-[92vh] sm:max-h-none shadow-[0_24px_64px_rgba(0,0,0,0.8)] overflow-y-auto relative">
         {/* Test Mode Ribbon */}
         {isTestMode && (
-          <div className="bg-gradient-to-r from-amber-500/20 via-blue-500/20 to-amber-500/20 border-b border-amber-500/30 px-4 py-1.5 flex items-center justify-between text-[11px] font-mono text-amber-300">
+          <div className="bg-gradient-to-r from-amber-500/20 via-[#243100]/40 to-amber-500/20 border-b border-amber-500/30 px-4 py-1.5 flex items-center justify-between text-[11px] font-mono text-amber-300">
             <span className="flex items-center gap-1.5 font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
               TEST MODE — No Real Money Charged
@@ -203,7 +203,7 @@ export function SimulatedCheckoutModal({
         {/* Header */}
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
           <div className="space-y-0.5">
-            <div className="text-[11px] uppercase tracking-widest font-mono text-blue-400 font-semibold flex items-center gap-1.5">
+            <div className="text-[11px] uppercase tracking-widest font-mono text-[#D8EC8D] font-semibold flex items-center gap-1.5">
               <Lock className="w-3.5 h-3.5" />
               <span>{BRAND_NAME} Secure Checkout</span>
             </div>
@@ -233,7 +233,7 @@ export function SimulatedCheckoutModal({
                   onClick={() => { setMethod("UPI"); setErrorMessage(""); }}
                   className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1 ${
                     method === "UPI"
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                      ? "bg-[#D8EC8D] text-[#131313] shadow-md shadow-[#D8EC8D]/20 font-bold"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
@@ -246,7 +246,7 @@ export function SimulatedCheckoutModal({
                   onClick={() => { setMethod("CARD"); setErrorMessage(""); }}
                   className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1 ${
                     method === "CARD"
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                      ? "bg-[#D8EC8D] text-[#131313] shadow-md shadow-[#D8EC8D]/20 font-bold"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
@@ -259,7 +259,7 @@ export function SimulatedCheckoutModal({
                   onClick={() => { setMethod("NETBANKING"); setErrorMessage(""); }}
                   className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1 ${
                     method === "NETBANKING"
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                      ? "bg-[#D8EC8D] text-[#131313] shadow-md shadow-[#D8EC8D]/20 font-bold"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
@@ -272,7 +272,7 @@ export function SimulatedCheckoutModal({
                   onClick={() => { setMethod("WALLET"); setErrorMessage(""); }}
                   className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1 ${
                     method === "WALLET"
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                      ? "bg-[#D8EC8D] text-[#131313] shadow-md shadow-[#D8EC8D]/20 font-bold"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
@@ -289,7 +289,7 @@ export function SimulatedCheckoutModal({
                     <button
                       type="button"
                       onClick={() => setShowQr(!showQr)}
-                      className="text-blue-400 hover:underline inline-flex items-center gap-1 text-[11px]"
+                      className="text-[#D8EC8D] hover:underline inline-flex items-center gap-1 text-[11px]"
                     >
                       <QrCode className="w-3.5 h-3.5" />
                       <span>{showQr ? "Enter VPA Instead" : "Show QR Code"}</span>
@@ -316,7 +316,7 @@ export function SimulatedCheckoutModal({
                           value={vpa}
                           onChange={(e) => setVpa(e.target.value)}
                           placeholder="yourname@okhdfcbank"
-                          className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
+                          className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
                         />
                       </div>
 
@@ -351,7 +351,7 @@ export function SimulatedCheckoutModal({
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <label className="text-[10px] uppercase font-mono text-slate-400">Card Number</label>
-                      <span className="text-[10px] text-blue-400 font-mono font-semibold">
+                      <span className="text-[10px] text-[#D8EC8D] font-mono font-semibold">
                         {getCardBrand(cardNumber)}
                       </span>
                     </div>
@@ -360,7 +360,7 @@ export function SimulatedCheckoutModal({
                       value={cardNumber}
                       onChange={(e) => setCardNumber(e.target.value)}
                       placeholder="4111 1111 1111 1111"
-                      className="w-full bg-white/5 border border-white/10 focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
+                      className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
                     />
                   </div>
 
@@ -431,7 +431,7 @@ export function SimulatedCheckoutModal({
                         onClick={() => setSelectedBank(b)}
                         className={`p-2.5 rounded-xl border text-left transition-all ${
                           selectedBank === b
-                            ? "bg-blue-600/20 border-blue-500 text-white font-semibold"
+                            ? "bg-[#D8EC8D]/15 border-[#D8EC8D]/40 text-[#D8EC8D] font-semibold"
                             : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
                         }`}
                       >
@@ -454,7 +454,7 @@ export function SimulatedCheckoutModal({
                         onClick={() => setSelectedWallet(w)}
                         className={`p-2.5 rounded-xl border text-left transition-all ${
                           selectedWallet === w
-                            ? "bg-blue-600/20 border-blue-500 text-white font-semibold"
+                            ? "bg-[#D8EC8D]/15 border-[#D8EC8D]/40 text-[#D8EC8D] font-semibold"
                             : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
                         }`}
                       >
@@ -478,7 +478,7 @@ export function SimulatedCheckoutModal({
                 <button
                   type="button"
                   onClick={handlePay}
-                  className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 text-white font-semibold text-sm shadow-[0_0_25px_rgba(37,99,235,0.4)] transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3.5 px-6 rounded-2xl btn-primary-gradient hover:brightness-105 text-[#171e00] font-bold text-sm shadow-[0_0_25px_rgba(216,236,141,0.25)] transition-all flex items-center justify-center gap-2"
                 >
                   <span>Pay ₹{amountRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -500,7 +500,7 @@ export function SimulatedCheckoutModal({
           {/* Processing Screen */}
           {step === "PROCESSING" && (
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-[0_0_30px_rgba(37,99,235,0.3)]">
+              <div className="w-16 h-16 rounded-full bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 flex items-center justify-center text-[#D8EC8D] shadow-[0_0_30px_rgba(216,236,141,0.25)]">
                 <RefreshCw className="w-8 h-8 animate-spin" />
               </div>
               <div className="space-y-1">
@@ -545,7 +545,7 @@ export function SimulatedCheckoutModal({
                 <button
                   type="button"
                   onClick={() => setStep("SELECT_METHOD")}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md"
+                  className="px-5 py-2.5 rounded-xl btn-primary-gradient text-[#171e00] text-xs font-bold shadow-md"
                 >
                   Retry Payment
                 </button>
@@ -563,7 +563,7 @@ export function SimulatedCheckoutModal({
 
         {/* Cancellation Confirmation Overlay */}
         {showCancelConfirm && (
-          <div className="absolute inset-0 bg-[#02040A]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-4 z-20">
+          <div className="absolute inset-0 bg-[#131313]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-4 z-20">
             <AlertCircle className="w-10 h-10 text-amber-400" />
             <div className="space-y-1">
               <h4 className="text-base font-semibold text-white">Cancel payment?</h4>

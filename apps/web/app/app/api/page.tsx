@@ -34,8 +34,8 @@ export default function ResellerApiPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            <span className="text-xs uppercase tracking-widest font-mono text-blue-400">
+            <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
+            <span className="text-xs uppercase tracking-widest font-mono text-[#D8EC8D]">
               Developer & Reseller Gateway
             </span>
           </div>
@@ -49,7 +49,7 @@ export default function ResellerApiPage() {
           <span className="px-3 py-1 rounded-full text-xs font-mono bg-[#201f1f] text-cyan-300 border border-cyan-500/20">
             Rate Limit: 60 req/min
           </span>
-          <span className="px-3 py-1 rounded-full text-xs font-mono bg-[#201f1f] text-blue-400 border border-blue-500/20">
+          <span className="px-3 py-1 rounded-full text-xs font-mono bg-[#201f1f] text-[#D8EC8D] border border-[#D8EC8D]/20">
             99.98% SLA
           </span>
         </div>
@@ -59,7 +59,7 @@ export default function ResellerApiPage() {
       <div className="glass-panel rounded-3xl p-6 md:p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-white font-medium">
-            <Key className="w-5 h-5 text-blue-400" />
+            <Key className="w-5 h-5 text-[#D8EC8D]" />
             <span>Active Secret Key</span>
           </div>
           <button
@@ -72,7 +72,7 @@ export default function ResellerApiPage() {
         </div>
 
         <div className="flex items-center justify-between gap-3 bg-[#131313] p-3 rounded-2xl border border-white/10 font-mono text-xs">
-          <span className="text-blue-400 truncate">{apiKey}</span>
+          <span className="text-[#D8EC8D] truncate">{apiKey}</span>
           <button
             onClick={handleCopy}
             className="p-2 rounded-xl bg-[#201f1f] hover:bg-[#2a2a2a] text-white flex items-center gap-1.5 shrink-0 transition-all"
@@ -83,7 +83,7 @@ export default function ResellerApiPage() {
         </div>
 
         <p className="text-[11px] text-[#c7c8b6] font-light">
-          Authenticate requests by providing your API key via the HTTP Header <code className="text-blue-400 bg-black/40 px-1.5 py-0.5 rounded">x-api-key: {apiKey.substring(0, 12)}...</code> or standard payload token.
+          Authenticate requests by providing your API key via the HTTP Header <code className="text-[#D8EC8D] bg-black/40 px-1.5 py-0.5 rounded">x-api-key: {apiKey.substring(0, 12)}...</code> or standard payload token.
         </p>
       </div>
 
@@ -91,7 +91,7 @@ export default function ResellerApiPage() {
       <div className="glass-panel rounded-3xl p-6 md:p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-6">
         <div className="flex items-center justify-between border-b border-white/10 pb-4 flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <Code2 className="w-5 h-5 text-blue-400" />
+            <Code2 className="w-5 h-5 text-[#D8EC8D]" />
             <h2 className="text-lg font-medium text-white">Endpoint Reference</h2>
           </div>
 
@@ -108,7 +108,7 @@ export default function ResellerApiPage() {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`px-3 py-1 rounded-full text-xs font-mono transition-all ${
                   activeTab === tab.id
-                    ? "bg-blue-600 text-white font-bold"
+                    ? "bg-[#D8EC8D] text-[#131313] font-bold"
                     : "text-[#c7c8b6] hover:text-white"
                 }`}
               >

@@ -85,8 +85,8 @@ export default function AdminServicesPage() {
         {/* Header Telemetry */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-mono text-blue-400">
-              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+            <div className="flex items-center gap-2 text-xs font-mono text-[#D8EC8D]">
+              <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
               <span className="uppercase tracking-widest font-semibold">
                 Service Matrix & Margin Multipliers
               </span>
@@ -99,7 +99,7 @@ export default function AdminServicesPage() {
 
           <button
             onClick={() => setIsAdding(true)}
-            className="px-5 py-2.5 rounded-full bg-blue-600 text-white text-xs font-bold hover:brightness-110 flex items-center gap-2 shadow-[0_0_20px_rgba(219,239,144,0.3)] shrink-0"
+            className="px-5 py-2.5 rounded-full btn-primary-gradient text-[#171e00] text-xs font-bold hover:brightness-110 flex items-center gap-2 shadow-[0_0_20px_rgba(216,236,141,0.25)] shrink-0"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Add Catalog Service</span>
@@ -236,7 +236,7 @@ export default function AdminServicesPage() {
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="submit"
-                className="px-6 py-2 rounded-full bg-blue-600 text-white text-xs font-bold hover:brightness-110 shadow-md"
+                className="px-6 py-2 rounded-full btn-primary-gradient text-[#171e00] text-xs font-bold hover:brightness-110 shadow-md"
               >
                 Save & Deploy Service
               </button>
@@ -253,7 +253,7 @@ export default function AdminServicesPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search services by ID, title, or category..."
-              className="w-full bg-surface-container-highest/80 border border-white/5 focus:border-blue-500 rounded-2xl pl-11 pr-4 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none font-mono"
+              className="w-full bg-surface-container-highest/80 border border-white/5 focus:border-[#D8EC8D]/50 rounded-2xl pl-11 pr-4 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none font-mono"
             />
           </div>
 
@@ -319,7 +319,7 @@ export default function AdminServicesPage() {
                       <td className="py-4 px-3 font-medium text-white max-w-sm truncate">
                         {service.name}
                       </td>
-                      <td className="py-4 px-3 font-mono font-bold text-blue-400 whitespace-nowrap">
+                      <td className="py-4 px-3 font-mono font-bold text-[#D8EC8D] whitespace-nowrap">
                         {isEditing ? (
                           <input
                             type="number"
@@ -329,7 +329,7 @@ export default function AdminServicesPage() {
                               updateService(service.id, { ratePer1000: Number(e.target.value) });
                               setEditingId(null);
                             }}
-                            className="w-20 bg-black border border-blue-500 rounded px-2 py-0.5 text-white"
+                            className="w-20 bg-black border border-[#D8EC8D] rounded px-2 py-0.5 text-white"
                             autoFocus
                           />
                         ) : (

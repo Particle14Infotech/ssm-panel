@@ -21,7 +21,7 @@ export default function OgImage() {
           alignItems: "flex-start",
           justifyContent: "space-between",
           padding: "80px",
-          background: "#02040A",
+          background: "#131313",
           fontFamily: "sans-serif",
           position: "relative",
         }}
@@ -56,7 +56,7 @@ export default function OgImage() {
               width: "12px",
               height: "12px",
               borderRadius: "50%",
-              background: "#3B82F6",
+              background: "#D8EC8D",
             }}
           />
           <span
@@ -64,7 +64,7 @@ export default function OgImage() {
               fontSize: "18px",
               fontWeight: 600,
               letterSpacing: "0.15em",
-              color: "#60A5FA",
+              color: "#D8EC8D",
               textTransform: "uppercase",
             }}
           >
@@ -86,7 +86,7 @@ export default function OgImage() {
             }}
           >
             Order Social Growth Services.{" "}
-            <span style={{ color: "#3B82F6", fontWeight: 400 }}>Track Every Order.</span>
+            <span style={{ color: "#D8EC8D", fontWeight: 400 }}>Track Every Order.</span>
           </h1>
 
           <p
