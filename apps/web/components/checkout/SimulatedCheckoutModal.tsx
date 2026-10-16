@@ -187,8 +187,8 @@ export function SimulatedCheckoutModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-[#070B16] border border-white/10 rounded-3xl w-full max-w-lg shadow-[0_24px_64px_rgba(0,0,0,0.8)] overflow-hidden relative">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+      <div className="bg-[#070B16] border border-white/10 rounded-t-3xl sm:rounded-3xl rounded-b-none sm:rounded-b-3xl w-full max-w-lg max-h-[92vh] sm:max-h-none shadow-[0_24px_64px_rgba(0,0,0,0.8)] overflow-y-auto relative">
         {/* Test Mode Ribbon */}
         {isTestMode && (
           <div className="bg-gradient-to-r from-amber-500/20 via-blue-500/20 to-amber-500/20 border-b border-amber-500/30 px-4 py-1.5 flex items-center justify-between text-[11px] font-mono text-amber-300">

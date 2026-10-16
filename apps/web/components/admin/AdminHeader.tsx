@@ -91,7 +91,9 @@ export function AdminHeader() {
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl bg-white/5 border border-white/10 text-white"
+              className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              aria-label="Toggle admin navigation menu"
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>

@@ -32,12 +32,12 @@
 - [x] 3.4 Create `ASSETS.md` documenting logo inventory, sources, and license notes -> `done`
 
 ### Phase 5: Responsive (Mobile-First) & Purposeful Scroll Animation
-- [ ] 5.1 Test and optimize layouts across viewports: 360px, 390px, 768px, 1024px, 1280px, 1536px -> `doing`
-- [ ] 5.2 Ensure tap targets >= 44px, body text >= 16px on mobile, responsive tables and modals -> `todo`
-- [ ] 5.3 Implement lightweight scroll reveals and section animations with `prefers-reduced-motion` support -> `todo`
+- [x] 5.1 Test and optimize layouts across viewports: 360px, 390px, 768px, 1024px, 1280px, 1536px -> `done`
+- [x] 5.2 Ensure tap targets >= 44px, body text >= 16px on mobile, responsive tables and modals -> `done`
+- [x] 5.3 Implement lightweight scroll reveals and section animations with `prefers-reduced-motion` support -> `done`
 
 ### Phase 6: Performance & 3D Optimization
-- [ ] 6.1 Lazy-load 3D canvas / mascot / crown stage using dynamic imports with static poster fallbacks -> `todo`
+- [ ] 6.1 Lazy-load 3D canvas / mascot / crown stage using dynamic imports with static poster fallbacks -> `doing`
 - [ ] 6.2 Optimize font loading (Poppins Latin subset, swap display) and image assets (Next Image, AVIF/WebP) -> `todo`
 - [ ] 6.3 Eliminate render-blocking resources, prune dead CSS/chunks, verify bundle sizes -> `todo`
 - [ ] 6.4 Produce `PERFORMANCE.md` with baseline vs optimized Lighthouse metrics -> `todo`

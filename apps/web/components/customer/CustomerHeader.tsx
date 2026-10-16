@@ -51,7 +51,7 @@ export function CustomerHeader() {
           <button
             type="button"
             onClick={() => setMobileDrawerOpen(true)}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors lg:hidden"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors lg:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             aria-label="Open Navigation Drawer"
           >
             <Menu className="w-5 h-5" />
@@ -191,7 +191,8 @@ export function CustomerHeader() {
                 </div>
                 <button
                   onClick={() => setMobileDrawerOpen(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-white"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 focus:outline-none"
+                  aria-label="Close Navigation Drawer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -208,7 +209,7 @@ export function CustomerHeader() {
                 <Link
                   href="/wallet"
                   onClick={() => setMobileDrawerOpen(false)}
-                  className="px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-semibold"
+                  className="min-h-[44px] px-3.5 flex items-center justify-center rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 transition-colors"
                 >
                   Add Funds
                 </Link>
@@ -223,7 +224,7 @@ export function CustomerHeader() {
                       key={item.name}
                       href={item.href}
                       onClick={() => setMobileDrawerOpen(false)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                      className={`flex items-center gap-3 px-3 py-3 min-h-[44px] rounded-xl text-xs font-medium transition-all ${
                         isActive
                           ? "bg-blue-600/15 text-white"
                           : "text-slate-400 hover:text-white hover:bg-white/5"
@@ -242,7 +243,7 @@ export function CustomerHeader() {
                 setMobileDrawerOpen(false);
                 logout();
               }}
-              className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-rose-400 hover:bg-rose-500/10 rounded-xl"
+              className="flex items-center gap-2 px-3 py-3 min-h-[44px] text-xs font-medium text-rose-400 hover:bg-rose-500/10 rounded-xl"
             >
               <LogOut className="w-4 h-4" />
               <span>Log Out</span>

@@ -135,7 +135,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className={`dark ${poppins.variable}`}>
+    <html lang="en-IN" className={`dark ${poppins.variable}`}>
       <head>
         <link
           rel="stylesheet"

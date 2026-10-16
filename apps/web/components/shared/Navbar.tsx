@@ -125,18 +125,18 @@ export function Navbar() {
             </MagneticButton>
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button with >= 44px tap targets */}
           <div className="flex md:hidden items-center gap-2">
             <Link
               href="/login"
-              className="px-3 py-1.5 text-xs font-medium text-white/90 bg-[#201f1f] border border-white/10 rounded-full"
+              className="min-h-[44px] px-4 py-2.5 flex items-center justify-center text-xs font-medium text-white/90 bg-[#201f1f] border border-white/10 rounded-full"
             >
               Sign In
             </Link>
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-full bg-[#201f1f] text-white/80 hover:text-white border border-white/10 focus:outline-none"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-full bg-[#201f1f] text-white/80 hover:text-white border border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               aria-label="Toggle navigation menu"
               aria-expanded={mobileMenuOpen}
             >
@@ -169,7 +169,7 @@ export function Navbar() {
                 >
                   <Link
                     href={item.href}
-                    className={`text-lg py-2 border-b border-white/10 flex items-center justify-between ${
+                    className={`text-lg py-3 min-h-[44px] border-b border-white/10 flex items-center justify-between ${
                       pathname === item.href ? "text-blue-400 font-semibold" : "text-white/80"
                     }`}
                   >
