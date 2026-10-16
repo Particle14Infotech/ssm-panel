@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { landingContent } from "@/content/landing";
 import { Menu, X, ArrowRight, Zap } from "lucide-react";
 import { MagneticButton } from "@/components/motion/MagneticButton";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -50,22 +51,7 @@ export function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Brand Logo */}
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-primary group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d8ec8d] rounded-lg"
-          >
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#bd0183] via-[#ffafd5] to-[#d8ec8d] p-[1.5px] flex items-center justify-center">
-              <div className="w-full h-full bg-[#131313] rounded-full flex items-center justify-center">
-                <Zap className="w-4 h-4 text-[#d8ec8d] group-hover:scale-110 transition-transform" />
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="font-heading font-bold text-xl uppercase tracking-wider text-white">
-                {landingContent.brand.name}
-              </span>
-              <span className="text-[#d8ec8d] text-xl font-black leading-none select-none">*</span>
-            </div>
-          </Link>
+          <BrandLogo variant="combined" size={36} withLink href="/" />
 
           {/* Desktop Navigation Links with layoutId active pill */}
           <nav

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Zap, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 
 export default function VerifyPage() {
   const [code, setCode] = useState("");
@@ -19,16 +20,9 @@ export default function VerifyPage() {
     <div className="min-h-screen w-full flex items-center justify-center p-4 py-32 relative overflow-hidden bg-[#131313]">
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-4 group">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#bd0183] to-[#D8EC8D] p-[1.5px] flex items-center justify-center">
-              <div className="w-full h-full bg-[#131313] rounded-full flex items-center justify-center">
-                <Zap className="w-5 h-5 text-[#D8EC8D]" />
-              </div>
-            </div>
-            <span className="font-heading font-bold text-2xl tracking-wider text-white">
-              SMM PANEL
-            </span>
-          </Link>
+          <div className="mb-4 flex justify-center">
+            <BrandLogo variant="combined" size={38} withLink href="/" />
+          </div>
           <h1 className="font-heading text-2xl font-light text-white">Two-Factor Authentication</h1>
           <p className="text-xs text-[#c7c8b6] mt-1 font-mono">
             Enter the 6-digit TOTP code from your authenticator app.

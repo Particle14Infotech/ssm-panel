@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCustomer } from "@/context/CustomerContext";
 import { BRAND_NAME } from "@/lib/brand";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 import {
   Wallet,
   Bell,
@@ -186,9 +187,7 @@ export function CustomerHeader() {
           <div className="fixed top-0 bottom-0 left-0 w-72 bg-[#131313] border-r border-white/10 p-6 flex flex-col justify-between shadow-2xl z-50">
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <div className="font-semibold text-white text-base tracking-tight">
-                  {BRAND_NAME}
-                </div>
+                <BrandLogo variant="combined" size={28} withLink href="/dashboard" />
                 <button
                   onClick={() => setMobileDrawerOpen(false)}
                   className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 focus:outline-none"

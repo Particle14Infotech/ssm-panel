@@ -17,6 +17,8 @@ import {
   ArrowRight,
   Info,
 } from "lucide-react";
+import { PaymentIcon } from "@/components/shared/PaymentIcon";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 
 export interface CheckoutModalProps {
   isOpen: boolean;
@@ -204,7 +206,7 @@ export function SimulatedCheckoutModal({
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
           <div className="space-y-0.5">
             <div className="text-[11px] uppercase tracking-widest font-mono text-[#D8EC8D] font-semibold flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5" />
+              <BrandLogo variant="icon" size={16} />
               <span>{BRAND_NAME} Secure Checkout</span>
             </div>
             <div className="text-xs text-slate-400 font-mono">Order ID: {orderId}</div>
@@ -231,52 +233,52 @@ export function SimulatedCheckoutModal({
                 <button
                   type="button"
                   onClick={() => { setMethod("UPI"); setErrorMessage(""); }}
-                  className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1 ${
+                  className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1.5 ${
                     method === "UPI"
-                      ? "bg-[#D8EC8D] text-[#131313] shadow-md shadow-[#D8EC8D]/20 font-bold"
+                      ? "bg-[#D8EC8D] text-[#131313] shadow-sm font-bold"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  <Smartphone className="w-4 h-4" />
+                  <PaymentIcon method="UPI" size={16} />
                   <span>UPI</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => { setMethod("CARD"); setErrorMessage(""); }}
-                  className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1 ${
+                  className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1.5 ${
                     method === "CARD"
-                      ? "bg-[#D8EC8D] text-[#131313] shadow-md shadow-[#D8EC8D]/20 font-bold"
+                      ? "bg-[#D8EC8D] text-[#131313] shadow-sm font-bold"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  <CreditCard className="w-4 h-4" />
+                  <PaymentIcon method="CARD" size={16} />
                   <span>Cards</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => { setMethod("NETBANKING"); setErrorMessage(""); }}
-                  className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1 ${
+                  className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1.5 ${
                     method === "NETBANKING"
-                      ? "bg-[#D8EC8D] text-[#131313] shadow-md shadow-[#D8EC8D]/20 font-bold"
+                      ? "bg-[#D8EC8D] text-[#131313] shadow-sm font-bold"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  <Building2 className="w-4 h-4" />
+                  <PaymentIcon method="NETBANKING" size={16} />
                   <span>Netbanking</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => { setMethod("WALLET"); setErrorMessage(""); }}
-                  className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1 ${
+                  className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1.5 ${
                     method === "WALLET"
-                      ? "bg-[#D8EC8D] text-[#131313] shadow-md shadow-[#D8EC8D]/20 font-bold"
+                      ? "bg-[#D8EC8D] text-[#131313] shadow-sm font-bold"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  <Wallet className="w-4 h-4" />
+                  <PaymentIcon method="WALLET" size={16} />
                   <span>Wallets</span>
                 </button>
               </div>

@@ -26,7 +26,7 @@ export interface CrownSectionTarget {
 }
 
 const SECTION_TARGETS: Record<string, CrownSectionTarget> = {
-  right: { xPct: 0.72, yPct: 0.42, scale: 1.0, opacity: 1.0 },
+  right: { xPct: 0.76, yPct: 0.44, scale: 0.96, opacity: 1.0 },
   left: { xPct: 0.28, yPct: 0.5, scale: 1.0, opacity: 1.0 },
   center: { xPct: 0.5, yPct: 0.5, scale: 0.7, opacity: 0.5 },
   dim: { xPct: 0.5, yPct: 0.5, scale: 0.8, opacity: 0.15 },
@@ -50,9 +50,9 @@ function DesktopBloom() {
 
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(size.width, size.height),
-      0.65,  // soft luminous bloom matching the reference halo
-      0.45,  // radius
-      0.72   // luminanceThreshold
+      0.35,  // luminous controlled glow highlighting jewel tips & reflections
+      0.32,  // radius
+      0.80   // threshold tuned for vibrant specular glints
     );
     composer.addPass(bloomPass);
 
@@ -158,13 +158,10 @@ function CrownRig({
     const pointerTiltY = mx * 0.14; // subtle mouse yaw
     const pointerTiltX = -my * 0.08; // subtle mouse pitch
 
-    // Dynamic bank on rapid scroll (rolls slightly into scroll direction)
-    const scrollRoll = THREE.MathUtils.clamp(v * 0.04, -0.15, 0.15);
-
-    // X tilt: 8 deg base tilt (0.14 rad) matching the exact reference angle where front spikes sit lower than back peaks
+    // X tilt: 10 deg base tilt (0.18 rad) for natural perspective showing hollow interior and tips
     crownRotRef.current.rotation.x = THREE.MathUtils.damp(
       crownRotRef.current.rotation.x,
-      0.14 + pointerTiltX,
+      0.18 + pointerTiltX,
       4,
       delta
     );
@@ -176,6 +173,9 @@ function CrownRig({
       5,
       delta
     );
+
+    // Dynamic bank on rapid scroll (rolls slightly into scroll direction)
+    const scrollRoll = THREE.MathUtils.clamp(v * 0.04, -0.15, 0.15);
 
     // Z rotation: dynamic scroll banking roll + pointer banking
     crownRotRef.current.rotation.z = THREE.MathUtils.damp(
@@ -201,7 +201,7 @@ function CrownRig({
         }
       }
       if (child.isLineSegments && child.material) {
-        child.material.opacity = (child.userData.baseOpacity ?? 0.95) * opacityRef.current;
+        child.material.opacity = (child.userData.baseOpacity ?? 0.55) * opacityRef.current;
       }
     });
   });
@@ -209,27 +209,28 @@ function CrownRig({
   return (
     <group ref={groupRef}>
       <group ref={crownRotRef}>
-        <CrownModel scale={1.35} />
+        <CrownModel scale={0.82} />
       </group>
 
-      {/* Real 3D Social Media Platform Logos Orbiting around Crown Base */}
-      <group position={[0, -1.3, 0]} scale={0.55}>
+      {/* Real 3D Social Media Platform Logos Orbiting OUTSIDE Crown with clear gap */}
+      <group position={[0, -0.15, 0]} scale={0.42}>
         <PlatformRing
-          radius={isMobile ? 2.8 : 3.4}
+          radius={isMobile ? 2.4 : 3.4}
           onSelect={onSelect}
           isMobile={isMobile}
+          scrollProgress={scrollProgress}
         />
       </group>
 
-      {/* Tiny floating lime sparkles: count 30, size 2, speed 0.2, color #DBEF90, opacity 0.4 */}
+      {/* Small, sparse floating lime sparkles (particles kept small and restrained) */}
       {!isLowPerformance && (
         <Sparkles
-          count={30}
-          scale={[2.5, 2.5, 2.5]}
-          size={2}
-          speed={0.2}
+          count={14}
+          scale={[2.4, 2.4, 2.4]}
+          size={1.2}
+          speed={0.15}
           color="#DBEF90"
-          opacity={0.4}
+          opacity={0.20}
         />
       )}
     </group>
@@ -378,8 +379,8 @@ export function CrownStage() {
           }}
         >
           <Image
-            src="/brand/crown@2x.webp"
-            alt="SMM Panel 3D metallic crown emblem"
+            src="/brand/crown-royal@2x.webp"
+            alt="SMM Panel 3D royal king's crown emblem"
             width={340}
             height={340}
             priority
@@ -409,16 +410,16 @@ export function CrownStage() {
           stencil: false,
           depth: true,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.2,
+          toneMappingExposure: 1.35,
         }}
         className="w-full h-full"
       >
-        {/* Ambient & directional lighting with studio glass highlights */}
-        <ambientLight intensity={0.7} color="#ffffff" />
-        <directionalLight position={[6, 9, 6]} intensity={2.0} color="#f0fec2" />
-        <directionalLight position={[-6, 4, 3]} intensity={1.3} color="#bef264" />
-        <pointLight position={[0, -2, 2]} intensity={2.0} color="#243100" />
-        <pointLight position={[-4, 4, -2]} intensity={1.4} color="#BEF264" />
+        {/* Luminous studio lighting: bright, radiant royal gold reflections & vibrant electric highlights */}
+        <ambientLight intensity={0.75} color="#f4ffe6" />
+        <directionalLight position={[6, 8, 5]} intensity={1.85} color="#fffde8" />
+        <directionalLight position={[-6, 4, 3]} intensity={1.15} color="#d4f768" />
+        <pointLight position={[2.5, 1.5, 3.5]} intensity={1.10} color="#e8fa7d" />
+        <pointLight position={[-4, 3, -2]} intensity={0.75} color="#90e628" />
 
         {/* Floating generic margin glyphs */}
         <FloatingMarginGlyphs isMobile={isMobile} />

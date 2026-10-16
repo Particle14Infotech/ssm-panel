@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ForgotPasswordInputSchema, ForgotPasswordInput } from "@smm/contracts";
 import { Zap, ArrowRight, Mail, AlertCircle, CheckCircle2 } from "lucide-react";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 
 export default function ForgotPasswordPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -37,19 +38,9 @@ export default function ForgotPasswordPage() {
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-4 group">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#bd0183] to-[#D8EC8D] p-[1.5px] flex items-center justify-center">
-              <div className="w-full h-full bg-[#131313] rounded-full flex items-center justify-center">
-                <Zap className="w-5 h-5 text-[#D8EC8D] group-hover:scale-110 transition-transform" />
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="font-heading font-bold text-2xl tracking-wider text-white">
-                SMM PANEL
-              </span>
-              <span className="text-[#D8EC8D] font-bold text-2xl">*</span>
-            </div>
-          </Link>
+          <div className="mb-4 flex justify-center">
+            <BrandLogo variant="combined" size={38} withLink href="/" />
+          </div>
           <h1 className="font-heading text-2xl font-light text-white">Reset Password</h1>
           <p className="text-xs text-[#c7c8b6] mt-1 font-mono">
             Single-Use Expiring Recovery Protocol

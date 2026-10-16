@@ -26,6 +26,8 @@ import {
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { PlatformIcon } from "@/components/shared/PlatformIcon";
+import { motion } from "framer-motion";
 
 export default function OrdersPage() {
   const { orders, refillOrder, cancelOrder } = useCustomer();
@@ -79,14 +81,15 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="space-y-8 pb-16">
-      {/* Header Telemetry */}
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="space-y-8 pb-16"
+    >
+      {/* Header Clean (Telemetry badge removed) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-mono text-[#D8EC8D]">
-            <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
-            <span className="uppercase tracking-widest font-semibold">Fulfillment Ledger</span>
-          </div>
           <h1 className="text-3xl font-semibold text-white tracking-tight">Orders History</h1>
           <p className="text-xs text-slate-400">
             View real-time delivery status, start count tracking, and warranty refills.
@@ -95,7 +98,7 @@ export default function OrdersPage() {
 
         <Link
           href="/new-order"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl btn-primary-gradient hover:brightness-105 text-[#171e00] text-xs font-bold shadow-md transition-all self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl btn-primary-gradient hover:brightness-105 text-[#171e00] text-xs font-bold shadow-sm transition-all self-start sm:self-auto"
         >
           <PlusCircle className="w-3.5 h-3.5" />
           <span>New Order</span>
@@ -217,10 +220,12 @@ export default function OrdersPage() {
                       </span>
                     </td>
 
-                    {/* Service */}
                     <td className="py-3.5 px-3">
                       <div className="font-medium text-white max-w-xs truncate">{order.serviceName}</div>
-                      <div className="text-[10px] text-slate-400 uppercase font-mono">{order.platform}</div>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <PlatformIcon platform={order.platform} size={13} useBrandColor={true} />
+                        <span className="text-[10px] text-slate-400 uppercase font-mono">{order.platform}</span>
+                      </div>
                     </td>
 
                     {/* Target */}
@@ -414,6 +419,6 @@ export default function OrdersPage() {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginInputSchema, LoginInput } from "@smm/contracts";
 import { Zap, ArrowRight, Lock, User, AlertCircle, ShieldCheck } from "lucide-react";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 
 import dynamic from "next/dynamic";
 
@@ -86,19 +87,9 @@ export default function LoginPage() {
       <div className="w-full max-w-5xl rounded-3xl p-6 sm:p-10 lg:p-12 bg-[#191919]/60 border border-white/[0.08] backdrop-blur-2xl shadow-[0_32px_64px_rgba(0,0,0,0.7)] relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         {/* Left Column: 3D Rotating Crown & Brand showcase on desktop */}
         <div className="lg:col-span-5 flex flex-col items-center lg:items-start text-center lg:text-left justify-center px-2">
-          <Link href="/" className="inline-flex items-center gap-2 mb-4 group">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#bd0183] to-[#D8EC8D] p-[1.5px] flex items-center justify-center shadow-lg">
-              <div className="w-full h-full bg-[#131313] rounded-full flex items-center justify-center">
-                <Zap className="w-4 h-4 text-[#D8EC8D] group-hover:scale-110 transition-transform" />
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="font-heading font-bold text-xl tracking-wider text-white">
-                SMM PANEL
-              </span>
-              <span className="text-[#D8EC8D] font-bold text-xl">*</span>
-            </div>
-          </Link>
+          <div className="mb-4">
+            <BrandLogo variant="combined" size={38} withLink href="/" />
+          </div>
 
           {/* Real 3D Rotating Crown Showcase with perfect proportional dimensions */}
           <div className="w-full max-w-[280px] sm:max-w-[320px] aspect-square relative my-1 flex items-center justify-center">

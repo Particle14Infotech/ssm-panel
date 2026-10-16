@@ -4,7 +4,7 @@
       "C:\\Program Files\\nodejs\\node.exe",
       "D:\\projects\\internship projects\\SMM\\node_modules\\@playwright\\test\\cli.js",
       "test",
-      "e2e/e2e-mvp-proof.spec.ts"
+      "e2e/crown-compare.spec.ts"
     ],
     "configFile": "D:\\projects\\internship projects\\SMM\\playwright.config.ts",
     "rootDir": "D:/projects/internship projects/SMM/e2e",
@@ -112,20 +112,20 @@
   },
   "suites": [
     {
-      "title": "e2e-mvp-proof.spec.ts",
-      "file": "e2e-mvp-proof.spec.ts",
+      "title": "crown-compare.spec.ts",
+      "file": "crown-compare.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Real End-to-End MVP Proof (P3 Desk 1440)",
-          "file": "e2e-mvp-proof.spec.ts",
-          "line": 3,
+          "title": "Compare Crown Screenshot with Reference",
+          "file": "crown-compare.spec.ts",
+          "line": 5,
           "column": 6,
           "specs": [
             {
-              "title": "1. Customer Flow: Login -> Read Balance -> Sandbox Add Funds (Exact +Bonus) -> Place Order (Exact -Charge) -> Poll COMPLETED",
+              "title": "capture hero crown and create comparison",
               "ok": true,
               "tags": [],
               "tests": [
@@ -140,18 +140,22 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7145,
+                      "duration": 24144,
                       "errors": [],
-                      "stdout": [],
+                      "stdout": [
+                        {
+                          "text": "DOM INFO: {\n  canvasCount: \u001b[33m1\u001b[39m,\n  container: \u001b[33mtrue\u001b[39m,\n  fallback: \u001b[33mfalse\u001b[39m,\n  userAgent: \u001b[32m'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36'\u001b[39m\n}\n"
+                        }
+                      ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-15T14:35:35.858Z",
+                      "startTime": "2026-10-16T20:37:51.367Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "trace",
                           "contentType": "application/zip",
-                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\e2e-mvp-proof-Real-End-to--a686e-ct--Charge---Poll-COMPLETED-chromium\\trace.zip"
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\crown-compare-Compare-Crow-c1120-crown-and-create-comparison-chromium\\trace.zip"
                         }
                       ]
                     }
@@ -159,89 +163,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "11c7c6ffbd38246256a9-7d7396f5f13ea6aa83da",
-              "file": "e2e-mvp-proof.spec.ts",
+              "id": "f4186ab9f52dd9fbd585-5c0b35cfe9279cd29544",
+              "file": "crown-compare.spec.ts",
               "line": 6,
-              "column": 7
-            },
-            {
-              "title": "2. Admin Flow: Login -> Admin Orders -> User Balance Adjustment with Mandatory Reason",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3001,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-15T14:35:43.934Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\e2e-mvp-proof-Real-End-to--71dc4-tment-with-Mandatory-Reason-chromium\\trace.zip"
-                        }
-                      ]
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "11c7c6ffbd38246256a9-63ce20de8b4abbe15074",
-              "file": "e2e-mvp-proof.spec.ts",
-              "line": 84,
-              "column": 7
-            },
-            {
-              "title": "3. Negative Tests: Insufficient Balance Guard (Blocks Order without Debit) & Idempotency",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1897,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-15T14:35:47.105Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\e2e-mvp-proof-Real-End-to--93e7a-r-without-Debit-Idempotency-chromium\\trace.zip"
-                        }
-                      ]
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "11c7c6ffbd38246256a9-fbdbb2977274e7102b37",
-              "file": "e2e-mvp-proof.spec.ts",
-              "line": 125,
               "column": 7
             }
           ]
@@ -251,9 +175,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-15T14:35:35.390Z",
-    "duration": 13968.539,
-    "expected": 3,
+    "startTime": "2026-10-16T20:37:50.159Z",
+    "duration": 29022.529000000002,
+    "expected": 1,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { BRAND_NAME } from "@/lib/brand";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 
 export function AdminHeader() {
   const pathname = usePathname();
@@ -41,17 +42,7 @@ export function AdminHeader() {
         {/* Top Header Row */}
         <div className="h-12 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Link href="/admin/dashboard" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 rounded-xl bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-[#D8EC8D]" />
-              </div>
-              <div className="flex items-baseline">
-                <span className="font-heading text-lg uppercase tracking-wider text-white font-bold">
-                  {BRAND_NAME}
-                </span>
-                <span className="text-[#D8EC8D] text-lg font-light leading-none">*</span>
-              </div>
-            </Link>
+            <BrandLogo variant="combined" size={30} withLink href="/admin/dashboard" />
 
             <div className="h-4 w-px bg-white/15 hidden sm:block" />
 

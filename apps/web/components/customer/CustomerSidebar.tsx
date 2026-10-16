@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BRAND_NAME } from "@/lib/brand";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 import { useCustomer } from "@/context/CustomerContext";
 import {
   LayoutDashboard,
@@ -56,16 +56,8 @@ export function CustomerSidebar() {
     <aside className="w-64 shrink-0 hidden lg:flex flex-col justify-between bg-[#131313]/95 backdrop-blur-xl border-r border-white/10 min-h-screen sticky top-0 z-40">
       <div>
         {/* Brand Header */}
-        <div className="h-16 px-6 flex items-center gap-3 border-b border-white/10">
-          <div className="w-8 h-8 rounded-xl bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 flex items-center justify-center text-[#D8EC8D]">
-            <Zap className="w-4 h-4" />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-white tracking-tight text-base font-sans">
-              {BRAND_NAME}
-            </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#D8EC8D] animate-pulse" />
-          </div>
+        <div className="h-16 px-5 flex items-center border-b border-white/10">
+          <BrandLogo variant="combined" size={32} withLink href="/dashboard" />
         </div>
 
         {/* Grouped Nav Items */}

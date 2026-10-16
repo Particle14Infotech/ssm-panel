@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { FormField } from "@/components/shared/FormField";
+import { PlatformIcon } from "@/components/shared/PlatformIcon";
+import { motion } from "framer-motion";
 
 function NewOrderContent() {
   const router = useRouter();
@@ -51,13 +53,13 @@ function NewOrderContent() {
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
 
   const platforms = [
-    { id: "instagram", name: "Instagram", icon: Share2 },
-    { id: "youtube", name: "YouTube", icon: Video },
-    { id: "tiktok", name: "TikTok", icon: Music },
-    { id: "telegram", name: "Telegram", icon: Send },
-    { id: "twitter", name: "X (Twitter)", icon: Globe },
-    { id: "spotify", name: "Spotify", icon: Music },
-    { id: "general", name: "Other Services", icon: Layers },
+    { id: "instagram", name: "Instagram" },
+    { id: "youtube", name: "YouTube" },
+    { id: "tiktok", name: "TikTok" },
+    { id: "telegram", name: "Telegram" },
+    { id: "twitter", name: "X (Twitter)" },
+    { id: "spotify", name: "Spotify" },
+    { id: "general", name: "Other Services" },
   ];
 
   // Filter services by platform & category
@@ -148,14 +150,15 @@ function NewOrderContent() {
   };
 
   return (
-    <div className="space-y-8 pb-16">
-      {/* Header Telemetry */}
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="space-y-8 pb-16"
+    >
+      {/* Header Clean (No clutter/beam glow) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-mono text-[#D8EC8D]">
-            <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
-            <span className="uppercase tracking-widest font-semibold">Order Dispatch Console</span>
-          </div>
           <h1 className="text-3xl font-semibold text-white tracking-tight">New Order</h1>
           <p className="text-xs text-slate-400">
             Configure target links and volume for high-velocity social media services.
@@ -169,7 +172,7 @@ function NewOrderContent() {
           </div>
           <Link
             href="/wallet"
-            className="px-3.5 py-1.5 rounded-xl btn-primary-gradient text-[#171e00] text-xs font-bold shadow-[0_0_15px_rgba(216,236,141,0.25)] transition-all"
+            className="px-3.5 py-1.5 rounded-xl btn-primary-gradient text-[#171e00] text-xs font-bold hover:brightness-105 transition-all shadow-sm"
           >
             + Add Funds
           </Link>
@@ -214,32 +217,33 @@ function NewOrderContent() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left: Configuration Form (7 cols) */}
         <form onSubmit={handleSubmit} className="lg:col-span-7 space-y-6">
-          {/* Step 1: Select Platform */}
+          {/* Step 1: Select Platform with REAL Social Media Logos */}
           <div className="glass-panel p-6 space-y-3">
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono block">
               01 • Select Platform
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {platforms.map((plat) => {
                 const isSelected = selectedPlatform === plat.id;
-                const Icon = plat.icon;
                 return (
-                  <button
+                  <motion.button
                     key={plat.id}
                     type="button"
+                    whileHover={{ y: -1.5 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => {
                       setSelectedPlatform(plat.id);
                       setSelectedCategory("ALL");
                     }}
                     className={`p-3 rounded-xl border text-left transition-all flex items-center gap-2.5 ${
                       isSelected
-                        ? "bg-[#D8EC8D]/15 border-[#D8EC8D] text-[#D8EC8D] shadow-sm"
-                        : "bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
+                        ? "bg-[#D8EC8D]/15 border-[#D8EC8D] text-white shadow-sm ring-1 ring-[#D8EC8D]/40"
+                        : "bg-white/[0.03] border-white/10 text-slate-300 hover:text-white hover:bg-white/[0.07] hover:border-white/20"
                     }`}
                   >
-                    <Icon className={`w-4 h-4 ${isSelected ? "text-[#D8EC8D]" : "text-slate-400"}`} />
+                    <PlatformIcon platform={plat.id} size={20} useBrandColor={true} />
                     <span className="text-xs font-medium truncate">{plat.name}</span>
-                  </button>
+                  </motion.button>
                 );
               })}
             </div>
@@ -437,7 +441,7 @@ function NewOrderContent() {
                   type="button"
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="w-full py-3.5 px-6 rounded-2xl btn-primary-gradient text-[#171e00] font-bold text-sm shadow-[0_0_25px_rgba(216,236,141,0.3)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-3.5 px-6 rounded-2xl btn-primary-gradient text-[#171e00] font-bold text-sm shadow-md hover:brightness-105 active:scale-[0.99] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {submitting ? (
                     <>
@@ -459,7 +463,7 @@ function NewOrderContent() {
                   </div>
                   <Link
                     href="/wallet"
-                    className="w-full py-3.5 px-6 rounded-2xl btn-primary-gradient text-[#171e00] font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(216,236,141,0.25)]"
+                    className="w-full py-3.5 px-6 rounded-2xl btn-primary-gradient text-[#171e00] font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-md hover:brightness-105 active:scale-[0.99]"
                   >
                     <PlusCircle className="w-4 h-4" />
                     <span>Add Funds to Continue</span>
@@ -481,7 +485,7 @@ function NewOrderContent() {
           </GlassCard>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { landingContent } from "@/content/landing";
 import { ShieldCheck, Zap, ArrowUpRight, Activity } from "lucide-react";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 
 export function Footer() {
   return (
@@ -38,15 +39,7 @@ export function Footer() {
           {/* Brand Col */}
           <div className="lg:col-span-2 flex flex-col gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#D8EC8D] via-[#BEF264] to-[#7B3FF2] p-[1px] flex items-center justify-center">
-                <div className="w-full h-full bg-[#131313] rounded-full flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-[#D8EC8D]" />
-                </div>
-              </div>
-              <span className="font-heading font-bold text-xl tracking-wider text-white">
-                {landingContent.brand.name}
-              </span>
-              <span className="text-[#D8EC8D] font-bold text-xl leading-none">*</span>
+              <BrandLogo variant="combined" size={32} withLink href="/" />
             </div>
 
             <p className="text-sm text-zinc-400 leading-relaxed max-w-sm font-light">

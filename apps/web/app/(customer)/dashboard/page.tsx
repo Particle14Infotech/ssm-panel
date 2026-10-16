@@ -6,26 +6,21 @@ import { useCustomer } from "@/context/CustomerContext";
 import {
   Wallet,
   Activity,
-  ArrowUpRight,
   PlusCircle,
   ShoppingBag,
   TrendingUp,
   Clock,
-  CheckCircle2,
-  AlertCircle,
-  ExternalLink,
   RefreshCw,
-  Layers,
-  ChevronRight,
-  Sparkles,
 } from "lucide-react";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { StatCard } from "@/components/shared/StatCard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { PlatformIcon } from "@/components/shared/PlatformIcon";
+import { motion } from "framer-motion";
 
 export default function CustomerDashboardPage() {
-  const { user, orders, refillOrder, cancelOrder } = useCustomer();
+  const { user, orders, refillOrder } = useCustomer();
   const [selectedPlatform, setSelectedPlatform] = useState<string>("ALL");
   const [chartRange, setChartRange] = useState<"7d" | "30d">("7d");
   const [refillingId, setRefillingId] = useState<string | null>(null);
@@ -64,14 +59,15 @@ export default function CustomerDashboardPage() {
   const maxChartCount = Math.max(...chartData.map((d) => d.count), 5);
 
   return (
-    <div className="space-y-8 pb-16">
-      {/* 1. Header Telemetry & Quick CTA */}
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="space-y-8 pb-16"
+    >
+      {/* 1. Header Clean (Badge removed & no beam glow) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#D8EC8D]/10 border border-[#D8EC8D]/25 text-xs font-medium text-[#D8EC8D]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#D8EC8D] animate-pulse" />
-            <span>Live Operational Console</span>
-          </div>
           <h1 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight font-sans">Overview</h1>
           <p className="text-xs text-slate-400 font-sans">
             Welcome back, {user.name || "Customer"}. Real-time monitoring of your liquidity and active orders.
@@ -81,7 +77,7 @@ export default function CustomerDashboardPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/new-order"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl btn-primary-gradient text-[#171e00] text-xs font-bold shadow-[0_0_20px_rgba(216,236,141,0.25)] transition-all font-sans"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl btn-primary-gradient text-[#171e00] text-xs font-bold hover:brightness-105 shadow-sm transition-all font-sans"
           >
             <PlusCircle className="w-3.5 h-3.5" />
             <span>New Order</span>
@@ -89,9 +85,8 @@ export default function CustomerDashboardPage() {
         </div>
       </div>
 
-      {/* 2. Primary KPI Cards Grid (12-col grid, equal height) */}
+      {/* 2. Primary KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Available Balance */}
         <StatCard
           title="Available Balance"
           value={`₹${user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`}
@@ -100,7 +95,6 @@ export default function CustomerDashboardPage() {
           highlight={true}
         />
 
-        {/* Total Orders */}
         <StatCard
           title="Total Orders"
           value={orders.length.toLocaleString()}
@@ -108,7 +102,6 @@ export default function CustomerDashboardPage() {
           icon={Activity}
         />
 
-        {/* In Progress */}
         <StatCard
           title="In Progress"
           value={inProgressCount.toLocaleString()}
@@ -116,7 +109,6 @@ export default function CustomerDashboardPage() {
           icon={Clock}
         />
 
-        {/* Total Spent */}
         <StatCard
           title="Total Spent"
           value={`₹${totalSpent.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`}
@@ -125,7 +117,7 @@ export default function CustomerDashboardPage() {
         />
       </div>
 
-      {/* 3. 7/30-Day Orders & Spend Trend Chart (GlassCard) */}
+      {/* 3. 7/30-Day Orders & Spend Trend Chart */}
       <GlassCard className="p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-0.5">
@@ -141,7 +133,7 @@ export default function CustomerDashboardPage() {
               onClick={() => setChartRange("7d")}
               className={`px-3 py-1 rounded-lg text-xs font-bold font-sans transition-all ${
                 chartRange === "7d"
-                  ? "bg-[#D8EC8D] text-[#131313] shadow-sm shadow-[#D8EC8D]/30"
+                  ? "bg-[#D8EC8D] text-[#131313] shadow-sm font-bold"
                   : "text-slate-400 hover:text-white"
               }`}
             >
@@ -152,7 +144,7 @@ export default function CustomerDashboardPage() {
               onClick={() => setChartRange("30d")}
               className={`px-3 py-1 rounded-lg text-xs font-bold font-sans transition-all ${
                 chartRange === "30d"
-                  ? "bg-[#D8EC8D] text-[#131313] shadow-sm shadow-[#D8EC8D]/30"
+                  ? "bg-[#D8EC8D] text-[#131313] shadow-sm font-bold"
                   : "text-slate-400 hover:text-white"
               }`}
             >
@@ -161,42 +153,36 @@ export default function CustomerDashboardPage() {
           </div>
         </div>
 
-        {/* Chart Visualization */}
-        <div className="h-44 w-full pt-4 flex items-end justify-between gap-1 sm:gap-2 border-b border-white/5 pb-2">
-          {chartData.map((d, i) => {
-            const hasActivity = d.count > 0;
-            const heightPct = hasActivity
-              ? Math.max(Math.round((d.count / maxChartCount) * 100), 18)
-              : 8;
-            return (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
-                <div className="w-full relative flex items-end justify-center h-32">
+        {/* Bar Visualizer */}
+        <div className="pt-4 space-y-2">
+          <div className="h-44 flex items-end justify-between gap-1 sm:gap-2 border-b border-white/5 pb-2">
+            {chartData.map((d, idx) => {
+              const heightPercent = Math.max(Math.round((d.count / maxChartCount) * 100), 6);
+              return (
+                <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 group relative">
                   <div
-                    style={{ height: `${heightPct}%` }}
-                    className={`w-full max-w-[28px] rounded-t-lg transition-all relative ${
-                      hasActivity
-                        ? "bg-gradient-to-t from-[#8EAC11] to-[#D8EC8D] shadow-[0_0_12px_rgba(216,236,141,0.3)] opacity-90 group-hover:opacity-100"
-                        : "bg-white/5 group-hover:bg-[#D8EC8D]/20"
-                    }`}
+                    style={{ height: `${heightPercent}%` }}
+                    className="w-full max-w-[28px] rounded-t-md bg-[#D8EC8D]/25 border border-[#D8EC8D]/40 group-hover:bg-[#D8EC8D] transition-all cursor-pointer relative"
                   >
-                    {/* Tooltip on Hover */}
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center z-20 pointer-events-none">
-                      <div className="bg-[#131313] border border-[#D8EC8D]/40 px-2.5 py-1 rounded-lg shadow-xl text-[11px] font-sans tabular-nums text-white whitespace-nowrap">
-                        {d.count} orders (₹{d.spend.toFixed(0)})
-                      </div>
+                    {/* Tooltip */}
+                    <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute -top-12 left-1/2 -translate-x-1/2 bg-[#1c1b1b] border border-white/10 px-2.5 py-1 rounded-lg text-[10px] font-mono text-white whitespace-nowrap shadow-xl z-20 transition-all">
+                      <div>{d.count} Orders</div>
+                      <div className="text-[#D8EC8D]">₹{d.spend.toFixed(2)}</div>
                     </div>
                   </div>
+                  {chartRange === "7d" && (
+                    <span className="text-[10px] font-mono text-slate-500 truncate w-full text-center">
+                      {d.date}
+                    </span>
+                  )}
                 </div>
-                <span className="text-[10px] font-sans text-slate-400 truncate max-w-[42px] text-center">
-                  {d.date}
-                </span>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </GlassCard>
 
-      {/* 4. Recent Orders Table & Platform Filtering */}
+      {/* 4. Recent Dispatched Orders Section */}
       <div className="glass-panel p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-0.5">
@@ -208,18 +194,23 @@ export default function CustomerDashboardPage() {
 
           <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
             {["ALL", "instagram", "youtube", "tiktok", "telegram", "twitter"].map((plat) => (
-              <button
+              <motion.button
                 key={plat}
                 type="button"
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setSelectedPlatform(plat)}
-                className={`px-3 py-1 rounded-xl text-xs font-semibold capitalize transition-all shrink-0 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium capitalize transition-all shrink-0 flex items-center gap-1.5 border ${
                   selectedPlatform === plat
-                    ? "bg-[#D8EC8D] text-[#131313] font-bold shadow-sm shadow-[#D8EC8D]/30"
-                    : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+                    ? "bg-[#D8EC8D] text-[#131313] font-bold border-[#D8EC8D] shadow-sm"
+                    : "bg-white/[0.03] border-white/10 text-slate-400 hover:text-white hover:bg-white/[0.06]"
                 }`}
               >
-                {plat === "ALL" ? "All Streams" : plat}
-              </button>
+                {plat !== "ALL" && (
+                  <PlatformIcon platform={plat} size={14} useBrandColor={selectedPlatform !== plat} />
+                )}
+                <span>{plat === "ALL" ? "All Streams" : plat}</span>
+              </motion.button>
             ))}
           </div>
         </div>
@@ -262,7 +253,10 @@ export default function CustomerDashboardPage() {
                       </td>
                       <td className="py-3.5 px-3">
                         <div className="font-medium text-white max-w-xs truncate">{order.serviceName}</div>
-                        <div className="text-[10px] text-slate-400 uppercase font-mono">{order.platform}</div>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <PlatformIcon platform={order.platform} size={13} useBrandColor={true} />
+                          <span className="text-[10px] text-slate-400 uppercase font-mono">{order.platform}</span>
+                        </div>
                       </td>
                       <td className="py-3.5 px-3 font-mono text-slate-400">
                         <span className="max-w-[180px] truncate block" title={order.target}>
@@ -290,19 +284,10 @@ export default function CustomerDashboardPage() {
                               type="button"
                               onClick={() => handleRefill(order.id)}
                               disabled={refillingId === order.id}
-                              className="px-2.5 py-1 rounded-lg bg-[#D8EC8D]/15 hover:bg-[#D8EC8D]/25 text-[#D8EC8D] text-xs font-semibold transition-all inline-flex items-center gap-1"
+                              className="px-2.5 py-1 rounded-lg bg-[#D8EC8D]/15 hover:bg-[#D8EC8D]/25 text-[#D8EC8D] text-xs font-medium transition-all flex items-center gap-1"
                             >
                               <RefreshCw className={`w-3 h-3 ${refillingId === order.id ? "animate-spin" : ""}`} />
-                              <span>{refillingId === order.id ? "Refilling" : "Refill"}</span>
-                            </button>
-                          )}
-                          {order.cancellable && (
-                            <button
-                              type="button"
-                              onClick={() => cancelOrder(order.id)}
-                              className="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 text-xs font-semibold transition-all"
-                            >
-                              Cancel
+                              <span>Refill</span>
                             </button>
                           )}
                           <Link
@@ -321,6 +306,6 @@ export default function CustomerDashboardPage() {
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

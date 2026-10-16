@@ -19,6 +19,8 @@ import {
   Lock,
 } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { PaymentIcon } from "@/components/shared/PaymentIcon";
+import { motion } from "framer-motion";
 
 export default function TransactionsPage() {
   const { user, transactions } = useCustomer();
@@ -46,16 +48,10 @@ export default function TransactionsPage() {
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Top Header */}
+      {/* Top Header Clean (Badge removed) */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
-            <span className="text-xs uppercase tracking-widest font-mono text-[#D8EC8D]">
-              Financial Ledger & Audit Trail
-            </span>
-          </div>
-          <h1 className="text-3xl font-light text-white mt-1">Transaction Ledger</h1>
+          <h1 className="text-3xl font-light text-white">Transaction Ledger</h1>
           <p className="text-xs text-slate-400 mt-0.5">
             Cryptographically audited append-only accounting. Every credit and debit is immutable.
           </p>
@@ -70,7 +66,7 @@ export default function TransactionsPage() {
           </div>
           <Link
             href="/wallet"
-            className="px-4 py-2 rounded-full btn-primary-gradient text-[#171e00] font-bold text-xs shadow-[0_0_20px_rgba(216,236,141,0.2)] transition-all flex items-center gap-1.5"
+            className="px-4 py-2 rounded-xl btn-primary-gradient text-[#171e00] font-bold text-xs hover:brightness-105 shadow-sm transition-all flex items-center gap-1.5"
           >
             <PlusCircle className="w-3.5 h-3.5" />
             <span>Add Funds</span>
@@ -155,8 +151,12 @@ export default function TransactionsPage() {
                           )}
                           <span>{tx.id}</span>
                         </td>
-                        <td className="py-3 px-4 text-slate-400">{tx.referenceId}</td>
-                        <td className="py-3 px-4 text-white">{tx.method}</td>
+                        <td className="py-3 px-4 text-white">
+                          <div className="flex items-center gap-1.5">
+                            <PaymentIcon method={tx.method} size={15} />
+                            <span>{tx.method}</span>
+                          </div>
+                        </td>
                         <td className="py-3 px-4 text-slate-400">
                           {new Date(tx.createdAt).toLocaleDateString()} {new Date(tx.createdAt).toLocaleTimeString()}
                         </td>

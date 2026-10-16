@@ -21,6 +21,8 @@ import {
   X,
 } from "lucide-react";
 import { PaymentIcon } from "@/components/shared/PaymentIcon";
+import { BrandLogo } from "@/components/shared/BrandLogo";
+import { motion } from "framer-motion";
 
 export default function WalletPage() {
   const { user, transactions, initiateDeposit, refreshData } = useCustomer();
@@ -36,21 +38,21 @@ export default function WalletPage() {
   const gateways = [
     {
       id: "UPI" as PaymentMethod,
-      name: "UPI (Unified Payments Interface)",
-      sub: "0% Transaction Fee • Instant (0–5s)",
-      badge: "Fastest Clearance",
+      name: "UPI",
+      sub: "Instant (0–5s) • 0% Fee",
+      badge: "Instant",
     },
     {
       id: "CARD" as PaymentMethod,
       name: "Credit / Debit Card",
-      sub: "Visa, Mastercard, RuPay (3D Secure)",
-      badge: "Secure Vault",
+      sub: "Visa, Mastercard, RuPay",
+      badge: "Secure",
     },
     {
       id: "NETBANKING" as PaymentMethod,
-      name: "Netbanking / IMPS",
-      sub: "All Major Indian Commercial Banks",
-      badge: "Direct Settlement",
+      name: "Netbanking",
+      sub: "IMPS, NEFT & All Banks",
+      badge: "Direct",
     },
   ];
 
@@ -95,42 +97,21 @@ export default function WalletPage() {
   };
 
   return (
-    <div className="w-full bg-[#131313] min-h-screen pb-24 text-slate-100">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="w-full bg-[#131313] min-h-screen pb-24 text-slate-100"
+    >
       <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-8 space-y-8">
-        {/* Header Telemetry */}
+        {/* Header Clean (Badge removed) */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-mono text-[#D8EC8D]">
-              <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
-              <span className="uppercase tracking-widest font-semibold">
-                Financial Operations & Liquidity
-              </span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <h1 className="text-3xl md:text-4xl font-semibold text-white tracking-tight">Add Funds & Billing</h1>
-            </div>
+            <h1 className="text-3xl md:text-4xl font-semibold text-white tracking-tight">Add Funds & Billing</h1>
             <p className="text-xs text-slate-400">
               Add spendable liquidity, unlock tier bonus credits, and view verified payment receipts.
             </p>
           </div>
-        </div>
-
-        {/* Global Test Mode Notice */}
-        <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 flex items-center justify-between text-xs text-amber-300">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
-            </div>
-            <div>
-              <span className="font-semibold block text-white">Test Mode Active — Simulator Gateway</span>
-              <span className="text-slate-400 text-[11px]">
-                No real card or bank funds will be charged. Use test simulators like <span className="font-mono text-amber-300">success@test</span> or card ending in <span className="font-mono text-amber-300">4111</span>.
-              </span>
-            </div>
-          </div>
-          <span className="hidden sm:inline-block px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[10px] font-semibold">
-            SIMULATED GATEWAY
-          </span>
         </div>
 
         {/* Success Banner */}
@@ -159,7 +140,7 @@ export default function WalletPage() {
         {/* Dual Column: Balance Overview & Deposit Form */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Top Up Gateway Selector (7 cols) */}
-          <div className="lg:col-span-7 bg-[#1c1b1b] border border-white/10 rounded-3xl p-6 md:p-8 space-y-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
+          <div className="lg:col-span-7 bg-[#1c1b1b] border border-white/10 rounded-3xl p-6 md:p-8 space-y-6 shadow-xl">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -174,36 +155,45 @@ export default function WalletPage() {
               </span>
             </div>
 
-            {/* Gateway Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Gateway Cards Grid with Real Payment Logos */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch">
               {gateways.map((gw) => {
                 const isSelected = selectedMethod === gw.id;
                 return (
-                  <button
+                  <motion.button
                     key={gw.id}
                     type="button"
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => setSelectedMethod(gw.id)}
-                    className={`p-4 rounded-2xl text-left border transition-all flex flex-col justify-between gap-3 ${
+                    className={`relative p-3.5 sm:p-4 rounded-2xl text-left border transition-all flex flex-col justify-between gap-3 overflow-hidden ${
                       isSelected
-                        ? "bg-[#D8EC8D]/15 border-[#D8EC8D]/40 shadow-[0_0_20px_rgba(216,236,141,0.15)]"
-                        : "bg-white/[0.02] border-white/5 hover:border-white/15"
+                        ? "bg-[#D8EC8D]/15 border-[#D8EC8D] ring-1 ring-[#D8EC8D]/40 shadow-sm"
+                        : "bg-white/[0.03] border-white/10 hover:border-white/20 hover:bg-white/[0.06]"
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <PaymentIcon method={gw.id} size={24} />
+                    <div className="flex items-center justify-between gap-1.5 w-full min-h-[26px]">
+                      <div className="shrink-0 flex items-center">
+                        <PaymentIcon method={gw.id} size={20} />
+                      </div>
                       <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-semibold ${
-                          isSelected ? "bg-[#D8EC8D] text-[#131313] font-bold" : "bg-white/10 text-slate-400"
+                        className={`text-[9px] px-2 py-0.5 rounded-full font-mono font-semibold whitespace-nowrap shrink-0 transition-colors ${
+                          isSelected ? "bg-[#D8EC8D] text-[#131313] font-bold" : "bg-white/10 text-slate-300"
                         }`}
                       >
                         {gw.badge}
                       </span>
                     </div>
-                    <div>
-                      <div className="text-xs font-semibold text-white">{gw.name}</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">{gw.sub}</div>
+
+                    <div className="min-w-0 mt-1 space-y-1">
+                      <div className="text-xs sm:text-sm font-semibold text-white tracking-tight leading-tight">
+                        {gw.name}
+                      </div>
+                      <div className="text-[11px] text-slate-400 leading-snug">
+                        {gw.sub}
+                      </div>
                     </div>
-                  </button>
+                  </motion.button>
                 );
               })}
             </div>
@@ -276,7 +266,7 @@ export default function WalletPage() {
               data-testid="deposit-submit-btn"
               onClick={handleOpenCheckout}
               disabled={isProcessing || amount <= 0}
-              className="w-full py-4 px-6 rounded-2xl btn-primary-gradient hover:brightness-105 text-[#171e00] font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(216,236,141,0.25)] disabled:opacity-50"
+              className="w-full py-4 px-6 rounded-2xl btn-primary-gradient hover:brightness-105 active:scale-[0.99] text-[#171e00] font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
             >
               {isProcessing ? (
                 <>
@@ -296,8 +286,7 @@ export default function WalletPage() {
           {/* Right Column: Balance Summary & Tier Card (5 cols) */}
           <div className="lg:col-span-5 space-y-6">
             {/* Wallet Balance Hero Card */}
-            <div className="bg-[#1c1b1b] border border-white/10 rounded-3xl p-6 md:p-8 space-y-6 relative overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
-              <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-[#243100]/40 blur-3xl pointer-events-none" />
+            <div className="bg-[#1c1b1b] border border-white/10 rounded-3xl p-6 md:p-8 space-y-6 relative overflow-hidden shadow-xl">
 
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-2">
@@ -399,9 +388,12 @@ export default function WalletPage() {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
+                      <td className="py-4 px-3 font-medium text-white">
+                        <div className="flex items-center gap-2">
+                          <PaymentIcon method={txn.method} size={18} />
+                          <span>{txn.method}</span>
+                        </div>
                       </td>
-                      <td className="py-4 px-3 font-medium text-white">{txn.method}</td>
-                      <td className="py-4 px-3 font-mono font-semibold text-white">
                         ₹{txn.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </td>
                       <td className="py-4 px-3 whitespace-nowrap">
@@ -453,9 +445,7 @@ export default function WalletPage() {
           <div className="bg-[#1c1b1b] border border-white/15 rounded-3xl p-6 md:p-8 max-w-lg w-full space-y-6 shadow-2xl relative text-xs">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 flex items-center justify-center">
-                  <Lock className="w-4 h-4 text-[#D8EC8D]" />
-                </div>
+                <BrandLogo variant="icon" size={28} />
                 <div>
                   <h3 className="text-base font-semibold text-white">{BRAND_NAME} Tax Invoice</h3>
                   <div className="text-[10px] font-mono text-slate-400">
@@ -524,7 +514,7 @@ export default function WalletPage() {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 

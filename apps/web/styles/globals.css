@@ -170,13 +170,13 @@
   background: linear-gradient(to right, #d8ec8d, #bccf74, #d8ec8d);
   color: #171e00;
   font-weight: 700;
-  box-shadow: 0 4px 16px rgba(216, 236, 141, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   transition: all 0.2s ease;
 }
 
 .btn-primary-gradient:hover {
   filter: brightness(1.05);
-  box-shadow: 0 6px 24px rgba(216, 236, 141, 0.5);
+  box-shadow: 0 4px 14px rgba(216, 236, 141, 0.22);
 }
 
 /* Fallbacks for browsers without backdrop-filter */

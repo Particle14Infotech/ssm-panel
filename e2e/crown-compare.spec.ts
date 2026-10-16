@@ -8,7 +8,7 @@ test.describe("Compare Crown Screenshot with Reference", () => {
     if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("http://localhost:3000", { waitUntil: "networkidle" });
+    await page.goto("http://localhost:3000", { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(3000);
 
     // Capture hero viewport
