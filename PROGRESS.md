@@ -60,7 +60,7 @@
 - [x] 8.4 Generate `QA_REPORT.md` -> `done`
 
 ### Phase 9: Deploy & Production Verification (Railway)
-- [ ] 9.1 Merge `overnight/polish` into `main` after QA gate passes -> `doing`
-- [ ] 9.2 Monitor Railway multi-service deployments (web, api, worker) -> `todo`
-- [ ] 9.3 Perform live smoke testing across health, auth, simulated payment, order lifecycle -> `todo`
-- [ ] 9.4 Finalize `MORNING_REPORT.md` -> `todo`
+- [x] 9.1 Merge `overnight/polish` into `main` after QA gate passes -> `done`
+- [x] 9.2 Monitor Railway multi-service deployments (web, api, worker) -> `done`
+- [x] 9.3 Perform live smoke testing across health, auth, simulated payment, order lifecycle -> `done`
+- [x] 9.4 Finalize `MORNING_REPORT.md` -> `done`
