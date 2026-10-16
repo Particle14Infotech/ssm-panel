@@ -17,13 +17,13 @@ export function FaqSection() {
     <section id="faq" data-crown="dim" className="w-full py-24 bg-transparent relative">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <RevealOnScroll className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-xs font-mono text-[#D8EC8D] uppercase tracking-widest mb-4 backdrop-blur-md">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-mono text-blue-400 uppercase tracking-widest mb-4 backdrop-blur-md">
             {landingContent.faq.badge}
           </div>
           <h2 className="font-heading text-3xl sm:text-5xl font-light text-white tracking-tight mb-4">
             {landingContent.faq.title}
           </h2>
-          <p className="text-base text-zinc-400 font-light">
+          <p className="text-base text-slate-400 font-light">
             {landingContent.faq.description}
           </p>
         </RevealOnScroll>
@@ -34,7 +34,7 @@ export function FaqSection() {
             const isOpen = openIdx === idx;
             return (
               <RevealOnScroll key={idx} delay={idx * 0.05}>
-                <div className="rounded-2xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] bg-zinc-950/45 border border-white/[0.14] hover:border-white/[0.28] hover:bg-zinc-950/60 backdrop-blur-2xl overflow-hidden transition-all duration-300 shadow-[0_16px_36px_rgba(0,0,0,0.45)]">
+                <div className="rounded-2xl bg-gradient-to-b from-white/[0.06] to-white/[0.02] bg-[#070B16]/80 border border-white/[0.08] hover:border-blue-500/30 backdrop-blur-xl overflow-hidden transition-all duration-300 shadow-[0_16px_36px_rgba(0,0,0,0.45)]">
                   <button
                     type="button"
                     onClick={() => toggle(idx)}
@@ -42,7 +42,7 @@ export function FaqSection() {
                     aria-expanded={isOpen}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/[0.08] text-[#DBEF90] font-mono border border-white/10 backdrop-blur-md">
+                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-mono border border-blue-500/20 backdrop-blur-md">
                         {item.category}
                       </span>
                       <span className="text-base font-medium text-white">{item.question}</span>
@@ -50,7 +50,7 @@ export function FaqSection() {
                     <motion.div
                       animate={{ rotate: isOpen ? 45 : 0 }}
                       transition={{ duration: 0.25, ease: "easeInOut" }}
-                      className="p-1 rounded-full bg-white/[0.08] text-[#D8EC8D]"
+                      className="p-1 rounded-full bg-white/[0.08] text-blue-400"
                     >
                       <Plus className="w-4 h-4" />
                     </motion.div>
@@ -65,7 +65,7 @@ export function FaqSection() {
                         transition={{ duration: 0.3, ease: [0.25, 1, 0.5, 1] }}
                         className="overflow-hidden"
                       >
-                        <div className="px-6 pb-6 pt-0 text-sm text-zinc-400 font-light leading-relaxed border-t border-white/[0.08] mt-2">
+                        <div className="px-6 pb-6 pt-0 text-sm text-slate-400 font-light leading-relaxed border-t border-white/[0.08] mt-2">
                           {item.answer}
                         </div>
                       </motion.div>
@@ -78,7 +78,7 @@ export function FaqSection() {
         </div>
 
         {/* Trademark Disclaimer */}
-        <div className="mt-12 text-center text-xs text-zinc-400 max-w-2xl mx-auto leading-relaxed border-t border-white/[0.08] pt-6">
+        <div className="mt-12 text-center text-xs text-slate-500 max-w-2xl mx-auto leading-relaxed border-t border-white/[0.08] pt-6 font-light">
           Instagram, YouTube, Telegram, TikTok, Facebook and X are trademarks of their respective owners. This service is not affiliated with or endorsed by them.
         </div>
       </div>

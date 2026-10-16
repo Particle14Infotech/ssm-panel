@@ -32,22 +32,22 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 py-32 relative overflow-hidden bg-[#131313]">
-      <div className="absolute top-1/4 -left-20 w-96 h-96 rounded-full bg-[#bd0183]/15 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-20 w-96 h-96 rounded-full bg-[#d8ec8d]/15 blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/4 -left-20 w-96 h-96 rounded-full bg-blue-600/10 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 -right-20 w-96 h-96 rounded-full bg-blue-500/10 blur-[120px] pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-4 group">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#bd0183] to-[#d8ec8d] p-[1.5px] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-blue-400 p-[1.5px] flex items-center justify-center">
               <div className="w-full h-full bg-[#131313] rounded-full flex items-center justify-center">
-                <Zap className="w-5 h-5 text-[#d8ec8d] group-hover:scale-110 transition-transform" />
+                <Zap className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
               </div>
             </div>
             <div className="flex items-center gap-1">
               <span className="font-heading font-bold text-2xl tracking-wider text-white">
                 SMM PANEL
               </span>
-              <span className="text-[#d8ec8d] font-bold text-2xl">*</span>
+              <span className="text-blue-400 font-bold text-2xl">*</span>
             </div>
           </Link>
           <h1 className="font-heading text-2xl font-light text-white">Reset Password</h1>
@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
         <div className="glass-panel rounded-3xl p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
           {submitted ? (
             <div className="text-center py-6">
-              <div className="w-14 h-14 rounded-full bg-[#d8ec8d]/20 text-[#d8ec8d] flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="w-7 h-7" />
               </div>
               <h2 className="font-heading text-xl font-medium text-white mb-2">Check Your Inbox</h2>
@@ -84,7 +84,7 @@ export default function ForgotPasswordPage() {
 
               <div>
                 <label className="text-xs font-mono uppercase tracking-wider text-[#c7c8b6] block mb-1.5">
-                  Account Email Address <span className="text-[#d8ec8d]">*</span>
+                  Account Email Address <span className="text-blue-400">*</span>
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 absolute left-3.5 top-3 text-[#c7c8b6]" />
@@ -92,7 +92,7 @@ export default function ForgotPasswordPage() {
                     type="email"
                     {...register("email")}
                     placeholder="user@example.com"
-                    className="w-full bg-[#131313] text-white text-sm pl-10 pr-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-[#d8ec8d]"
+                    className="w-full bg-[#131313] text-white text-sm pl-10 pr-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 {errors.email && (
@@ -103,7 +103,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3.5 rounded-full bg-gradient-to-r from-[#d8ec8d] via-[#bccf74] to-[#d8ec8d] text-[#171e00] font-bold text-sm hover:shadow-[0_0_24px_rgba(216,236,141,0.4)] hover:scale-[1.01] transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
+                className="w-full py-3.5 rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-white font-bold text-sm hover:shadow-[0_0_24px_rgba(37,99,235,0.25)] hover:scale-[1.01] transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
               >
                 <span>{isSubmitting ? "Transmitting..." : "Send Reset Token"}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -113,7 +113,7 @@ export default function ForgotPasswordPage() {
 
           <div className="mt-8 pt-6 border-t border-white/10 text-center text-xs text-[#c7c8b6]">
             Remember your credentials?{" "}
-            <Link href="/login" className="text-[#d8ec8d] font-bold hover:underline">
+            <Link href="/login" className="text-blue-400 font-bold hover:underline">
               Back to Sign In
             </Link>
           </div>

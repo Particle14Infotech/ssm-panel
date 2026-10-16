@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 
-export const alt = "SMM PANEL - Social Media Marketing Platform & Reseller Infrastructure";
+export const alt = "SMM Panel - Social Growth Services & API Infrastructure";
 export const size = {
   width: 1200,
   height: 630,
@@ -21,7 +21,7 @@ export default function OgImage() {
           alignItems: "flex-start",
           justifyContent: "space-between",
           padding: "80px",
-          background: "#131313",
+          background: "#02040A",
           fontFamily: "sans-serif",
           position: "relative",
         }}
@@ -35,7 +35,7 @@ export default function OgImage() {
             width: "600px",
             height: "600px",
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(216,236,141,0.2) 0%, rgba(19,19,19,0) 70%)",
+            background: "radial-gradient(circle, rgba(37,99,235,0.2) 0%, rgba(2,4,10,0) 70%)",
           }}
         />
 
@@ -47,8 +47,8 @@ export default function OgImage() {
             gap: "12px",
             padding: "10px 24px",
             borderRadius: "9999px",
-            background: "rgba(255, 255, 255, 0.08)",
-            border: "1px solid rgba(255, 255, 255, 0.15)",
+            background: "rgba(255, 255, 255, 0.06)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
           }}
         >
           <div
@@ -56,7 +56,7 @@ export default function OgImage() {
               width: "12px",
               height: "12px",
               borderRadius: "50%",
-              background: "#D8EC8D",
+              background: "#3B82F6",
             }}
           />
           <span
@@ -64,11 +64,11 @@ export default function OgImage() {
               fontSize: "18px",
               fontWeight: 600,
               letterSpacing: "0.15em",
-              color: "#D8EC8D",
+              color: "#60A5FA",
               textTransform: "uppercase",
             }}
           >
-            Platform Active • SMM Architecture
+            Platform Active • SMM Panel
           </span>
         </div>
 
@@ -86,20 +86,20 @@ export default function OgImage() {
             }}
           >
             Order Social Growth Services.{" "}
-            <span style={{ color: "#D8EC8D", fontWeight: 400 }}>Track Every Order.</span>
+            <span style={{ color: "#3B82F6", fontWeight: 400 }}>Track Every Order.</span>
           </h1>
 
           <p
             style={{
               fontSize: "24px",
-              color: "#A1A1AA",
+              color: "#94A3B8",
               margin: 0,
               lineHeight: 1.4,
               maxWidth: "850px",
               fontWeight: 300,
             }}
           >
-            One unified wallet, 500+ direct provider services, real-time sync, and double-entry protected ledger accounting.
+            One unified wallet in INR, 500+ direct provider services, real-time sync, and double-entry protected ledger accounting.
           </p>
         </div>
 
@@ -110,15 +110,15 @@ export default function OgImage() {
             alignItems: "center",
             justifyContent: "space-between",
             width: "100%",
-            borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+            borderTop: "1px solid rgba(255, 255, 255, 0.08)",
             paddingTop: "30px",
           }}
         >
           <span style={{ fontSize: "20px", color: "#FFFFFF", fontWeight: 500, letterSpacing: "0.05em" }}>
             smmarchitecture.com
           </span>
-          <span style={{ fontSize: "18px", color: "#71717A" }}>
-            Instagram • YouTube • TikTok • Telegram • X (Twitter)
+          <span style={{ fontSize: "18px", color: "#64748B" }}>
+            Instagram • YouTube • TikTok • Telegram • X
           </span>
         </div>
       </div>

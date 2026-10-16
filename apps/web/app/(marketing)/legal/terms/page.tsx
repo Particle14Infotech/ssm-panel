@@ -17,16 +17,16 @@ export default function TermsPage() {
     <div className="w-full pt-32 pb-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="mb-10">
         <Breadcrumb items={[{ label: "Terms of Service", href: "/legal/terms" }]} />
-        <span className="text-xs font-mono uppercase tracking-widest text-[#DBEF90]">
+        <span className="text-xs font-mono uppercase tracking-widest text-blue-400">
           Legal Documentation
         </span>
         <h1 className="font-heading text-4xl font-light text-white mt-2 mb-4">
           Terms of Service
         </h1>
-        <p className="text-xs font-mono text-[#c7c8b6]">Last Updated: January 2025</p>
+        <p className="text-xs font-mono text-slate-400">Last Updated: January 2025</p>
       </div>
 
-      <div className="glass-panel rounded-3xl p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] flex flex-col gap-6 text-sm text-[#c7c8b6] leading-relaxed">
+      <div className="glass-panel rounded-2xl p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] flex flex-col gap-6 text-sm text-slate-300 leading-relaxed">
         <div>
           <h2 className="text-base font-semibold text-white mb-2">1. Compliance & Authorized Fulfilment</h2>
           <p>

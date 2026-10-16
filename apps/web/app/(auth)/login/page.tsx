@@ -78,25 +78,25 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 lg:p-12 py-12 md:py-20 relative overflow-hidden bg-[#131313]">
       {/* Background ambient lighting */}
-      <div className="absolute top-1/4 -left-20 w-96 h-96 rounded-full bg-[#bd0183]/15 blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-20 w-96 h-96 rounded-full bg-[#d8ec8d]/15 blur-[140px] pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-[#243100]/20 blur-[160px] pointer-events-none -z-10" />
+      <div className="absolute top-1/4 -left-20 w-96 h-96 rounded-full bg-blue-600/10 blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-1/4 -right-20 w-96 h-96 rounded-full bg-blue-500/10 blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-blue-900/10 blur-[160px] pointer-events-none -z-10" />
 
       {/* Unified Outer Frame with Clean Boundaries */}
       <div className="w-full max-w-5xl rounded-3xl p-6 sm:p-10 lg:p-12 bg-[#191919]/60 border border-white/[0.08] backdrop-blur-2xl shadow-[0_32px_64px_rgba(0,0,0,0.7)] relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         {/* Left Column: 3D Rotating Crown & Brand showcase on desktop */}
         <div className="lg:col-span-5 flex flex-col items-center lg:items-start text-center lg:text-left justify-center px-2">
           <Link href="/" className="inline-flex items-center gap-2 mb-4 group">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#bd0183] to-[#d8ec8d] p-[1.5px] flex items-center justify-center shadow-lg">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-blue-400 p-[1.5px] flex items-center justify-center shadow-lg">
               <div className="w-full h-full bg-[#131313] rounded-full flex items-center justify-center">
-                <Zap className="w-4 h-4 text-[#d8ec8d] group-hover:scale-110 transition-transform" />
+                <Zap className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
               </div>
             </div>
             <div className="flex items-center gap-1">
               <span className="font-heading font-bold text-xl tracking-wider text-white">
                 SMM PANEL
               </span>
-              <span className="text-[#d8ec8d] font-bold text-xl">*</span>
+              <span className="text-blue-400 font-bold text-xl">*</span>
             </div>
           </Link>
 
@@ -106,7 +106,7 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-3">
-            <span className="text-[11px] uppercase tracking-widest font-mono text-[#D8EC8D] font-semibold block mb-0.5">
+            <span className="text-[11px] uppercase tracking-widest font-mono text-blue-400 font-semibold block mb-0.5">
               High-Frequency Network
             </span>
             <p className="text-xs text-zinc-400 font-light max-w-xs leading-relaxed">
@@ -135,7 +135,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <div>
               <label className="text-xs font-mono uppercase tracking-wider text-[#c7c8b6] block mb-1.5">
-                Username or Email <span className="text-[#d8ec8d]">*</span>
+                Username or Email <span className="text-blue-400">*</span>
               </label>
               <div className="relative">
                 <User className="w-4 h-4 absolute left-3.5 top-3 text-[#c7c8b6]" />
@@ -143,7 +143,7 @@ export default function LoginPage() {
                   type="text"
                   {...register("usernameOrEmail")}
                   placeholder="admin or user@domain.com"
-                  className="w-full bg-[#131313] text-white text-sm pl-10 pr-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-[#d8ec8d]"
+                  className="w-full bg-[#131313] text-white text-sm pl-10 pr-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-blue-500"
                 />
               </div>
               {errors.usernameOrEmail && (
@@ -156,11 +156,11 @@ export default function LoginPage() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-mono uppercase tracking-wider text-[#c7c8b6]">
-                  Password <span className="text-[#d8ec8d]">*</span>
+                  Password <span className="text-blue-400">*</span>
                 </label>
                 <Link
                   href="/forgot-password"
-                  className="text-xs text-[#d8ec8d] hover:underline font-mono"
+                  className="text-xs text-blue-400 hover:underline font-mono"
                 >
                   Forgot password?
                 </Link>
@@ -171,7 +171,7 @@ export default function LoginPage() {
                   type="password"
                   {...register("password")}
                   placeholder="••••••••••••"
-                  className="w-full bg-[#131313] text-white text-sm pl-10 pr-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-[#d8ec8d]"
+                  className="w-full bg-[#131313] text-white text-sm pl-10 pr-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-blue-500"
                 />
               </div>
               {errors.password && (
@@ -192,7 +192,7 @@ export default function LoginPage() {
                   maxLength={6}
                   {...register("twoFactorCode")}
                   placeholder="6-digit authenticator code"
-                  className="w-full bg-[#131313] text-white text-sm pl-10 pr-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-[#d8ec8d] font-mono tracking-widest"
+                  className="w-full bg-[#131313] text-white text-sm pl-10 pr-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-blue-500 font-mono tracking-widest"
                 />
               </div>
             </div>
@@ -200,7 +200,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3.5 rounded-full bg-gradient-to-r from-[#d8ec8d] via-[#bccf74] to-[#d8ec8d] text-[#171e00] font-bold text-sm hover:shadow-[0_0_24px_rgba(216,236,141,0.4)] hover:scale-[1.01] transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
+              className="w-full py-3.5 rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-white font-bold text-sm hover:shadow-[0_0_24px_rgba(37,99,235,0.25)] hover:scale-[1.01] transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
             >
               <span>{isSubmitting ? "Authenticating..." : "Sign In to Account"}</span>
               <ArrowRight className="w-4 h-4" />
@@ -209,7 +209,7 @@ export default function LoginPage() {
 
           <div className="mt-8 pt-6 border-t border-white/10 text-center text-xs text-[#c7c8b6]">
             Don&apos;t have an account yet?{" "}
-            <Link href="/register" className="text-[#d8ec8d] font-bold hover:underline">
+            <Link href="/register" className="text-blue-400 font-bold hover:underline">
               Create an account
             </Link>
           </div>

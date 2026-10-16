@@ -5,27 +5,27 @@ import { ShieldCheck, Zap, ArrowUpRight, Activity } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer data-crown="dim" className="w-full bg-transparent border-t border-white/[0.08] text-[#e5e2e1] pt-16 pb-12">
+    <footer data-crown="dim" className="w-full bg-transparent border-t border-white/[0.08] text-slate-300 pt-16 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Compliance Posture Box */}
-        <div className="mb-14 rounded-3xl p-6 md:p-8 bg-gradient-to-b from-white/[0.08] to-white/[0.02] bg-zinc-950/45 border border-white/[0.14] backdrop-blur-2xl relative overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+        <div className="mb-14 rounded-2xl p-6 md:p-8 bg-gradient-to-b from-white/[0.06] to-white/[0.02] bg-[#070B16]/80 border border-white/[0.08] backdrop-blur-xl relative overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-white/[0.08] border border-white/10 flex items-center justify-center flex-shrink-0 text-[#DBEF90] backdrop-blur-md">
+              <div className="w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0 text-blue-400 backdrop-blur-md">
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <div>
                 <h4 className="font-heading font-semibold text-lg text-white mb-1">
                   {landingContent.complianceNotice.title}
                 </h4>
-                <p className="text-sm text-zinc-400 max-w-3xl leading-relaxed">
+                <p className="text-sm text-slate-400 max-w-3xl leading-relaxed font-light">
                   {landingContent.complianceNotice.body}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="px-3.5 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] text-xs font-mono text-[#D8EC8D] flex items-center gap-2">
+              <div className="px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-mono text-blue-400 flex items-center gap-2">
                 <Activity className="w-3.5 h-3.5" />
                 <span>All Providers Monitored</span>
               </div>
@@ -38,24 +38,22 @@ export function Footer() {
           {/* Brand Col */}
           <div className="lg:col-span-2 flex flex-col gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#D8EC8D] via-[#BEF264] to-[#7B3FF2] p-[1px] flex items-center justify-center">
-                <div className="w-full h-full bg-zinc-950 rounded-full flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-[#D8EC8D]" />
-                </div>
+              <div className="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
+                <Zap className="w-4 h-4 text-blue-400" />
               </div>
               <span className="font-heading font-bold text-xl tracking-wider text-white">
                 {landingContent.brand.name}
               </span>
-              <span className="text-[#D8EC8D] font-bold text-xl">*</span>
+              <span className="text-blue-400 font-bold text-xl leading-none">*</span>
             </div>
 
-            <p className="text-sm text-zinc-400 leading-relaxed max-w-sm">
+            <p className="text-sm text-slate-400 leading-relaxed max-w-sm font-light">
               {landingContent.footer.description}
             </p>
 
             <div className="pt-2 flex items-center gap-3">
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-xs text-zinc-400">
-                <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs text-slate-400 font-mono">
+                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                 <span>{landingContent.brand.version}</span>
               </div>
             </div>
@@ -72,10 +70,10 @@ export function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-[#c7c8b6] hover:text-white transition-colors flex items-center gap-1 group"
+                      className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-1 group font-light"
                     >
                       <span>{link.label}</span>
-                      <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" />
                     </Link>
                   </li>
                 ))}
@@ -85,7 +83,7 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#c7c8b6]">
+        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-light">
           <div>{landingContent.footer.copyright}</div>
           <div className="flex items-center gap-6">
             <Link href="/legal/terms" className="hover:text-white transition-colors">

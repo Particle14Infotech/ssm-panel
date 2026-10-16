@@ -10,6 +10,7 @@
     "test": "turbo run test",
     "check:externals": "node scripts/check-externals.js",
     "check:contracts": "node scripts/check-contract-diff.js",
+    "check:emoji": "node scripts/check-emoji.mjs --fail",
     "verify:backend": "node scripts/verify-backend.js",
     "smoke": "node scripts/smoke.js",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""

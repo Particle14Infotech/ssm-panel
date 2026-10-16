@@ -52,7 +52,7 @@ export function validateEnvironment(env: Record<string, string | undefined> = pr
         missing.push("ALLOW_SIMULATED_PAYMENTS (Simulated payments in production requires ALLOW_SIMULATED_PAYMENTS=true)");
       } else {
         console.warn("\n=======================================================");
-        console.warn("⚠️  [Payments Guard] WARNING: Running with SIMULATED payments in PRODUCTION mode. No real money will be charged.");
+        console.warn("[Payments Guard] WARNING: Running with SIMULATED payments in PRODUCTION mode. No real money will be charged.");
         console.warn("=======================================================\n");
       }
     } else if (paymentProvider === "razorpay") {
@@ -66,7 +66,7 @@ export function validateEnvironment(env: Record<string, string | undefined> = pr
 
     if (missing.length > 0) {
       console.error("\n=======================================================");
-      console.error("❌ FATAL: PRODUCTION BOOT REFUSED - MISSING SECRETS");
+      console.error("FATAL: PRODUCTION BOOT REFUSED - MISSING SECRETS");
       console.error("=======================================================");
       missing.forEach((v) => console.error(`  - Missing or placeholder: ${v}`));
       console.error("\nSet valid production credentials in the environment.\n");

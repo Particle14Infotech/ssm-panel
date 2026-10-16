@@ -35,7 +35,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       }
     } catch (e: any) {
       this.isConnected = false;
-      console.warn("⚠️ Database connection skipped in sandbox mode:", e?.message);
+      console.warn("[PrismaService] Database connection skipped in sandbox mode:", e?.message);
     }
   }
 

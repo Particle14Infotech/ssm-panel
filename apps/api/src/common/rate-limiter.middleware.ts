@@ -124,7 +124,7 @@ export class RateLimiterMiddleware implements NestMiddleware {
       if (err instanceof HttpException) {
         next(err);
       } else {
-        console.warn("⚠️ Rate limiter degraded / failed-open:", err?.message || err);
+        console.warn("[RateLimiter] Rate limiter degraded / failed-open:", err?.message || err);
         next();
       }
     }

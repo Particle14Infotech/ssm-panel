@@ -76,7 +76,7 @@ export default function OrderDetailPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-light text-white">Order {order.id}</h1>
-              <span className="px-3 py-0.5 rounded-full text-xs font-mono font-bold bg-[#d8ec8d]/15 text-[#d8ec8d] border border-[#d8ec8d]/30">
+              <span className="px-3 py-0.5 rounded-full text-xs font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/30">
                 {order.status}
               </span>
             </div>
@@ -112,7 +112,7 @@ export default function OrderDetailPage() {
 
           <Link
             href={`/app/support?orderId=${order.id}`}
-            className="px-4 py-2 rounded-full bg-[#d8ec8d] text-[#171e00] text-xs font-bold hover:shadow-[0_0_20px_rgba(216,236,141,0.3)] transition-all flex items-center gap-1.5"
+            className="px-4 py-2 rounded-full bg-blue-600 text-white text-xs font-bold hover:shadow-[0_0_20px_rgba(37,99,235,0.25)] transition-all flex items-center gap-1.5"
           >
             <HelpCircle className="w-3.5 h-3.5" />
             <span>Open Ticket</span>
@@ -127,11 +127,11 @@ export default function OrderDetailPage() {
           <div>
             <div className="flex justify-between items-center text-xs font-mono mb-2">
               <span className="text-[#c7c8b6] uppercase tracking-wider">Fulfillment Progress</span>
-              <span className="text-[#d8ec8d] font-bold">{progressPercent}%</span>
+              <span className="text-blue-400 font-bold">{progressPercent}%</span>
             </div>
             <div className="w-full h-3 rounded-full bg-[#201f1f] overflow-hidden p-0.5 border border-white/5">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[#d8ec8d] to-[#bccf74] transition-all duration-700"
+                className="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-500 transition-all duration-700"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -149,7 +149,7 @@ export default function OrderDetailPage() {
             </div>
             <div className="bg-[#201f1f] p-4 rounded-2xl border border-white/5">
               <span className="text-[10px] uppercase font-mono text-[#c7c8b6] block">Total Charge</span>
-              <span className="text-xl font-light text-[#d8ec8d]">₹{order.charge.toFixed(2)}</span>
+              <span className="text-xl font-light text-blue-400">₹{order.charge.toFixed(2)}</span>
             </div>
             <div className="bg-[#201f1f] p-4 rounded-2xl border border-white/5">
               <span className="text-[10px] uppercase font-mono text-[#c7c8b6] block">Platform</span>
@@ -174,13 +174,13 @@ export default function OrderDetailPage() {
         {/* Right Column: Execution Timeline */}
         <div className="lg:col-span-5 glass-panel rounded-3xl p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
           <h2 className="text-base font-medium text-white mb-4 flex items-center gap-2">
-            <Activity className="w-4 h-4 text-[#d8ec8d]" />
+            <Activity className="w-4 h-4 text-blue-400" />
             <span>Audit & Event Timeline</span>
           </h2>
 
           <div className="space-y-4 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-white/10 pl-6">
             <div className="relative">
-              <span className="absolute -left-[19px] top-1 w-2.5 h-2.5 rounded-full bg-[#d8ec8d]" />
+              <span className="absolute -left-[19px] top-1 w-2.5 h-2.5 rounded-full bg-blue-500" />
               <div className="text-xs font-semibold text-white">Order Placed & Wallet Debited</div>
               <div className="text-[11px] font-mono text-[#c7c8b6]">{new Date(order.createdAt).toLocaleTimeString()}</div>
               <p className="text-xs text-[#c7c8b6] mt-0.5">₹{order.charge.toFixed(2)} debited via atomic double-entry ledger.</p>

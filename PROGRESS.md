@@ -14,25 +14,25 @@
 - [x] 0.4 Audit routes, components, 3D stack, bundle size, Lighthouse baseline -> `done`
 
 ### Phase 1: Content Cull (High-Signal, No Filler)
-- [ ] 1.1 Audit and prune landing/public content: remove fake testimonials, unverified stats, fake reviews -> `todo`
-- [ ] 1.2 Remove lorem ipsum, placeholder text, "coming soon" blocks, dead links -> `todo`
-- [ ] 1.3 Ensure lean public structure (Home, Services, Pricing, How It Works, FAQ, Contact, About, Legal) -> `todo`
-- [ ] 1.4 Refine copy: clear, honest, INR pricing, delivery expectations stated without hype words -> `todo`
+- [x] 1.1 Audit and prune landing/public content: remove fake testimonials, unverified stats, fake reviews -> `done`
+- [x] 1.2 Remove lorem ipsum, placeholder text, "coming soon" blocks, dead links -> `done`
+- [x] 1.3 Ensure lean public structure (Home, Services, Pricing, How It Works, FAQ, Contact, About, Legal) -> `done`
+- [x] 1.4 Refine copy: clear, honest, INR pricing, delivery expectations stated without hype words -> `done`
 
 ### Phase 2: Remove AI-Look Artifacts
-- [ ] 2.1 Unicode emoji sweep across all src/, content, UI text, metadata (Zero emoji rule) -> `todo`
-- [ ] 2.2 Add CI/lint check failing on emoji in `src/` -> `todo`
-- [ ] 2.3 Remove glow-beams, text-shadow glow, and neon gradient text from headings -> `todo`
-- [ ] 2.4 Unify tokens: 20-24px radius scale, 8px spacing grid, consistent border and shadow tokens -> `todo`
+- [x] 2.1 Unicode emoji sweep across all src/, content, UI text, metadata (Zero emoji rule) -> `done`
+- [x] 2.2 Add CI/lint check failing on emoji in `src/` -> `done`
+- [x] 2.3 Remove glow-beams, text-shadow glow, and neon gradient text from headings -> `done`
+- [x] 2.4 Unify tokens: 20-24px radius scale, 8px spacing grid, consistent border and shadow tokens -> `done`
 
 ### Phase 3: Real Logos (Platforms & Payment Methods)
-- [ ] 3.1 Build `<PlatformIcon platform size />` component with optimized local SVGs -> `todo`
-- [ ] 3.2 Build `<PaymentIcon method size />` component with optimized local SVGs -> `todo`
-- [ ] 3.3 Verify all supported platforms & payment methods in catalog & checkout -> `todo`
-- [ ] 3.4 Create `ASSETS.md` documenting logo inventory, sources, and license notes -> `todo`
+- [x] 3.1 Build `<PlatformIcon platform size />` component with optimized local SVGs -> `done`
+- [x] 3.2 Build `<PaymentIcon method size />` component with optimized local SVGs -> `done`
+- [x] 3.3 Verify all supported platforms & payment methods in catalog & checkout -> `done`
+- [x] 3.4 Create `ASSETS.md` documenting logo inventory, sources, and license notes -> `done`
 
 ### Phase 5: Responsive (Mobile-First) & Purposeful Scroll Animation
-- [ ] 5.1 Test and optimize layouts across viewports: 360px, 390px, 768px, 1024px, 1280px, 1536px -> `todo`
+- [ ] 5.1 Test and optimize layouts across viewports: 360px, 390px, 768px, 1024px, 1280px, 1536px -> `doing`
 - [ ] 5.2 Ensure tap targets >= 44px, body text >= 16px on mobile, responsive tables and modals -> `todo`
 - [ ] 5.3 Implement lightweight scroll reveals and section animations with `prefers-reduced-motion` support -> `todo`
 

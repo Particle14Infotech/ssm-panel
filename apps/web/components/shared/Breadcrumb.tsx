@@ -46,7 +46,7 @@ export function Breadcrumb({ items, className = "" }: BreadcrumbProps) {
                   <ChevronRight className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" />
                 )}
                 {isLast || !item.href ? (
-                  <span className="text-[#D8EC8D] font-semibold" aria-current="page">
+                  <span className="text-blue-400 font-medium" aria-current="page">
                     {item.label}
                   </span>
                 ) : (

@@ -3,16 +3,20 @@ import React from "react";
 import * as THREE from "three";
 
 export const BRAND = {
-  lime: "#D8EC8D",
-  accent: "#BEF264",
-  pink: "#FF4D8D",
-  purple: "#7B3FF2",
-  white: "#ffffff",
-  dark: "#0b0c10",
+  blue: "#2563EB",
+  bright: "#3B82F6",
+  glow: "#60A5FA",
+  white: "#FFFFFF",
+  dark: "#02040A",
+  // Legacy alias redirects for safety
+  lime: "#3B82F6",
+  accent: "#60A5FA",
+  pink: "#3B82F6",
+  purple: "#2563EB",
 } as const;
 
 export function Brand({
-  color = BRAND.pink,
+  color = BRAND.bright,
   glow = 0.2,
   roughness = 0.25,
   metalness = 0.1,

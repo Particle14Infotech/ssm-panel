@@ -17,22 +17,22 @@ export default function RefundPage() {
     <div className="w-full pt-32 pb-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="mb-10">
         <Breadcrumb items={[{ label: "Refund Policy", href: "/legal/refund" }]} />
-        <span className="text-xs font-mono uppercase tracking-widest text-[#d8ec8d]">
+        <span className="text-xs font-mono uppercase tracking-widest text-blue-400">
           Ledger Policy
         </span>
         <h1 className="font-heading text-4xl font-light text-white mt-2 mb-4">
           Refund Policy
         </h1>
-        <p className="text-xs font-mono text-[#c7c8b6]">Last Updated: January 2025</p>
+        <p className="text-xs font-mono text-slate-400">Last Updated: January 2025</p>
       </div>
 
-      <div className="glass-panel rounded-3xl p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] flex flex-col gap-6 text-sm text-[#c7c8b6] leading-relaxed">
+      <div className="glass-panel rounded-2xl p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] flex flex-col gap-6 text-sm text-slate-300 leading-relaxed">
         <div>
           <h2 className="text-base font-semibold text-white mb-2">1. Automated Partial Refunds</h2>
           <p>
             If an order is marked as <strong>Partial</strong> by a provider network, our background worker immediately calculates the exact remainder:
             <br />
-            <code className="inline-block mt-2 px-3 py-1 bg-[#201f1f] rounded-lg text-[#d8ec8d] font-mono text-xs">
+            <code className="inline-block mt-2 px-3 py-1 bg-[#02040A] border border-white/10 rounded-lg text-blue-400 font-mono text-xs">
               Refund Amount = Charge × (Remains / Initial Quantity)
             </code>
             <br />

@@ -66,8 +66,8 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT) || 4000;
   await app.listen(port, "0.0.0.0");
-  smmLogger.info(`🚀 SMM Panel API running on: http://0.0.0.0:${port}/api/v1`);
-  smmLogger.info(`📚 OpenAPI Spec available at: http://0.0.0.0:${port}/api/docs`);
+  smmLogger.info(`[API] SMM Panel API running on: http://0.0.0.0:${port}/api/v1`);
+  smmLogger.info(`[Docs] OpenAPI Spec available at: http://0.0.0.0:${port}/api/docs`);
 }
 
 bootstrap();

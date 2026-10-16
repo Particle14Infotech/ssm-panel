@@ -121,17 +121,17 @@ export function CrownMesh({
     return [...frontSpikes, ...backSpikes];
   }, []);
 
-  // Glass Material (translucent #DBEF90 with #243100 dark attenuation)
+  // Glass Material (translucent blue with deep dark attenuation)
   const glassMaterial = useMemo(() => {
     return new THREE.MeshPhysicalMaterial({
-      color: "#DBEF90",
-      emissive: "#243100",
+      color: "#60A5FA",
+      emissive: "#1E3A8A",
       emissiveIntensity: 0.35 * intensity,
       transmission: 0.82,
       thickness: 0.6,
       roughness: 0.18,
       ior: 1.35,
-      attenuationColor: new THREE.Color("#243100"),
+      attenuationColor: new THREE.Color("#070B16"),
       attenuationDistance: 1.2,
       transparent: true,
       opacity: 0.58 * presence,
@@ -141,10 +141,10 @@ export function CrownMesh({
     });
   }, [intensity, presence]);
 
-  // Glowing Edge Material (#DBEF90, toneMapped=false for crisp bloom)
+  // Glowing Edge Material (blue-300, toneMapped=false for crisp bloom)
   const edgeMaterial = useMemo(() => {
     return new THREE.LineBasicMaterial({
-      color: "#DBEF90",
+      color: "#93C5FD",
       transparent: true,
       opacity: 0.95 * presence * intensity,
       toneMapped: false,
@@ -154,8 +154,8 @@ export function CrownMesh({
   // Dark Inner Core Material
   const coreMaterial = useMemo(() => {
     return new THREE.MeshStandardMaterial({
-      color: "#0b1200",
-      emissive: "#243100",
+      color: "#02040A",
+      emissive: "#070B16",
       emissiveIntensity: 0.25,
       roughness: 0.6,
       flatShading: true,
@@ -166,7 +166,7 @@ export function CrownMesh({
   // Tip Glow Material
   const tipGlowMaterial = useMemo(() => {
     return new THREE.MeshBasicMaterial({
-      color: "#DBEF90",
+      color: "#60A5FA",
       toneMapped: false,
       transparent: true,
       opacity: 0.9 * presence,
@@ -219,8 +219,8 @@ export function CrownMesh({
       ))}
 
       {/* Radiant ambient glow from crown center */}
-      <pointLight color="#DBEF90" intensity={2.8 * presence * intensity} distance={8} position={[0, 0.2, 0]} />
-      <pointLight color="#243100" intensity={1.5 * presence} distance={4} position={[0, -0.5, 0]} />
+      <pointLight color="#3B82F6" intensity={2.8 * presence * intensity} distance={8} position={[0, 0.2, 0]} />
+      <pointLight color="#1E3A8A" intensity={1.5 * presence} distance={4} position={[0, -0.5, 0]} />
     </group>
   );
 }
@@ -233,7 +233,7 @@ export function CrownAtmosphere() {
   const rayMaterial1 = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
-        color: "#DBEF90",
+        color: "#3B82F6",
         transparent: true,
         opacity: 0.045,
         side: THREE.DoubleSide,
@@ -245,7 +245,7 @@ export function CrownAtmosphere() {
   const rayMaterial2 = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
-        color: "#243100",
+        color: "#1E3A8A",
         transparent: true,
         opacity: 0.08,
         side: THREE.DoubleSide,
@@ -260,7 +260,7 @@ export function CrownAtmosphere() {
       <mesh geometry={rayGeometry} material={rayMaterial1} rotation={[0, 0, Math.PI / 4.2]} position={[-1.2, 1, 0]} />
       <mesh geometry={rayGeometry} material={rayMaterial2} rotation={[0, 0, -Math.PI / 5]} position={[1.5, 0.5, 0]} />
       {/* Tiny floating dust particles */}
-      <Sparkles count={40} scale={[4.5, 4.5, 3]} size={2} speed={0.2} color="#DBEF90" opacity={0.45} />
+      <Sparkles count={40} scale={[4.5, 4.5, 3]} size={2} speed={0.2} color="#60A5FA" opacity={0.45} />
     </group>
   );
 }
@@ -277,7 +277,7 @@ export function CrownFallbackImage({ className = "" }: { className?: string }) {
         width={720}
         height={720}
         priority
-        className="w-full h-full object-contain mix-blend-screen opacity-90 drop-shadow-[0_0_50px_rgba(219,239,144,0.35)]"
+        className="w-full h-full object-contain mix-blend-screen opacity-90 drop-shadow-[0_0_50px_rgba(37,99,235,0.25)]"
       />
     </div>
   );

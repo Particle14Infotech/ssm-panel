@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  X,
 } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -319,8 +320,9 @@ export default function OrdersPage() {
               <button
                 onClick={() => setActiveModalOrder(null)}
                 className="p-1.5 rounded-full hover:bg-white/10 text-slate-400"
+                aria-label="Close details"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 

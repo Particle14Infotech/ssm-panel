@@ -18,7 +18,9 @@ import {
   FileText,
   Lock,
   ExternalLink,
+  X,
 } from "lucide-react";
+import { PaymentIcon } from "@/components/shared/PaymentIcon";
 
 export default function WalletPage() {
   const { user, transactions, initiateDeposit, refreshData } = useCustomer();
@@ -37,21 +39,18 @@ export default function WalletPage() {
       name: "UPI (Unified Payments Interface)",
       sub: "0% Transaction Fee • Instant (0–5s)",
       badge: "Fastest Clearance",
-      icon: "⚡",
     },
     {
       id: "CARD" as PaymentMethod,
       name: "Credit / Debit Card",
       sub: "Visa, Mastercard, RuPay (3D Secure)",
       badge: "Secure Vault",
-      icon: "💳",
     },
     {
       id: "NETBANKING" as PaymentMethod,
       name: "Netbanking / IMPS",
       sub: "All Major Indian Commercial Banks",
       badge: "Direct Settlement",
-      icon: "🏛️",
     },
   ];
 
@@ -191,7 +190,7 @@ export default function WalletPage() {
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-2xl">{gw.icon}</span>
+                      <PaymentIcon method={gw.id} size={24} />
                       <span
                         className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-semibold ${
                           isSelected ? "bg-blue-600 text-white" : "bg-white/10 text-slate-400"
@@ -467,8 +466,9 @@ export default function WalletPage() {
               <button
                 onClick={() => setInvoiceModalTxn(null)}
                 className="p-1.5 rounded-full hover:bg-white/10 text-slate-400"
+                aria-label="Close invoice"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 

@@ -329,14 +329,14 @@ export function SimulatedCheckoutModal({
                             onClick={() => setVpa("success@test")}
                             className="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25"
                           >
-                            ✓ success@test (Approved)
+                            Pass: success@test
                           </button>
                           <button
                             type="button"
                             onClick={() => setVpa("failure@test")}
                             className="px-2.5 py-1 rounded-lg bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25"
                           >
-                            ✕ failure@test (Declined)
+                            Fail: failure@test
                           </button>
                         </div>
                       </div>
@@ -401,7 +401,7 @@ export function SimulatedCheckoutModal({
                         }}
                         className="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
                       >
-                        ✓ Visa 4111 (Success)
+                        Pass: Visa 4111
                       </button>
                       <button
                         type="button"
@@ -412,7 +412,7 @@ export function SimulatedCheckoutModal({
                         }}
                         className="px-2 py-1 rounded-lg bg-rose-500/15 text-rose-300 border border-rose-500/30"
                       >
-                        ✕ Decline 0002 (Fail)
+                        Fail: Decline 0002
                       </button>
                     </div>
                   </div>

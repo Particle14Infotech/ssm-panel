@@ -17,7 +17,7 @@ export function SplitTextReveal({
   text,
   className = "",
   highlightWords = [],
-  highlightClass = "bg-gradient-to-r from-white via-[#ffd5e6] to-[#d8ec8d] bg-clip-text text-transparent font-semibold",
+  highlightClass = "text-[#3B82F6] font-normal",
   as = "h1",
 }: SplitTextRevealProps) {
   const shouldReduceMotion = useReducedMotion();

@@ -28,14 +28,14 @@ export class SMMWorkerEngine {
 
   async start() {
     this.isRunning = true;
-    logger.info("⚡ SMM PANEL Production Worker initializing (BullMQ Engine & Status Sync Daemon)");
+    logger.info("[Worker] SMM PANEL Production Worker initializing (BullMQ Engine & Status Sync Daemon)");
 
     // 1. Verify Database connectivity
     try {
       await prisma.$connect();
-      logger.info("✅ PostgreSQL database connected successfully");
+      logger.info("[Postgres] Database connected successfully");
     } catch (err: any) {
-      logger.fatal({ err: err.message }, "❌ FATAL: PostgreSQL unreachable on worker boot");
+      logger.fatal({ err: err.message }, "[FATAL] PostgreSQL unreachable on worker boot");
       process.exit(1);
     }
 
@@ -49,7 +49,7 @@ export class SMMWorkerEngine {
         this.bullWorker = new BullWorker(
           "smm-orders",
           async (job: Job) => {
-            logger.info({ jobId: job.id, jobName: job.name, data: job.data }, "📥 BullMQ order processing job");
+            logger.info({ jobId: job.id, jobName: job.name, data: job.data }, "[BullMQ] Processing order job");
             if (job.name === "dispatch-order" && job.data?.orderId) {
               await this.dispatchOrderToProvider(job.data.orderId);
             }
@@ -62,7 +62,7 @@ export class SMMWorkerEngine {
         );
 
         this.bullWorker.on("ready", () => {
-          logger.info("🚀 BullMQ worker ready on queue 'smm-orders'");
+          logger.info("[BullMQ] Worker ready on queue 'smm-orders'");
         });
 
         this.bullWorker.on("failed", (job, err) => {
@@ -124,9 +124,9 @@ export class SMMWorkerEngine {
 
       await this.redis.connect();
       await this.redis.ping();
-      logger.info("✅ Redis connected successfully for BullMQ & Caching");
+      logger.info("[Redis] Connected successfully for BullMQ & Caching");
     } catch (err: any) {
-      logger.warn({ err: err.message }, "⚠️ Redis unreachable on worker boot. Running in local DB polling mode.");
+      logger.warn({ err: err.message }, "[Redis] Unreachable on worker boot. Running in local DB polling mode.");
       this.redis = null;
     }
   }
@@ -650,7 +650,7 @@ export class SMMWorkerEngine {
     if (this.bullWorker) await this.bullWorker.close();
     if (this.redis) await this.redis.quit();
     await prisma.$disconnect();
-    logger.info("🛑 SMM PANEL Production Worker shutdown gracefully");
+    logger.info("[Worker] SMM PANEL Production Worker shutdown gracefully");
   }
 }
 

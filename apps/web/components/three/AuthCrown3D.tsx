@@ -125,8 +125,8 @@ export function AuthCrown3D({
       onMouseLeave={handleMouseLeave}
       className={`relative select-none flex items-center justify-center ${className}`}
     >
-      {/* Radial soft emerald-lime atmospheric backlight */}
-      <div className="absolute inset-0 bg-[#243100]/40 blur-[80px] rounded-full pointer-events-none -z-10" />
+      {/* Radial soft blue atmospheric backlight */}
+      <div className="absolute inset-0 bg-blue-600/15 blur-[80px] rounded-full pointer-events-none -z-10" />
 
       {shouldUseFallback ? (
         <div className="w-full h-full flex items-center justify-center p-4">
@@ -136,7 +136,7 @@ export function AuthCrown3D({
             width={400}
             height={400}
             priority
-            className="w-full h-full object-contain mix-blend-screen drop-shadow-[0_0_40px_rgba(219,239,144,0.3)] pointer-events-none"
+            className="w-full h-full object-contain mix-blend-screen drop-shadow-[0_0_40px_rgba(37,99,235,0.25)] pointer-events-none"
           />
         </div>
       ) : (
@@ -154,14 +154,14 @@ export function AuthCrown3D({
         >
           {/* Studio specular rim & fill lighting */}
           <ambientLight intensity={0.65} color="#ffffff" />
-          {/* Key bright lime light from top-right */}
-          <directionalLight position={[6, 9, 6]} intensity={2.2} color="#f0fec2" />
+          {/* Key bright light from top-right */}
+          <directionalLight position={[6, 9, 6]} intensity={2.2} color="#f0f9ff" />
           {/* Secondary fill light from front-left */}
-          <directionalLight position={[-6, 4, 3]} intensity={1.4} color="#bef264" />
+          <directionalLight position={[-6, 4, 3]} intensity={1.4} color="#93c5fd" />
           {/* Sharp rim backlight for glass edge dispersion */}
-          <directionalLight position={[0, -5, -4]} intensity={2.0} color="#3c5500" />
-          {/* Subtle warm underglow */}
-          <pointLight position={[0, -2, 2]} intensity={2.5} color="#202c00" />
+          <directionalLight position={[0, -5, -4]} intensity={2.0} color="#1d4ed8" />
+          {/* Subtle cool underglow */}
+          <pointLight position={[0, -2, 2]} intensity={2.5} color="#1e3a8a" />
 
           <React.Suspense fallback={null}>
             <AuthCrownRig mousePos={mousePos} />

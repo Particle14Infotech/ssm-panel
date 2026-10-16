@@ -97,6 +97,9 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
+      - name: Emoji Banned-Pattern Scan
+        run: pnpm check:emoji
+
       - name: Lint
         run: pnpm turbo run lint --continue
 

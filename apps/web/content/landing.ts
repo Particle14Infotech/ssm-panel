@@ -156,16 +156,16 @@ export interface LandingContent {
 
 export const landingContent: LandingContent = {
   brand: {
-    name: "SMM PANEL",
+    name: "SMM Panel",
     tagline: "Social Media Marketing Platform",
     badge: "Platform Active",
     version: "v4.9 Stable",
   },
   navigation: {
     links: [
-      { label: "Work", href: "/work" },
       { label: "Services", href: "/services" },
       { label: "Pricing", href: "/pricing" },
+      { label: "How It Works", href: "/work" },
       { label: "FAQ", href: "/faq" },
       { label: "Contact", href: "/contact" },
     ],
@@ -175,10 +175,10 @@ export const landingContent: LandingContent = {
     },
   },
   hero: {
-    badge: "✦ Platform Online",
+    badge: "Platform Online",
     headline: "Order social growth services. Track every order.",
     support:
-      "One wallet, a clear catalog, live order status. Fulfilled through authorized provider APIs with straightforward delivery tracking.",
+      "One wallet in INR, an explicit service catalog, live order status. Dispatched through verified provider APIs with double-entry ledger protection.",
     primaryCta: {
       label: "Create an account",
       href: "/register",
@@ -190,18 +190,18 @@ export const landingContent: LandingContent = {
     stats: [
       {
         label: "Wallet Balance",
-        value: "Instant Credit",
-        sub: "Direct payment methods",
+        value: "Direct Credit",
+        sub: "Instant INR deposits",
       },
       {
         label: "Catalog Services",
-        value: "500+ Options",
-        sub: "Verified provider routing",
+        value: "Live Routing",
+        sub: "Real provider rates",
       },
       {
         label: "Order Tracking",
         value: "Live Status",
-        sub: "Clear progress updates",
+        sub: "Automated queue updates",
       },
     ],
     telemetry: {
@@ -212,26 +212,9 @@ export const landingContent: LandingContent = {
     },
   },
   socialProof: {
-    headline: "Built for social creators, marketing teams, and agencies.",
+    headline: "Engineered for social growth agencies, marketing teams, and content creators.",
     metrics: [],
-    testimonials: [
-      {
-        quote:
-          "Automatic partial refunds for incomplete quantities save our support team hours every week. Clear balance deductions and steady delivery.",
-        author: "Marcus Vance",
-        role: "Growth Director",
-        company: "Vance Media Agency",
-        metric: "Agency Partner",
-      },
-      {
-        quote:
-          "Straightforward pricing per 1,000 units with instant ledger credits. Clean API documentation and reliable dispatch.",
-        author: "Elena Rostova",
-        role: "Head of Operations",
-        company: "OmniGrowth Labs",
-        metric: "API Reseller",
-      },
-    ],
+    testimonials: [],
   },
   benefits: {
     badge: "Platform Standards",
@@ -495,9 +478,9 @@ export const landingContent: LandingContent = {
     body: "Instagram, YouTube, Telegram, TikTok, Facebook and X are trademarks of their respective owners. This service is not affiliated with or endorsed by them. All marketing services are fulfilled exclusively via third-party provider APIs.",
   },
   footer: {
-    copyright: `© ${new Date().getFullYear()} SMM Architecture. All rights reserved.`,
+    copyright: `© ${new Date().getFullYear()} SMM Panel. All rights reserved.`,
     description:
-      "Social growth management infrastructure. Provider synchronization, ledger accounting, and transparent order tracking. Instagram, YouTube, Telegram, TikTok, Facebook and X are trademarks of their respective owners. This service is not affiliated with or endorsed by them.",
+      "Enterprise social growth infrastructure. Automated provider synchronization, double-entry ledger accounting, and live order tracking. Instagram, YouTube, Telegram, TikTok, Facebook and X are trademarks of their respective owners. This service is not affiliated with or endorsed by them.",
     columns: [
       {
         title: "Platform",
@@ -505,6 +488,7 @@ export const landingContent: LandingContent = {
           { label: "Live Catalog", href: "/services" },
           { label: "Pricing & Bonuses", href: "/pricing" },
           { label: "How It Works", href: "/work" },
+          { label: "About Platform", href: "/about" },
           { label: "Reseller API", href: "/app/api" },
         ],
       },
@@ -513,7 +497,6 @@ export const landingContent: LandingContent = {
         links: [
           { label: "Knowledge Base & FAQ", href: "/faq" },
           { label: "Contact Us", href: "/contact" },
-          { label: "System Health", href: "/health" },
         ],
       },
       {

@@ -13,6 +13,7 @@ import {
   Key,
   Globe,
   Database,
+  X,
 } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 
@@ -98,7 +99,13 @@ export default function AdminProvidersPage() {
               <CheckCircle2 className="w-4 h-4 shrink-0 text-blue-400" />
               <span>{importNotice}</span>
             </div>
-            <button onClick={() => setImportNotice(null)} className="text-blue-200 hover:text-white">✕</button>
+            <button
+              onClick={() => setImportNotice(null)}
+              className="text-blue-200 hover:text-white p-1 rounded-md"
+              aria-label="Dismiss notice"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         )}
 
@@ -115,7 +122,7 @@ export default function AdminProvidersPage() {
                 onClick={() => setIsAdding(false)}
                 className="text-xs text-slate-400 hover:text-white"
               >
-                ✕ Cancel
+                Cancel
               </button>
             </div>
 

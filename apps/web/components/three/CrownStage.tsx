@@ -367,7 +367,7 @@ export function CrownStage() {
         data-testid="crown-stage-fallback"
       >
         {/* Ambient subtle glow */}
-        <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-[#243100]/25 blur-[140px] rounded-full pointer-events-none" />
+        <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-blue-600/15 blur-[140px] rounded-full pointer-events-none" />
 
         {/* Mobile/Reduced-motion static image shown once in Hero only without rectangular box */}
         <div
@@ -396,8 +396,8 @@ export function CrownStage() {
       aria-hidden="true"
       data-testid="crown-stage-container"
     >
-      {/* Delicate dark olive haze behind crown */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[#243100]/20 blur-[160px] rounded-full pointer-events-none -z-10" />
+      {/* Delicate cool blue haze behind crown */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-blue-600/15 blur-[160px] rounded-full pointer-events-none -z-10" />
 
       <Canvas
         dpr={[1, 2]}
@@ -415,10 +415,10 @@ export function CrownStage() {
       >
         {/* Ambient & directional lighting with studio glass highlights */}
         <ambientLight intensity={0.7} color="#ffffff" />
-        <directionalLight position={[6, 9, 6]} intensity={2.0} color="#f0fec2" />
-        <directionalLight position={[-6, 4, 3]} intensity={1.3} color="#bef264" />
-        <pointLight position={[0, -2, 2]} intensity={2.0} color="#243100" />
-        <pointLight position={[-4, 4, -2]} intensity={1.4} color="#BEF264" />
+        <directionalLight position={[6, 9, 6]} intensity={2.0} color="#f0f9ff" />
+        <directionalLight position={[-6, 4, 3]} intensity={1.3} color="#93c5fd" />
+        <pointLight position={[0, -2, 2]} intensity={2.0} color="#1d4ed8" />
+        <pointLight position={[-4, 4, -2]} intensity={1.4} color="#60a5fa" />
 
         {/* Floating generic margin glyphs */}
         <FloatingMarginGlyphs isMobile={isMobile} />
