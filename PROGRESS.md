@@ -37,24 +37,24 @@
 - [x] 5.3 Implement lightweight scroll reveals and section animations with `prefers-reduced-motion` support -> `done`
 
 ### Phase 6: Performance & 3D Optimization
-- [ ] 6.1 Lazy-load 3D canvas / mascot / crown stage using dynamic imports with static poster fallbacks -> `doing`
-- [ ] 6.2 Optimize font loading (Poppins Latin subset, swap display) and image assets (Next Image, AVIF/WebP) -> `todo`
-- [ ] 6.3 Eliminate render-blocking resources, prune dead CSS/chunks, verify bundle sizes -> `todo`
-- [ ] 6.4 Produce `PERFORMANCE.md` with baseline vs optimized Lighthouse metrics -> `todo`
+- [x] 6.1 Lazy-load 3D canvas / mascot / crown stage using dynamic imports with static poster fallbacks -> `done`
+- [x] 6.2 Optimize font loading (Poppins Latin subset, swap display) and image assets (Next Image, AVIF/WebP) -> `done`
+- [x] 6.3 Eliminate render-blocking resources, prune dead CSS/chunks, verify bundle sizes -> `done`
+- [x] 6.4 Produce `PERFORMANCE.md` with baseline vs optimized Lighthouse metrics -> `done`
 
 ### Phase 4: Glassmorphism UI Consistency
-- [ ] 4.1 Apply exact recipe across public, auth, customer, and admin pages -> `todo`
-- [ ] 4.2 Standardize loading skeletons, empty states, error states, and form focus rings -> `todo`
-- [ ] 4.3 Verify tabular-nums, en-IN grouping, and currency formatting on all monetary readouts -> `todo`
+- [x] 4.1 Apply exact recipe across public, auth, customer, and admin pages -> `done`
+- [x] 4.2 Standardize loading skeletons, empty states, error states, and form focus rings -> `done`
+- [x] 4.3 Verify tabular-nums, en-IN grouping, and currency formatting on all monetary readouts -> `done`
 
 ### Phase 7: SEO & Technical Metadata
-- [ ] 7.1 Page-level unique titles (<= 60 chars), meta descriptions (<= 155 chars), canonical URLs -> `todo`
-- [ ] 7.2 Structured data (JSON-LD: Organization, WebSite, FAQPage) -> `todo`
-- [ ] 7.3 Generate dynamic `sitemap.ts` and `robots.ts` with noindex on auth/dashboard/admin -> `todo`
-- [ ] 7.4 Dedicated high-value platform service landing pages (Instagram, YouTube, Telegram) -> `todo`
+- [x] 7.1 Page-level unique titles (<= 60 chars), meta descriptions (<= 155 chars), canonical URLs -> `done`
+- [x] 7.2 Structured data (JSON-LD: Organization, WebSite, FAQPage, Service) -> `done`
+- [x] 7.3 Generate dynamic `sitemap.ts` and `robots.ts` with noindex on auth/dashboard/admin -> `done`
+- [x] 7.4 Dedicated high-value platform service landing pages (Instagram, YouTube, Telegram, TikTok) -> `done`
 
 ### Phase 8: QA Gate & Strict Banned-Pattern Scan
-- [ ] 8.1 TypeScript typecheck, ESLint, unit/integration test suite execution -> `todo`
+- [ ] 8.1 TypeScript typecheck, ESLint, unit/integration test suite execution -> `doing`
 - [ ] 8.2 Banned pattern scan: zero emoji, zero lorem ipsum, zero old brand names, zero purple/pink -> `todo`
 - [ ] 8.3 Playwright crawl & axe accessibility verification -> `todo`
 - [ ] 8.4 Generate `QA_REPORT.md` -> `todo`

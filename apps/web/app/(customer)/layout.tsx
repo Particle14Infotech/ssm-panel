@@ -5,6 +5,10 @@ import { CustomerLayoutWrapper } from "@/components/customer/CustomerLayoutWrapp
 export const metadata: Metadata = {
   title: "Dashboard | SMM PANEL",
   description: "Next-generation high-frequency social media marketing command center and real-time execution ledger.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
