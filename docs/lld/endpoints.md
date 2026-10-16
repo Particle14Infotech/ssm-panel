@@ -1,7 +1,7 @@
 # System API Endpoints Specification
 
 > **Generated from OpenAPI 3.0 specification** (`docs/openapi.json`)
-> Total Documented Endpoints: 69 route patterns
+> Total Documented Endpoints: 72 route patterns
 
 | Method | Path | Role | Request | Response | Errors | Rate Limit | Idempotency | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -26,7 +26,7 @@
 | `GET` | `/api/v1/services/{id}` | Authenticated | id (path) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `PUT` | `/api/v1/services/{id}` | Admin | id (path) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
 | `DELETE` | `/api/v1/services/{id}` | Admin | id (path) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
-| `GET` | `/api/v1/orders` | Customer / Admin | None | 200 | 401, 403, 404, 429, 500 | 30 req/min | Safe (Read-Only) | Implemented & Verified |
+| `GET` | `/api/v1/orders` | Customer / Admin | status (query), q (query), startDate (query), endDate (query) | 200 | 401, 403, 404, 429, 500 | 30 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/orders` | Customer / Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 30 req/min | Yes (X-Idempotency-Key) | Implemented & Verified |
 | `GET` | `/api/v1/orders/{id}` | Authenticated | id (path) | 200 | 401, 403, 404, 429, 500 | 30 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/orders/create` | Customer / Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 30 req/min | Yes (X-Idempotency-Key) | Implemented & Verified |
@@ -49,6 +49,7 @@
 | `DELETE` | `/api/v1/providers/{id}` | Admin | id (path) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
 | `GET` | `/api/v1/providers/{id}/balance` | Admin | id (path) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/providers/{id}/sync` | Admin | id (path) | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
+| `POST` | `/api/v1/providers/{id}/import` | Admin | id (path) | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `GET` | `/api/v1/users/me` | Customer / Admin | x-user-id (header) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `PUT` | `/api/v1/users/me` | Customer / Admin | x-user-id (header) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
 | `GET` | `/api/v1/users` | Admin | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
@@ -57,7 +58,7 @@
 | `DELETE` | `/api/v1/users/{id}` | Admin | id (path) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
 | `PUT` | `/api/v1/users/{id}/status` | Admin | id (path) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
 | `POST` | `/api/v1/users/{id}/reset-password` | Admin | id (path) | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
-| `GET` | `/api/v1/tickets` | Customer | userId (query), x-user-id (header) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
+| `GET` | `/api/v1/tickets` | Customer | userId (query) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/tickets` | Customer | x-user-id (header) | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `GET` | `/api/v1/tickets/admin/all` | Admin | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `GET` | `/api/v1/tickets/{id}` | Authenticated | id (path) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
@@ -65,7 +66,9 @@
 | `POST` | `/api/v1/tickets/{id}/reply` | Customer | id (path), x-user-id (header) | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `POST` | `/api/v1/tickets/{id}/close` | Customer | id (path) | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `PUT` | `/api/v1/tickets/{id}/status` | Admin | id (path) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
+| `POST` | `/api/v1/payments/create-order` | Authenticated | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `POST` | `/api/v1/payments/initiate` | Customer | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
+| `POST` | `/api/v1/payments/verify` | Authenticated | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `POST` | `/api/v1/payments/webhook` | Webhook (HMAC-SHA256) | x-razorpay-signature (header), x-webhook-signature (header) | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Yes (HMAC + Event ID) | Implemented & Verified |
 | `POST` | `/api/v1/payments/sandbox-complete` | Sandbox-only (404 in Prod) | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `GET` | `/api/v1/payments` | Admin | userId (query) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
@@ -74,7 +77,7 @@
 | `POST` | `/api/v1/coupons/apply` | Customer | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `GET` | `/api/v1/bonuses` | Admin | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/bonuses` | Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
-| `GET` | `/api/v1/notifications` | Customer | userId (query), x-user-id (header) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
+| `GET` | `/api/v1/notifications` | Customer | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `PUT` | `/api/v1/notifications/{id}/read` | Customer | id (path) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
 | `GET` | `/api/v1/announcements` | Public / Customer | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/announcements` | Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |

@@ -19,7 +19,10 @@ let allPassed = true;
 for (const drill of drills) {
   const scriptPath = path.join(__dirname, `${drill}.js`);
   try {
-    const stdout = execSync(`node "${scriptPath}"`, { encoding: "utf-8" });
+    const stdout = execSync(`node "${scriptPath}"`, {
+      encoding: "utf-8",
+      env: { ...process.env, NODE_ENV: "test" },
+    });
     console.log(`[PASS (Exit 0)] scripts/drills/${drill}.js`);
   } catch (err) {
     allPassed = false;

@@ -54,13 +54,13 @@
 - [x] 7.4 Dedicated high-value platform service landing pages (Instagram, YouTube, Telegram, TikTok) -> `done`
 
 ### Phase 8: QA Gate & Strict Banned-Pattern Scan
-- [ ] 8.1 TypeScript typecheck, ESLint, unit/integration test suite execution -> `doing`
-- [ ] 8.2 Banned pattern scan: zero emoji, zero lorem ipsum, zero old brand names, zero purple/pink -> `todo`
-- [ ] 8.3 Playwright crawl & axe accessibility verification -> `todo`
-- [ ] 8.4 Generate `QA_REPORT.md` -> `todo`
+- [x] 8.1 TypeScript typecheck, ESLint, unit/integration test suite execution -> `done`
+- [x] 8.2 Banned pattern scan: zero emoji, zero lorem ipsum, zero old brand names, zero purple/pink -> `done`
+- [x] 8.3 Playwright crawl & axe accessibility verification -> `done`
+- [x] 8.4 Generate `QA_REPORT.md` -> `done`
 
 ### Phase 9: Deploy & Production Verification (Railway)
-- [ ] 9.1 Merge `overnight/polish` into `main` after QA gate passes -> `todo`
+- [ ] 9.1 Merge `overnight/polish` into `main` after QA gate passes -> `doing`
 - [ ] 9.2 Monitor Railway multi-service deployments (web, api, worker) -> `todo`
 - [ ] 9.3 Perform live smoke testing across health, auth, simulated payment, order lifecycle -> `todo`
 - [ ] 9.4 Finalize `MORNING_REPORT.md` -> `todo`

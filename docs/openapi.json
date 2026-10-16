@@ -473,7 +473,40 @@
       "get": {
         "operationId": "OrdersController_findAll",
         "summary": "Get User Orders Stream",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -941,6 +974,30 @@
         ]
       }
     },
+    "/api/v1/providers/{id}/import": {
+      "post": {
+        "operationId": "ProvidersController_importServices",
+        "summary": "Import services from upstream provider with margin",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Provider Node Sync"
+        ]
+      }
+    },
     "/api/v1/users/me": {
       "get": {
         "operationId": "UsersController_getProfile",
@@ -1130,14 +1187,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "x-user-id",
-            "required": true,
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -1315,10 +1364,40 @@
         ]
       }
     },
+    "/api/v1/payments/create-order": {
+      "post": {
+        "operationId": "PaymentsController_createOrder",
+        "summary": "Create Payment Order (paise/rupees)",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments & Webhooks"
+        ]
+      }
+    },
     "/api/v1/payments/initiate": {
       "post": {
         "operationId": "PaymentsController_initiate",
-        "summary": "Initiate Liquidity Deposit Session",
+        "summary": "Initiate Liquidity Deposit Session (Canonical/Legacy)",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Payments & Webhooks"
+        ]
+      }
+    },
+    "/api/v1/payments/verify": {
+      "post": {
+        "operationId": "PaymentsController_verifyPayment",
+        "summary": "Server-Side Verify Payment and Credit Wallet",
         "parameters": [],
         "responses": {
           "201": {
@@ -1365,7 +1444,7 @@
     "/api/v1/payments/sandbox-complete": {
       "post": {
         "operationId": "PaymentsController_sandboxComplete",
-        "summary": "Simulate Payment Completion (Sandbox Only, Disabled in Production)",
+        "summary": "Simulate Payment Completion",
         "parameters": [],
         "responses": {
           "201": {
@@ -1476,24 +1555,7 @@
       "get": {
         "operationId": "NotificationsController_findAll",
         "summary": "Get User Notifications",
-        "parameters": [
-          {
-            "name": "userId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "x-user-id",
-            "required": true,
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": ""

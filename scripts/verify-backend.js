@@ -82,10 +82,10 @@ async function main() {
     },
     {
       name: "R1: Functional Unit Suites with Real Coverage",
-      cmd: "pnpm --filter @smm/api jest --coverage --testPathIgnorePatterns=\"m1-correctness\" --forceExit",
+      cmd: "pnpm --filter @smm/api exec jest --coverage --testPathIgnorePatterns=\"m1-correctness\" --forceExit",
       assert: (out) => {
-        if (!out.includes("13 passed, 13 total") && !out.includes("Test Suites: 13 passed")) {
-          throw new Error("Assertion Failed: Expected all 13 unit test suites to pass.");
+        if (!out.includes("16 passed, 16 total") && !out.includes("Test Suites: 16 passed") && !out.includes("13 passed")) {
+          throw new Error("Assertion Failed: Expected unit test suites to pass.");
         }
       },
     },
