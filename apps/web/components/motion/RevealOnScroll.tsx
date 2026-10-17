@@ -20,22 +20,24 @@ export function RevealOnScroll({
 }: RevealOnScrollProps) {
   const { reduced } = useMotionPreference();
 
-  if (reduced) {
-    return (
-      <div data-reveal className={className}>
-        {children}
-      </div>
-    );
-  }
-
   return (
     <motion.div
       data-reveal
       variants={stagger ? staggerContainer : fadeUpVariant}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ delay }}
+      initial={{
+        opacity: 0,
+        y: reduced ? 0 : 24,
+      }}
+      whileInView={{
+        opacity: 1,
+        y: 0,
+      }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{
+        duration: reduced ? 0.2 : 0.7,
+        ease: reduced ? "easeOut" : [0.22, 1, 0.36, 1],
+        delay,
+      }}
       className={className}
     >
       {children}

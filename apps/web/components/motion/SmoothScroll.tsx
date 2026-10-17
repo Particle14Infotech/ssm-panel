@@ -2,63 +2,87 @@
 
 import React, { useEffect, useRef } from "react";
 import Lenis from "lenis";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useMotionPreference } from "./useMotionPreference";
-
-gsap.registerPlugin(ScrollTrigger);
+import { useReducedMotion } from "framer-motion";
 
 export function SmoothScroll({ children }: { children: React.ReactNode }) {
   const lenisRef = useRef<Lenis | null>(null);
-  const { reduced } = useMotionPreference();
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
-    if (reduced) return;
+    // If reduced motion is requested, maintain standard native browser scrolling
+    if (shouldReduceMotion) return;
+
+    // Detect touch-only device (disable smooth virtual scroll on touch to preserve native fling & gestures)
+    const isTouchOnly =
+      typeof window !== "undefined" &&
+      ("ontouchstart" in window || navigator.maxTouchPoints > 0) &&
+      window.innerWidth < 1024;
+
+    if (isTouchOnly) return;
 
     const lenis = new Lenis({
-      duration: 0.7,
+      duration: 1.1,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: "vertical",
       gestureOrientation: "vertical",
       smoothWheel: true,
-      touchMultiplier: 1.2,
+      syncTouch: false, // native touch scrolling
+      touchMultiplier: 1.0,
     });
 
     lenisRef.current = lenis;
 
-    // Sync Lenis with GSAP ScrollTrigger
-    lenis.on("scroll", ScrollTrigger.update);
+    // RequestAnimationFrame loop
+    let rafId: number;
+    function raf(time: number) {
+      lenis.raf(time);
+      rafId = requestAnimationFrame(raf);
+    }
+    rafId = requestAnimationFrame(raf);
 
-    const tickerCb = (time: number) => {
-      lenis.raf(time * 1000);
-    };
-
-    gsap.ticker.add(tickerCb);
-    gsap.ticker.lagSmoothing(0);
-
-    // Anchor link handling
+    // Keep anchor links working smoothly with sticky nav offset
     const handleAnchorClick = (e: MouseEvent) => {
       const target = (e.target as HTMLElement)?.closest("a");
       if (!target) return;
       const href = target.getAttribute("href");
       if (href && href.startsWith("#") && href.length > 1) {
-        e.preventDefault();
-        const element = document.querySelector(href);
-        if (element) {
-          lenis.scrollTo(element as HTMLElement, { offset: -80 });
+        const elem = document.querySelector(href);
+        if (elem) {
+          e.preventDefault();
+          lenis.scrollTo(elem as HTMLElement, { offset: -90 });
         }
       }
     };
-
     document.addEventListener("click", handleAnchorClick);
 
+    // Stop Lenis while modals/drawers are open (observing body overflow or modal elements)
+    const observer = new MutationObserver(() => {
+      const isModalOpen =
+        document.body.style.overflow === "hidden" ||
+        document.querySelector('[role="dialog"]') !== null ||
+        document.querySelector("[data-state='open']") !== null;
+
+      if (isModalOpen) {
+        lenis.stop();
+      } else {
+        lenis.start();
+      }
+    });
+
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["style", "class"],
+      subtree: true,
+    });
+
     return () => {
+      cancelAnimationFrame(rafId);
       document.removeEventListener("click", handleAnchorClick);
-      gsap.ticker.remove(tickerCb);
+      observer.disconnect();
       lenis.destroy();
       lenisRef.current = null;
     };
-  }, [reduced]);
+  }, [shouldReduceMotion]);
 
   return <>{children}</>;
 }

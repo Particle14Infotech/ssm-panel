@@ -140,6 +140,11 @@ export default function RootLayout({
     <html lang="en-IN" className={`dark ${poppins.variable}`}>
       <head>
         <script
+          dangerouslySetInnerHTML={{
+            __html: "document.documentElement.classList.add('js');",
+          }}
+        />
+        <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
