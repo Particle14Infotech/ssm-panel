@@ -59,8 +59,8 @@ export default function AdminTicketsPage() {
         const matchesOrderId = t.orderId ? t.orderId.toLowerCase().includes(q) : false;
         const matchesUserId = t.userId.toLowerCase().includes(q);
         const matchedUser = users.find((u) => u.id === t.userId);
-        const matchesUserName = matchedUser ? matchedUser.name.toLowerCase().includes(q) : false;
-        const matchesUserEmail = matchedUser ? matchedUser.email.toLowerCase().includes(q) : false;
+        const matchesUserName = (matchedUser?.name || (t as any).userName || "").toLowerCase().includes(q);
+        const matchesUserEmail = (matchedUser?.email || (t as any).userEmail || "").toLowerCase().includes(q);
 
         return matchesId || matchesSubject || matchesOrderId || matchesUserId || matchesUserName || matchesUserEmail;
       }
@@ -78,8 +78,8 @@ export default function AdminTicketsPage() {
     if (!activeTicket) return null;
     return users.find((u) => u.id === activeTicket.userId) || {
       id: activeTicket.userId,
-      name: "Customer Account",
-      email: `${activeTicket.userId.substring(0, 8)}@customer.internal`,
+      name: (activeTicket as any).userName || "Customer Account",
+      email: (activeTicket as any).userEmail || `${activeTicket.userId.substring(0, 8)}@customer.internal`,
       balance: 0,
       tier: "STARTER" as const,
     };
@@ -308,7 +308,7 @@ export default function AdminTicketsPage() {
                       <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-white/5">
                         <div className="flex items-center gap-1.5">
                           <User className="w-3 h-3 text-slate-400" />
-                          <span className="text-slate-300">{customer?.name || t.userId}</span>
+                          <span className="text-slate-300">{customer?.name || (t as any).userName || t.userId}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="w-3 h-3 text-slate-400" />

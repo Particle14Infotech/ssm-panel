@@ -62,7 +62,10 @@ export class TicketsService {
       const where = requesterRole === "ADMIN" ? (userId ? { userId } : {}) : (userId ? { userId } : { userId: "none" });
       return await this.prisma.ticket.findMany({
         where,
-        include: { messages: true },
+        include: {
+          messages: true,
+          user: { select: { id: true, name: true, email: true } },
+        },
         orderBy: { updatedAt: "desc" },
       });
     } catch {

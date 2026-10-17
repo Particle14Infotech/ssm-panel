@@ -100,49 +100,53 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
         token ? fetch(`${API_BASE}/tickets/admin/all`, { headers: authHeaders, cache: "no-store" }).catch(() => null) : null,
       ]);
 
+      let mappedOrders: OrderItem[] = [];
+      if (ordersRes && ordersRes.ok) {
+        const rawOrders = await ordersRes.json();
+        if (Array.isArray(rawOrders)) {
+          mappedOrders = rawOrders.map((o: any) => ({
+            id: o.id,
+            userId: o.userId,
+            userEmail: o.user?.email || o.userId,
+            serviceId: o.serviceId,
+            serviceName: o.service?.name || "Service Item",
+            platform: (o.service?.platform || "general").toLowerCase(),
+            target: o.target,
+            quantity: o.quantity,
+            charge: Number(o.charge),
+            startCount: o.startCount ?? 0,
+            remains: o.remains ?? 0,
+            status: o.status,
+            providerOrderId: o.providerOrderId || null,
+            providerName: o.provider?.name || null,
+            createdAt: o.createdAt,
+            updatedAt: o.updatedAt,
+            refillable: o.service?.refillable ?? false,
+            cancellable: o.service?.cancellable ?? false,
+          }));
+          setOrders(mappedOrders);
+        }
+      }
+
       if (usersRes && usersRes.ok) {
         const rawUsers = await usersRes.json();
         if (Array.isArray(rawUsers)) {
           setUsers(
-            rawUsers.map((u: any) => ({
-              id: u.id,
-              name: u.name || "Customer",
-              email: u.email,
-              balance: u.wallet?.balance ? Number(u.wallet.balance) : 0,
-              totalSpent: 0,
-              totalOrders: 0,
-              tier: (u.tier || "STARTER") as "STARTER" | "GROWTH" | "PRO_SCALE" | "ENTERPRISE",
-              status: u.isDeleted ? "SUSPENDED" : "ACTIVE",
-              createdAt: u.createdAt || new Date().toISOString(),
-            }))
-          );
-        }
-      }
-
-      if (ordersRes && ordersRes.ok) {
-        const rawOrders = await ordersRes.json();
-        if (Array.isArray(rawOrders)) {
-          setOrders(
-            rawOrders.map((o: any) => ({
-              id: o.id,
-              userId: o.userId,
-              userEmail: o.user?.email || o.userId,
-              serviceId: o.serviceId,
-              serviceName: o.service?.name || "Service Item",
-              platform: (o.service?.platform || "general").toLowerCase(),
-              target: o.target,
-              quantity: o.quantity,
-              charge: Number(o.charge),
-              startCount: o.startCount ?? 0,
-              remains: o.remains ?? 0,
-              status: o.status,
-              providerOrderId: o.providerOrderId || null,
-              providerName: o.provider?.name || null,
-              createdAt: o.createdAt,
-              updatedAt: o.updatedAt,
-              refillable: o.service?.refillable ?? false,
-              cancellable: o.service?.cancellable ?? false,
-            }))
+            rawUsers.map((u: any) => {
+              const userOrders = mappedOrders.filter((o) => o.userId === u.id);
+              const totalSpent = userOrders.reduce((sum, o) => sum + (Number(o.charge) || 0), 0);
+              return {
+                id: u.id,
+                name: u.name || "Customer",
+                email: u.email,
+                balance: u.balance !== undefined ? Number(u.balance) : (u.wallet?.balance ? Number(u.wallet.balance) : 0),
+                totalSpent: Number(totalSpent.toFixed(2)),
+                totalOrders: userOrders.length,
+                tier: (u.tier || "STARTER") as "STARTER" | "GROWTH" | "PRO_SCALE" | "ENTERPRISE",
+                status: u.isDeleted ? "SUSPENDED" : "ACTIVE",
+                createdAt: u.createdAt || new Date().toISOString(),
+              };
+            })
           );
         }
       }
@@ -197,6 +201,8 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
             rawTickets.map((tk: any) => ({
               id: tk.id,
               userId: tk.userId,
+              userName: tk.user?.name || "Customer",
+              userEmail: tk.user?.email || tk.userId,
               subject: tk.subject,
               department: (tk.department || "GENERAL_SUPPORT") as TicketDepartment,
               priority: (tk.priority === "HIGH" || tk.priority === "CRITICAL" || tk.priority === "LOW" ? tk.priority : "MEDIUM") as TicketPriority,
@@ -210,7 +216,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
                     id: m.id,
                     ticketId: tk.id,
                     authorId: m.senderId,
-                    authorName: m.senderId === "ADMIN" || m.senderId === "admin" ? "Support Staff" : "Customer",
+                    authorName: m.senderId === "ADMIN" || m.senderId === "admin" ? "Support Staff" : (tk.user?.name || "Customer"),
                     authorRole: (m.senderId === "ADMIN" || m.senderId === "admin" ? "ADMIN" : "USER") as "USER" | "ADMIN",
                     content: m.message,
                     attachments: [],
