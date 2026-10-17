@@ -3,7 +3,11 @@
 import React from "react";
 import { landingContent } from "@/content/landing";
 import { RotateCcw, Activity, LifeBuoy } from "lucide-react";
-import { RevealOnScroll } from "@/components/motion/RevealOnScroll";
+import { Reveal } from "@/components/motion/Reveal";
+import { RevealGroup, RevealItem } from "@/components/motion/RevealGroup";
+import { SplitHeading } from "@/components/motion/SplitHeading";
+import { SpotlightCard } from "@/components/motion/SpotlightCard";
+import { motion } from "framer-motion";
 
 export function BenefitsSection() {
   const iconMap: Record<string, React.ReactNode> = {
@@ -13,28 +17,45 @@ export function BenefitsSection() {
   };
 
   return (
-    <section id="why" className="w-full py-14 md:py-[72px] lg:py-28 bg-transparent relative">
+    <section id="why" className="w-full py-14 md:py-[72px] lg:py-28 bg-[#131313] relative">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         {/* Title Block */}
-        <RevealOnScroll className="max-w-[560px] mb-12 text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-4">
-            <span className="text-[13px] font-medium text-[#d8ec8d]">
-              {landingContent.benefits.badge}
-            </span>
-          </div>
-          <h2 className="text-[clamp(30px,3.6vw,44px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-3">
-            {landingContent.benefits.title}
-          </h2>
-          <p className="text-base text-[#A1A1AA] font-normal leading-relaxed">
-            {landingContent.benefits.description}
-          </p>
-        </RevealOnScroll>
+        <div className="max-w-[560px] mb-12 text-left">
+          <Reveal delay={0.05}>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-4">
+              <span className="text-[13px] font-medium text-[#d8ec8d]">
+                {landingContent.benefits.badge}
+              </span>
+            </div>
+          </Reveal>
 
-        {/* 3 Plain Language Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {landingContent.benefits.items.map((item, idx) => (
-            <RevealOnScroll key={item.id} delay={idx * 0.08}>
-              <div className="h-full rounded-[20px] p-6 md:p-7 border border-white/[0.08] bg-white/[0.03] hover:border-white/[0.16] transition-colors flex flex-col justify-between">
+          <SplitHeading
+            as="h2"
+            className="text-[clamp(30px,3.6vw,44px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-3"
+          >
+            {landingContent.benefits.title}
+          </SplitHeading>
+
+          <Reveal delay={0.15}>
+            <p className="text-base text-[#A1A1AA] font-normal leading-relaxed">
+              {landingContent.benefits.description}
+            </p>
+          </Reveal>
+
+          <motion.div
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true, amount: 0.15 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+            className="w-24 h-[1px] bg-gradient-to-r from-[#d8ec8d]/50 to-transparent origin-left mt-6"
+          />
+        </div>
+
+        {/* 3 Plain Language Cards with SpotlightCard Cursor Highlight */}
+        <RevealGroup stagger={0.08} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {landingContent.benefits.items.map((item) => (
+            <RevealItem key={item.id} className="h-full">
+              <SpotlightCard className="h-full p-6 md:p-7 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-5">
                     <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
@@ -53,10 +74,10 @@ export function BenefitsSection() {
                     {item.description}
                   </p>
                 </div>
-              </div>
-            </RevealOnScroll>
+              </SpotlightCard>
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
       </div>
     </section>
   );

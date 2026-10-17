@@ -47,38 +47,38 @@ export function ContactSection() {
           {/* Left Info Column */}
           <RevealOnScroll className="lg:col-span-5 flex flex-col justify-between">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-xs font-mono text-[#D8EC8D] uppercase tracking-widest mb-4 backdrop-blur-md">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-mono text-[#D8EC8D] uppercase tracking-widest mb-4">
                 {landingContent.contact.badge}
               </div>
-              <h2 className="font-heading text-3xl sm:text-5xl font-light text-white tracking-tight mb-4 leading-tight">
+              <h2 className="font-heading text-[clamp(28px,3.4vw,42px)] font-semibold text-white tracking-[-0.02em] mb-4 leading-tight">
                 {landingContent.contact.title}
               </h2>
-              <p className="text-base text-zinc-400 font-light leading-relaxed mb-8">
+              <p className="text-base text-[#A1A1AA] leading-relaxed mb-8">
                 {landingContent.contact.description}
               </p>
             </div>
 
-            <div className="flex flex-col gap-4 p-6 rounded-2xl bg-gradient-to-b from-white/[0.06] to-white/[0.02] bg-[#1c1b1b]/80 border border-white/[0.08] backdrop-blur-xl shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+            <div className="flex flex-col gap-4 p-6 rounded-[20px] bg-white/[0.03] border border-white/[0.08]">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/[0.08] border border-white/10 flex items-center justify-center text-[#DBEF90] backdrop-blur-md">
+                <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-[#D8EC8D]">
                   <Mail className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-xs text-zinc-400 font-mono block">Direct Inquiries</span>
+                  <span className="text-xs text-[#A1A1AA] font-mono block">Direct Inquiries</span>
                   <span className="text-sm font-semibold text-white">
                     {landingContent.contact.email}
                   </span>
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-white/[0.08] text-xs text-zinc-400 font-mono">
+              <div className="pt-3 border-t border-white/[0.08] text-xs text-[#A1A1AA] font-mono">
                 {landingContent.contact.responsePromise}
               </div>
             </div>
           </RevealOnScroll>
 
           {/* Right Form Column */}
-          <RevealOnScroll delay={0.15} className="lg:col-span-7 rounded-2xl p-8 bg-gradient-to-b from-white/[0.06] to-white/[0.02] bg-[#1c1b1b]/80 border border-white/[0.08] backdrop-blur-xl shadow-[0_24px_50px_rgba(0,0,0,0.6)]">
+          <RevealOnScroll delay={0.15} className="lg:col-span-7 rounded-[20px] p-8 bg-white/[0.03] border border-white/[0.08]">
             {submitted ? (
               <div className="py-12 flex flex-col items-center text-center">
                 <div className="w-16 h-16 rounded-full bg-[#D8EC8D]/20 text-[#D8EC8D] flex items-center justify-center mb-4">

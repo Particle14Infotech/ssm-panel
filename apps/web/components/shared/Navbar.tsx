@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { landingContent } from "@/content/landing";
 import { Menu, X, ArrowRight, Zap } from "lucide-react";
 import { MagneticButton } from "@/components/motion/MagneticButton";
+import { ScrollProgress } from "@/components/motion/ScrollProgress";
 import { BrandLogo } from "@/components/shared/BrandLogo";
 
 export function Navbar() {
@@ -15,16 +16,17 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   const lastScrollY = useRef(0);
 
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      setScrolled(currentScrollY > 24);
+      setScrolled(currentScrollY > 40);
 
-      if (currentScrollY > 120 && currentScrollY > lastScrollY.current + 8) {
+      if (currentScrollY > 160 && currentScrollY > lastScrollY.current + 10) {
         setHidden(true);
-      } else if (currentScrollY < lastScrollY.current - 8) {
+      } else if (currentScrollY < lastScrollY.current - 10) {
         setHidden(false);
       }
       lastScrollY.current = currentScrollY;
@@ -34,16 +36,44 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Section observer for landing page active link
+  useEffect(() => {
+    if (pathname !== "/") {
+      setActiveSection(null);
+      return;
+    }
+
+    const sections = ["services", "pricing", "work", "faq"];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        }
+      },
+      { rootMargin: "-30% 0px -50% 0px" }
+    );
+
+    sections.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [pathname]);
+
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
 
   return (
     <>
+      <ScrollProgress />
       <motion.header
         initial={{ y: 0 }}
         animate={{ y: hidden ? -100 : 0 }}
-        transition={{ duration: 0.3, ease: [0.25, 1, 0.5, 1] }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
             ? "bg-[#131313]/90 backdrop-blur-xl border-b border-white/[0.08] shadow-2xl py-3"
@@ -61,12 +91,16 @@ export function Navbar() {
             onMouseLeave={() => setHoveredLink(null)}
           >
             {landingContent.navigation.links.map((item) => {
-              const isActive = pathname === item.href;
+              const sectionMatch = item.href.replace("/", "");
+              const isSectionActive = pathname === "/" && activeSection === sectionMatch;
+              const isRouteActive = pathname === item.href;
+              const isActive = isSectionActive || isRouteActive;
               const isHovered = hoveredLink === item.href;
+
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={pathname === "/" ? `#${sectionMatch}` : item.href}
                   onMouseEnter={() => setHoveredLink(item.href)}
                   className={`relative px-4 py-1.5 rounded-lg text-sm transition-colors duration-200 z-10 ${
                     isActive ? "text-white font-medium" : "text-[#A1A1AA] hover:text-white"
@@ -74,10 +108,10 @@ export function Navbar() {
                 >
                   {(isActive || isHovered) && (
                     <motion.div
-                      layoutId="navPill"
-                      transition={{ type: "spring", stiffness: 450, damping: 30 }}
+                      layoutId="active-nav-indicator"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
                       className={`absolute inset-0 rounded-lg -z-10 ${
-                        isActive ? "bg-white/[0.08]" : "bg-white/[0.04]"
+                        isActive ? "bg-white/[0.09] border border-white/[0.12]" : "bg-white/[0.04]"
                       }`}
                     />
                   )}

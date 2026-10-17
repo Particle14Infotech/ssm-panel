@@ -36,10 +36,15 @@ function ContainedCrownRig({
     // Gentle float and rotation
     rotY.current += 0.22 * delta;
 
-    // Subtle pointer parallax tilt
+    // Subtle pointer parallax tilt (damped, maximum 6 degrees = ~0.10 rad)
     const [mx, my] = mousePos.current;
-    const pointerTiltY = mx * 0.12;
-    const pointerTiltX = -my * 0.08;
+    const pointerTiltY = Math.min(Math.max(mx * 0.09, -0.10), 0.10);
+    const pointerTiltX = Math.min(Math.max(-my * 0.07, -0.10), 0.10);
+
+    // Scroll-linked rotation & parallax
+    const scrollY = typeof window !== "undefined" ? window.scrollY : 0;
+    const scrollAngle = Math.min(scrollY * 0.0006, 0.4);
+    const scrollParallaxY = Math.min(scrollY * 0.0004, 0.35);
 
     crownRotRef.current.rotation.x = THREE.MathUtils.damp(
       crownRotRef.current.rotation.x,
@@ -50,32 +55,32 @@ function ContainedCrownRig({
 
     crownRotRef.current.rotation.y = THREE.MathUtils.damp(
       crownRotRef.current.rotation.y,
-      rotY.current + pointerTiltY,
+      rotY.current + pointerTiltY + scrollAngle,
       5,
       delta
     );
 
     crownRotRef.current.rotation.z = THREE.MathUtils.damp(
       crownRotRef.current.rotation.z,
-      -mx * 0.05,
+      -mx * 0.04,
       4,
       delta
     );
 
-    // Subtle breathing float on Y
-    groupRef.current.position.y = Math.sin(rotY.current * 0.8) * 0.06;
+    // Subtle breathing float on Y + slower scroll movement (parallax)
+    groupRef.current.position.y = Math.sin(rotY.current * 0.8) * 0.06 - scrollParallaxY;
   });
 
   return (
     <group ref={groupRef} position={[0, -0.05, 0]}>
       <group ref={crownRotRef}>
-        <CrownModel scale={0.88} />
+        <CrownModel scale={1.05} />
       </group>
 
       {/* Orbiting 3D Social Media Platform Logos */}
-      <group position={[0, -0.15, 0]} scale={0.44}>
+      <group position={[0, -0.15, 0]} scale={0.46}>
         <PlatformRing
-          radius={isMobile ? 2.3 : 2.9}
+          radius={isMobile ? 2.4 : 3.0}
           onSelect={onSelect}
           isMobile={isMobile}
           scrollProgress={scrollDummy}
@@ -89,8 +94,8 @@ function ContainedCrownRig({
           scale={[1.8, 1.8, 1.8]}
           size={1.0}
           speed={0.12}
-          color="#DBEF90"
-          opacity={0.20}
+          color="#d8ec8d"
+          opacity={0.25}
         />
       )}
     </group>

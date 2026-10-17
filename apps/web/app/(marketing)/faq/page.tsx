@@ -37,13 +37,13 @@ export default function FaqPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-        <Breadcrumb items={[{ label: "Knowledge Base (FAQ)", href: "/faq" }]} />
-        <h1 className="font-heading text-3xl sm:text-5xl font-light text-white tracking-tight">
-          Frequently Asked <span className="text-[#D8EC8D] font-normal">Questions</span>
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 mb-8">
+        <Breadcrumb items={[{ label: "FAQ", href: "/faq" }]} />
+        <h1 className="font-heading text-[clamp(32px,4vw,52px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-3">
+          Frequently Asked <span className="text-[#D8EC8D]">Questions</span>
         </h1>
-        <p className="text-zinc-400 text-sm sm:text-base mt-2 max-w-2xl font-light">
-          Everything you need to know about order routing, balance safety, payment methods, and API integration.
+        <p className="text-[#A1A1AA] text-base leading-relaxed max-w-2xl">
+          Clear answers about order dispatch, wallet deposits, supported payment methods, and automated refunds.
         </p>
       </div>
       <FaqSection />
