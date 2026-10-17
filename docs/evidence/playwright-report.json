@@ -4,8 +4,9 @@
       "C:\\Program Files\\nodejs\\node.exe",
       "D:\\projects\\internship projects\\SMM\\node_modules\\@playwright\\test\\cli.js",
       "test",
-      "e2e/motion-audit.spec.ts",
-      "--project=chromium"
+      "e2e/phase5-responsive-crown.spec.ts",
+      "-g",
+      "390-phone|1440-desktop"
     ],
     "configFile": "D:\\projects\\internship projects\\SMM\\playwright.config.ts",
     "rootDir": "D:/projects/internship projects/SMM/e2e",
@@ -113,20 +114,20 @@
   },
   "suites": [
     {
-      "title": "motion-audit.spec.ts",
-      "file": "motion-audit.spec.ts",
+      "title": "phase5-responsive-crown.spec.ts",
+      "file": "phase5-responsive-crown.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Phase 4 - Motion System & Animation Verification",
-          "file": "motion-audit.spec.ts",
-          "line": 5,
+          "title": "Phase 5 - Responsive Matrix & Traveling Crown E2E Verification",
+          "file": "phase5-responsive-crown.spec.ts",
+          "line": 20,
           "column": 6,
           "specs": [
             {
-              "title": "Desktop 1440: H1 visible at first paint, scroll animations run, stepped captures & video",
+              "title": "Viewport 390-phone (390x844): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
               "ok": true,
               "tags": [],
               "tests": [
@@ -141,18 +142,18 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 16285,
+                      "duration": 43739,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-17T10:37:51.064Z",
+                      "startTime": "2026-10-17T14:10:36.768Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "trace",
                           "contentType": "application/zip",
-                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\motion-audit-Phase-4---Mot-93fde--run-stepped-captures-video-chromium\\trace.zip"
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-a55d7-own-bounds-non-intersection-chromium\\trace.zip"
                         }
                       ]
                     }
@@ -160,13 +161,13 @@
                   "status": "expected"
                 }
               ],
-              "id": "c25b373d89308c14f35e-68b150d8dd38ab0a98f6",
-              "file": "motion-audit.spec.ts",
-              "line": 14,
-              "column": 7
+              "id": "a48f85d08fee4991bbce-9a6ab7e2aed6ad1362d0",
+              "file": "phase5-responsive-crown.spec.ts",
+              "line": 30,
+              "column": 9
             },
             {
-              "title": "Mobile 390: Responsiveness, drawer, and stepped scroll video",
+              "title": "Viewport 1440-desktop (1440x900): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
               "ok": true,
               "tags": [],
               "tests": [
@@ -181,18 +182,18 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5456,
+                      "duration": 75127,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-17T10:38:09.230Z",
+                      "startTime": "2026-10-17T14:11:22.259Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "trace",
                           "contentType": "application/zip",
-                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\motion-audit-Phase-4---Mot-c979d-er-and-stepped-scroll-video-chromium\\trace.zip"
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-4884c-own-bounds-non-intersection-chromium\\trace.zip"
                         }
                       ]
                     }
@@ -200,50 +201,10 @@
                   "status": "expected"
                 }
               ],
-              "id": "c25b373d89308c14f35e-ca2f11a1c65b945112a7",
-              "file": "motion-audit.spec.ts",
-              "line": 118,
-              "column": 7
-            },
-            {
-              "title": "Reduced Motion: Everything visible with fades only, no stuck elements",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1419,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-17T10:38:15.022Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\motion-audit-Phase-4---Mot-202b8-ades-only-no-stuck-elements-chromium\\trace.zip"
-                        }
-                      ]
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "c25b373d89308c14f35e-8d6b6c9fb20f0f9c1fc7",
-              "file": "motion-audit.spec.ts",
-              "line": 154,
-              "column": 7
+              "id": "a48f85d08fee4991bbce-1f7960a63b546ddb6849",
+              "file": "phase5-responsive-crown.spec.ts",
+              "line": 30,
+              "column": 9
             }
           ]
         }
@@ -252,9 +213,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-17T10:37:50.644Z",
-    "duration": 27735.246,
-    "expected": 3,
+    "startTime": "2026-10-17T14:10:36.296Z",
+    "duration": 123615.08,
+    "expected": 2,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

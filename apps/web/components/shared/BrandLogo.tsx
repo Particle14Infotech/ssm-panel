@@ -94,7 +94,7 @@ export function BrandLogo({
 
   if (withLink) {
     return (
-      <Link href={href} className="group inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D8EC8D] rounded-xl">
+      <Link href={href} className="group inline-flex items-center min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D8EC8D] rounded-xl">
         {content}
       </Link>
     );

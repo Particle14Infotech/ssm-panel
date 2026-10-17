@@ -17,10 +17,10 @@ export function BenefitsSection() {
   };
 
   return (
-    <section id="why" className="w-full py-14 md:py-[72px] lg:py-28 bg-[#131313] relative">
+    <section id="why" className="w-full py-14 sm:py-20 lg:py-28 bg-[#131313] relative">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         {/* Title Block */}
-        <div className="max-w-[560px] mb-12 text-left">
+        <div className="max-w-[560px] mb-10 md:mb-12 text-left">
           <Reveal delay={0.05}>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-4">
               <span className="text-[13px] font-medium text-[#d8ec8d]">
@@ -31,7 +31,7 @@ export function BenefitsSection() {
 
           <SplitHeading
             as="h2"
-            className="text-[clamp(30px,3.6vw,44px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-3"
+            className="text-[clamp(28px,3.6vw,44px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-3"
           >
             {landingContent.benefits.title}
           </SplitHeading>
@@ -51,11 +51,11 @@ export function BenefitsSection() {
           />
         </div>
 
-        {/* 3 Plain Language Cards with SpotlightCard Cursor Highlight */}
-        <RevealGroup stagger={0.08} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* 3 Plain Language Cards: 1 / 2 / 3 columns responsive */}
+        <RevealGroup stagger={0.08} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pr-16 xl:pr-0">
           {landingContent.benefits.items.map((item) => (
             <RevealItem key={item.id} className="h-full">
-              <SpotlightCard className="h-full p-6 md:p-7 flex flex-col justify-between">
+              <SpotlightCard className="h-full p-6 sm:p-7 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-5">
                     <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
@@ -66,7 +66,7 @@ export function BenefitsSection() {
                     </span>
                   </div>
 
-                  <h3 className="text-[20px] font-semibold text-white mb-2 leading-snug">
+                  <h3 className="text-[19px] sm:text-[20px] font-semibold text-white mb-2 leading-snug w-fit">
                     {item.title}
                   </h3>
 

@@ -43,6 +43,7 @@
     color-scheme: dark;
     scroll-behavior: smooth;
     background-color: #131313;
+    overflow-x: hidden;
   }
 
   body {

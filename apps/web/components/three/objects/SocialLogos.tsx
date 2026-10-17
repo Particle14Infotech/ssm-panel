@@ -303,7 +303,7 @@ export function PlatformRing({
         // when in back (z < 0), sits higher framing the top pointed tips from behind.
         // The crown's front face, gemstones, and hollow interior are NEVER obscured!
         const zNorm = z / radZ;
-        const yOffset = -0.38 - zNorm * 0.52;
+        const yOffset = 0.15 - zNorm * 1.35;
 
         const content = (
           <group

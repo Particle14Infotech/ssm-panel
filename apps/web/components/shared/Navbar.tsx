@@ -102,7 +102,7 @@ export function Navbar() {
                   key={item.href}
                   href={pathname === "/" ? `#${sectionMatch}` : item.href}
                   onMouseEnter={() => setHoveredLink(item.href)}
-                  className={`relative px-4 py-1.5 rounded-lg text-sm transition-colors duration-200 z-10 ${
+                  className={`relative px-4 py-2.5 min-h-[44px] flex items-center rounded-lg text-sm transition-colors duration-200 z-10 ${
                     isActive ? "text-white font-medium" : "text-[#A1A1AA] hover:text-white"
                   }`}
                 >
@@ -125,7 +125,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             <Link
               href="/login"
-              className="px-4 py-2 text-sm font-medium text-[#A1A1AA] hover:text-white transition-colors"
+              className="px-4 py-2.5 min-h-[44px] flex items-center text-sm font-medium text-[#A1A1AA] hover:text-white transition-colors"
             >
               {landingContent.navigation.cta.login}
             </Link>
@@ -133,7 +133,7 @@ export function Navbar() {
             <MagneticButton>
               <Link
                 href="/register"
-                className="h-10 px-5 rounded-xl bg-[#d8ec8d] text-[#171e00] text-sm font-semibold hover:brightness-105 transition-all flex items-center gap-1.5 shadow-sm focus-visible:ring-2 focus-visible:ring-[#d8ec8d]"
+                className="h-11 min-h-[44px] px-5 rounded-xl bg-[#d8ec8d] text-[#171e00] text-sm font-semibold hover:brightness-105 transition-all flex items-center gap-1.5 shadow-sm focus-visible:ring-2 focus-visible:ring-[#d8ec8d]"
               >
                 <span>{landingContent.navigation.cta.register}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />

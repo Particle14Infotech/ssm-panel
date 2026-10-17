@@ -5,6 +5,7 @@ import Link from "next/link";
 import { landingContent } from "@/content/landing";
 import { ArrowRight } from "lucide-react";
 import { MagneticButton } from "@/components/motion/MagneticButton";
+import { CrownSlot } from "@/components/three/CrownSlot";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 
 export function CtaSection() {
@@ -19,7 +20,10 @@ export function CtaSection() {
   const radialY = useTransform(scrollYProgress, [0, 1], ["0%", "40%"]);
 
   return (
-    <section ref={ctaRef} className="w-full py-14 sm:py-20 lg:py-28 bg-[#131313] relative overflow-hidden">
+    <section
+      ref={ctaRef}
+      className="w-full py-14 sm:py-20 lg:py-28 bg-[#131313] relative overflow-hidden"
+    >
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, scale: shouldReduceMotion ? 1 : 0.97 }}
@@ -35,7 +39,13 @@ export function CtaSection() {
             aria-hidden="true"
           />
 
-          <h2 className="font-heading font-semibold text-[clamp(30px,3.6vw,44px)] leading-tight text-white mb-4 max-w-2xl relative z-10">
+          {/* Reserved docking slot centered above final CTA */}
+          <CrownSlot
+            id="cta"
+            className="w-20 h-20 sm:w-28 sm:h-28 lg:w-36 lg:h-36 mb-6"
+          />
+
+          <h2 className="font-heading font-semibold text-[clamp(28px,3.6vw,44px)] leading-tight text-white mb-4 max-w-2xl relative z-10">
             {landingContent.ctaBand.title}
           </h2>
 
@@ -47,7 +57,7 @@ export function CtaSection() {
             <MagneticButton>
               <Link
                 href={landingContent.ctaBand.buttonHref}
-                className="group h-12 px-8 rounded-[12px] bg-[#D8EC8D] text-[#171e00] font-semibold text-sm inline-flex items-center justify-center gap-2 hover:brightness-105 transition-all shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D8EC8D] focus-visible:ring-offset-2 focus-visible:ring-offset-[#131313]"
+                className="group h-12 px-8 rounded-[12px] bg-[#D8EC8D] text-[#171e00] font-semibold text-sm inline-flex items-center justify-center gap-2 hover:brightness-105 active:scale-95 transition-all shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D8EC8D] focus-visible:ring-offset-2 focus-visible:ring-offset-[#131313]"
               >
                 <span>{landingContent.ctaBand.buttonText}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

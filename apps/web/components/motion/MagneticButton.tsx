@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { motion, useSpring } from "framer-motion";
 import { useMotionPreference } from "./useMotionPreference";
 
@@ -19,12 +19,17 @@ export function MagneticButton({
 }: MagneticButtonProps) {
   const { reduced, lowPower } = useMotionPreference();
   const ref = useRef<HTMLDivElement>(null);
+  const [isTouch, setIsTouch] = useState(false);
+
+  useEffect(() => {
+    setIsTouch("ontouchstart" in window || navigator.maxTouchPoints > 0);
+  }, []);
 
   const x = useSpring(0, { stiffness: 350, damping: 20 });
   const y = useSpring(0, { stiffness: 350, damping: 20 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (reduced || lowPower || !ref.current) return;
+    if (isTouch || reduced || lowPower || !ref.current) return;
     const { clientX, clientY } = e;
     const { left, top, width, height } = ref.current.getBoundingClientRect();
     const centerX = left + width / 2;
@@ -43,14 +48,14 @@ export function MagneticButton({
   return (
     <motion.div
       ref={ref}
-      style={{ x, y }}
+      style={isTouch ? undefined : { x, y }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      whileTap={{ scale: 0.97 }}
+      whileTap={{ scale: 0.96 }}
       onClick={onClick}
-      className={`inline-block relative overflow-hidden group cursor-pointer ${className}`}
+      className={`inline-block relative overflow-hidden group cursor-pointer active:brightness-95 ${className}`}
     >
-      {/* Gradient sheen sweep */}
+      {/* Sheen sweep on hover for desktop */}
       <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
       {children}
     </motion.div>
