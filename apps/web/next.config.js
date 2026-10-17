@@ -19,6 +19,16 @@ const nextConfig = {
       },
     ],
   },
+  async rewrites() {
+    const backendUrl = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
+    const cleanBackend = backendUrl.replace(/\/api\/v1\/?$/, "").replace(/\/+$/, "");
+    return [
+      {
+        source: "/api/v1/:path*",
+        destination: `${cleanBackend}/api/v1/:path*`,
+      },
+    ];
+  },
   async headers() {
     return [
       {

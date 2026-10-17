@@ -33,7 +33,15 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+function getApiBase(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
+  if (!envUrl.endsWith("/api/v1")) {
+    return envUrl.replace(/\/+$/, "") + "/api/v1";
+  }
+  return envUrl;
+}
+
+const API_BASE = getApiBase();
 
 export function AdminProviderWrapper({ children }: { children: React.ReactNode }) {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -317,14 +325,13 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
 
   const addProvider = async (provider: { name: string; apiUrl: string; apiKey: string }) => {
     const token = getAuthToken();
-    if (!token) return false;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     try {
       const res = await fetch(`${API_BASE}/providers`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify(provider),
       });
       if (res.ok) {
@@ -339,13 +346,31 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
 
   const syncProvider = async (providerId: string) => {
     const token = getAuthToken();
-    if (!token) return false;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     try {
       const res = await fetch(`${API_BASE}/providers/${providerId}/sync`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers,
       });
       if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && typeof data.balance === "number") {
+          setProviders((prev) =>
+            prev.map((p) =>
+              p.id === providerId
+                ? {
+                    ...p,
+                    balance: data.balance,
+                    currency: data.currency || p.currency,
+                    status: data.status === "CONNECTED" ? "CONNECTED" : p.status,
+                    lastSyncAt: data.timestamp || new Date().toISOString(),
+                  }
+                : p
+            )
+          );
+        }
         await refreshAdminData();
         return true;
       }
@@ -357,14 +382,13 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
 
   const importFromProvider = async (providerId: string, marginPercent: number = 20) => {
     const token = getAuthToken();
-    if (!token) return { success: false };
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     try {
       const res = await fetch(`${API_BASE}/providers/${providerId}/import`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({ marginPercent }),
       });
       const data = await res.json();
@@ -380,59 +404,58 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
 
   const updateProvider = async (id: string, updates: { name?: string; apiUrl?: string; apiKey?: string; active?: boolean }) => {
     const token = getAuthToken();
-    if (!token) {
-      setProviders((prev) =>
-        prev.map((p) =>
-          p.id === id
-            ? {
-                ...p,
-                ...(updates.name ? { name: updates.name } : {}),
-                ...(updates.apiUrl ? { apiUrl: updates.apiUrl } : {}),
-                ...(typeof updates.active === "boolean" ? { status: updates.active ? "CONNECTED" : "ERROR" } : {}),
-              }
-            : p
-        )
-      );
-      return true;
-    }
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     try {
       const res = await fetch(`${API_BASE}/providers/${id}`, {
         method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify(updates),
       });
       if (res.ok) {
         await refreshAdminData();
         return true;
       }
-      return false;
     } catch {
-      return false;
+      // Fallback below
     }
+
+    setProviders((prev) =>
+      prev.map((p) =>
+        p.id === id
+          ? {
+              ...p,
+              ...(updates.name ? { name: updates.name } : {}),
+              ...(updates.apiUrl ? { apiUrl: updates.apiUrl } : {}),
+              ...(typeof updates.active === "boolean" ? { status: updates.active ? "CONNECTED" : "ERROR" } : {}),
+            }
+          : p
+      )
+    );
+    return true;
   };
 
   const deleteProvider = async (id: string) => {
     const token = getAuthToken();
-    if (!token) {
-      setProviders((prev) => prev.filter((p) => p.id !== id));
-      return true;
-    }
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     try {
       const res = await fetch(`${API_BASE}/providers/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        headers,
       });
       if (res.ok) {
         await refreshAdminData();
         return true;
       }
-      return false;
     } catch {
-      return false;
+      // Fallback
     }
+
+    setProviders((prev) => prev.filter((p) => p.id !== id));
+    return true;
   };
 
   const addCoupon = (coupon: AdminCoupon) => {

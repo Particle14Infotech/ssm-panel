@@ -52,6 +52,16 @@ export class SmmProviderClient {
       return this.handleSimulatedRequest<T>(action, params);
     }
 
+    // Auto-normalize standard SMM v2 endpoint if user entered base domain URL without /api/
+    let targetUrl = apiUrl.trim();
+    if (
+      !targetUrl.includes("/api/") &&
+      !targetUrl.startsWith("simulated://") &&
+      !targetUrl.includes("localhost")
+    ) {
+      targetUrl = targetUrl.replace(/\/+$/, "") + "/api/v2";
+    }
+
     try {
       const payload = {
         key: apiKey,
@@ -59,7 +69,7 @@ export class SmmProviderClient {
         ...params,
       };
 
-      const response = await fetch(apiUrl, {
+      const response = await fetch(targetUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
