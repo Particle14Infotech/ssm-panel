@@ -1,24 +1,24 @@
 import React from "react";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { SocialProofSection } from "@/components/landing/SocialProofSection";
-import { BenefitsSection } from "@/components/landing/BenefitsSection";
-import { ServicesPreviewSection } from "@/components/landing/ServicesPreviewSection";
 import { WorkWalkthroughSection } from "@/components/landing/WorkWalkthroughSection";
-import { PricingSection } from "@/components/landing/PricingSection";
+import { ServicesPreviewSection } from "@/components/landing/ServicesPreviewSection";
+import { PaymentsSection } from "@/components/landing/PaymentsSection";
+import { BenefitsSection } from "@/components/landing/BenefitsSection";
 import { FaqSection } from "@/components/landing/FaqSection";
-import { ContactSection } from "@/components/landing/ContactSection";
+import { CtaSection } from "@/components/landing/CtaSection";
 
 export default function HomePage() {
   return (
     <div className="w-full flex flex-col items-center">
       <HeroSection />
       <SocialProofSection />
-      <BenefitsSection />
-      <ServicesPreviewSection />
       <WorkWalkthroughSection />
-      <PricingSection />
+      <ServicesPreviewSection />
+      <PaymentsSection />
+      <BenefitsSection />
       <FaqSection />
-      <ContactSection />
+      <CtaSection />
     </div>
   );
 }

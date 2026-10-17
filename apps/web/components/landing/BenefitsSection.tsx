@@ -2,89 +2,58 @@
 
 import React from "react";
 import { landingContent } from "@/content/landing";
-import { Zap, ShieldCheck, Cpu, CheckCircle2 } from "lucide-react";
-import { TiltCard } from "@/components/motion/TiltCard";
+import { RotateCcw, Activity, LifeBuoy } from "lucide-react";
 import { RevealOnScroll } from "@/components/motion/RevealOnScroll";
 
 export function BenefitsSection() {
   const iconMap: Record<string, React.ReactNode> = {
-    zap: <Zap className="w-6 h-6 text-[#D8EC8D]" />,
-    "shield-check": <ShieldCheck className="w-6 h-6 text-[#BEF264]" />,
-    sparkles: <Cpu className="w-6 h-6 text-[#D8EC8D]" />,
-  };
-
-  const glowMap: Record<string, string> = {
-    fast: "rgba(216, 236, 141, 0.2)",
-    secure: "rgba(190, 242, 100, 0.25)",
-    "seo-ready": "rgba(216, 236, 141, 0.2)",
-  };
-
-  const badgeColorMap: Record<string, string> = {
-    fast: "text-[#D8EC8D]",
-    secure: "text-[#BEF264]",
-    "seo-ready": "text-[#D8EC8D]",
+    refund: <RotateCcw className="w-5 h-5 text-[#d8ec8d]" strokeWidth={1.75} />,
+    activity: <Activity className="w-5 h-5 text-[#d8ec8d]" strokeWidth={1.75} />,
+    support: <LifeBuoy className="w-5 h-5 text-[#d8ec8d]" strokeWidth={1.75} />,
   };
 
   return (
-    <section id="benefits" data-crown="dim" className="w-full py-24 bg-transparent relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <RevealOnScroll className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-xs font-mono text-[#D8EC8D] uppercase tracking-widest mb-4 backdrop-blur-md">
-            {landingContent.benefits.badge}
+    <section id="why" className="w-full py-14 md:py-[72px] lg:py-28 bg-transparent relative">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
+        {/* Title Block */}
+        <RevealOnScroll className="max-w-[560px] mb-12 text-left">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-4">
+            <span className="text-[13px] font-medium text-[#d8ec8d]">
+              {landingContent.benefits.badge}
+            </span>
           </div>
-          <h2 className="font-heading text-3xl sm:text-5xl font-light text-white tracking-tight mb-4">
+          <h2 className="text-[clamp(30px,3.6vw,44px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-3">
             {landingContent.benefits.title}
           </h2>
-          <p className="text-base text-zinc-400 font-light">
+          <p className="text-base text-[#A1A1AA] font-normal leading-relaxed">
             {landingContent.benefits.description}
           </p>
         </RevealOnScroll>
 
-        {/* 3 Pillars Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {landingContent.benefits.items.map((pillar, idx) => (
-            <RevealOnScroll key={pillar.id} delay={idx * 0.1}>
-              <TiltCard
-                maxTilt={4}
-                glowColor={glowMap[pillar.id] || "rgba(219, 239, 144, 0.2)"}
-                className="h-full rounded-2xl p-8 bg-gradient-to-b from-white/[0.06] to-white/[0.02] bg-[#1c1b1b]/80 border border-white/[0.08] hover:border-[#D8EC8D]/40 backdrop-blur-xl flex flex-col justify-between shadow-[0_20px_40px_rgba(0,0,0,0.5)] transition-all duration-300 group"
-              >
+        {/* 3 Plain Language Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {landingContent.benefits.items.map((item, idx) => (
+            <RevealOnScroll key={item.id} delay={idx * 0.08}>
+              <div className="h-full rounded-[20px] p-6 md:p-7 border border-white/[0.08] bg-white/[0.03] hover:border-white/[0.16] transition-colors flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="w-12 h-12 rounded-xl bg-white/[0.08] border border-white/10 flex items-center justify-center group-hover:scale-105 transition-transform backdrop-blur-md">
-                      {iconMap[pillar.icon] || <Zap className="w-6 h-6 text-[#DBEF90]" />}
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+                      {iconMap[item.icon] || <Activity className="w-5 h-5 text-[#d8ec8d]" strokeWidth={1.75} />}
                     </div>
-                    <span className={`text-xs px-3 py-1 rounded-full bg-white/[0.08] border border-white/10 backdrop-blur-md font-mono font-semibold ${badgeColorMap[pillar.id] || "text-[#DBEF90]"}`}>
-                      {pillar.badge}
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-white/[0.04] text-[#d8ec8d] font-medium border border-white/[0.06]">
+                      {item.badge}
                     </span>
                   </div>
 
-                  <div className="mb-2">
-                    <span className="text-xs font-mono uppercase tracking-widest text-zinc-400">
-                      {pillar.title}
-                    </span>
-                    <h3 className="font-heading text-2xl font-light text-white mt-1">
-                      {pillar.subtitle}
-                    </h3>
-                  </div>
+                  <h3 className="text-[20px] font-semibold text-white mb-2 leading-snug">
+                    {item.title}
+                  </h3>
 
-                  <p className="text-sm text-zinc-300 font-light leading-relaxed mb-8">
-                    {pillar.description}
+                  <p className="text-sm text-[#A1A1AA] font-normal leading-relaxed">
+                    {item.description}
                   </p>
                 </div>
-
-                <div className="pt-6 border-t border-white/[0.08] flex flex-col gap-2.5">
-                  {pillar.metrics.map((m, mIdx) => (
-                    <div key={mIdx} className="flex items-center justify-between text-xs">
-                      <span className="text-zinc-400 flex items-center gap-1.5 font-light">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#D8EC8D]" />
-                        {m.label}
-                      </span>
-                      <span className="font-mono text-white font-medium">{m.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </TiltCard>
+              </div>
             </RevealOnScroll>
           ))}
         </div>

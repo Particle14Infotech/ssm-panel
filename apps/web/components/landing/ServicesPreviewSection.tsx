@@ -3,139 +3,152 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { landingContent } from "@/content/landing";
-import { Search, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { formatINR } from "@/lib/utils";
 import { RevealOnScroll } from "@/components/motion/RevealOnScroll";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
 
 export function ServicesPreviewSection() {
   const [selectedPlatform, setSelectedPlatform] = useState<string>("ALL");
-  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const platforms = [
     { id: "ALL", label: "All Platforms" },
     { id: "INSTAGRAM", label: "Instagram" },
-    { id: "TIKTOK", label: "TikTok" },
     { id: "YOUTUBE", label: "YouTube" },
-    { id: "X_TWITTER", label: "X" },
+    { id: "TIKTOK", label: "TikTok" },
     { id: "TELEGRAM", label: "Telegram" },
+    { id: "X_TWITTER", label: "X" },
   ];
 
   const filteredServices = landingContent.servicesPreview.items.filter((item) => {
-    const matchesPlatform = selectedPlatform === "ALL" || item.platform === selectedPlatform;
-    const matchesSearch =
-      item.serviceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesPlatform && matchesSearch;
+    return selectedPlatform === "ALL" || item.platform === selectedPlatform;
   });
 
   return (
-    <section id="services" data-crown="dim" className="w-full py-24 bg-transparent relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="services" className="w-full py-14 md:py-[72px] lg:py-28 bg-transparent relative">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
+        {/* Title Block */}
         <RevealOnScroll className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-xs font-mono text-[#D8EC8D] uppercase tracking-widest mb-3 backdrop-blur-md">
-              {landingContent.servicesPreview.badge}
+          <div className="max-w-[560px]">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-4">
+              <span className="text-[13px] font-medium text-[#d8ec8d]">
+                Services & Pricing
+              </span>
             </div>
-            <h2 className="font-heading text-3xl sm:text-5xl font-light text-white tracking-tight">
-              {landingContent.servicesPreview.title}
+            <h2 className="text-[clamp(30px,3.6vw,44px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-3">
+              Clear rates per 1,000 units
             </h2>
+            <p className="text-base text-[#A1A1AA] font-normal leading-relaxed">
+              Explore popular services across platforms with upfront pricing and delivery estimates.
+            </p>
           </div>
 
           <Link
             href="/services"
-            className="text-sm text-[#D8EC8D] hover:text-white flex items-center gap-1.5 group font-medium self-start md:self-auto"
+            className="text-sm font-semibold text-[#d8ec8d] hover:text-white flex items-center gap-1.5 transition-colors self-start md:self-auto"
           >
-            <span>Browse All 500+ Services</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <span>View all services</span>
+            <ArrowRight className="w-4 h-4" />
           </Link>
         </RevealOnScroll>
 
-        {/* Filter Bar & Search */}
-        <RevealOnScroll delay={0.1}>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-[#1c1b1b]/80 p-2 rounded-2xl border border-white/[0.08] backdrop-blur-xl">
-            {/* Platform Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-none">
-              {platforms.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setSelectedPlatform(p.id)}
-                  className={`px-4 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all flex items-center gap-2 ${
-                    selectedPlatform === p.id
-                      ? "bg-gradient-to-r from-[#D8EC8D] to-[#BEF264] text-[#171e00] shadow-sm font-semibold border border-white/10"
-                      : "text-zinc-400 hover:text-white hover:bg-white/[0.06]"
-                  }`}
+        {/* Platform Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-4 mb-6 scrollbar-none">
+          {platforms.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setSelectedPlatform(p.id)}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
+                selectedPlatform === p.id
+                  ? "bg-[#d8ec8d] text-[#171e00]"
+                  : "text-[#A1A1AA] hover:text-white hover:bg-white/[0.04] border border-transparent"
+              }`}
+            >
+              {p.id !== "ALL" && <PlatformIcon platform={p.id} size={14} />}
+              <span>{p.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden md:block rounded-[20px] border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-white/[0.08] text-xs font-medium text-[#A1A1AA]">
+                <th className="py-4 px-6">Service</th>
+                <th className="py-4 px-6">Rate / 1,000</th>
+                <th className="py-4 px-6">Min – Max</th>
+                <th className="py-4 px-6">Speed</th>
+                <th className="py-4 px-6 text-right">Order</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.06] text-sm">
+              {filteredServices.map((service) => (
+                <tr
+                  key={service.id}
+                  className="hover:bg-white/[0.02] transition-colors"
                 >
-                  {p.id !== "ALL" && <PlatformIcon platform={p.id} size={14} />}
-                  <span>{p.label}</span>
-                </button>
+                  <td className="py-4 px-6 font-medium text-white">
+                    <div className="flex items-center gap-2.5">
+                      <PlatformIcon platform={service.platform} size={16} />
+                      <span>{service.serviceName}</span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-6 font-semibold tabular-nums text-white">
+                    {formatINR(service.ratePer1000, 2)}
+                  </td>
+                  <td className="py-4 px-6 text-[#A1A1AA] text-xs tabular-nums font-mono">
+                    {service.minQty.toLocaleString("en-US")} – {service.maxQty.toLocaleString("en-US")}
+                  </td>
+                  <td className="py-4 px-6 text-[#A1A1AA] text-xs">
+                    {service.avgSpeed}
+                  </td>
+                  <td className="py-4 px-6 text-right">
+                    <Link
+                      href="/register"
+                      className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg bg-white/[0.06] hover:bg-[#d8ec8d] hover:text-[#171e00] text-xs font-semibold text-white transition-all"
+                    >
+                      <span>Order</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </td>
+                </tr>
               ))}
-            </div>
+            </tbody>
+          </table>
+        </div>
 
-            {/* Search Box */}
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 absolute left-3.5 top-3 text-zinc-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search services, platforms..."
-                className="w-full bg-[#131313] text-white text-xs pl-10 pr-4 py-2.5 rounded-xl border border-white/[0.08] focus:outline-none focus:border-[#D8EC8D] placeholder-zinc-500"
-              />
-            </div>
-          </div>
-        </RevealOnScroll>
-
-        {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredServices.map((service, idx) => (
-            <RevealOnScroll key={service.id} delay={0.06 * Math.min(idx, 6)}>
-              <div className="rounded-2xl p-6 bg-gradient-to-b from-white/[0.06] to-white/[0.02] bg-[#1c1b1b]/80 border border-white/[0.08] hover:border-[#D8EC8D]/40 backdrop-blur-xl transition-all duration-300 flex flex-col justify-between group shadow-[0_20px_40px_rgba(0,0,0,0.5)] h-full">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/10 text-zinc-300 font-mono backdrop-blur-md flex items-center gap-1.5">
-                      <PlatformIcon platform={service.platform} size={12} />
-                      {service.platformName}
-                    </span>
-                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#DBEF90]/15 text-[#DBEF90] font-semibold border border-[#DBEF90]/20 backdrop-blur-md">
-                      {service.badge}
-                    </span>
-                  </div>
-
-                  <h3 className="text-base font-semibold text-white mb-2 group-hover:text-[#D8EC8D] transition-colors leading-snug">
+        {/* Mobile Compact Cards */}
+        <div className="md:hidden flex flex-col gap-3">
+          {filteredServices.map((service) => (
+            <div
+              key={service.id}
+              className="rounded-[16px] p-4 border border-white/[0.08] bg-white/[0.02] flex flex-col gap-3"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <PlatformIcon platform={service.platform} size={16} />
+                  <span className="text-sm font-semibold text-white">
                     {service.serviceName}
-                  </h3>
-
-                  <p className="text-xs text-zinc-400 font-light leading-relaxed mb-6">
-                    {service.description}
-                  </p>
+                  </span>
                 </div>
-
-                <div className="pt-4 border-t border-white/[0.08]">
-                  <div className="flex items-baseline justify-between mb-4">
-                    <div>
-                      <span className="text-xs text-zinc-300 block font-mono">Rate per 1,000</span>
-                      <span className="font-heading text-2xl font-light text-white font-sans tabular-nums font-semibold tracking-tight">
-                        {formatINR(service.ratePer1000, 2)}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs text-zinc-300 block font-mono">Speed</span>
-                      <span className="text-xs text-[#DBEF90] font-semibold">{service.avgSpeed}</span>
-                    </div>
-                  </div>
-
-                  <Link
-                    href={`/register`}
-                    className="w-full py-2.5 rounded-full bg-white/[0.08] hover:bg-gradient-to-r hover:from-[#D8EC8D] hover:to-[#BEF264] text-white hover:text-[#171e00] border border-white/10 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
-                  >
-                    <span>Order Now</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
+                <span className="text-sm font-semibold tabular-nums text-[#d8ec8d]">
+                  {formatINR(service.ratePer1000, 2)}
+                </span>
               </div>
-            </RevealOnScroll>
+
+              <div className="flex items-center justify-between text-xs text-[#A1A1AA] pt-2 border-t border-white/[0.06]">
+                <span>Speed: {service.avgSpeed}</span>
+                <Link
+                  href="/register"
+                  className="inline-flex items-center gap-1 h-7 px-3 rounded-lg bg-white/[0.08] text-white text-xs font-semibold"
+                >
+                  <span>Order</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+            </div>
           ))}
         </div>
       </div>

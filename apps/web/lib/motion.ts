@@ -17,13 +17,13 @@ export const durations = {
 };
 
 export const fadeUpVariant: Variants = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { opacity: 0, y: 16 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: durations.medium,
-      ease: easings.power3Out,
+      duration: 0.5,
+      ease: [0.25, 1, 0.5, 1],
     },
   },
 };
@@ -33,8 +33,8 @@ export const staggerContainer: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.05,
+      staggerChildren: 0.06,
+      delayChildren: 0.02,
     },
   },
 };

@@ -15,6 +15,7 @@ interface BreadcrumbProps {
 export function Breadcrumb({ items, className = "" }: BreadcrumbProps) {
   const allItems = [{ label: "Home", href: "/" }, ...items];
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://smmpanel.com";
   // Schema.org BreadcrumbList microdata
   const jsonLd = {
     "@context": "https://schema.org",
@@ -23,7 +24,7 @@ export function Breadcrumb({ items, className = "" }: BreadcrumbProps) {
       "@type": "ListItem",
       position: index + 1,
       name: item.label,
-      item: item.href ? `https://smmarchitecture.com${item.href}` : undefined,
+      item: item.href ? `${siteUrl}${item.href}` : undefined,
     })),
   };
 

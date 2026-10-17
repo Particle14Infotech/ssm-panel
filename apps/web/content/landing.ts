@@ -10,12 +10,11 @@ export interface BenefitItem {
   description: string;
   badge: string;
   icon: string;
-  metrics: { label: string; value: string }[];
 }
 
 export interface CatalogPreviewItem {
   id: string;
-  platform: "INSTAGRAM" | "TIKTOK" | "YOUTUBE" | "X_TWITTER" | "TELEGRAM";
+  platform: "INSTAGRAM" | "TIKTOK" | "YOUTUBE" | "X_TWITTER" | "TELEGRAM" | "FACEBOOK" | "SPOTIFY";
   platformName: string;
   category: string;
   serviceName: string;
@@ -23,40 +22,20 @@ export interface CatalogPreviewItem {
   minQty: number;
   maxQty: number;
   avgSpeed: string;
-  badge: string;
+  badge?: string;
   description: string;
 }
 
 export interface StepItem {
   step: string;
   title: string;
-  subtitle: string;
   description: string;
-  detail: string;
-  tag: string;
 }
 
 export interface FaqItem {
   question: string;
   answer: string;
-  category: "Orders" | "Wallet & Billing" | "Providers & Compliance" | "API";
-}
-
-export interface TestimonialItem {
-  quote: string;
-  author: string;
-  role: string;
-  company: string;
-  metric: string;
-}
-
-export interface PricingTierItem {
-  name: string;
-  description: string;
-  minDeposit: number;
-  bonusPercent: number;
-  features: string[];
-  recommended?: boolean;
+  category: string;
 }
 
 export interface LandingContent {
@@ -64,7 +43,6 @@ export interface LandingContent {
     name: string;
     tagline: string;
     badge: string;
-    version: string;
   };
   navigation: {
     links: NavItem[];
@@ -76,6 +54,7 @@ export interface LandingContent {
   hero: {
     badge: string;
     headline: string;
+    accentWord: string;
     support: string;
     primaryCta: {
       label: string;
@@ -85,23 +64,15 @@ export interface LandingContent {
       label: string;
       href: string;
     };
-    stats: {
+    facts: {
       label: string;
-      value: string;
-      sub: string;
+      icon: "wallet" | "activity" | "refund";
     }[];
-    telemetry: {
-      status: string;
-      uptime: string;
-      latency: string;
-      activeNodes: string;
-    };
   };
-  socialProof: {
-    headline: string;
-    metrics: { label: string; value: string }[];
-    testimonials: TestimonialItem[];
-  };
+  platforms: {
+    id: string;
+    name: string;
+  }[];
   benefits: {
     badge: string;
     title: string;
@@ -120,12 +91,12 @@ export interface LandingContent {
     description: string;
     steps: StepItem[];
   };
-  pricingTiers: {
+  payments: {
     badge: string;
     title: string;
     description: string;
-    tiers: PricingTierItem[];
-    note: string;
+    minDeposit: number;
+    methods: { id: string; name: string }[];
   };
   faq: {
     badge: string;
@@ -133,20 +104,24 @@ export interface LandingContent {
     description: string;
     items: FaqItem[];
   };
+  ctaBand: {
+    title: string;
+    description: string;
+    buttonText: string;
+    buttonHref: string;
+  };
   contact: {
-    badge: string;
+    badge?: string;
     title: string;
     description: string;
     email: string;
-    responsePromise: string;
-  };
-  complianceNotice: {
-    title: string;
-    body: string;
+    responsePromise?: string;
+    href: string;
   };
   footer: {
     copyright: string;
     description: string;
+    trademarkDisclaimer: string;
     columns: {
       title: string;
       links: { label: string; href: string }[];
@@ -158,8 +133,7 @@ export const landingContent: LandingContent = {
   brand: {
     name: "SMM Panel",
     tagline: "Social Media Marketing Platform",
-    badge: "Platform Active",
-    version: "v4.9 Stable",
+    badge: "Social Media Marketing",
   },
   navigation: {
     links: [
@@ -167,7 +141,6 @@ export const landingContent: LandingContent = {
       { label: "Pricing", href: "/pricing" },
       { label: "How It Works", href: "/work" },
       { label: "FAQ", href: "/faq" },
-      { label: "Contact", href: "/contact" },
     ],
     cta: {
       login: "Sign In",
@@ -175,10 +148,11 @@ export const landingContent: LandingContent = {
     },
   },
   hero: {
-    badge: "Platform Online",
-    headline: "Order social growth services. Track every order.",
+    badge: "Social Growth Platform",
+    headline: "Order social growth. Track every order.",
+    accentWord: "Track every order.",
     support:
-      "One wallet in INR, an explicit service catalog, live order status. Dispatched through verified provider APIs with double-entry ledger protection.",
+      "Top up your wallet in INR using UPI or cards, and follow each order live. Any unused balance on cancelled or partial orders automatically returns to your wallet.",
     primaryCta: {
       label: "Create an account",
       href: "/register",
@@ -187,97 +161,79 @@ export const landingContent: LandingContent = {
       label: "Browse services",
       href: "/services",
     },
-    stats: [
+    facts: [
       {
-        label: "Wallet Balance",
-        value: "Direct Credit",
-        sub: "Instant INR deposits",
+        label: "Pay in INR via UPI and cards",
+        icon: "wallet",
       },
       {
-        label: "Catalog Services",
-        value: "Live Routing",
-        sub: "Real provider rates",
+        label: "Live order tracking",
+        icon: "activity",
       },
       {
-        label: "Order Tracking",
-        value: "Live Status",
-        sub: "Automated queue updates",
+        label: "Automatic wallet refund for undelivered orders",
+        icon: "refund",
       },
     ],
-    telemetry: {
-      status: "System Active",
-      uptime: "99.9%",
-      latency: "Real-time",
-      activeNodes: "Services Online",
-    },
   },
-  socialProof: {
-    headline: "Engineered for social growth agencies, marketing teams, and content creators.",
-    metrics: [],
-    testimonials: [],
-  },
+  platforms: [
+    { id: "instagram", name: "Instagram" },
+    { id: "youtube", name: "YouTube" },
+    { id: "tiktok", name: "TikTok" },
+    { id: "telegram", name: "Telegram" },
+    { id: "x", name: "X" },
+    { id: "facebook", name: "Facebook" },
+    { id: "spotify", name: "Spotify" },
+  ],
   benefits: {
-    badge: "Platform Standards",
-    title: "Three Pillars of Platform Reliability",
-    description: "Built around verifiable accounting standards, steady queues, and transparent operations.",
+    badge: "Why SMM Panel",
+    title: "Simple, honest, and reliable",
+    description: "Built for creators and agencies who want transparent pricing and automated order fulfillment.",
     items: [
       {
-        id: "fast",
-        title: "Fast",
-        subtitle: "Automated Order Processing",
+        id: "refunds",
+        title: "Automatic refunds",
+        subtitle: "Wallet protection on partials",
         description:
-          "Automated background processing queues deliver orders directly to provider endpoints without delays or manual bottlenecks.",
-        badge: "Automated Ingress",
-        icon: "zap",
-        metrics: [
-          { label: "Queue Processing", value: "Dedicated queues" },
-          { label: "Status Polling", value: "Automated sync" },
-        ],
+          "If an order cannot be fully completed or is cancelled, the unfulfilled amount returns automatically to your wallet balance.",
+        badge: "Auto Refunds",
+        icon: "refund",
       },
       {
-        id: "secure",
-        title: "Secure",
-        subtitle: "Protected Wallet Ledger",
+        id: "tracking",
+        title: "Live order tracking",
+        subtitle: "Clear status at every step",
         description:
-          "Protected password hashing, encrypted provider credentials, rotating user sessions, and double-entry ledger accounting where funds are tracked precisely.",
-        badge: "Atomic Ledger",
-        icon: "shield-check",
-        metrics: [
-          { label: "Audit Trails", value: "Append-only DB logs" },
-          { label: "Provider Keys", value: "Encrypted at rest" },
-        ],
+          "Check the real-time status of your orders from placement to completion directly from your dashboard.",
+        badge: "Live Status",
+        icon: "activity",
       },
       {
-        id: "seo-ready",
-        title: "SEO-Ready",
-        subtitle: "Fast Catalog Loading",
+        id: "support",
+        title: "Support tickets",
+        subtitle: "Help whenever you need it",
         description:
-          "Server-rendered catalog pages, clean metadata hierarchy, and fast page response times across mobile and desktop devices.",
-        badge: "Optimized Performance",
-        icon: "sparkles",
-        metrics: [
-          { label: "Catalog Indexing", value: "Clean category routes" },
-          { label: "Edge Response", value: "Fast page delivery" },
-        ],
+          "Have a question about an order? Open a support ticket and our team will assist you promptly.",
+        badge: "Helpdesk",
+        icon: "support",
       },
     ],
   },
   servicesPreview: {
-    badge: "Live Service Catalog",
-    title: "Transparent, Provider-Synced Services",
-    description: "Real-time pricing, explicit minimums/maximums, and instant availability tracking.",
+    badge: "Service Catalog",
+    title: "Popular services",
+    description: "Transparent pricing per 1,000 units with clear start times and quantity limits.",
     items: [
       {
         id: "ig-reels-01",
         platform: "INSTAGRAM",
         platformName: "Instagram",
-        category: "Reels High-Retention Views",
-        serviceName: "Meta Reels High-Retention Views [Steady Delivery]",
+        category: "Reels Views",
+        serviceName: "Reels High-Retention Views",
         ratePer1000: 70,
         minQty: 100,
         maxQty: 1000000,
         avgSpeed: "50k/day",
-        badge: "High Retention",
         description: "High-retention video playback with natural watch duration distribution.",
       },
       {
@@ -285,222 +241,175 @@ export const landingContent: LandingContent = {
         platform: "TIKTOK",
         platformName: "TikTok",
         category: "Sound Engagement",
-        serviceName: "TikTok Sound Multiplier [Paced Delivery]",
+        serviceName: "Sound Engagement Multiplier",
         ratePer1000: 95,
         minQty: 250,
         maxQty: 500000,
         avgSpeed: "100k/day",
-        badge: "Priority Batch",
         description: "Optimized sound cluster delivery across active creator regions.",
       },
       {
         id: "yt-sub-03",
         platform: "YOUTUBE",
         platformName: "YouTube",
-        category: "Subscribers & Watch Hours",
-        serviceName: "YouTube Channel Subscribers [30 Days Refill Window]",
+        category: "Subscribers",
+        serviceName: "Channel Subscribers with Refill",
         ratePer1000: 1450,
         minQty: 50,
         maxQty: 25000,
         avgSpeed: "2k/day",
-        badge: "Refill Window",
-        description: "Channel subscriber growth with 30-day automated refill coverage.",
+        description: "Channel subscriber growth with 30-day refill window.",
       },
       {
         id: "x-eng-04",
         platform: "X_TWITTER",
-        platformName: "X (Twitter)",
-        category: "Engagement & Reposts",
-        serviceName: "X Tweet Engagements & Retweets [Fast Start]",
+        platformName: "X",
+        category: "Engagement",
+        serviceName: "Post Engagements & Reposts",
         ratePer1000: 280,
         minQty: 100,
         maxQty: 50000,
         avgSpeed: "15k/day",
-        badge: "Fast Start",
-        description: "Social shares, retweets, and bookmark signals from active accounts.",
+        description: "Social shares, reposts, and engagement signals.",
       },
       {
         id: "tg-mem-05",
         platform: "TELEGRAM",
         platformName: "Telegram",
         category: "Channel Members",
-        serviceName: "Telegram Community Members [90-Day Retention]",
+        serviceName: "Community Channel Members",
         ratePer1000: 175,
         minQty: 100,
         maxQty: 100000,
         avgSpeed: "20k/day",
-        badge: "High Retention",
-        description: "Public and private channel member delivery with low drop rates.",
+        description: "Public and private channel member growth.",
       },
     ],
   },
   workWalkthrough: {
-    badge: "Operational Pipeline",
-    title: "How an order works",
-    description: "From wallet deduction to provider synchronization in 5 transparent stages.",
+    badge: "How It Works",
+    title: "Four simple steps",
+    description: "Get started in minutes with transparent pricing and live order updates.",
     steps: [
       {
-        step: "01",
+        step: "1",
         title: "Add funds",
-        subtitle: "Wallet Top-up",
-        description: "Top up your wallet. Any bonus credit is shown before you pay.",
-        detail: "Instant balance credit with verified deposit methods and no hidden fees.",
-        tag: "1 Add funds",
+        description: "Top up your wallet in INR using UPI, cards, or netbanking.",
       },
       {
-        step: "02",
-        title: "Choose service",
-        subtitle: "Platform & Tier Selection",
-        description: "Pick a platform and service. Price per 1,000 and min/max quantity are shown up front.",
-        detail: "Transparent pricing per 1,000 units and estimated delivery speed.",
-        tag: "2 Choose service",
+        step: "2",
+        title: "Choose a service",
+        description: "Select your platform and service with clear rates per 1,000 shown upfront.",
       },
       {
-        step: "03",
-        title: "Place order",
-        subtitle: "Link & Quantity Input",
-        description: "Enter your link and quantity. The total is shown before you confirm.",
-        detail: "Ledger balance verification prevents overdrafts.",
-        tag: "3 Place order",
+        step: "3",
+        title: "Place your order",
+        description: "Enter your link and quantity, then confirm your order.",
       },
       {
-        step: "04",
-        title: "Provider delivers",
-        subtitle: "Automated Provider Dispatch",
-        description: "The order goes to the provider through their API. Status updates on its own.",
-        detail: "Automated queue workers dispatch orders with regular status synchronization.",
-        tag: "4 Provider delivers",
-      },
-      {
-        step: "05",
-        title: "Complete",
-        subtitle: "Fulfillment & Auto-Refunds",
-        description: "Completed and partial orders appear in your history. Any undelivered quantity goes back to your wallet.",
-        detail: "Automatic balance refund for any cancelled or partial quantities.",
-        tag: "5 Complete",
+        step: "4",
+        title: "Track and get refunds",
+        description: "Follow delivery live; any unfulfilled amount automatically returns to your wallet.",
       },
     ],
   },
-  pricingTiers: {
-    badge: "Transparent Tiers",
-    title: "Wallet Deposit Bonus Rules",
-    description: "No hidden transaction fees. Automatic bonus credits applied at time of deposit.",
-    tiers: [
-      {
-        name: "Starter",
-        description: "Ideal for individual creators testing out catalog services.",
-        minDeposit: 100,
-        bonusPercent: 0,
-        features: [
-          "Access to entire 500+ service catalog",
-          "Standard processing queue",
-          "Full self-service dashboard",
-          "Email support ticket response",
-        ],
-      },
-      {
-        name: "Growth Tier",
-        description: "Designed for scaling brands, influencers, and active creators.",
-        minDeposit: 500,
-        bonusPercent: 5,
-        features: [
-          "+5% Bonus credited automatically",
-          "Faster queue dispatch",
-          "Standard cancel and refill controls",
-          "Priority support assistance",
-          "CSV bulk order uploads",
-        ],
-      },
-      {
-        name: "High Volume Tier",
-        description: "For agencies and high-volume accounts requiring maximum deposit value.",
-        minDeposit: 1000,
-        bonusPercent: 10,
-        recommended: true,
-        features: [
-          "+10% Bonus credited automatically",
-          "Personal Reseller API key",
-          "Dedicated volume support",
-          "Direct webhook notifications",
-          "Priority order dispatch",
-        ],
-      },
+  payments: {
+    badge: "Payments",
+    title: "Pay your way",
+    description: "Fast and secure deposits in INR with supported payment methods.",
+    minDeposit: 100,
+    methods: [
+      { id: "upi", name: "UPI" },
+      { id: "gpay", name: "Google Pay" },
+      { id: "phonepe", name: "PhonePe" },
+      { id: "paytm", name: "Paytm" },
+      { id: "visa", name: "Visa" },
+      { id: "mastercard", name: "Mastercard" },
+      { id: "rupay", name: "RuPay" },
+      { id: "netbanking", name: "Netbanking" },
     ],
-    note: "Prices vary per service and are updated in real-time according to provider rates.",
   },
   faq: {
-    badge: "Knowledge Base",
-    title: "Frequently Asked Questions",
-    description: "Clear answers on platform mechanics, automated refunds, and compliance.",
+    badge: "FAQ",
+    title: "Frequently asked questions",
+    description: "Straightforward answers about our services, orders, and wallet balance.",
     items: [
       {
         category: "Orders",
         question: "How quickly do orders start after placement?",
         answer:
-          "Most automated services begin dispatch within 30 to 120 seconds of order submission. Each service in the catalog displays its estimated average start time and speed.",
+          "Start times vary by service from instant to a few minutes. Estimated start speed is clearly shown for each service in the catalog.",
       },
       {
         category: "Orders",
-        question: "What happens if an order is only partially completed?",
+        question: "What happens if an order is cancelled or only partially completed?",
         answer:
-          "Our synchronization system tracks the exact remains count from the provider. If an order finishes as Partial, the system calculates the undelivered amount and automatically credits the exact difference back to your wallet balance.",
+          "If an order cannot be completed or is only partially fulfilled, the unspent portion is automatically credited back to your wallet balance.",
       },
       {
-        category: "Wallet & Billing",
+        category: "Payments",
+        question: "Which payment methods are supported for wallet top-ups?",
+        answer:
+          "We accept INR payments via UPI (Google Pay, PhonePe, Paytm), RuPay, Visa, Mastercard, and Netbanking. Minimum deposit is ₹100.",
+      },
+      {
+        category: "Wallet",
         question: "Can I withdraw unspent funds from my wallet balance?",
         answer:
-          "Deposits are converted into service credits for automated order dispatch. If you have an issue with a specific service, automatic refunds to your internal balance occur immediately.",
+          "Deposits are converted into service credits for automated order dispatch. If you have an issue with a specific order, automatic refunds return the balance for use on other services.",
       },
       {
-        category: "Providers & Compliance",
-        question: "What is your compliance posture regarding social platforms?",
+        category: "Platforms",
+        question: "Which platforms are supported in the catalog?",
         answer:
-          "Instagram, YouTube, Telegram, TikTok, Facebook and X are trademarks of their respective owners. This service is not affiliated with or endorsed by them. We operate strictly through authorized provider APIs.",
+          "We support services for Instagram, YouTube, TikTok, Telegram, X, Facebook, and Spotify with regular catalog updates.",
       },
       {
         category: "API",
-        question: "Do you provide an API for automated integrations?",
+        question: "Do you offer an automated API for orders?",
         answer:
-          "Yes. Accounts can access standard API endpoints (services, add, status, balance) with dedicated rate limits and real-time webhook notifications.",
+          "Yes, API endpoints are available for authorized accounts to check balances, fetch active services, place orders, and track fulfillment status.",
       },
     ],
   },
-  contact: {
-    badge: "Direct Communication",
-    title: "Get in Touch with our Support Team",
-    description:
-      "Need custom agency integrations, high-volume capacity, or account assistance? Send us a message.",
-    email: "support@smmarchitecture.com",
-    responsePromise: "Average response time: under 2 hours during active support hours.",
+  ctaBand: {
+    title: "Ready to grow your audience?",
+    description: "Create an account, top up your wallet in INR, and start placing orders in minutes.",
+    buttonText: "Create an account",
+    buttonHref: "/register",
   },
-  complianceNotice: {
-    title: "Compliance & Operating Standards",
-    body: "Instagram, YouTube, Telegram, TikTok, Facebook and X are trademarks of their respective owners. This service is not affiliated with or endorsed by them. All marketing services are fulfilled exclusively via third-party provider APIs.",
+  contact: {
+    badge: "Contact",
+    title: "Need help or have questions?",
+    description: "Our support team is here to assist with custom orders, account queries, and API inquiries.",
+    email: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.SUPPORT_EMAIL || "support@smmpanel.com",
+    responsePromise: "We typically respond to inquiries within 24 hours.",
+    href: "/contact",
   },
   footer: {
     copyright: `© ${new Date().getFullYear()} SMM Panel. All rights reserved.`,
     description:
-      "Enterprise social growth infrastructure. Automated provider synchronization, double-entry ledger accounting, and live order tracking. Instagram, YouTube, Telegram, TikTok, Facebook and X are trademarks of their respective owners. This service is not affiliated with or endorsed by them.",
+      "Order social growth services with real-time tracking, transparent INR pricing, and automatic wallet refunds.",
+    trademarkDisclaimer:
+      "Instagram, YouTube, Telegram, TikTok, Facebook, and X are trademarks of their respective owners. SMM Panel is not affiliated with or endorsed by these platforms.",
     columns: [
       {
-        title: "Platform",
+        title: "Product",
         links: [
-          { label: "Live Catalog", href: "/services" },
-          { label: "Pricing & Bonuses", href: "/pricing" },
+          { label: "Services", href: "/services" },
+          { label: "Pricing", href: "/pricing" },
           { label: "How It Works", href: "/work" },
-          { label: "About Platform", href: "/about" },
-          { label: "Reseller API", href: "/app/api" },
         ],
       },
       {
-        title: "Support & Docs",
+        title: "Support",
         links: [
-          { label: "Knowledge Base & FAQ", href: "/faq" },
-          { label: "Contact Us", href: "/contact" },
+          { label: "FAQ", href: "/faq" },
+          { label: "Contact", href: "/contact" },
         ],
       },
       {
-        title: "Legal & Policies",
+        title: "Legal",
         links: [
           { label: "Terms of Service", href: "/legal/terms" },
           { label: "Privacy Policy", href: "/legal/privacy" },
