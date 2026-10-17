@@ -74,6 +74,9 @@ test.describe("CrownStage Persistent 3D Crown E2E Verification", () => {
     await page.waitForTimeout(300);
     await page.screenshot({ path: path.join(outDir, "footer-390.png") });
 
+    if (consoleErrors.length > 0) {
+      console.log("Captured console errors:", JSON.stringify(consoleErrors, null, 2));
+    }
     expect(consoleErrors.length).toBe(0);
   });
 

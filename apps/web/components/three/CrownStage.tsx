@@ -1,164 +1,46 @@
 "use client";
 
-import React, { useRef, useEffect, useState, useMemo } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Sparkles } from "@react-three/drei";
 import * as THREE from "three";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMotionPreference } from "../motion/useMotionPreference";
 import { CrownModel } from "./objects/CrownModel";
-import { FloatingMarginGlyphs } from "./objects/GenericGlyphs";
 import { PlatformRing, PlatformId, LOGOS, getLogoGeometryStats } from "./objects/SocialLogos";
 
-gsap.registerPlugin(ScrollTrigger);
+export type CrownSectionTarget = "hero" | "benefits" | "services" | "work" | "pricing" | "faq" | "contact";
 
-export interface CrownSectionTarget {
-  xPct: number;
-  yPct: number;
-  scale: number;
-  opacity: number;
-}
-
-const SECTION_TARGETS: Record<string, CrownSectionTarget> = {
-  right: { xPct: 0.76, yPct: 0.44, scale: 0.96, opacity: 1.0 },
-  left: { xPct: 0.28, yPct: 0.5, scale: 1.0, opacity: 1.0 },
-  center: { xPct: 0.5, yPct: 0.5, scale: 0.7, opacity: 0.5 },
-  dim: { xPct: 0.5, yPct: 0.5, scale: 0.8, opacity: 0.15 },
-};
-
-/**
- * Desktop-only Bloom postprocessing using EffectComposer & UnrealBloomPass
- * Luminance threshold: 0.25, intensity: 0.9
- */
-function DesktopBloom() {
-  const { gl, scene, camera, size } = useThree();
-  const composerRef = useRef<EffectComposer | null>(null);
-
-  useEffect(() => {
-    const composer = new EffectComposer(gl);
-    composer.renderToScreen = true;
-
-    const renderPass = new RenderPass(scene, camera);
-    renderPass.clearAlpha = 0;
-    composer.addPass(renderPass);
-
-    const bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(size.width, size.height),
-      0.35,  // luminous controlled glow highlighting jewel tips & reflections
-      0.32,  // radius
-      0.80   // threshold tuned for vibrant specular glints
-    );
-    composer.addPass(bloomPass);
-
-    composerRef.current = composer;
-
-    return () => {
-      composer.dispose();
-      composerRef.current = null;
-    };
-  }, [gl, scene, camera, size.width, size.height]);
-
-  useFrame(() => {
-    if (composerRef.current) {
-      composerRef.current.render();
-    }
-  }, 1);
-
-  return null;
-}
-
-function CrownRig({
+function ContainedCrownRig({
   mousePos,
-  scrollProgress,
-  scrollVelocity,
-  currentTarget,
   isLowPerformance,
   isMobile,
   onSelect,
+  isIntersecting,
 }: {
   mousePos: React.MutableRefObject<[number, number]>;
-  scrollProgress: React.MutableRefObject<number>;
-  scrollVelocity: React.MutableRefObject<number>;
-  currentTarget: React.MutableRefObject<CrownSectionTarget>;
   isLowPerformance: boolean;
   isMobile: boolean;
   onSelect?: (id: PlatformId) => void;
+  isIntersecting: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const crownRotRef = useRef<THREE.Group>(null);
-  const opacityRef = useRef(1);
-  const { viewport } = useThree();
-
-  // Rotation states
   const rotY = useRef(0);
-  const prevP = useRef(0);
+  const scrollDummy = useRef(0);
 
   useFrame((_, delta) => {
-    if (!groupRef.current || !crownRotRef.current) return;
+    if (!isIntersecting || !crownRotRef.current || !groupRef.current) return;
 
-    // 1. Position & Scale tweening based on current target
-    const target = currentTarget.current;
-    // Map xPct (0 -> 1) to viewport 3D coordinates: (-viewport.width/2 to +viewport.width/2)
-    const target3dX = (target.xPct - 0.5) * viewport.width;
-    const target3dY = (0.5 - target.yPct) * viewport.height;
-    const targetScale = target.scale * (viewport.width < 8 ? 0.7 : 1.15);
+    // Gentle float and rotation
+    rotY.current += 0.22 * delta;
 
-    groupRef.current.position.x = THREE.MathUtils.damp(
-      groupRef.current.position.x,
-      target3dX,
-      3.5,
-      delta
-    );
-    groupRef.current.position.y = THREE.MathUtils.damp(
-      groupRef.current.position.y,
-      target3dY,
-      3.5,
-      delta
-    );
-    groupRef.current.position.z = THREE.MathUtils.damp(
-      groupRef.current.position.z,
-      0,
-      3.5,
-      delta
-    );
-    groupRef.current.scale.setScalar(
-      THREE.MathUtils.damp(groupRef.current.scale.x, targetScale, 3.5, delta)
-    );
-
-    // 2. Controlled Multi-Axis Rotation & Fluid Scroll Response
-    // Idle gentle spin: 0.18 rad/s
-    const idleDelta = 0.18 * delta;
-
-    // Scroll coupling: full 360-degree rotation across page scroll + velocity response
-    const currentP = scrollProgress.current;
-    const scrollDelta = (currentP - prevP.current) * Math.PI * 4;
-    prevP.current = currentP;
-
-    // Smooth scroll velocity influence
-    const v = scrollVelocity.current;
-
-    // Cap angular velocity to ensure buttery smoothness without erratic spinning
-    const maxAngularDelta = 0.4;
-    const clampedScrollDelta = THREE.MathUtils.clamp(
-      scrollDelta,
-      -maxAngularDelta,
-      maxAngularDelta
-    );
-
-    rotY.current += idleDelta + clampedScrollDelta;
-
-    // Pointer parallax tilt (horizontal: Y-axis rotation, vertical: subtle banking)
+    // Subtle pointer parallax tilt
     const [mx, my] = mousePos.current;
-    const pointerTiltY = mx * 0.14; // subtle mouse yaw
-    const pointerTiltX = -my * 0.08; // subtle mouse pitch
+    const pointerTiltY = mx * 0.12;
+    const pointerTiltX = -my * 0.08;
 
-    // X tilt: 10 deg base tilt (0.18 rad) for natural perspective showing hollow interior and tips
     crownRotRef.current.rotation.x = THREE.MathUtils.damp(
       crownRotRef.current.rotation.x,
       0.18 + pointerTiltX,
@@ -166,7 +48,6 @@ function CrownRig({
       delta
     );
 
-    // Y rotation: idle + scroll delta + pointer tilt
     crownRotRef.current.rotation.y = THREE.MathUtils.damp(
       crownRotRef.current.rotation.y,
       rotY.current + pointerTiltY,
@@ -174,61 +55,40 @@ function CrownRig({
       delta
     );
 
-    // Dynamic bank on rapid scroll (rolls slightly into scroll direction)
-    const scrollRoll = THREE.MathUtils.clamp(v * 0.04, -0.15, 0.15);
-
-    // Z rotation: dynamic scroll banking roll + pointer banking
     crownRotRef.current.rotation.z = THREE.MathUtils.damp(
       crownRotRef.current.rotation.z,
-      scrollRoll - mx * 0.06,
+      -mx * 0.05,
       4,
       delta
     );
 
-    // 3. Opacity damp
-    opacityRef.current = THREE.MathUtils.damp(
-      opacityRef.current,
-      target.opacity,
-      4,
-      delta
-    );
-
-    // Apply opacity to children materials
-    crownRotRef.current.traverse((child: any) => {
-      if (child.isMesh && child.material) {
-        if (child.material.transparent) {
-          child.material.opacity = (child.userData.baseOpacity ?? 0.5) * opacityRef.current;
-        }
-      }
-      if (child.isLineSegments && child.material) {
-        child.material.opacity = (child.userData.baseOpacity ?? 0.55) * opacityRef.current;
-      }
-    });
+    // Subtle breathing float on Y
+    groupRef.current.position.y = Math.sin(rotY.current * 0.8) * 0.06;
   });
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} position={[0, -0.05, 0]}>
       <group ref={crownRotRef}>
-        <CrownModel scale={0.82} />
+        <CrownModel scale={0.88} />
       </group>
 
-      {/* Real 3D Social Media Platform Logos Orbiting OUTSIDE Crown with clear gap */}
-      <group position={[0, -0.15, 0]} scale={0.42}>
+      {/* Orbiting 3D Social Media Platform Logos */}
+      <group position={[0, -0.15, 0]} scale={0.44}>
         <PlatformRing
-          radius={isMobile ? 2.4 : 3.4}
+          radius={isMobile ? 2.3 : 2.9}
           onSelect={onSelect}
           isMobile={isMobile}
-          scrollProgress={scrollProgress}
+          scrollProgress={scrollDummy}
         />
       </group>
 
-      {/* Small, sparse floating lime sparkles (particles kept small and restrained) */}
+      {/* Minimal, restrained lime sparkles contained tightly inside the crown */}
       {!isLowPerformance && (
         <Sparkles
-          count={14}
-          scale={[2.4, 2.4, 2.4]}
-          size={1.2}
-          speed={0.15}
+          count={10}
+          scale={[1.8, 1.8, 1.8]}
+          size={1.0}
+          speed={0.12}
           color="#DBEF90"
           opacity={0.20}
         />
@@ -243,35 +103,29 @@ export function CrownStage() {
   const [isClient, setIsClient] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isLowPerformance, setIsLowPerformance] = useState(false);
+  const [isIntersecting, setIsIntersecting] = useState(true);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const mousePos = useRef<[number, number]>([0, 0]);
-  const scrollProgress = useRef(0);
-  const scrollVelocity = useRef(0);
-  const currentTarget = useRef<CrownSectionTarget>(SECTION_TARGETS.right);
 
-  const handleSelectPlatform = (id: PlatformId) => {
+  const handleSelectPlatform = useCallback((id: PlatformId) => {
     router.push(`/services?platform=${id}`);
-  };
+  }, [router]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       (window as any).__onSelectLogo = handleSelectPlatform;
       (window as any).__logoDebug = getLogoGeometryStats;
-      (window as any).__sceneDebug = (overrideP?: number) => {
-        const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-        const domProgress = totalHeight > 0 ? window.scrollY / totalHeight : 0;
-        const activeP = typeof overrideP === "number" ? overrideP : scrollProgress.current > 0 ? scrollProgress.current : domProgress;
-        return {
-          visibleGroups: ["hero"],
-          platforms: Object.keys(LOGOS),
-          colors: ["#FF4D8D", "#D8EC8D", "#7B3FF2", "#FFFFFF"],
-          currentProgress: activeP,
-          pipelineT: THREE.MathUtils.clamp((activeP - 0.32) / 0.40, 0, 1),
-          presences: { hero: 1, pipeline: 0, closing: 0 },
-        };
-      };
+      (window as any).__sceneDebug = () => ({
+        visibleGroups: ["hero"],
+        platforms: Object.keys(LOGOS),
+        colors: ["#FF4D8D", "#D8EC8D", "#7B3FF2", "#FFFFFF"],
+        currentProgress: 0,
+        pipelineT: 0,
+        presences: { hero: 1, pipeline: 0, closing: 0 },
+      });
     }
-  }, []);
+  }, [handleSelectPlatform]);
 
   useEffect(() => {
     setIsClient(true);
@@ -292,99 +146,64 @@ export function CrownStage() {
     return () => window.removeEventListener("resize", checkViewport);
   }, []);
 
-  // Pointer & Scroll coupling with GSAP ScrollTrigger
+  // IntersectionObserver to pause rendering when offscreen
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsIntersecting(entry.isIntersecting);
+      },
+      { threshold: 0.05 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isClient]);
+
+  // Gentle mouse parallax inside container
   useEffect(() => {
     if (reduced || !canRender3D || isMobile) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      mousePos.current = [
-        (e.clientX / window.innerWidth) * 2 - 1,
-        -(e.clientY / window.innerHeight) * 2 + 1,
-      ];
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const inX = (e.clientX - rect.left) / rect.width;
+      const inY = (e.clientY - rect.top) / rect.height;
+      if (inX >= 0 && inX <= 1 && inY >= 0 && inY <= 1) {
+        mousePos.current = [(inX - 0.5) * 2, (0.5 - inY) * 2];
+      } else {
+        mousePos.current = [0, 0];
+      }
     };
+
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
-
-    let lastScrollY = window.scrollY;
-    let lastScrollTime = performance.now();
-
-    // ScrollTrigger to read data-crown attribute from landing sections
-    const triggers: ScrollTrigger[] = [];
-    const sections = document.querySelectorAll("[data-crown]");
-
-    sections.forEach((sec) => {
-      const mode = (sec.getAttribute("data-crown") || "right") as keyof typeof SECTION_TARGETS;
-      const targetConfig = SECTION_TARGETS[mode] || SECTION_TARGETS.right;
-
-      const trigger = ScrollTrigger.create({
-        trigger: sec,
-        start: "top 60%",
-        end: "bottom 40%",
-        onEnter: () => {
-          currentTarget.current = targetConfig;
-        },
-        onEnterBack: () => {
-          currentTarget.current = targetConfig;
-        },
-      });
-      triggers.push(trigger);
-    });
-
-    // Page overall scroll tracking
-    const overallTrigger = ScrollTrigger.create({
-      start: "top top",
-      end: "bottom bottom",
-      scrub: 0.6,
-      onUpdate: (self) => {
-        scrollProgress.current = self.progress;
-
-        const now = performance.now();
-        const dt = (now - lastScrollTime) / 1000;
-        const currentY = window.scrollY;
-        if (dt > 0.01) {
-          const dy = currentY - lastScrollY;
-          scrollVelocity.current = THREE.MathUtils.clamp(dy / (dt * 1000), -5, 5);
-          lastScrollY = currentY;
-          lastScrollTime = now;
-        }
-      },
-    });
-    triggers.push(overallTrigger);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      triggers.forEach((t) => t.kill());
-    };
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [reduced, canRender3D, isMobile]);
 
-  // Fallback check: static crown.webp for reduced motion, mobile under 768 px, no WebGL
   const shouldUseFallback =
     !isClient || reduced || !canRender3D || isMobile || lowPower;
 
   if (shouldUseFallback) {
     return (
       <div
-        className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+        ref={containerRef}
+        className="relative w-full aspect-[4/3] sm:aspect-square max-w-[460px] mx-auto pointer-events-none select-none z-0 flex items-center justify-center overflow-hidden"
         aria-hidden="true"
         data-testid="crown-stage-fallback"
       >
-        {/* Ambient subtle glow */}
-        <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-[#243100]/25 blur-[140px] rounded-full pointer-events-none" />
+        {/* Soft contained ambient olive glow */}
+        <div className="absolute inset-4 bg-[#243100]/25 blur-[90px] rounded-full pointer-events-none" />
 
-        {/* Mobile/Reduced-motion static image with lowered opacity on mobile to guarantee AA readability */}
-        <div
-          className="absolute top-36 right-0 sm:right-12 w-[240px] sm:w-[340px] h-[240px] sm:h-[340px] pointer-events-none flex items-center justify-center opacity-25 sm:opacity-70 md:opacity-100 transition-opacity"
-          style={{
-            maskImage: "radial-gradient(closest-side, #000 64%, transparent 100%)",
-            WebkitMaskImage: "radial-gradient(closest-side, #000 64%, transparent 100%)",
-          }}
-        >
+        <div className="relative w-[240px] sm:w-[320px] h-[240px] sm:h-[320px] pointer-events-none flex items-center justify-center">
           <Image
             src="/brand/crown-royal@2x.webp"
             alt="SMM Panel 3D royal king's crown emblem"
-            width={340}
-            height={340}
+            width={320}
+            height={320}
             priority
-            className="w-full h-full object-contain mix-blend-screen pointer-events-none"
+            className="w-full h-full object-contain mix-blend-screen pointer-events-none select-none"
           />
         </div>
       </div>
@@ -393,16 +212,18 @@ export function CrownStage() {
 
   return (
     <div
-      className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-black"
+      ref={containerRef}
+      className="relative w-full aspect-[4/3] sm:aspect-square max-w-[460px] mx-auto pointer-events-none select-none z-0 overflow-hidden"
       aria-hidden="true"
       data-testid="crown-stage-container"
     >
-      {/* Delicate dark olive haze behind crown */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[#243100]/20 blur-[160px] rounded-full pointer-events-none -z-10" />
+      {/* Soft contained ambient olive glow strictly inside stage */}
+      <div className="absolute inset-6 bg-[#243100]/20 blur-[100px] rounded-full pointer-events-none -z-10" />
 
       <Canvas
-        dpr={[1, 2]}
-        camera={{ position: [0, 0, 4.8], fov: 42 }}
+        dpr={[1, 1.75]}
+        camera={{ position: [0, 0, 4.5], fov: 42 }}
+        frameloop={isIntersecting ? "always" : "never"}
         gl={{
           antialias: true,
           alpha: true,
@@ -410,33 +231,23 @@ export function CrownStage() {
           stencil: false,
           depth: true,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.35,
+          toneMappingExposure: 1.25,
         }}
-        className="w-full h-full"
+        className="w-full h-full pointer-events-none"
       >
-        {/* Luminous studio lighting: bright, radiant royal gold reflections & vibrant electric highlights */}
-        <ambientLight intensity={0.75} color="#f4ffe6" />
-        <directionalLight position={[6, 8, 5]} intensity={1.85} color="#fffde8" />
-        <directionalLight position={[-6, 4, 3]} intensity={1.15} color="#d4f768" />
-        <pointLight position={[2.5, 1.5, 3.5]} intensity={1.10} color="#e8fa7d" />
-        <pointLight position={[-4, 3, -2]} intensity={0.75} color="#90e628" />
+        <ambientLight intensity={0.8} color="#f4ffe6" />
+        <directionalLight position={[5, 6, 4]} intensity={1.8} color="#fffde8" />
+        <directionalLight position={[-5, 3, 2]} intensity={1.1} color="#d4f768" />
+        <pointLight position={[2, 1, 3]} intensity={1.0} color="#e8fa7d" />
+        <pointLight position={[-3, 2, -1]} intensity={0.7} color="#90e628" />
 
-        {/* Floating generic margin glyphs */}
-        <FloatingMarginGlyphs isMobile={isMobile} />
-
-        {/* Animated & Scroll-Coupled Crown Rig with Orbiting Platform Logos */}
-        <CrownRig
+        <ContainedCrownRig
           mousePos={mousePos}
-          scrollProgress={scrollProgress}
-          scrollVelocity={scrollVelocity}
-          currentTarget={currentTarget}
           isLowPerformance={isLowPerformance}
           isMobile={isMobile}
           onSelect={handleSelectPlatform}
+          isIntersecting={isIntersecting}
         />
-
-        {/* Bloom postprocessing (desktop only, lowPower disabled) */}
-        {!isLowPerformance && !isMobile && <DesktopBloom />}
       </Canvas>
     </div>
   );
