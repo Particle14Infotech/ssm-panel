@@ -1,5 +1,6 @@
 "use client";
 
+
 import React, { useState } from "react";
 import { useAdmin } from "@/context/AdminContext";
 import { OrderStatus } from "@smm/contracts";
@@ -19,11 +20,26 @@ import {
 } from "lucide-react";
 
 export default function AdminOrdersPage() {
-  const { orders, updateOrderStatus, resendOrderToProvider } = useAdmin();
+  const { orders, updateOrderStatus, resendOrderToProvider, refreshAdminData } = useAdmin();
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [editStatusValue, setEditStatusValue] = useState<OrderStatus>("PENDING");
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshAdminData();
+    setIsRefreshing(false);
+  };
+
+  // Auto-refresh orders every 10 seconds for real-time supervisor telemetry
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      refreshAdminData();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [refreshAdminData]);
 
   const filteredOrders = orders.filter((o) => {
     const matchesStatus = selectedStatus === "ALL" || o.status === selectedStatus;
@@ -32,6 +48,9 @@ export default function AdminOrdersPage() {
       q === "" ||
       o.id.toLowerCase().includes(q) ||
       o.userId.toLowerCase().includes(q) ||
+      (o.userEmail && o.userEmail.toLowerCase().includes(q)) ||
+      (o.providerOrderId && o.providerOrderId.toLowerCase().includes(q)) ||
+      (o.providerName && o.providerName.toLowerCase().includes(q)) ||
       o.serviceName.toLowerCase().includes(q) ||
       o.target.toLowerCase().includes(q);
 
@@ -65,6 +84,15 @@ export default function AdminOrdersPage() {
               Override fulfillment states, resend stuck provider vectors, or issue direct ledger refunds.
             </p>
           </div>
+
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/[0.04] border border-white/10 hover:border-[#D8EC8D]/40 text-xs font-mono text-white transition-colors"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-[#D8EC8D] ${isRefreshing ? "animate-spin" : ""}`} />
+            <span>{isRefreshing ? "Refreshing..." : "Refresh Orders"}</span>
+          </button>
         </div>
 
         {/* Filters & Search */}
@@ -94,6 +122,7 @@ export default function AdminOrdersPage() {
               <option value="PARTIAL">Partial</option>
               <option value="CANCELLED">Cancelled</option>
               <option value="REFUNDED">Refunded</option>
+              <option value="FAILED">Failed</option>
             </select>
           </div>
         </div>
@@ -110,6 +139,7 @@ export default function AdminOrdersPage() {
                   <th className="py-3 px-3">Target URL</th>
                   <th className="py-3 px-3">Qty / Remains</th>
                   <th className="py-3 px-3">Charge</th>
+                  <th className="py-3 px-3">Provider Ref</th>
                   <th className="py-3 px-3">Status</th>
                   <th className="py-3 px-3 text-right">Root Actions</th>
                 </tr>
@@ -118,10 +148,14 @@ export default function AdminOrdersPage() {
                 {filteredOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="py-4 px-3 font-mono font-bold text-white whitespace-nowrap">
-                      {order.id}
+                      <div>{order.id.slice(0, 8)}...</div>
+                      <div className="text-[10px] text-on-surface-variant font-normal">
+                        {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ""}
+                      </div>
                     </td>
                     <td className="py-4 px-3 font-mono text-on-surface-variant whitespace-nowrap">
-                      {order.userId}
+                      <div className="text-white font-medium">{order.userEmail || order.userId}</div>
+                      <div className="text-[10px] text-white/40">{order.userId}</div>
                     </td>
                     <td className="py-4 px-3">
                       <div className="font-medium text-white max-w-xs truncate">{order.serviceName}</div>
@@ -148,6 +182,15 @@ export default function AdminOrdersPage() {
                     </td>
                     <td className="py-4 px-3 font-mono font-semibold text-[#D8EC8D] whitespace-nowrap">
                       ₹{order.charge.toFixed(2)}
+                    </td>
+                    <td className="py-4 px-3 font-mono text-xs whitespace-nowrap">
+                      {order.providerOrderId ? (
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 text-[10px]">
+                          #{order.providerOrderId}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-white/30 italic">Unassigned</span>
+                      )}
                     </td>
                     <td className="py-4 px-3 whitespace-nowrap">
                       {editingOrderId === order.id ? (

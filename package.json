@@ -14,6 +14,7 @@
     "check:emoji": "node scripts/check-emoji.mjs --fail",
     "verify:backend": "node scripts/verify-backend.js",
     "smoke": "node scripts/smoke.js",
+    "e2e:prod": "node scripts/e2e-prod.js",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""
   },
   "devDependencies": {

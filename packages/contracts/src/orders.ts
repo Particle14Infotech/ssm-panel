@@ -91,6 +91,7 @@ export type CreateOrderInput = z.infer<typeof CreateOrderInputSchema>;
 export const OrderItemSchema = z.object({
   id: z.string(),
   userId: z.string(),
+  userEmail: z.string().optional(),
   serviceId: z.string(),
   serviceName: z.string(),
   platform: z.string(),
@@ -100,6 +101,8 @@ export const OrderItemSchema = z.object({
   startCount: z.number().nullable().optional(),
   remains: z.number().nullable().optional(),
   status: OrderStatusSchema,
+  providerOrderId: z.string().nullable().optional(),
+  providerName: z.string().nullable().optional(),
   idempotencyKey: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),

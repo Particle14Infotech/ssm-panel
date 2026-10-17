@@ -78,7 +78,15 @@ interface CustomerContextType {
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+function getApiBase(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
+  if (!envUrl.endsWith("/api/v1")) {
+    return envUrl.replace(/\/+$/, "") + "/api/v1";
+  }
+  return envUrl;
+}
+
+const API_BASE = getApiBase();
 
 export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile>(EMPTY_USER);

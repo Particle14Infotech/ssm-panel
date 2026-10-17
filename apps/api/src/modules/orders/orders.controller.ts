@@ -26,12 +26,14 @@ export class OrdersController {
   @ApiOperation({ summary: "Get User Orders Stream" })
   findAll(
     @CurrentUser() user: CurrentUserData,
+    @Query("userId") queryUserId?: string,
     @Query("status") status?: string,
     @Query("q") query?: string,
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string
   ) {
-    return this.ordersService.findAll(user.id, user.role, { status, query, startDate, endDate });
+    const targetUserId = user.role === Role.ADMIN ? (queryUserId || undefined) : user.id;
+    return this.ordersService.findAll(targetUserId, user.role, { status, query, startDate, endDate });
   }
 
   @Get(":id")

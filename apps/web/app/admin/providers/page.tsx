@@ -1,5 +1,6 @@
 "use client";
 
+
 import React, { useState } from "react";
 import { useAdmin } from "@/context/AdminContext";
 import {
@@ -87,8 +88,15 @@ export default function AdminProvidersPage() {
 
   const handleSync = async (id: string) => {
     setSyncingId(id);
-    await syncProvider(id);
-    setTimeout(() => setSyncingId(null), 800);
+    setImportNotice(null);
+    const success = await syncProvider(id);
+    setSyncingId(null);
+    if (success) {
+      setImportNotice(`Provider #${id} balance and telemetry successfully refreshed.`);
+    } else {
+      setImportNotice(`Failed to sync provider #${id}. Verify upstream API connectivity and secret key.`);
+    }
+    setTimeout(() => setImportNotice(null), 5000);
   };
 
   const handleImport = async (id: string) => {

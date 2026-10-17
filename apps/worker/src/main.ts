@@ -51,7 +51,21 @@ export class SMMWorkerEngine {
           async (job: Job) => {
             logger.info({ jobId: job.id, jobName: job.name, data: job.data }, "[BullMQ] Processing order job");
             if (job.name === "dispatch-order" && job.data?.orderId) {
-              await this.dispatchOrderToProvider(job.data.orderId);
+              try {
+                await this.dispatchOrderToProvider(job.data.orderId);
+              } catch (dispatchErr: any) {
+                const attemptsMade = (job.attemptsMade || 0) + 1;
+                const isPermanent =
+                  dispatchErr.message?.includes("Missing username") ||
+                  dispatchErr.message?.includes("not found") ||
+                  dispatchErr.message?.includes("Incorrect request");
+                if (attemptsMade >= 3 || isPermanent) {
+                  logger.warn(`[BullMQ] Order #${job.data.orderId} failed dispatch permanently. Triggering auto-refund.`);
+                  await this.handleFinalOrderFailure(job.data.orderId, dispatchErr.message);
+                } else {
+                  throw dispatchErr;
+                }
+              }
             }
             return { processed: true, completedAt: new Date().toISOString() };
           },
@@ -247,6 +261,13 @@ export class SMMWorkerEngine {
         );
       } catch (err: any) {
         logger.error(`[Worker Engine] Upstream provider dispatch failed for #${order.id}: ${err.message}`);
+        await prisma.orderStatusHistory.create({
+          data: {
+            orderId: order.id,
+            status: OrderStatus.PENDING,
+            notes: `Dispatch attempt failed: ${err.message}`,
+          },
+        }).catch(() => null);
         throw err;
       }
     } else {
@@ -581,15 +602,39 @@ export class SMMWorkerEngine {
       return `prov_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
     }
 
-    const payload = {
+    const cleanLink = link.trim();
+    const payload: Record<string, any> = {
       key: apiKey,
       action: "add",
       service,
-      link,
+      link: cleanLink,
       quantity,
     };
 
-    const response = await fetch(apiUrl, {
+    // If upstream expects username or link is a profile handle/URL
+    if (cleanLink.includes("instagram.com/")) {
+      const postMatch = cleanLink.match(/instagram\.com\/(?:p|reel|tv)\/([a-zA-Z0-9_-]+)/i);
+      if (postMatch && postMatch[1]) {
+        payload.link = cleanLink;
+        // Some upstream auto-likes services require a username parameter even for posts
+        payload.username = postMatch[1];
+      } else {
+        const profileMatch = cleanLink.match(/instagram\.com\/([a-zA-Z0-9._]+)\/?(?:\?.*)?$/i);
+        if (
+          profileMatch &&
+          profileMatch[1] &&
+          !["p", "reel", "tv", "stories", "explore", "reels"].includes(profileMatch[1].toLowerCase())
+        ) {
+          payload.username = profileMatch[1];
+          payload.link = `https://www.instagram.com/${profileMatch[1]}`;
+        }
+      }
+    } else if (!cleanLink.startsWith("http")) {
+      payload.username = cleanLink.replace(/^@/, "");
+      payload.link = cleanLink.replace(/^@/, "");
+    }
+
+    let response = await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams(payload as any).toString(),
@@ -600,7 +645,25 @@ export class SMMWorkerEngine {
       throw new Error(`Upstream SMM API returned HTTP ${response.status}`);
     }
 
-    const data: any = await response.json();
+    let data: any = await response.json();
+
+    // If upstream provider specifically reports "Missing username", retry once with extracted handle/target
+    if (data.error && data.error.toLowerCase().includes("missing username") && !payload.username) {
+      const fallbackUser = cleanLink.replace(/^https?:\/\/(?:www\.)?instagram\.com\//i, "").replace(/\/.*$/, "").replace(/^@/, "");
+      if (fallbackUser && fallbackUser.length > 0) {
+        payload.username = fallbackUser;
+        const retryRes = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams(payload as any).toString(),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (retryRes.ok) {
+          data = await retryRes.json();
+        }
+      }
+    }
+
     if (data.error) {
       throw new Error(`Upstream provider error: ${data.error}`);
     }

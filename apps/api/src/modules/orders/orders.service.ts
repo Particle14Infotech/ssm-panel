@@ -65,24 +65,30 @@ export class OrdersService {
         if (filters.endDate) where.createdAt.lte = new Date(filters.endDate);
       }
 
+      const include: any = {
+        service: {
+          select: {
+            id: true,
+            name: true,
+            platform: true,
+            refillable: true,
+            cancellable: true,
+          },
+        },
+        history: {
+          orderBy: { createdAt: "asc" },
+        },
+        refunds: true,
+      };
+
+      if (requesterRole === "ADMIN") {
+        include.provider = { select: { id: true, name: true } };
+        include.user = { select: { id: true, email: true, name: true } };
+      }
+
       return await this.prisma.order.findMany({
         where,
-        include: {
-          service: {
-            select: {
-              id: true,
-              name: true,
-              platform: true,
-              refillable: true,
-              cancellable: true,
-            },
-          },
-          history: {
-            orderBy: { createdAt: "asc" },
-          },
-          refunds: true,
-          provider: requesterRole === "ADMIN" ? { select: { id: true, name: true } } : false,
-        },
+        include,
         orderBy: { createdAt: "desc" },
       });
     } catch (err: any) {
@@ -103,16 +109,22 @@ export class OrdersService {
       throw new NotFoundException(`Order #${id} not found.`);
     }
 
+    const include: any = {
+      service: true,
+      history: {
+        orderBy: { createdAt: "asc" },
+      },
+      refunds: true,
+    };
+
+    if (requesterRole === "ADMIN") {
+      include.provider = { select: { id: true, name: true } };
+      include.user = { select: { id: true, email: true, name: true } };
+    }
+
     const order = await this.prisma.order.findUnique({
       where: { id },
-      include: {
-        service: true,
-        history: {
-          orderBy: { createdAt: "asc" },
-        },
-        refunds: true,
-        provider: requesterRole === "ADMIN" ? { select: { id: true, name: true } } : false,
-      },
+      include,
     });
 
     if (!order) {

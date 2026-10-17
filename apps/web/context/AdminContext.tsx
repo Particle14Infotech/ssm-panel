@@ -70,7 +70,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
   const [providers, setProviders] = useState<AdminProvider[]>(INITIAL_ADMIN_PROVIDERS);
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
-  const [tickets, setTickets] = useState<Ticket[]>(INITIAL_ADMIN_TICKETS);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const getAuthToken = useCallback(() => {
@@ -126,6 +126,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
             rawOrders.map((o: any) => ({
               id: o.id,
               userId: o.userId,
+              userEmail: o.user?.email || o.userId,
               serviceId: o.serviceId,
               serviceName: o.service?.name || "Service Item",
               platform: (o.service?.platform || "general").toLowerCase(),
@@ -135,6 +136,8 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
               startCount: o.startCount ?? 0,
               remains: o.remains ?? 0,
               status: o.status,
+              providerOrderId: o.providerOrderId || null,
+              providerName: o.provider?.name || null,
               createdAt: o.createdAt,
               updatedAt: o.updatedAt,
               refillable: o.service?.refillable ?? false,
@@ -189,7 +192,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
 
       if (ticketsRes && ticketsRes.ok) {
         const rawTickets = await ticketsRes.json();
-        if (Array.isArray(rawTickets) && rawTickets.length > 0) {
+        if (Array.isArray(rawTickets)) {
           setTickets(
             rawTickets.map((tk: any) => ({
               id: tk.id,
@@ -419,6 +422,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
                     balance: data.balance,
                     currency: data.currency || p.currency,
                     status: data.status === "CONNECTED" ? "CONNECTED" : p.status,
+                    serviceCount: data.totalActiveServices ?? p.serviceCount,
                     lastSyncAt: data.timestamp || new Date().toISOString(),
                   }
                 : p

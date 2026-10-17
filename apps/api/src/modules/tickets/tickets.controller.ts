@@ -28,8 +28,8 @@ export class TicketsController {
     @CurrentUser() user?: CurrentUserData | string,
     @Query("userId") queryUserId?: string
   ) {
-    const effectiveUserId = typeof user === "string" ? user : (user?.id || queryUserId);
     const role = typeof user === "object" ? user?.role : undefined;
+    const effectiveUserId = role === Role.ADMIN ? queryUserId : (typeof user === "string" ? user : user?.id);
     return this.ticketsService.findAll(effectiveUserId, role);
   }
 

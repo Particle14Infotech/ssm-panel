@@ -226,16 +226,29 @@ export class ProvidersService {
   }
 
   async sync(id: string) {
+    // 1. Refresh live provider balance
     const balanceRes = await this.getBalance(id);
+
+    // 2. Perform catalog sync/import with default 20% margin
+    let importRes: any = { importedCount: 0, updatedCount: 0, errorsCount: 0 };
+    try {
+      importRes = await this.importServices(id, { marginPercent: 20 });
+    } catch (err: any) {
+      this.logger.error(`Catalog auto-sync during provider sync failed: ${err.message}`);
+    }
+
     return {
       success: true,
       ...balanceRes,
+      importedCount: importRes.importedCount || 0,
+      updatedCount: importRes.updatedCount || 0,
+      errorsCount: importRes.errorsCount || 0,
       timestamp: new Date().toISOString(),
     };
   }
 
   /**
-   * Import services from upstream provider and apply margin %
+   * Import services from upstream provider, sanitize rates/limits, and apply margin %
    */
   async importServices(id: string, options: { marginPercent?: number }) {
     const p = await this.prisma.provider.findUnique({ where: { id } });
@@ -245,83 +258,126 @@ export class ProvidersService {
     const decryptedKey = decryptProviderKey(p.apiKeyEncrypted);
     const upstreamServices = await this.smmClient.getServices(p.apiUrl, decryptedKey);
 
+    if (!Array.isArray(upstreamServices)) {
+      throw new BadRequestException("Upstream provider returned an invalid services format.");
+    }
+
     let importedCount = 0;
+    let updatedCount = 0;
+    let errorsCount = 0;
+
     for (const item of upstreamServices) {
-      // Find or create category
-      const catName = item.category || "General";
-      const catSlug = catName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-      
-      const category = await this.prisma.category.upsert({
-        where: { slug: catSlug },
-        update: {},
-        create: {
-          name: catName,
-          slug: catSlug,
-        },
-      });
+      try {
+        if (!item || !item.service || !item.name) continue;
 
-      const providerCost = parseFloat(String(item.rate || "100"));
-      // Rate = provider cost + margin %
-      const sellingRate = Number((providerCost * (1 + margin / 100)).toFixed(2));
-
-      // Platform detection
-      let platform = "OTHER";
-      const nameUpper = (item.name + " " + catName).toUpperCase();
-      if (nameUpper.includes("INSTAGRAM")) platform = "INSTAGRAM";
-      else if (nameUpper.includes("YOUTUBE")) platform = "YOUTUBE";
-      else if (nameUpper.includes("TIKTOK")) platform = "TIKTOK";
-      else if (nameUpper.includes("TELEGRAM")) platform = "TELEGRAM";
-      else if (nameUpper.includes("TWITTER") || nameUpper.includes(" X ")) platform = "X_TWITTER";
-      else if (nameUpper.includes("FACEBOOK")) platform = "FACEBOOK";
-
-      const existingService = await this.prisma.service.findFirst({
-        where: {
-          providerId: p.id,
-          providerServiceId: String(item.service),
-        },
-      });
-
-      if (existingService) {
-        await this.prisma.service.update({
-          where: { id: existingService.id },
-          data: {
-            name: item.name,
-            categoryId: category.id,
-            ratePer1000: new Decimal(sellingRate),
-            minQty: parseInt(String(item.min || 10), 10),
-            maxQty: parseInt(String(item.max || 100000), 10),
-            refillable: Boolean(item.refill),
-            cancellable: Boolean(item.cancel),
-            description: item.description || existingService.description,
-            active: true,
-            isDeleted: false,
+        // 1. Sanitize category
+        const catName = (item.category || "General").trim().slice(0, 100);
+        const catSlug = catName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "general";
+        
+        const category = await this.prisma.category.upsert({
+          where: { slug: catSlug },
+          update: {},
+          create: {
+            name: catName,
+            slug: catSlug,
           },
         });
-      } else {
-        await this.prisma.service.create({
-          data: {
-            name: item.name,
-            categoryId: category.id,
-            platform,
-            ratePer1000: new Decimal(sellingRate),
-            minQty: parseInt(String(item.min || 10), 10),
-            maxQty: parseInt(String(item.max || 100000), 10),
+
+        // 2. Parse & sanitize financial rate (protect against numeric field overflow < 10^8)
+        let providerCost = parseFloat(String(item.rate || "100"));
+        if (isNaN(providerCost) || providerCost < 0) {
+          providerCost = 100;
+        }
+        let sellingRate = Number((providerCost * (1 + margin / 100)).toFixed(2));
+        if (isNaN(sellingRate) || sellingRate <= 0) {
+          sellingRate = 1.0;
+        }
+        // PostgreSQL Decimal(10, 2) max value is 99999999.99
+        if (sellingRate > 9999999.99) {
+          sellingRate = 9999999.99;
+        }
+
+        // 3. Parse & clamp quantities to 32-bit integer limits (1 to 2,147,483,640)
+        let minQty = parseInt(String(item.min || 10), 10);
+        if (isNaN(minQty) || minQty < 1) minQty = 1;
+        if (minQty > 2147483640) minQty = 2147483640;
+
+        let maxQty = parseInt(String(item.max || 100000), 10);
+        if (isNaN(maxQty) || maxQty < minQty) maxQty = Math.max(minQty, 100000);
+        if (maxQty > 2147483640) maxQty = 2147483640;
+
+        // 4. Platform detection
+        let platform = "OTHER";
+        const nameUpper = (item.name + " " + catName).toUpperCase();
+        if (nameUpper.includes("INSTAGRAM")) platform = "INSTAGRAM";
+        else if (nameUpper.includes("YOUTUBE")) platform = "YOUTUBE";
+        else if (nameUpper.includes("TIKTOK")) platform = "TIKTOK";
+        else if (nameUpper.includes("TELEGRAM")) platform = "TELEGRAM";
+        else if (nameUpper.includes("TWITTER") || nameUpper.includes(" X ")) platform = "X_TWITTER";
+        else if (nameUpper.includes("FACEBOOK")) platform = "FACEBOOK";
+
+        const existingService = await this.prisma.service.findFirst({
+          where: {
             providerId: p.id,
             providerServiceId: String(item.service),
-            refillable: Boolean(item.refill),
-            cancellable: Boolean(item.cancel),
-            description: item.description || "",
-            active: true,
           },
         });
+
+        if (existingService) {
+          await this.prisma.service.update({
+            where: { id: existingService.id },
+            data: {
+              name: item.name.slice(0, 255),
+              categoryId: category.id,
+              platform,
+              ratePer1000: new Decimal(sellingRate),
+              minQty,
+              maxQty,
+              refillable: Boolean(item.refill),
+              cancellable: Boolean(item.cancel),
+              description: item.description || existingService.description || "",
+              active: true,
+              isDeleted: false,
+            },
+          });
+          updatedCount++;
+        } else {
+          await this.prisma.service.create({
+            data: {
+              name: item.name.slice(0, 255),
+              categoryId: category.id,
+              platform,
+              ratePer1000: new Decimal(sellingRate),
+              minQty,
+              maxQty,
+              providerId: p.id,
+              providerServiceId: String(item.service),
+              refillable: Boolean(item.refill),
+              cancellable: Boolean(item.cancel),
+              description: item.description || "",
+              active: true,
+            },
+          });
+          importedCount++;
+        }
+      } catch (svcErr: any) {
+        errorsCount++;
+        this.logger.warn(`Skipping malformed provider service #${item?.service}: ${svcErr.message}`);
       }
-      importedCount++;
     }
+
+    // Update active service count for provider
+    const totalActive = await this.prisma.service.count({
+      where: { providerId: p.id, active: true, isDeleted: false },
+    });
 
     return {
       success: true,
       providerId: p.id,
       importedCount,
+      updatedCount,
+      errorsCount,
+      totalActiveServices: totalActive,
       marginPercent: margin,
     };
   }

@@ -137,7 +137,8 @@ export function SimulatedCheckoutModal({
     setTimeout(async () => {
       try {
         const token = localStorage.getItem("authToken");
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+        const rawUrl = process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
+        const apiBase = rawUrl.endsWith("/api/v1") ? rawUrl : rawUrl.replace(/\/+$/, "") + "/api/v1";
 
         const paymentId = isFailureTrigger
           ? `pay_fail_${Date.now()}`

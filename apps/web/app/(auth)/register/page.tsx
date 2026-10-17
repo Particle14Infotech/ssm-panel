@@ -37,7 +37,8 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterInput) => {
     setServerError(null);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+      const rawUrl = process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
+      const apiBase = rawUrl.endsWith("/api/v1") ? rawUrl : rawUrl.replace(/\/+$/, "") + "/api/v1";
       const res = await fetch(`${apiBase}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
