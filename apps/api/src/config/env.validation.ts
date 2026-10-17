@@ -48,8 +48,14 @@ export function validateEnvironment(env: Record<string, string | undefined> = pr
 
     // Production guard for payments
     if (paymentProvider === "simulated") {
-      if (env.ALLOW_SIMULATED_PAYMENTS !== "true") {
-        missing.push("ALLOW_SIMULATED_PAYMENTS (Simulated payments in production requires ALLOW_SIMULATED_PAYMENTS=true)");
+      const isAllowedSimulated =
+        env.ALLOW_SIMULATED_PAYMENTS === "true" ||
+        env.PAYMENTS_MODE === "sandbox";
+
+      if (!isAllowedSimulated) {
+        missing.push(
+          "ALLOW_SIMULATED_PAYMENTS (Simulated payments in production requires ALLOW_SIMULATED_PAYMENTS=true or PAYMENTS_MODE=sandbox)"
+        );
       } else {
         console.warn("\n=======================================================");
         console.warn("[Payments Guard] WARNING: Running with SIMULATED payments in PRODUCTION mode. No real money will be charged.");

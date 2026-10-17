@@ -18,10 +18,15 @@ if (service === "web") {
     console.log("[start-service] Deploying reviewed Prisma migrations...");
     run("pnpm exec prisma migrate deploy");
     console.log("[start-service] Database migrations applied successfully.");
+  } catch (err) {
+    console.warn("[start-service] Note: db migration warning:", err.message);
+  }
+
+  try {
     console.log("[start-service] Running idempotent seed...");
     run("node scripts/seed.js");
   } catch (err) {
-    console.warn("[start-service] Note: db migration/seed warning:", err.message);
+    console.warn("[start-service] Note: db seed warning:", err.message);
   }
   run("node apps/api/dist/src/main.js || node apps/api/dist/main.js || pnpm --filter @smm/api start:prod");
 }
