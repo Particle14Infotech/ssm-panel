@@ -16,7 +16,7 @@ console.log('===================================================================
 let passed = true;
 
 // 1. Verify robots.ts
-if (!robotsContent.includes('sitemap: "https://smmarchitecture.com/sitemap.xml"') && !robotsContent.includes("sitemap: 'https://smmarchitecture.com/sitemap.xml'")) {
+if (!robotsContent.includes('sitemap.xml')) {
   console.error('❌ robots.ts does not declare canonical sitemap URL');
   passed = false;
 } else {

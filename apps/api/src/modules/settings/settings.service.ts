@@ -9,7 +9,7 @@ export class SettingsService {
     autoRefillEnabled: true,
     minDepositAmount: 100,
     maxDepositAmount: 200000,
-    supportEmail: "support@smmarchitecture.com",
+    supportEmail: process.env.SUPPORT_EMAIL || "support@smmpanel.internal",
     telegramBot: "@smm_panel_ops_bot",
     resellerDiscountPct: 15,
   };
