@@ -6,7 +6,7 @@
       "test",
       "e2e/phase5-responsive-crown.spec.ts",
       "-g",
-      "Reduced Motion"
+      "1440-desktop"
     ],
     "configFile": "D:\\projects\\internship projects\\SMM\\playwright.config.ts",
     "rootDir": "D:/projects/internship projects/SMM/e2e",
@@ -127,7 +127,7 @@
           "column": 6,
           "specs": [
             {
-              "title": "Reduced Motion: Static crown in hero slot, zero crown travel, all content visible",
+              "title": "Viewport 1440-desktop (1440x900): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
               "ok": true,
               "tags": [],
               "tests": [
@@ -142,18 +142,18 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2968,
+                      "duration": 75618,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-17T15:40:27.111Z",
+                      "startTime": "2026-10-17T16:25:03.886Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "trace",
                           "contentType": "application/zip",
-                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-7ef98--travel-all-content-visible-chromium\\trace.zip"
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-4884c-own-bounds-non-intersection-chromium\\trace.zip"
                         }
                       ]
                     }
@@ -161,10 +161,10 @@
                   "status": "expected"
                 }
               ],
-              "id": "a48f85d08fee4991bbce-289ba83573f999c219e0",
+              "id": "a48f85d08fee4991bbce-1f7960a63b546ddb6849",
               "file": "phase5-responsive-crown.spec.ts",
-              "line": 188,
-              "column": 7
+              "line": 30,
+              "column": 9
             }
           ]
         }
@@ -173,8 +173,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-17T15:40:26.674Z",
-    "duration": 3964.7929999999997,
+    "startTime": "2026-10-17T16:25:03.282Z",
+    "duration": 81095.491,
     "expected": 1,
     "skipped": 0,
     "unexpected": 0,
