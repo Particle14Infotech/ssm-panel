@@ -17,6 +17,8 @@ import {
   Sparkles,
   RefreshCw,
   ExternalLink,
+  MessageSquare,
+  Clock,
 } from "lucide-react";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { StatCard } from "@/components/shared/StatCard";
@@ -24,7 +26,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 
 export default function AdminDashboardPage() {
-  const { users, services, orders, providers, transactions, syncProvider, updateOrderStatus } = useAdmin();
+  const { users, services, orders, providers, transactions, tickets, syncProvider, updateOrderStatus } = useAdmin();
   const [syncingId, setSyncingId] = useState<string | null>(null);
 
   // Real calculations only — no hardcoded placeholder amounts
@@ -33,6 +35,17 @@ export default function AdminDashboardPage() {
   const netProfit = totalRevenue - upstreamCost;
   const customerBalances = users.reduce((acc, u) => acc + (u.balance || 0), 0);
   const activeOrdersCount = orders.filter((o) => o.status === "IN_PROGRESS" || o.status === "PROCESSING").length;
+  const openTicketsCount = tickets.filter((t) => t.status === "OPEN" || t.status === "CUSTOMER_REPLY" || t.status === "IN_REVIEW").length;
+  const failedOrdersCount = orders.filter((o) => o.status === "FAILED" || o.status === "CANCELLED").length;
+  const todayOrdersCount = orders.filter((o) => {
+    try {
+      const d = new Date(o.createdAt);
+      const today = new Date();
+      return d.toDateString() === today.toDateString();
+    } catch {
+      return false;
+    }
+  }).length;
 
   const handleSync = async (providerId: string) => {
     setSyncingId(providerId);
@@ -58,7 +71,14 @@ export default function AdminDashboardPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href="/admin/tickets"
+              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-semibold border border-white/10 transition-all flex items-center gap-1.5"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-[#D8EC8D]" />
+              <span>Tickets ({openTicketsCount} open)</span>
+            </Link>
             <Link
               href="/admin/services"
               className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-semibold border border-white/10 transition-all"
@@ -85,14 +105,15 @@ export default function AdminDashboardPage() {
           <StatCard
             title="Total Platform Orders"
             value={orders.length.toLocaleString()}
-            subtitle={`${activeOrdersCount} active in processing queue`}
+            subtitle={`${activeOrdersCount} in-flight • ${todayOrdersCount} today`}
             icon={Activity}
           />
           <StatCard
-            title="Active Services"
-            value={services.length.toLocaleString()}
-            subtitle="Catalog offerings online"
-            icon={Layers}
+            title="Open Support Tickets"
+            value={openTicketsCount.toLocaleString()}
+            subtitle={`${tickets.length} total customer cases`}
+            icon={MessageSquare}
+            highlight={openTicketsCount > 0}
           />
           <StatCard
             title="Connected Providers"

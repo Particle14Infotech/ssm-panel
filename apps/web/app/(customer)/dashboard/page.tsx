@@ -11,6 +11,11 @@ import {
   TrendingUp,
   Clock,
   RefreshCw,
+  Megaphone,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  X,
 } from "lucide-react";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { StatCard } from "@/components/shared/StatCard";
@@ -25,10 +30,29 @@ export default function CustomerDashboardPage() {
   const [chartRange, setChartRange] = useState<"7d" | "30d">("7d");
   const [refillingId, setRefillingId] = useState<string | null>(null);
 
+  // Platform announcements state (SRS Sec 24, 36)
+  const [announcements] = useState([
+    {
+      id: "ann_1",
+      title: "Fast-Track UPI Gateways Active",
+      content: "All UPI QR codes and instant PhonePe/GPay deposits are credited within 10-30 seconds with automated ledger verification.",
+      type: "SUCCESS",
+    },
+    {
+      id: "ann_2",
+      title: "High-Retention YouTube Views Shard Expanded",
+      content: "YouTube High Retention Views (Service #2015) throughput expanded to 500k/day with zero drop rate.",
+      type: "INFO",
+    },
+  ]);
+  const [activeAnnIndex, setActiveAnnIndex] = useState(0);
+  const [annDismissed, setAnnDismissed] = useState(false);
+
   const totalSpent = orders.reduce((acc, o) => acc + (o.charge || 0), 0);
   const inProgressCount = orders.filter((o) => o.status === "IN_PROGRESS" || o.status === "PROCESSING").length;
   const completedCount = orders.filter((o) => o.status === "COMPLETED").length;
   const pendingCount = orders.filter((o) => o.status === "PENDING").length;
+  const cancelledCount = orders.filter((o) => o.status === "CANCELLED" || o.status === "FAILED" || o.status === "REFUNDED").length;
 
   const filteredOrders = selectedPlatform === "ALL"
     ? orders
@@ -65,7 +89,7 @@ export default function CustomerDashboardPage() {
       transition={{ duration: 0.35, ease: "easeOut" }}
       className="space-y-8 pb-16"
     >
-      {/* 1. Header Clean (Badge removed & no beam glow) */}
+      {/* 1. Header Clean */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight font-sans">Overview</h1>
@@ -85,8 +109,51 @@ export default function CustomerDashboardPage() {
         </div>
       </div>
 
-      {/* 2. Primary KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Announcement Broadcast Banner (SRS Sec 24, 36) */}
+      {!annDismissed && announcements.length > 0 && (
+        <div className="p-4 rounded-2xl bg-[#1e1e1e]/90 border border-[#D8EC8D]/30 backdrop-blur-md flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[#D8EC8D]/15 text-[#D8EC8D] flex items-center justify-center shrink-0">
+              <Megaphone className="w-4 h-4 text-[#D8EC8D]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#D8EC8D]/20 text-[#D8EC8D] font-bold">
+                  Broadcast
+                </span>
+                <span className="text-xs font-bold text-white font-sans">
+                  {announcements[activeAnnIndex]?.title}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 font-sans mt-0.5">
+                {announcements[activeAnnIndex]?.content}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {announcements.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setActiveAnnIndex((prev) => (prev + 1) % announcements.length)}
+                className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-mono text-slate-300"
+              >
+                Next ({activeAnnIndex + 1}/{announcements.length})
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setAnnDismissed(true)}
+              className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Specific Order Breakdown Cards Grid (SRS Sec 6) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
           title="Available Balance"
           value={`₹${user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`}
@@ -96,24 +163,31 @@ export default function CustomerDashboardPage() {
         />
 
         <StatCard
-          title="Total Orders"
-          value={orders.length.toLocaleString()}
-          subtitle={`${completedCount} completed lifetime`}
-          icon={Activity}
+          title="Completed"
+          value={completedCount.toLocaleString()}
+          subtitle="Fulfilled lifetime"
+          icon={CheckCircle2}
         />
 
         <StatCard
           title="In Progress"
           value={inProgressCount.toLocaleString()}
-          subtitle={`${pendingCount} pending queue`}
+          subtitle="Active delivery stream"
           icon={Clock}
         />
 
         <StatCard
-          title="Total Spent"
-          value={`₹${totalSpent.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`}
-          subtitle="Lifetime volume charged"
-          icon={TrendingUp}
+          title="Pending Queue"
+          value={pendingCount.toLocaleString()}
+          subtitle="Awaiting provider start"
+          icon={Activity}
+        />
+
+        <StatCard
+          title="Cancelled / Refund"
+          value={cancelledCount.toLocaleString()}
+          subtitle="Returned to wallet"
+          icon={XCircle}
         />
       </div>
 

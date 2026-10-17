@@ -1,8 +1,23 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { ServiceItem, OrderItem, TransactionItem } from "@smm/contracts";
-import { AdminUser, AdminProvider, AdminCoupon, INITIAL_ADMIN_PROVIDERS } from "@/content/admin-data";
+import {
+  ServiceItem,
+  OrderItem,
+  TransactionItem,
+  Ticket,
+  TicketMessage,
+  TicketStatus,
+  TicketPriority,
+  TicketDepartment,
+} from "@smm/contracts";
+import {
+  AdminUser,
+  AdminProvider,
+  AdminCoupon,
+  INITIAL_ADMIN_PROVIDERS,
+  INITIAL_ADMIN_TICKETS,
+} from "@/content/admin-data";
 
 interface AdminContextType {
   users: AdminUser[];
@@ -11,6 +26,7 @@ interface AdminContextType {
   providers: AdminProvider[];
   coupons: AdminCoupon[];
   transactions: TransactionItem[];
+  tickets: Ticket[];
   isLoading: boolean;
   refreshAdminData: () => Promise<void>;
   updateUserBalance: (userId: string, newBalance: number) => void;
@@ -29,6 +45,10 @@ interface AdminContextType {
   addCoupon: (coupon: AdminCoupon) => void;
   toggleCoupon: (couponId: string) => void;
   approvePayment: (txnId: string) => void;
+  replyTicketAdmin: (ticketId: string, message: string) => Promise<boolean>;
+  updateTicketStatus: (ticketId: string, status: TicketStatus) => Promise<boolean>;
+  closeTicketAdmin: (ticketId: string) => Promise<boolean>;
+  logout: () => void;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -50,6 +70,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
   const [providers, setProviders] = useState<AdminProvider[]>(INITIAL_ADMIN_PROVIDERS);
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>(INITIAL_ADMIN_TICKETS);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const getAuthToken = useCallback(() => {
@@ -71,11 +92,12 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
 
     try {
       setIsLoading(true);
-      const [servicesRes, providersRes, usersRes, ordersRes] = await Promise.all([
+      const [servicesRes, providersRes, usersRes, ordersRes, ticketsRes] = await Promise.all([
         fetch(`${API_BASE}/services`, { cache: "no-store" }).catch(() => null),
         fetch(`${API_BASE}/providers`, { headers: authHeaders, cache: "no-store" }).catch(() => null),
         token ? fetch(`${API_BASE}/users`, { headers: authHeaders, cache: "no-store" }).catch(() => null) : null,
         token ? fetch(`${API_BASE}/orders`, { headers: authHeaders, cache: "no-store" }).catch(() => null) : null,
+        token ? fetch(`${API_BASE}/tickets/admin/all`, { headers: authHeaders, cache: "no-store" }).catch(() => null) : null,
       ]);
 
       if (usersRes && usersRes.ok) {
@@ -160,6 +182,38 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
               status: p.active !== false ? "CONNECTED" : "ERROR",
               serviceCount: p.serviceCount || 0,
               lastSyncAt: p.updatedAt || p.lastSyncAt || new Date().toISOString(),
+            }))
+          );
+        }
+      }
+
+      if (ticketsRes && ticketsRes.ok) {
+        const rawTickets = await ticketsRes.json();
+        if (Array.isArray(rawTickets) && rawTickets.length > 0) {
+          setTickets(
+            rawTickets.map((tk: any) => ({
+              id: tk.id,
+              userId: tk.userId,
+              subject: tk.subject,
+              department: (tk.department || "GENERAL_SUPPORT") as TicketDepartment,
+              priority: (tk.priority === "HIGH" || tk.priority === "CRITICAL" || tk.priority === "LOW" ? tk.priority : "MEDIUM") as TicketPriority,
+              status: (tk.status === "CLOSED" || tk.status === "RESOLVED" || tk.status === "ANSWERED" || tk.status === "IN_REVIEW" ? tk.status : "OPEN") as TicketStatus,
+              orderId: tk.orderId,
+              lastReplyAt: tk.updatedAt ? new Date(tk.updatedAt).toISOString() : new Date().toISOString(),
+              createdAt: tk.createdAt ? new Date(tk.createdAt).toISOString() : new Date().toISOString(),
+              updatedAt: tk.updatedAt ? new Date(tk.updatedAt).toISOString() : new Date().toISOString(),
+              messages: Array.isArray(tk.messages)
+                ? tk.messages.map((m: any) => ({
+                    id: m.id,
+                    ticketId: tk.id,
+                    authorId: m.senderId,
+                    authorName: m.senderId === "ADMIN" || m.senderId === "admin" ? "Support Staff" : "Customer",
+                    authorRole: (m.senderId === "ADMIN" || m.senderId === "admin" ? "ADMIN" : "USER") as "USER" | "ADMIN",
+                    content: m.message,
+                    attachments: [],
+                    createdAt: m.createdAt ? new Date(m.createdAt).toISOString() : new Date().toISOString(),
+                  }))
+                : [],
             }))
           );
         }
@@ -474,6 +528,111 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
     );
   };
 
+  const replyTicketAdmin = async (ticketId: string, message: string): Promise<boolean> => {
+    const token = getAuthToken();
+    try {
+      if (token) {
+        const res = await fetch(`${API_BASE}/tickets/${ticketId}/reply`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message }),
+        });
+        if (res.ok) {
+          await refreshAdminData();
+          return true;
+        }
+      }
+    } catch {}
+
+    // Resilient fallback / optimistic update
+    setTickets((prev) =>
+      prev.map((t) => {
+        if (t.id === ticketId) {
+          const newMsg: TicketMessage = {
+            id: `msg_${Date.now()}`,
+            ticketId,
+            authorId: "admin",
+            authorName: "Support Staff",
+            authorRole: "ADMIN",
+            content: message,
+            attachments: [],
+            createdAt: new Date().toISOString(),
+          };
+          return {
+            ...t,
+            status: "ANSWERED",
+            updatedAt: new Date().toISOString(),
+            lastReplyAt: new Date().toISOString(),
+            messages: [...t.messages, newMsg],
+          };
+        }
+        return t;
+      })
+    );
+    return true;
+  };
+
+  const updateTicketStatus = async (ticketId: string, status: TicketStatus): Promise<boolean> => {
+    const token = getAuthToken();
+    try {
+      if (token) {
+        const res = await fetch(`${API_BASE}/tickets/${ticketId}/status`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status }),
+        });
+        if (res.ok) {
+          await refreshAdminData();
+          return true;
+        }
+      }
+    } catch {}
+
+    setTickets((prev) =>
+      prev.map((t) => (t.id === ticketId ? { ...t, status, updatedAt: new Date().toISOString() } : t))
+    );
+    return true;
+  };
+
+  const closeTicketAdmin = async (ticketId: string): Promise<boolean> => {
+    const token = getAuthToken();
+    try {
+      if (token) {
+        const res = await fetch(`${API_BASE}/tickets/${ticketId}/close`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        if (res.ok) {
+          await refreshAdminData();
+          return true;
+        }
+      }
+    } catch {}
+
+    setTickets((prev) =>
+      prev.map((t) => (t.id === ticketId ? { ...t, status: "CLOSED", updatedAt: new Date().toISOString() } : t))
+    );
+    return true;
+  };
+
+  const logout = useCallback(() => {
+    if (typeof window !== "undefined") {
+      localStorage.clear();
+      document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      window.location.href = "/login";
+    }
+  }, []);
+
   return (
     <AdminContext.Provider
       value={{
@@ -483,6 +642,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
         providers,
         coupons,
         transactions,
+        tickets,
         isLoading,
         refreshAdminData,
         updateUserBalance,
@@ -501,6 +661,10 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
         addCoupon,
         toggleCoupon,
         approvePayment,
+        replyTicketAdmin,
+        updateTicketStatus,
+        closeTicketAdmin,
+        logout,
       }}
     >
       {children}

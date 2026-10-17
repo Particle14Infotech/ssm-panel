@@ -15,6 +15,11 @@ import {
   Menu,
   X,
   Check,
+  MessageSquare,
+  LogOut,
+  BarChart3,
+  Settings,
+  FileText,
 } from "lucide-react";
 
 import { BrandLogo } from "@/components/shared/BrandLogo";
@@ -25,7 +30,7 @@ export function AdminHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
-  const { refreshAdminData, syncProvider, providers } = useAdmin();
+  const { refreshAdminData, syncProvider, providers, logout } = useAdmin();
 
   const handleLiveSync = async () => {
     if (isSyncing) return;
@@ -55,6 +60,10 @@ export function AdminHeader() {
     { name: "API Providers", href: "/admin/providers", icon: Server },
     { name: "Payment Audits", href: "/admin/payments", icon: CreditCard },
     { name: "Coupons & Promos", href: "/admin/coupons", icon: Tag },
+    { name: "Support Tickets", href: "/admin/tickets", icon: MessageSquare },
+    { name: "Reports", href: "/admin/reports", icon: BarChart3 },
+    { name: "Audit Logs", href: "/admin/audit-logs", icon: FileText },
+    { name: "Settings", href: "/admin/settings", icon: Settings },
   ];
 
   return (
@@ -105,6 +114,17 @@ export function AdminHeader() {
                 AD
               </div>
             </div>
+
+            {/* Logout Button */}
+            <button
+              type="button"
+              onClick={logout}
+              className="px-3 py-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 hover:text-white hover:border-rose-500/50 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 ml-1"
+              title="Sign out of Admin Console"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -159,6 +179,17 @@ export function AdminHeader() {
                 </Link>
               );
             })}
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                logout();
+              }}
+              className="col-span-2 mt-2 p-3 rounded-2xl flex items-center justify-center gap-2 text-xs font-semibold border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 hover:text-white transition-all cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Sign Out (Admin Logout)</span>
+            </button>
           </div>
         )}
       </div>
