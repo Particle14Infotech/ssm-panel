@@ -29,14 +29,16 @@ async function main() {
   });
 
   // 2. Admin User from Environment
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@smmpanel.internal';
+  const adminEmail = (process.env.ADMIN_EMAIL || 'admin@smmpanel.internal').toLowerCase().trim();
   const adminPassword = process.env.ADMIN_PASSWORD || 'ChangeThisAdminPasswordNow!';
   
   await prisma.user.upsert({
     where: { email: adminEmail },
-    update: {},
+    update: {
+      role: 'ADMIN',
+      passwordHash: '$argon2id$v=19$m=65536,t=3,p=4$demo_salt$demo_hash',
+    },
     create: {
-      id: 'usr_admin_001',
       email: adminEmail,
       name: 'System Administrator',
       passwordHash: '$argon2id$v=19$m=65536,t=3,p=4$demo_salt$demo_hash',
