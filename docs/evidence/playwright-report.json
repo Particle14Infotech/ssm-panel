@@ -4,7 +4,7 @@
       "C:\\Program Files\\nodejs\\node.exe",
       "D:\\projects\\internship projects\\SMM\\node_modules\\@playwright\\test\\cli.js",
       "test",
-      "e2e/crown-compare.spec.ts"
+      "e2e/landing-3d.spec.ts"
     ],
     "configFile": "D:\\projects\\internship projects\\SMM\\playwright.config.ts",
     "rootDir": "D:/projects/internship projects/SMM/e2e",
@@ -112,20 +112,20 @@
   },
   "suites": [
     {
-      "title": "crown-compare.spec.ts",
-      "file": "crown-compare.spec.ts",
+      "title": "landing-3d.spec.ts",
+      "file": "landing-3d.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Compare Crown Screenshot with Reference",
-          "file": "crown-compare.spec.ts",
+          "title": "Real Platform Logos & 5-Step Order Journey E2E Verification",
+          "file": "landing-3d.spec.ts",
           "line": 5,
           "column": 6,
           "specs": [
             {
-              "title": "capture hero crown and create comparison",
+              "title": "1. asserts real 3D canvas exposes __sceneDebug with all 6 platform IDs and brand palette",
               "ok": true,
               "tags": [],
               "tests": [
@@ -140,22 +140,18 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 24144,
+                      "duration": 9884,
                       "errors": [],
-                      "stdout": [
-                        {
-                          "text": "DOM INFO: {\n  canvasCount: \u001b[33m1\u001b[39m,\n  container: \u001b[33mtrue\u001b[39m,\n  fallback: \u001b[33mfalse\u001b[39m,\n  userAgent: \u001b[32m'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36'\u001b[39m\n}\n"
-                        }
-                      ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-16T20:37:51.367Z",
+                      "startTime": "2026-10-17T09:40:57.989Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "trace",
                           "contentType": "application/zip",
-                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\crown-compare-Compare-Crow-c1120-crown-and-create-comparison-chromium\\trace.zip"
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\landing-3d-Real-Platform-L-ee9f7-tform-IDs-and-brand-palette-chromium\\trace.zip"
                         }
                       ]
                     }
@@ -163,9 +159,336 @@
                   "status": "expected"
                 }
               ],
-              "id": "f4186ab9f52dd9fbd585-5c0b35cfe9279cd29544",
-              "file": "crown-compare.spec.ts",
-              "line": 6,
+              "id": "31caf4e59df43c39d096-5b528e853733977ea2e0",
+              "file": "landing-3d.spec.ts",
+              "line": 15,
+              "column": 7
+            },
+            {
+              "title": "2. asserts logo geometries in 3D scene have vertices > 500 and Instagram has holes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5263,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T09:41:08.663Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\landing-3d-Real-Platform-L-9950a-500-and-Instagram-has-holes-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "31caf4e59df43c39d096-239294e34d3632d90eb5",
+              "file": "landing-3d.spec.ts",
+              "line": 66,
+              "column": 7
+            },
+            {
+              "title": "3. asserts 5-step pipeline labels exist and fit inside viewport at 1440 and 390",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 6199,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeAttached\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('1 Add funds', { exact: true }).first()\nExpected: attached\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeAttached\" getByText('1 Add funds', { exact: true }).first() with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('1 Add funds', { exact: true }).first()\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeAttached\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('1 Add funds', { exact: true }).first()\nExpected: attached\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeAttached\" getByText('1 Add funds', { exact: true }).first() with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('1 Add funds', { exact: true }).first()\u001b[22m\n\n    at D:\\projects\\internship projects\\SMM\\e2e\\landing-3d.spec.ts:110:34",
+                        "location": {
+                          "file": "D:\\projects\\internship projects\\SMM\\e2e\\landing-3d.spec.ts",
+                          "column": 34,
+                          "line": 110
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 108 |\u001b[39m       \u001b[36mfor\u001b[39m (\u001b[36mconst\u001b[39m tag \u001b[36mof\u001b[39m expectedTags) {\n \u001b[90m 109 |\u001b[39m         \u001b[36mconst\u001b[39m tagElement \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByText(tag\u001b[33m,\u001b[39m { exact\u001b[33m:\u001b[39m \u001b[36mtrue\u001b[39m })\u001b[33m.\u001b[39mfirst()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 110 |\u001b[39m         \u001b[36mawait\u001b[39m expect(tagElement)\u001b[33m.\u001b[39mtoBeAttached()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 111 |\u001b[39m       }\n \u001b[90m 112 |\u001b[39m     }\n \u001b[90m 113 |\u001b[39m   })\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\projects\\internship projects\\SMM\\e2e\\landing-3d.spec.ts",
+                            "column": 34,
+                            "line": 110
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeAttached\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('1 Add funds', { exact: true }).first()\nExpected: attached\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeAttached\" getByText('1 Add funds', { exact: true }).first() with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('1 Add funds', { exact: true }).first()\u001b[22m\n\n\n  108 |       for (const tag of expectedTags) {\n  109 |         const tagElement = page.getByText(tag, { exact: true }).first();\n> 110 |         await expect(tagElement).toBeAttached();\n      |                                  ^\n  111 |       }\n  112 |     }\n  113 |   });\n    at D:\\projects\\internship projects\\SMM\\e2e\\landing-3d.spec.ts:110:34"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T09:41:14.281Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\landing-3d-Real-Platform-L-0f42c-de-viewport-at-1440-and-390-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\landing-3d-Real-Platform-L-0f42c-de-viewport-at-1440-and-390-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\projects\\internship projects\\SMM\\e2e\\landing-3d.spec.ts",
+                        "column": 34,
+                        "line": 110
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "31caf4e59df43c39d096-2649aa446e3b81010905",
+              "file": "landing-3d.spec.ts",
+              "line": 88,
+              "column": 7
+            },
+            {
+              "title": "4. asserts logo click navigates to /services?platform=instagram",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 621,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T09:41:22.947Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\landing-3d-Real-Platform-L-a9441-services-platform-instagram-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "31caf4e59df43c39d096-358240fead7af1da0748",
+              "file": "landing-3d.spec.ts",
+              "line": 115,
+              "column": 7
+            },
+            {
+              "title": "5. asserts footer and FAQ contain trademark disclaimer",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 5812,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('footer')\nExpected substring: \u001b[32m\"Instagram, YouTube, Telegram, TikTok, Facebook and X\"\u001b[39m\nReceived string:    \u001b[31m\"\u001b[7mSMM PanelOrder social growth services with real-time tracking, transparent INR pricing, and automatic wallet refunds.ProductServicesPricingHow It WorksSupportFAQContactLegalTerms of ServicePrivacy PolicyRefund Policy© 2026 SMM Panel. All rights reserved.\u001b[27mInstagram, YouTube, Telegram, TikTok, Facebook\u001b[7m,\u001b[27m and X\u001b[7m are trademarks of their respective owners. SMM Panel is not affiliated with or endorsed by these platforms.\u001b[27m\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('footer') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('footer')\u001b[22m\n\u001b[2m    10 × locator resolved to <footer class=\"w-full bg-transparent border-t border-white/[0.08] text-zinc-400 pt-16 pb-12\">…</footer>\u001b[22m\n\u001b[2m       - unexpected value \"SMM PanelOrder social growth services with real-time tracking, transparent INR pricing, and automatic wallet refunds.ProductServicesPricingHow It WorksSupportFAQContactLegalTerms of ServicePrivacy PolicyRefund Policy© 2026 SMM Panel. All rights reserved.Instagram, YouTube, Telegram, TikTok, Facebook, and X are trademarks of their respective owners. SMM Panel is not affiliated with or endorsed by these platforms.\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('footer')\nExpected substring: \u001b[32m\"Instagram, YouTube, Telegram, TikTok, Facebook and X\"\u001b[39m\nReceived string:    \u001b[31m\"\u001b[7mSMM PanelOrder social growth services with real-time tracking, transparent INR pricing, and automatic wallet refunds.ProductServicesPricingHow It WorksSupportFAQContactLegalTerms of ServicePrivacy PolicyRefund Policy© 2026 SMM Panel. All rights reserved.\u001b[27mInstagram, YouTube, Telegram, TikTok, Facebook\u001b[7m,\u001b[27m and X\u001b[7m are trademarks of their respective owners. SMM Panel is not affiliated with or endorsed by these platforms.\u001b[27m\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('footer') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('footer')\u001b[22m\n\u001b[2m    10 × locator resolved to <footer class=\"w-full bg-transparent border-t border-white/[0.08] text-zinc-400 pt-16 pb-12\">…</footer>\u001b[22m\n\u001b[2m       - unexpected value \"SMM PanelOrder social growth services with real-time tracking, transparent INR pricing, and automatic wallet refunds.ProductServicesPricingHow It WorksSupportFAQContactLegalTerms of ServicePrivacy PolicyRefund Policy© 2026 SMM Panel. All rights reserved.Instagram, YouTube, Telegram, TikTok, Facebook, and X are trademarks of their respective owners. SMM Panel is not affiliated with or endorsed by these platforms.\"\u001b[22m\n\n    at D:\\projects\\internship projects\\SMM\\e2e\\landing-3d.spec.ts:143:26",
+                        "location": {
+                          "file": "D:\\projects\\internship projects\\SMM\\e2e\\landing-3d.spec.ts",
+                          "column": 26,
+                          "line": 143
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 141 |\u001b[39m     \u001b[90m// Assert disclaimer present in footer compliance box / text\u001b[39m\n \u001b[90m 142 |\u001b[39m     \u001b[36mconst\u001b[39m footer \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m\"footer\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 143 |\u001b[39m     \u001b[36mawait\u001b[39m expect(footer)\u001b[33m.\u001b[39mtoContainText(\u001b[32m\"Instagram, YouTube, Telegram, TikTok, Facebook and X\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 144 |\u001b[39m\n \u001b[90m 145 |\u001b[39m     \u001b[90m// Assert FAQ contains disclaimer\u001b[39m\n \u001b[90m 146 |\u001b[39m     \u001b[36mconst\u001b[39m faq \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m\"#faq\"\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\projects\\internship projects\\SMM\\e2e\\landing-3d.spec.ts",
+                            "column": 26,
+                            "line": 143
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('footer')\nExpected substring: \u001b[32m\"Instagram, YouTube, Telegram, TikTok, Facebook and X\"\u001b[39m\nReceived string:    \u001b[31m\"\u001b[7mSMM PanelOrder social growth services with real-time tracking, transparent INR pricing, and automatic wallet refunds.ProductServicesPricingHow It WorksSupportFAQContactLegalTerms of ServicePrivacy PolicyRefund Policy© 2026 SMM Panel. All rights reserved.\u001b[27mInstagram, YouTube, Telegram, TikTok, Facebook\u001b[7m,\u001b[27m and X\u001b[7m are trademarks of their respective owners. SMM Panel is not affiliated with or endorsed by these platforms.\u001b[27m\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('footer') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('footer')\u001b[22m\n\u001b[2m    10 × locator resolved to <footer class=\"w-full bg-transparent border-t border-white/[0.08] text-zinc-400 pt-16 pb-12\">…</footer>\u001b[22m\n\u001b[2m       - unexpected value \"SMM PanelOrder social growth services with real-time tracking, transparent INR pricing, and automatic wallet refunds.ProductServicesPricingHow It WorksSupportFAQContactLegalTerms of ServicePrivacy PolicyRefund Policy© 2026 SMM Panel. All rights reserved.Instagram, YouTube, Telegram, TikTok, Facebook, and X are trademarks of their respective owners. SMM Panel is not affiliated with or endorsed by these platforms.\"\u001b[22m\n\n\n  141 |     // Assert disclaimer present in footer compliance box / text\n  142 |     const footer = page.locator(\"footer\");\n> 143 |     await expect(footer).toContainText(\"Instagram, YouTube, Telegram, TikTok, Facebook and X\");\n      |                          ^\n  144 |\n  145 |     // Assert FAQ contains disclaimer\n  146 |     const faq = page.locator(\"#faq\");\n    at D:\\projects\\internship projects\\SMM\\e2e\\landing-3d.spec.ts:143:26"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T09:41:23.884Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\landing-3d-Real-Platform-L-0840b-ontain-trademark-disclaimer-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\landing-3d-Real-Platform-L-0840b-ontain-trademark-disclaimer-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\projects\\internship projects\\SMM\\e2e\\landing-3d.spec.ts",
+                        "column": 26,
+                        "line": 143
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "31caf4e59df43c39d096-6309d8bc3fc2c4fc7e5b",
+              "file": "landing-3d.spec.ts",
+              "line": 135,
+              "column": 7
+            },
+            {
+              "title": "6. captures stage screenshots at 1440 and 390 to artifacts/3d-stages/",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 10363,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T09:41:30.967Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\landing-3d-Real-Platform-L-3e0c5-390-to-artifacts-3d-stages--chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "31caf4e59df43c39d096-a848ec0dfe4e146f1e8a",
+              "file": "landing-3d.spec.ts",
+              "line": 150,
+              "column": 7
+            },
+            {
+              "title": "7. asserts reduced-motion fallback displays static SVG without 3D canvas",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 5445,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('static-pipeline-svg')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByTestId('static-pipeline-svg') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('static-pipeline-svg')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('static-pipeline-svg')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByTestId('static-pipeline-svg') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('static-pipeline-svg')\u001b[22m\n\n    at D:\\projects\\internship projects\\SMM\\e2e\\landing-3d.spec.ts:208:34",
+                        "location": {
+                          "file": "D:\\projects\\internship projects\\SMM\\e2e\\landing-3d.spec.ts",
+                          "column": 34,
+                          "line": 208
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 206 |\u001b[39m     \u001b[90m// Static SVG pipeline fallback must be present with all 5 steps\u001b[39m\n \u001b[90m 207 |\u001b[39m     \u001b[36mconst\u001b[39m staticPipeline \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"static-pipeline-svg\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 208 |\u001b[39m     \u001b[36mawait\u001b[39m expect(staticPipeline)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 209 |\u001b[39m     \u001b[36mawait\u001b[39m expect(staticPipeline\u001b[33m.\u001b[39mgetByText(\u001b[32m\"1 Add funds\"\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 210 |\u001b[39m     \u001b[36mawait\u001b[39m expect(staticPipeline\u001b[33m.\u001b[39mgetByText(\u001b[32m\"2 Choose service\"\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 211 |\u001b[39m     \u001b[36mawait\u001b[39m expect(staticPipeline\u001b[33m.\u001b[39mgetByText(\u001b[32m\"3 Place order\"\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\projects\\internship projects\\SMM\\e2e\\landing-3d.spec.ts",
+                            "column": 34,
+                            "line": 208
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('static-pipeline-svg')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByTestId('static-pipeline-svg') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('static-pipeline-svg')\u001b[22m\n\n\n  206 |     // Static SVG pipeline fallback must be present with all 5 steps\n  207 |     const staticPipeline = page.getByTestId(\"static-pipeline-svg\");\n> 208 |     await expect(staticPipeline).toBeVisible();\n      |                                  ^\n  209 |     await expect(staticPipeline.getByText(\"1 Add funds\")).toBeVisible();\n  210 |     await expect(staticPipeline.getByText(\"2 Choose service\")).toBeVisible();\n  211 |     await expect(staticPipeline.getByText(\"3 Place order\")).toBeVisible();\n    at D:\\projects\\internship projects\\SMM\\e2e\\landing-3d.spec.ts:208:34"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T09:41:42.503Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\landing-3d-Real-Platform-L-abdc9-tatic-SVG-without-3D-canvas-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\landing-3d-Real-Platform-L-abdc9-tatic-SVG-without-3D-canvas-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\projects\\internship projects\\SMM\\e2e\\landing-3d.spec.ts",
+                        "column": 34,
+                        "line": 208
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "31caf4e59df43c39d096-e7c908abbe7909a9526e",
+              "file": "landing-3d.spec.ts",
+              "line": 196,
               "column": 7
             }
           ]
@@ -175,11 +498,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-16T20:37:50.159Z",
-    "duration": 29022.529000000002,
-    "expected": 1,
+    "startTime": "2026-10-17T09:40:57.569Z",
+    "duration": 52269.543999999994,
+    "expected": 4,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 3,
     "flaky": 0
   }
 }
