@@ -5,15 +5,15 @@ import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { landingContent } from "@/content/landing";
 
 export const metadata: Metadata = {
-  title: "Contact Support & Agency Enquiries",
-  description: "Get in touch with our operations team for agency integrations, bulk volume discounts, or dedicated support assistance.",
+  title: "Contact Support & Inquiries",
+  description: "Get in touch with our team for account assistance, bulk orders, or support.",
   alternates: {
-    canonical: "https://smmarchitecture.com/contact",
+    canonical: "/contact",
   },
   openGraph: {
-    title: "Contact Support & Agency Enquiries | SMM PANEL",
-    description: "Get in touch with our operations team for agency integrations or dedicated support.",
-    url: "https://smmarchitecture.com/contact",
+    title: "Contact Support & Inquiries | SMM Panel",
+    description: "Get in touch with our team for account assistance, bulk orders, or support.",
+    url: "/contact",
   },
 };
 

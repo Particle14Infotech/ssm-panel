@@ -58,7 +58,7 @@ const PLATFORMS: Record<string, PlatformData> = {
       },
       {
         q: "What happens if an order only partially delivers?",
-        a: "Our double-entry accounting ledger automatically calculates remaining undelivered units and credits the refund back to your wallet."
+        a: "Our automated system calculates remaining undelivered units and credits the refund back to your wallet."
       },
       {
         q: "Can I place multiple orders for the same post simultaneously?",
@@ -88,7 +88,7 @@ const PLATFORMS: Record<string, PlatformData> = {
         desc: "Views are distributed with realistic watch durations to prevent synthetic velocity spikes in YouTube Studio."
       },
       {
-        title: "Double-Entry Balance Guarantee",
+        title: "Wallet Balance Guarantee",
         desc: "Your funds are protected. Any service interruption immediately credits unserved fractions to your wallet."
       },
       {
@@ -115,7 +115,7 @@ const PLATFORMS: Record<string, PlatformData> = {
     slug: "telegram",
     name: "Telegram",
     metaTitle: "Telegram SMM Panel | Members & Post Views in INR",
-    metaDesc: "Add verified Telegram channel members, group participants, and post views. Instant execution with double-entry balance protection.",
+    metaDesc: "Add verified Telegram channel members, group participants, and post views. Instant execution with automatic balance protection.",
     headline: "Telegram Channel & Group Dispatch",
     subheadline: "Fast member delivery and post view distribution for public and private Telegram broadcast channels.",
     overview:
@@ -179,7 +179,7 @@ const PLATFORMS: Record<string, PlatformData> = {
       },
       {
         title: "Idempotent Wallet Safety",
-        desc: "Double-entry accounting ensures each transaction has a unique cryptographic reference key."
+        desc: "Secure wallet accounting ensures each transaction has a unique reference key."
       },
       {
         title: "API-Ready Reselling",
@@ -215,12 +215,12 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
     title: p.metaTitle,
     description: p.metaDesc,
     alternates: {
-      canonical: `https://smmarchitecture.com/platform/${p.slug}`,
+      canonical: `/platform/${p.slug}`,
     },
     openGraph: {
-      title: `${p.metaTitle} | SMM PANEL`,
+      title: `${p.metaTitle} | SMM Panel`,
       description: p.metaDesc,
-      url: `https://smmarchitecture.com/platform/${p.slug}`,
+      url: `/platform/${p.slug}`,
     },
     twitter: {
       card: "summary_large_image",
@@ -234,6 +234,8 @@ export default function PlatformPage({ params }: { params: { slug: string } }) {
   const p = PLATFORMS[params.slug];
   if (!p) notFound();
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://smmpanel.com";
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Service",
@@ -241,7 +243,7 @@ export default function PlatformPage({ params }: { params: { slug: string } }) {
     provider: {
       "@type": "Organization",
       name: "SMM Panel",
-      url: "https://smmarchitecture.com",
+      url: siteUrl,
     },
     serviceType: "Social Media Marketing",
     description: p.metaDesc,
@@ -318,7 +320,7 @@ export default function PlatformPage({ params }: { params: { slug: string } }) {
                 {p.overview}
               </p>
               <p className="text-sm text-zinc-300 font-light leading-relaxed">
-                Orders are validated for correct syntax and immediately synchronized with high-availability API providers. All monetary movements adhere to our double-entry ledger invariant: your balance never decrements without a corresponding recorded transaction, ensuring zero leakage and automated refunds on order cancellations.
+                Orders are validated for correct syntax and immediately synchronized with high-availability API providers. All monetary movements are recorded securely: your balance never decrements without a corresponding recorded transaction, ensuring zero leakage and automated refunds on order cancellations.
               </p>
             </div>
 

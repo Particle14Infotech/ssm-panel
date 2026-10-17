@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "Terms of Service & Usage Agreement",
   description: `Terms and conditions governing the use of the ${landingContent.brand.name} platform and provider API services.`,
   alternates: {
-    canonical: "https://smmarchitecture.com/legal/terms",
+    canonical: "/legal/terms",
   },
 };
 

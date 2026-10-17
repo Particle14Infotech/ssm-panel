@@ -10,42 +10,44 @@ const poppins = Poppins({
   display: "swap",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://smmpanel.com";
+const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.SUPPORT_EMAIL || "support@smmpanel.com";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://smmarchitecture.com"),
+  metadataBase: new URL(siteUrl),
   title: {
-    default: `${landingContent.brand.name} | Social Media Marketing Platform & Reseller Infrastructure`,
+    default: `${landingContent.brand.name} | Social Media Growth Services`,
     template: `%s | ${landingContent.brand.name}`,
   },
   description:
-    "Order verified social growth services with real-time tracking, double-entry protected ledger accounting, and sub-second automated provider synchronization.",
+    "Order social growth services with real-time tracking, transparent INR pricing, and automatic wallet refunds.",
   keywords: [
     "SMM Panel",
     "Social Media Marketing",
     "Instagram Services",
     "TikTok Growth",
     "YouTube Subscribers",
-    "Reseller API",
-    "Social Platform Infrastructure",
+    "Social Platform Growth",
     "Automated Order Dispatch",
   ],
   authors: [{ name: `${landingContent.brand.name} Platform` }],
   creator: landingContent.brand.name,
   publisher: landingContent.brand.name,
   alternates: {
-    canonical: "https://smmarchitecture.com",
+    canonical: siteUrl,
   },
   openGraph: {
-    title: `${landingContent.brand.name} | Social Media Marketing Platform`,
-    description: "One unified wallet, 500+ direct provider services, real-time sync, and double-entry protected ledger accounting.",
-    url: "https://smmarchitecture.com",
+    title: `${landingContent.brand.name} | Social Media Growth Platform`,
+    description: "One unified wallet in INR, real-time order tracking, and automatic wallet refunds.",
+    url: siteUrl,
     siteName: landingContent.brand.name,
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: `${landingContent.brand.name} | Social Media Marketing Platform`,
-    description: "One unified wallet, 500+ direct provider services, real-time sync, and double-entry protected ledger accounting.",
+    title: `${landingContent.brand.name} | Social Media Growth Platform`,
+    description: "One unified wallet in INR, real-time order tracking, and automatic wallet refunds.",
   },
   robots: {
     index: true,
@@ -70,41 +72,41 @@ export default function RootLayout({
     "@graph": [
       {
         "@type": "Organization",
-        "@id": "https://smmarchitecture.com/#organization",
+        "@id": `${siteUrl}/#organization`,
         name: landingContent.brand.name,
-        url: "https://smmarchitecture.com",
-        logo: "https://smmarchitecture.com/icon.png",
-        description: "Authoritative Social Media Marketing Platform and Reseller API Infrastructure",
+        url: siteUrl,
+        logo: `${siteUrl}/icon.png`,
+        description: "Social Media Marketing Platform with Real-time Order Tracking",
         contactPoint: {
           "@type": "ContactPoint",
           contactType: "Customer Support",
-          email: "support@smmpanel.io",
+          email: supportEmail,
           availableLanguage: ["English", "Hindi"],
         },
       },
       {
         "@type": "WebSite",
-        "@id": "https://smmarchitecture.com/#website",
-        url: "https://smmarchitecture.com",
+        "@id": `${siteUrl}/#website`,
+        url: siteUrl,
         name: landingContent.brand.name,
         publisher: {
-          "@id": "https://smmarchitecture.com/#organization",
+          "@id": `${siteUrl}/#organization`,
         },
         potentialAction: {
           "@type": "SearchAction",
-          target: "https://smmarchitecture.com/services?q={search_term_string}",
+          target: `${siteUrl}/services?q={search_term_string}`,
           "query-input": "required name=search_term_string",
         },
       },
       {
         "@type": "LocalBusiness",
-        "@id": "https://smmarchitecture.com/#localbusiness",
+        "@id": `${siteUrl}/#localbusiness`,
         name: landingContent.brand.name,
-        url: "https://smmarchitecture.com",
-        logo: "https://smmarchitecture.com/icon.png",
-        image: "https://smmarchitecture.com/opengraph-image",
-        description: "Authoritative Social Media Marketing Platform and Reseller API Infrastructure",
-        email: "support@smmpanel.io",
+        url: siteUrl,
+        logo: `${siteUrl}/icon.png`,
+        image: `${siteUrl}/opengraph-image`,
+        description: "Social Media Marketing Platform with Real-time Order Tracking",
+        email: supportEmail,
         priceRange: "$$",
         address: {
           "@type": "PostalAddress",

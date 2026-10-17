@@ -6,14 +6,14 @@ import { landingContent } from "@/content/landing";
 
 export const metadata: Metadata = {
   title: "Services Catalog & Real-Time Rates",
-  description: "Browse 500+ verified provider-synchronized social media marketing services with live rate calculation and instant dispatch.",
+  description: "Browse social media growth services with upfront rates per 1,000, clear speed estimates, and live dispatch.",
   alternates: {
-    canonical: "https://smmarchitecture.com/services",
+    canonical: "/services",
   },
   openGraph: {
-    title: "Services Catalog & Real-Time Rates | SMM PANEL",
-    description: "Browse 500+ verified provider-synchronized social media marketing services with live rate calculation.",
-    url: "https://smmarchitecture.com/services",
+    title: "Services Catalog & Real-Time Rates | SMM Panel",
+    description: "Browse social media growth services with upfront rates per 1,000 and live dispatch.",
+    url: "/services",
   },
 };
 

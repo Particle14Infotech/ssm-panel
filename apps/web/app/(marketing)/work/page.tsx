@@ -6,15 +6,15 @@ import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { landingContent } from "@/content/landing";
 
 export const metadata: Metadata = {
-  title: "How It Works — Order Lifecycle & Architecture",
-  description: "Explore the 5-step order journey: wallet balance verification, clear catalog, provider outbox relay, and automated refill tracking.",
+  title: "How It Works — Order Lifecycle & Fulfillment",
+  description: "Explore the 4-step order journey: add funds in INR, choose service, place order, and track with automatic refunds.",
   alternates: {
-    canonical: "https://smmarchitecture.com/work",
+    canonical: "/work",
   },
   openGraph: {
-    title: "How It Works — Order Lifecycle & Architecture | SMM PANEL",
-    description: "Explore the 5-step order journey and automated provider order dispatch pipeline.",
-    url: "https://smmarchitecture.com/work",
+    title: "How It Works — Order Lifecycle & Fulfillment | SMM Panel",
+    description: "Explore the 4-step order journey and automated provider order dispatch pipeline.",
+    url: "/work",
   },
 };
 

@@ -1,33 +1,22 @@
 # SMM Panel
 
-> Authoritative Social Media Marketing Platform, Reseller API, and Order Accounting Infrastructure.
+> Social Media Marketing Services and Live Order Tracking.
 
 ## Overview
-SMM Panel (`https://smmarchitecture.com`) is a high-reliability, provider-synchronized social media growth infrastructure designed for agencies, creators, and reseller networks. It operates on an automated double-entry ledger financial model, with sub-second order dispatch and real-time telemetry across major social networks.
+SMM Panel is a reliable platform for ordering social media growth services with transparent INR pricing, live order tracking, and automatic wallet refunds for cancelled or partial orders.
 
 ## Core Features
-- **Deterministic Ledger Accounting:** Double-entry bookkeeping with strict row-level locking (`SELECT ... FOR UPDATE`), zero floating-point math, and integer paise precision.
-- **Provider Multi-Routing:** Automated dispatch to vetted upstream wholesale providers with automated status synchronization and cancellation/refill daemon attached.
-- **Reseller API v2:** High-throughput JSON REST API with HMAC and API Key authentication, rate-limited up to 300 requests/minute.
-- **Real-Time Telemetry:** Live uptime monitoring, transparent latency tracking, and status health probes (`/api/v1/health/live`, `/api/v1/health/ready`).
-
-## Core Endpoints & Slugs
-- Homepage: `https://smmarchitecture.com/`
-- Service Catalog: `https://smmarchitecture.com/services` (500+ active services across Instagram, YouTube, TikTok, Telegram, X/Twitter)
-- Pricing & Bonus Tiers: `https://smmarchitecture.com/pricing` (Tiered deposit bonuses from Bronze to Platinum)
-- Architecture & Pipeline: `https://smmarchitecture.com/work` (5-step order lifecycle walkthrough)
-- Knowledge Base: `https://smmarchitecture.com/faq` (Policies on speeds, refills, and partial refunds)
-- Agency Contact: `https://smmarchitecture.com/contact` (Direct support and reseller onboarding)
+- **INR Wallet:** Top up balance using UPI, cards, and netbanking.
+- **Automated Order Dispatch:** Fast order synchronization with transparent start times and quantity limits.
+- **Live Order Tracking:** Real-time status updates from placement through completion.
+- **Automatic Wallet Refunds:** Unfulfilled portions on cancelled or partial orders automatically return to your wallet balance.
 
 ## Supported Social Platforms
-- **Instagram:** Followers, Likes, Reels Views, Comments, Story Impressions
-- **YouTube:** High-Retention Views, Subscribers, Likes, Watch Time
-- **TikTok:** Views, Followers, Likes, Shares
+- **Instagram:** Followers, Likes, Reels Views, Comments
+- **YouTube:** Views, Subscribers, Likes
+- **TikTok:** Views, Followers, Likes
 - **Telegram:** Channel Members, Post Views, Reactions
-- **X (Twitter):** Followers, Retweets, Likes, Poll Votes
+- **X:** Followers, Reposts, Likes
 
-## Compliance & Terms
-- Service Terms: `https://smmarchitecture.com/legal/terms`
-- Privacy Policy: `https://smmarchitecture.com/legal/privacy`
-- Refund Policy: `https://smmarchitecture.com/legal/refund` (Guaranteed automated wallet refund on cancelled/failed orders)
-- Technical Contact: `support@smmpanel.io`
+## Support
+- Contact: support@smmpanel.com

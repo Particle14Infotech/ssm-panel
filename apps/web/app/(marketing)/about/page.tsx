@@ -5,15 +5,15 @@ import { Shield, Zap, RefreshCw, Cpu } from "lucide-react";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "About — Architecture & Standards",
-  description: "Learn about the engineering and operational standards behind SMM Panel: double-entry accounting, direct provider queues, and real INR wallet balances.",
+  title: "About — Standards & Operations",
+  description: "Learn about the operational standards behind SMM Panel: secure wallet accounting, automated order queues, and real INR wallet balances.",
   alternates: {
-    canonical: "https://smmarchitecture.com/about",
+    canonical: "/about",
   },
   openGraph: {
-    title: "About — Architecture & Standards | SMM Panel",
-    description: "Learn about the engineering and operational standards behind SMM Panel.",
-    url: "https://smmarchitecture.com/about",
+    title: "About — Standards & Operations | SMM Panel",
+    description: "Learn about the operational standards behind SMM Panel.",
+    url: "/about",
   },
 };
 
@@ -21,8 +21,8 @@ export default function AboutPage() {
   const PILLARS = [
     {
       icon: Shield,
-      title: "Double-Entry Ledger",
-      desc: "Every wallet transaction (deposits, order debits, partial refunds) is recorded atomically inside PostgreSQL transactions with row-level locks. User balances are calculated from immutable ledger entries.",
+      title: "Secure Wallet Accounting",
+      desc: "Every wallet transaction (deposits, order debits, partial refunds) is recorded atomically with row-level locks. User balances are calculated from immutable transaction entries.",
     },
     {
       icon: Zap,
@@ -54,7 +54,7 @@ export default function AboutPage() {
             Engineering for <span className="text-[#D8EC8D] font-normal">Real Money Safety</span>
           </h1>
           <p className="text-zinc-300 text-base sm:text-lg mt-4 leading-relaxed font-light">
-            SMM Panel is built on the principle of technical transparency. We do not use fake order counters, synthetic testimonials, or arbitrary service delays. The platform operates as a high-throughput router connecting social creators and marketing agencies directly with verified provider endpoints.
+            SMM Panel is built on the principle of technical transparency. We do not use fake order counters, synthetic testimonials, or arbitrary service delays. The platform operates as a high-throughput router connecting social creators and marketing agencies directly with direct provider endpoints.
           </p>
         </div>
 

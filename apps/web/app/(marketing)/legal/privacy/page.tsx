@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "Privacy Policy & Data Protection",
   description: `Privacy and data protection policies for users and API consumers of ${landingContent.brand.name}.`,
   alternates: {
-    canonical: "https://smmarchitecture.com/legal/privacy",
+    canonical: "/legal/privacy",
   },
 };
 

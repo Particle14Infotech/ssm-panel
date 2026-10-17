@@ -5,15 +5,15 @@ import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { landingContent } from "@/content/landing";
 
 export const metadata: Metadata = {
-  title: "Frequently Asked Questions & Knowledge Base",
-  description: "Learn how order speeds, automated partial refunds, provider API policies, and double-entry ledger security operate.",
+  title: "Frequently Asked Questions",
+  description: "Straightforward answers about our services, order speeds, and automated wallet balance refunds.",
   alternates: {
-    canonical: "https://smmarchitecture.com/faq",
+    canonical: "/faq",
   },
   openGraph: {
-    title: "Frequently Asked Questions & Knowledge Base | SMM PANEL",
-    description: "Learn how order speeds, automated partial refunds, and provider API policies function.",
-    url: "https://smmarchitecture.com/faq",
+    title: "Frequently Asked Questions | SMM Panel",
+    description: "Straightforward answers about our services, order speeds, and automated wallet balance refunds.",
+    url: "/faq",
   },
 };
 

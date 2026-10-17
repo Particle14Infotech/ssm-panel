@@ -26,7 +26,7 @@ export default function OgImage() {
           position: "relative",
         }}
       >
-        {/* Glow ambient background element */}
+        {/* Subtle ambient background element */}
         <div
           style={{
             position: "absolute",
@@ -35,11 +35,11 @@ export default function OgImage() {
             width: "600px",
             height: "600px",
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(37,99,235,0.2) 0%, rgba(2,4,10,0) 70%)",
+            background: "radial-gradient(circle, rgba(216,236,141,0.06) 0%, rgba(19,19,19,0) 70%)",
           }}
         />
 
-        {/* Top telemetry badge */}
+        {/* Top badge */}
         <div
           style={{
             display: "flex",
@@ -47,28 +47,28 @@ export default function OgImage() {
             gap: "12px",
             padding: "10px 24px",
             borderRadius: "9999px",
-            background: "rgba(255, 255, 255, 0.06)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
+            background: "rgba(255, 255, 255, 0.04)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
           }}
         >
           <div
             style={{
-              width: "12px",
-              height: "12px",
+              width: "10px",
+              height: "10px",
               borderRadius: "50%",
               background: "#D8EC8D",
             }}
           />
           <span
             style={{
-              fontSize: "18px",
+              fontSize: "16px",
               fontWeight: 600,
-              letterSpacing: "0.15em",
+              letterSpacing: "0.1em",
               color: "#D8EC8D",
               textTransform: "uppercase",
             }}
           >
-            Platform Active • SMM Panel
+            SMM Panel
           </span>
         </div>
 
@@ -77,33 +77,33 @@ export default function OgImage() {
           <h1
             style={{
               fontSize: "64px",
-              fontWeight: 300,
+              fontWeight: 600,
               color: "#FFFFFF",
-              lineHeight: 1.15,
+              lineHeight: 1.12,
               margin: 0,
-              letterSpacing: "-0.03em",
+              letterSpacing: "-0.02em",
               maxWidth: "950px",
             }}
           >
-            Order Social Growth Services.{" "}
-            <span style={{ color: "#D8EC8D", fontWeight: 400 }}>Track Every Order.</span>
+            Order Social Growth.{" "}
+            <span style={{ color: "#D8EC8D" }}>Track every order.</span>
           </h1>
 
           <p
             style={{
               fontSize: "24px",
-              color: "#94A3B8",
+              color: "#A1A1AA",
               margin: 0,
-              lineHeight: 1.4,
+              lineHeight: 1.5,
               maxWidth: "850px",
-              fontWeight: 300,
+              fontWeight: 400,
             }}
           >
-            One unified wallet in INR, 500+ direct provider services, real-time sync, and double-entry protected ledger accounting.
+            One unified wallet in INR, live order tracking, and automatic wallet refunds for undelivered orders.
           </p>
         </div>
 
-        {/* Footer badges */}
+        {/* Footer */}
         <div
           style={{
             display: "flex",
@@ -114,10 +114,10 @@ export default function OgImage() {
             paddingTop: "30px",
           }}
         >
-          <span style={{ fontSize: "20px", color: "#FFFFFF", fontWeight: 500, letterSpacing: "0.05em" }}>
-            smmarchitecture.com
+          <span style={{ fontSize: "20px", color: "#FFFFFF", fontWeight: 600, letterSpacing: "0.02em" }}>
+            SMM Panel
           </span>
-          <span style={{ fontSize: "18px", color: "#64748B" }}>
+          <span style={{ fontSize: "18px", color: "#71717A" }}>
             Instagram • YouTube • TikTok • Telegram • X
           </span>
         </div>

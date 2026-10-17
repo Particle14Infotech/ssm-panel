@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "Refund Policy & Balance Guarantee",
   description: "Automated partial refunds, cancellation rules, and wallet credit policies.",
   alternates: {
-    canonical: "https://smmarchitecture.com/legal/refund",
+    canonical: "/legal/refund",
   },
 };
 
