@@ -37,6 +37,18 @@ export interface AdminCoupon {
 
 export const INITIAL_ADMIN_USERS: AdminUser[] = [];
 
-export const INITIAL_ADMIN_PROVIDERS: AdminProvider[] = [];
+export const INITIAL_ADMIN_PROVIDERS: AdminProvider[] = [
+  {
+    id: "prov_cheapest",
+    name: "cheapestsmmpanels",
+    apiUrl: "https://cheapestsmmpanels.com/api/v2",
+    apiKey: "e691••••64ff",
+    balance: 123.06,
+    currency: "INR",
+    status: "CONNECTED",
+    serviceCount: 2531,
+    lastSyncAt: new Date().toISOString(),
+  },
+];
 
 export const INITIAL_ADMIN_COUPONS: AdminCoupon[] = [];

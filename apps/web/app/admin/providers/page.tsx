@@ -9,17 +9,19 @@ import {
   DownloadCloud,
   CheckCircle2,
   AlertTriangle,
-  ExternalLink,
-  Key,
-  Globe,
-  Database,
+  Edit3,
+  Trash2,
   X,
+  Check,
 } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { AdminProvider } from "@/content/admin-data";
 
 export default function AdminProvidersPage() {
-  const { providers, addProvider, syncProvider, importFromProvider } = useAdmin();
+  const { providers, addProvider, updateProvider, deleteProvider, syncProvider, importFromProvider } = useAdmin();
   const [isAdding, setIsAdding] = useState(false);
+  const [editingProvider, setEditingProvider] = useState<AdminProvider | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [importingId, setImportingId] = useState<string | null>(null);
   const [importNotice, setImportNotice] = useState<string | null>(null);
@@ -29,6 +31,12 @@ export default function AdminProvidersPage() {
   const [apiUrl, setApiUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [marginPercent, setMarginPercent] = useState<number>(20);
+
+  // Edit Provider Form
+  const [editName, setEditName] = useState("");
+  const [editApiUrl, setEditApiUrl] = useState("");
+  const [editApiKey, setEditApiKey] = useState("");
+  const [editActive, setEditActive] = useState(true);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +51,38 @@ export default function AdminProvidersPage() {
     setName("");
     setApiUrl("");
     setApiKey("");
+    setImportNotice("Provider connected successfully.");
+    setTimeout(() => setImportNotice(null), 4000);
+  };
+
+  const handleStartEdit = (p: AdminProvider) => {
+    setEditingProvider(p);
+    setEditName(p.name);
+    setEditApiUrl(p.apiUrl);
+    setEditApiKey("");
+    setEditActive(p.status === "CONNECTED");
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProvider || !editName.trim() || !editApiUrl.trim()) return;
+
+    await updateProvider(editingProvider.id, {
+      name: editName.trim(),
+      apiUrl: editApiUrl.trim(),
+      apiKey: editApiKey.trim() ? editApiKey.trim() : undefined,
+      active: editActive,
+    });
+    setEditingProvider(null);
+    setImportNotice(`Provider #${editingProvider.id} updated successfully.`);
+    setTimeout(() => setImportNotice(null), 4000);
+  };
+
+  const handleDeleteConfirm = async (id: string) => {
+    await deleteProvider(id);
+    setDeletingId(null);
+    setImportNotice(`Provider #${id} deleted.`);
+    setTimeout(() => setImportNotice(null), 4000);
   };
 
   const handleSync = async (id: string) => {
@@ -135,7 +175,7 @@ export default function AdminProvidersPage() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. ApexSMM Primary API"
+                  placeholder="e.g. cheapestsmmpanels"
                   required
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white"
                 />
@@ -149,7 +189,7 @@ export default function AdminProvidersPage() {
                   type="url"
                   value={apiUrl}
                   onChange={(e) => setApiUrl(e.target.value)}
-                  placeholder="https://provider.com/api/v2"
+                  placeholder="https://cheapestsmmpanels.com/api/v2"
                   required
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white font-mono"
                 />
@@ -163,7 +203,7 @@ export default function AdminProvidersPage() {
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="sk_live_..."
+                  placeholder="Enter secret API key..."
                   required
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white font-mono"
                 />
@@ -172,6 +212,13 @@ export default function AdminProvidersPage() {
 
             <div className="flex justify-end gap-3 pt-2">
               <button
+                type="button"
+                onClick={() => setIsAdding(false)}
+                className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-white text-xs"
+              >
+                Cancel
+              </button>
+              <button
                 type="submit"
                 className="px-6 py-2 rounded-full btn-primary-gradient text-[#171e00] text-xs font-bold transition-all shadow-md"
               >
@@ -179,6 +226,127 @@ export default function AdminProvidersPage() {
               </button>
             </div>
           </form>
+        )}
+
+        {/* Edit Provider Modal */}
+        {editingProvider && (
+          <form
+            onSubmit={handleSaveEdit}
+            className="bg-[#131313] border border-[#D8EC8D]/30 rounded-3xl p-6 md:p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-4"
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-[#D8EC8D]" />
+                <h3 className="text-base font-semibold text-white">Modify Provider Node #{editingProvider.id}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingProvider(null)}
+                className="text-xs text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+              <div>
+                <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  Provider Name / Label
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  API Endpoint URL
+                </label>
+                <input
+                  type="url"
+                  value={editApiUrl}
+                  onChange={(e) => setEditApiUrl(e.target.value)}
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  New API Key (Leave empty to keep existing)
+                </label>
+                <input
+                  type="password"
+                  value={editApiKey}
+                  onChange={(e) => setEditApiKey(e.target.value)}
+                  placeholder="Leave blank to preserve key"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={editActive}
+                  onChange={(e) => setEditActive(e.target.checked)}
+                  className="w-4 h-4 rounded bg-white/5 border-white/10 accent-[#D8EC8D]"
+                />
+                <span>Active Provider (Enable automatic routing)</span>
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setEditingProvider(null)}
+                className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-white text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2 rounded-full btn-primary-gradient text-[#171e00] text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+              >
+                <Check className="w-4 h-4" />
+                <span>Save Changes</span>
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deletingId && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-3xl p-6 space-y-4 text-xs">
+            <div className="flex items-center gap-3 text-red-400">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              <div>
+                <h4 className="font-bold text-white text-sm">Delete Provider Node #{deletingId}?</h4>
+                <p className="text-slate-400 text-xs">
+                  This action removes the API credentials from the platform. Any linked services will be unlinked.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeletingId(null)}
+                className="px-4 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteConfirm(deletingId)}
+                className="px-4 py-1.5 rounded-full bg-red-500 hover:bg-red-600 text-white text-xs font-bold shadow-md"
+              >
+                Confirm Delete
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Margin setting bar */}
@@ -221,9 +389,31 @@ export default function AdminProvidersPage() {
                     <span className="px-3 py-1 rounded-full bg-white/5 text-[10px] font-mono uppercase text-slate-400">
                       {p.id}
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 font-mono text-[10px] font-bold border border-emerald-500/30">
-                      {p.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold border ${
+                          p.status === "CONNECTED"
+                            ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                            : "bg-red-500/15 text-red-300 border-red-500/30"
+                        }`}
+                      >
+                        {p.status}
+                      </span>
+                      <button
+                        onClick={() => handleStartEdit(p)}
+                        className="p-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all"
+                        title="Edit provider"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setDeletingId(p.id)}
+                        className="p-1 rounded-lg bg-white/5 hover:bg-red-500/20 text-slate-300 hover:text-red-400 transition-all"
+                        title="Delete provider"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   <h3 className="text-sm font-semibold text-white">{p.name}</h3>

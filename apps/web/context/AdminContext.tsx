@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { ServiceItem, OrderItem, TransactionItem } from "@smm/contracts";
-import { AdminUser, AdminProvider, AdminCoupon } from "@/content/admin-data";
+import { AdminUser, AdminProvider, AdminCoupon, INITIAL_ADMIN_PROVIDERS } from "@/content/admin-data";
 
 interface AdminContextType {
   users: AdminUser[];
@@ -22,6 +22,8 @@ interface AdminContextType {
   updateOrderStatus: (orderId: string, status: any) => Promise<boolean>;
   resendOrderToProvider: (orderId: string) => Promise<boolean>;
   addProvider: (provider: { name: string; apiUrl: string; apiKey: string }) => Promise<boolean>;
+  updateProvider: (id: string, updates: { name?: string; apiUrl?: string; apiKey?: string; active?: boolean }) => Promise<boolean>;
+  deleteProvider: (id: string) => Promise<boolean>;
   syncProvider: (providerId: string) => Promise<boolean>;
   importFromProvider: (providerId: string, marginPercent?: number) => Promise<{ success: boolean; importedCount?: number }>;
   addCoupon: (coupon: AdminCoupon) => void;
@@ -37,38 +39,38 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [orders, setOrders] = useState<OrderItem[]>([]);
-  const [providers, setProviders] = useState<AdminProvider[]>([]);
+  const [providers, setProviders] = useState<AdminProvider[]>(INITIAL_ADMIN_PROVIDERS);
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const getAuthToken = useCallback(() => {
     if (typeof window === "undefined") return null;
-    return localStorage.getItem("authToken");
+    const local = localStorage.getItem("authToken") || localStorage.getItem("token");
+    if (local) return local;
+    const match = document.cookie.match(/(?:^|;\s*)authToken=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : null;
   }, []);
 
   const refreshAdminData = useCallback(async () => {
     const token = getAuthToken();
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
-
-    const authHeaders = {
-      Authorization: `Bearer ${token}`,
+    const authHeaders: Record<string, string> = {
       "Content-Type": "application/json",
     };
+    if (token) {
+      authHeaders["Authorization"] = `Bearer ${token}`;
+    }
 
     try {
       setIsLoading(true);
-      const [usersRes, ordersRes, servicesRes, providersRes] = await Promise.all([
-        fetch(`${API_BASE}/users`, { headers: authHeaders, cache: "no-store" }),
-        fetch(`${API_BASE}/orders`, { headers: authHeaders, cache: "no-store" }),
-        fetch(`${API_BASE}/services`, { headers: authHeaders, cache: "no-store" }),
+      const [servicesRes, providersRes, usersRes, ordersRes] = await Promise.all([
+        fetch(`${API_BASE}/services`, { cache: "no-store" }).catch(() => null),
         fetch(`${API_BASE}/providers`, { headers: authHeaders, cache: "no-store" }).catch(() => null),
+        token ? fetch(`${API_BASE}/users`, { headers: authHeaders, cache: "no-store" }).catch(() => null) : null,
+        token ? fetch(`${API_BASE}/orders`, { headers: authHeaders, cache: "no-store" }).catch(() => null) : null,
       ]);
 
-      if (usersRes.ok) {
+      if (usersRes && usersRes.ok) {
         const rawUsers = await usersRes.json();
         if (Array.isArray(rawUsers)) {
           setUsers(
@@ -87,7 +89,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
         }
       }
 
-      if (ordersRes.ok) {
+      if (ordersRes && ordersRes.ok) {
         const rawOrders = await ordersRes.json();
         if (Array.isArray(rawOrders)) {
           setOrders(
@@ -112,7 +114,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
         }
       }
 
-      if (servicesRes.ok) {
+      if (servicesRes && servicesRes.ok) {
         const rawServices = await servicesRes.json();
         if (Array.isArray(rawServices)) {
           setServices(
@@ -376,6 +378,63 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
     }
   };
 
+  const updateProvider = async (id: string, updates: { name?: string; apiUrl?: string; apiKey?: string; active?: boolean }) => {
+    const token = getAuthToken();
+    if (!token) {
+      setProviders((prev) =>
+        prev.map((p) =>
+          p.id === id
+            ? {
+                ...p,
+                ...(updates.name ? { name: updates.name } : {}),
+                ...(updates.apiUrl ? { apiUrl: updates.apiUrl } : {}),
+                ...(typeof updates.active === "boolean" ? { status: updates.active ? "CONNECTED" : "ERROR" } : {}),
+              }
+            : p
+        )
+      );
+      return true;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/providers/${id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        await refreshAdminData();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  const deleteProvider = async (id: string) => {
+    const token = getAuthToken();
+    if (!token) {
+      setProviders((prev) => prev.filter((p) => p.id !== id));
+      return true;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/providers/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        await refreshAdminData();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
   const addCoupon = (coupon: AdminCoupon) => {
     setCoupons((prev) => [coupon, ...prev]);
   };
@@ -412,6 +471,8 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
         updateOrderStatus,
         resendOrderToProvider,
         addProvider,
+        updateProvider,
+        deleteProvider,
         syncProvider,
         importFromProvider,
         addCoupon,

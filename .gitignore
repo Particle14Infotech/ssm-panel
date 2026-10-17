@@ -47,3 +47,8 @@ test-results/
 
 # Turbo
 .turbo/
+
+# Design references and test videos
+design-reference/
+*.webm
+crown-preview.png

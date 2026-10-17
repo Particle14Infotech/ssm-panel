@@ -12,17 +12,38 @@ import {
   Server,
   Tag,
   RefreshCw,
-  ExternalLink,
   Menu,
   X,
+  Check,
 } from "lucide-react";
 
-import { BRAND_NAME } from "@/lib/brand";
 import { BrandLogo } from "@/components/shared/BrandLogo";
+import { useAdmin } from "@/context/AdminContext";
 
 export function AdminHeader() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncSuccess, setSyncSuccess] = useState(false);
+  const { refreshAdminData, syncProvider, providers } = useAdmin();
+
+  const handleLiveSync = async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    setSyncSuccess(false);
+    try {
+      await refreshAdminData();
+      if (providers && providers.length > 0) {
+        await Promise.allSettled(providers.map((p) => syncProvider(p.id)));
+      }
+      setSyncSuccess(true);
+      setTimeout(() => setSyncSuccess(false), 2500);
+    } catch {
+      // Handled gracefully
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const adminNav = [
     { name: "Dashboard", href: "/admin/dashboard", icon: Layers },
@@ -57,19 +78,24 @@ export function AdminHeader() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full liquid-glass-pill text-xs font-mono">
-              <RefreshCw className="w-3 h-3 text-[#D8EC8D]" />
-              <span className="text-[#D8EC8D] font-semibold">Live Sync</span>
-            </div>
-
-            <Link
-              href="/dashboard"
-              className="px-3.5 py-1.5 rounded-full liquid-glass-pill text-white text-xs font-semibold flex items-center gap-1.5 transition-all hover:border-[#D8EC8D]/40"
+            {/* Functional Live Sync Button */}
+            <button
+              type="button"
+              onClick={handleLiveSync}
+              disabled={isSyncing}
+              className={`px-3.5 py-1.5 rounded-full liquid-glass-pill text-xs font-mono flex items-center gap-2 transition-all hover:border-[#D8EC8D]/50 hover:bg-white/5 active:scale-95 cursor-pointer ${
+                isSyncing ? "opacity-75 cursor-wait" : ""
+              }`}
+              title="Sync platform metrics, orders, and upstream provider balances"
             >
-              <span>Customer View</span>
-              <ExternalLink className="w-3.5 h-3.5 text-[#D8EC8D]" />
-            </Link>
+              <RefreshCw className={`w-3.5 h-3.5 text-[#D8EC8D] ${isSyncing ? "animate-spin" : ""}`} />
+              <span className="text-[#D8EC8D] font-semibold">
+                {isSyncing ? "Syncing..." : syncSuccess ? "Synced ✓" : "Live Sync"}
+              </span>
+              {syncSuccess && <span className="w-1.5 h-1.5 rounded-full bg-[#D8EC8D] animate-ping" />}
+            </button>
 
+            {/* Admin Avatar */}
             <div className="flex items-center gap-2 pl-2 border-l border-white/10">
               <div className="hidden md:flex flex-col text-right">
                 <span className="text-xs font-bold text-white leading-tight">Administrator</span>
