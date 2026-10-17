@@ -1,191 +1,193 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { landingContent } from "@/content/landing";
-import { Reveal } from "@/components/motion/Reveal";
-import { SplitHeading } from "@/components/motion/SplitHeading";
+import Image from "next/image";
+import { motion, useScroll, useSpring, useTransform, AnimatePresence } from "framer-motion";
 import { CrownSlot } from "@/components/three/CrownSlot";
-import { Wallet, Layers, Send, CheckCircle2 } from "lucide-react";
-import { motion, useScroll, useSpring, useReducedMotion } from "framer-motion";
+
+const STEPS = [
+  {
+    num: "01",
+    total: "04",
+    title: "Add funds",
+    sentence: "Top up your wallet in INR using UPI, cards, or netbanking with instant credit.",
+    previewSrc: "/previews/preview-add-funds.png",
+    alt: "Add funds preview",
+  },
+  {
+    num: "02",
+    total: "04",
+    title: "Choose a service",
+    sentence: "Select your platform and service with transparent rates per 1,000 shown upfront.",
+    previewSrc: "/previews/preview-choose-service.png",
+    alt: "Choose service preview",
+  },
+  {
+    num: "03",
+    total: "04",
+    title: "Place your order",
+    sentence: "Enter your destination link, adjust your desired quantity, and confirm in one click.",
+    previewSrc: "/previews/preview-place-order.png",
+    alt: "Place order preview",
+  },
+  {
+    num: "04",
+    total: "04",
+    title: "Track and get refunds",
+    sentence: "Follow order progress live; unfulfilled amounts automatically return to your wallet.",
+    previewSrc: "/previews/preview-track-order.png",
+    alt: "Track order preview",
+  },
+];
 
 export function WorkWalkthroughSection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const shouldReduceMotion = useReducedMotion();
-  const [activeStep, setActiveStep] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [activeStep, setActiveStep] = useState(0);
 
   const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start 75%", "end 65%"],
+    target: containerRef,
+    offset: ["start start", "end end"],
   });
 
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 220,
-    damping: 28,
+    stiffness: 240,
+    damping: 30,
     restDelta: 0.001,
   });
 
   useEffect(() => {
     return smoothProgress.on("change", (latest) => {
-      if (latest < 0.25) setActiveStep(1);
-      else if (latest < 0.50) setActiveStep(2);
-      else if (latest < 0.75) setActiveStep(3);
-      else setActiveStep(4);
+      const idx = Math.min(3, Math.max(0, Math.floor(latest * 4)));
+      setActiveStep(idx);
     });
   }, [smoothProgress]);
 
-  const stepIcons = [
-    <Wallet key="1" className="w-4 h-4" strokeWidth={1.75} />,
-    <Layers key="2" className="w-4 h-4" strokeWidth={1.75} />,
-    <Send key="3" className="w-4 h-4" strokeWidth={1.75} />,
-    <CheckCircle2 key="4" className="w-4 h-4" strokeWidth={1.75} />,
-  ];
-
-  // Plain language step details with zero engineering jargon
-  const stepDetails = [
-    "Pay with UPI, cards or netbanking",
-    "See price per 1,000, min/max and start time",
-    "Enter your link and quantity",
-    "Watch status live; unused amount returns to your wallet",
-  ];
+  const step = STEPS[activeStep];
 
   return (
     <section
-      ref={sectionRef}
+      ref={containerRef}
       id="work"
-      className="w-full py-14 sm:py-20 lg:py-28 bg-[#181818]/60 border-y border-white/[0.06] relative"
+      className="relative w-full h-[280vh] bg-transparent"
     >
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-        {/* Title Block with reserved CrownSlot on the right (small on mobile 80px, medium on desktop) */}
-        <div className="flex items-start justify-between gap-4 mb-10 md:mb-12">
-          <div className="max-w-[560px] text-left">
-            <Reveal delay={0.05}>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-4">
-                <span className="text-[13px] font-medium text-[#d8ec8d]">
-                  {landingContent.workWalkthrough.badge}
-                </span>
-              </div>
-            </Reveal>
+      {/* Pinned Sticky Stage */}
+      <div className="sticky top-0 h-screen w-full flex flex-col justify-center items-center overflow-hidden px-4 sm:px-6">
+        <div className="max-w-[1200px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          
+          {/* Mobile view: Preview top, text below */}
+          {/* Desktop view: Left column = text + progress rail (7 cols), Right column = glass preview + crown stage (5 cols) */}
 
-            <SplitHeading
-              as="h2"
-              className="text-[clamp(28px,3.6vw,44px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-3"
-            >
-              {landingContent.workWalkthrough.title}
-            </SplitHeading>
+          {/* Left Column (Text & Step Info) */}
+          <div className="order-2 lg:order-1 lg:col-span-6 flex flex-col justify-center text-left">
+            {/* Eyebrow & Step Counter */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xs uppercase tracking-widest text-[#d8ec8d] font-mono px-2.5 py-1 rounded-md bg-white/[0.04] border border-white/[0.08]">
+                How It Works
+              </span>
+              <span className="text-xs font-mono text-[#A1A1AA]">
+                {step.num} / {step.total}
+              </span>
+            </div>
 
-            <Reveal delay={0.15}>
-              <p className="text-base text-[#A1A1AA] font-normal leading-relaxed">
-                {landingContent.workWalkthrough.description}
-              </p>
-            </Reveal>
+            {/* Step Title & Sentence with crisp crossfade transition */}
+            <div className="min-h-[140px] sm:min-h-[160px] flex flex-col justify-center">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={step.num}
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -14 }}
+                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <h2 className="text-[clamp(28px,3.8vw,48px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-4">
+                    {step.title}
+                  </h2>
+                  <p className="text-base sm:text-lg text-[#A1A1AA] font-normal leading-relaxed max-w-lg">
+                    {step.sentence}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+            </div>
 
-            {/* Accent divider line */}
-            <motion.div
-              initial={{ scaleX: 0 }}
-              whileInView={{ scaleX: 1 }}
-              viewport={{ once: true, amount: 0.15 }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-              className="w-24 h-[1px] bg-gradient-to-r from-[#d8ec8d]/50 to-transparent origin-left mt-6"
-            />
-          </div>
-
-          {/* Reserved docking slot beside heading / side gutter: never inside text column */}
-          <CrownSlot
-            id="steps"
-            className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 xl:translate-x-16 2xl:translate-x-28 shrink-0"
-          />
-        </div>
-
-        {/* 4 Steps Container:
-            - Phone (< md): Vertical timeline with progress line in left gutter outside card content
-            - Tablet (md to lg): 2x2 grid
-            - Laptop+ (lg+): 4 columns with horizontal progress line
-        */}
-        <div className="relative">
-          {/* Laptop+ Horizontal Progress Line */}
-          <div className="hidden lg:block absolute top-[28px] left-[40px] right-[40px] h-[2px] bg-white/[0.08] pointer-events-none -z-0">
-            <motion.div
-              style={{ scaleX: shouldReduceMotion ? 1 : smoothProgress }}
-              className="h-full bg-[#d8ec8d] origin-left"
-            />
-          </div>
-
-          {/* Phone Vertical Progress Line: in dedicated left gutter outside card content */}
-          <div className="md:hidden absolute top-[24px] bottom-[24px] left-[15px] w-[2px] bg-white/[0.08] pointer-events-none -z-0">
-            <motion.div
-              style={{ scaleY: shouldReduceMotion ? 1 : smoothProgress }}
-              className="w-full bg-[#d8ec8d] origin-top"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10 pl-10 pr-16 xl:pr-0 md:pl-0">
-            {landingContent.workWalkthrough.steps.map((step, idx) => {
-              const stepNumber = idx + 1;
-              const isPassed = activeStep >= stepNumber;
-              const isCurrent = activeStep === stepNumber;
-
-              return (
-                <div key={step.step} className="relative">
-                  {/* Step Dot for Phone Vertical Timeline on the left line */}
-                  <div
-                    className={`md:hidden absolute -left-[31px] top-6 w-3 h-3 rounded-full border-2 transition-colors duration-300 z-10 ${
-                      isPassed
-                        ? "bg-[#d8ec8d] border-[#d8ec8d] shadow-[0_0_8px_rgba(216,236,141,0.5)]"
-                        : "bg-[#181818] border-white/20"
+            {/* Progress Rail with 4 Dots */}
+            <div className="flex items-center gap-3 mt-8">
+              {STEPS.map((s, i) => (
+                <button
+                  key={s.num}
+                  type="button"
+                  onClick={() => {
+                    if (containerRef.current) {
+                      const top = containerRef.current.offsetTop;
+                      const height = containerRef.current.offsetHeight;
+                      window.scrollTo({
+                        top: top + (i / 4) * height + 10,
+                        behavior: "smooth",
+                      });
+                    }
+                  }}
+                  className={`min-h-[44px] min-w-[44px] flex items-center justify-center p-2 group focus:outline-none`}
+                  aria-label={`Go to step ${s.num}`}
+                >
+                  <span
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      i === activeStep
+                        ? "w-8 bg-[#d8ec8d] shadow-[0_0_10px_rgba(216,236,141,0.5)]"
+                        : i < activeStep
+                        ? "w-2 bg-[#d8ec8d]/50"
+                        : "w-2 bg-white/20 group-hover:bg-white/40"
                     }`}
                   />
-
-                  {/* Card content */}
-                  <div
-                    className={`h-full rounded-[20px] p-6 border transition-all duration-300 flex flex-col justify-between ${
-                      isPassed
-                        ? "border-[#d8ec8d]/40 bg-white/[0.04] shadow-[0_4px_24px_rgba(216,236,141,0.04)]"
-                        : "border-white/[0.08] bg-white/[0.02]"
-                    }`}
-                  >
-                    <div>
-                      {/* Step Header with Step Badge and Icon */}
-                      <div className="flex items-center justify-between mb-5">
-                        <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center font-mono text-xs font-bold transition-all duration-300 ${
-                            isPassed
-                              ? "bg-[#d8ec8d] text-[#171e00] shadow-[0_0_12px_rgba(216,236,141,0.3)]"
-                              : "bg-white/[0.04] border border-white/[0.08] text-[#A1A1AA]"
-                          }`}
-                        >
-                          {step.step}
-                        </div>
-
-                        <motion.div
-                          animate={isCurrent ? { scale: [1, 1.15, 1] } : { scale: 1 }}
-                          transition={{ duration: 0.4 }}
-                          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                            isPassed
-                              ? "bg-[#d8ec8d]/10 text-[#d8ec8d]"
-                              : "bg-white/[0.03] text-[#A1A1AA]/60"
-                          }`}
-                        >
-                          {stepIcons[idx]}
-                        </motion.div>
-                      </div>
-
-                      <h3 className="text-[18px] font-semibold text-white mb-2 leading-snug w-fit">
-                        {step.title}
-                      </h3>
-
-                      <p className="text-sm text-[#A1A1AA] font-normal leading-relaxed mb-3">
-                        {step.description}
-                      </p>
-
-                      <p className="text-sm text-white/70 font-normal leading-normal pt-2.5 border-t border-white/[0.06]">
-                        {stepDetails[idx]}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* Right Column (Glass Preview Panel + Crown Stage) */}
+          <div className="order-1 lg:order-2 lg:col-span-6 flex flex-col items-center justify-center relative">
+            {/* Glass Preview Panel */}
+            <div className="w-full max-w-[540px] rounded-2xl bg-[#1c1b1b]/80 border border-white/[0.12] backdrop-blur-2xl p-3 sm:p-4 shadow-2xl relative overflow-hidden">
+              {/* Window Header */}
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/[0.08]">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-white/20" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-white/20" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-white/20" />
+                </div>
+                <div className="text-[11px] font-mono tracking-wider uppercase px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.1] text-white/70">
+                  Preview
+                </div>
+              </div>
+
+              {/* Screen Preview Image */}
+              <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden bg-[#131313] border border-white/[0.06]">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={step.num}
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.02 }}
+                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute inset-0"
+                  >
+                    <Image
+                      src={step.previewSrc}
+                      alt={step.alt}
+                      fill
+                      className="object-cover object-top"
+                      sizes="(max-width: 768px) 100vw, 540px"
+                    />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {/* Reserved 3D Crown Slot for Story stage */}
+            <CrownSlot
+              id="steps"
+              className="absolute -top-12 -right-8 lg:-right-12 w-28 h-28 pointer-events-none z-10"
+            />
+          </div>
+
         </div>
       </div>
     </section>

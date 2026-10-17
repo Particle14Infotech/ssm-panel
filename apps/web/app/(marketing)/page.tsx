@@ -34,7 +34,6 @@ export default function HomePage() {
         <WorkWalkthroughSection />
         <ServicesPreviewSection />
         <PaymentsSection />
-        <BenefitsSection />
         <FaqSection />
         <CtaSection />
       </div>

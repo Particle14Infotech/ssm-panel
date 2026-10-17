@@ -137,7 +137,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en-IN" className={`dark ${poppins.variable}`}>
+    <html lang="en-IN" className={`dark ${poppins.variable}`} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{

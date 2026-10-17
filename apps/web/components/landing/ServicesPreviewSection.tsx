@@ -1,23 +1,19 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { landingContent } from "@/content/landing";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Calculator, Clock, Sparkles } from "lucide-react";
 import { formatINR } from "@/lib/utils";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
-import { SplitHeading } from "@/components/motion/SplitHeading";
-import { Reveal } from "@/components/motion/Reveal";
 import { CrownSlot } from "@/components/three/CrownSlot";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function ServicesPreviewSection() {
-  const [selectedPlatform, setSelectedPlatform] = useState<string>("ALL");
-  const shouldReduceMotion = useReducedMotion();
-  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [selectedPlatform, setSelectedPlatform] = useState<string>("INSTAGRAM");
+  const services = landingContent.servicesPreview.items;
 
   const platforms = [
-    { id: "ALL", label: "All Platforms" },
     { id: "INSTAGRAM", label: "Instagram" },
     { id: "YOUTUBE", label: "YouTube" },
     { id: "TIKTOK", label: "TikTok" },
@@ -25,245 +21,240 @@ export function ServicesPreviewSection() {
     { id: "X_TWITTER", label: "X" },
   ];
 
-  const filteredServices = landingContent.servicesPreview.items.filter((item) => {
-    return selectedPlatform === "ALL" || item.platform === selectedPlatform;
-  });
+  const availableServices = useMemo(() => {
+    return services.filter((s) => s.platform === selectedPlatform);
+  }, [services, selectedPlatform]);
 
-  // Auto-scroll active tab into view smoothly
+  const [selectedServiceId, setSelectedServiceId] = useState<string>(
+    availableServices[0]?.id || ""
+  );
+
   useEffect(() => {
-    const el = tabRefs.current[selectedPlatform];
-    if (el) {
-      el.scrollIntoView({
-        behavior: shouldReduceMotion ? "auto" : "smooth",
-        block: "nearest",
-        inline: "center",
-      });
+    if (availableServices.length > 0) {
+      setSelectedServiceId(availableServices[0].id);
     }
-  }, [selectedPlatform, shouldReduceMotion]);
+  }, [selectedPlatform, availableServices]);
+
+  const activeService = useMemo(() => {
+    return (
+      availableServices.find((s) => s.id === selectedServiceId) ||
+      availableServices[0]
+    );
+  }, [availableServices, selectedServiceId]);
+
+  const [quantity, setQuantity] = useState<number>(1000);
+
+  useEffect(() => {
+    if (activeService) {
+      const defaultQty = Math.max(
+        activeService.minQty,
+        Math.min(1000, activeService.maxQty)
+      );
+      setQuantity(defaultQty);
+    }
+  }, [activeService]);
+
+  const totalPrice = useMemo(() => {
+    if (!activeService) return 0;
+    return (activeService.ratePer1000 * quantity) / 1000;
+  }, [activeService, quantity]);
 
   return (
     <section
-      id="services"
-      className="w-full py-14 sm:py-20 lg:py-28 bg-[#131313] relative"
+      id="pricing"
+      className="w-full py-16 sm:py-24 lg:py-28 bg-transparent relative"
     >
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-        {/* Title Block with reserved CrownSlot on the right */}
-        <div className="flex items-start justify-between gap-4 mb-8 md:mb-12">
-          <div className="max-w-[560px] text-left">
-            <Reveal delay={0.05}>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-4">
-                <span className="text-[13px] font-medium text-[#d8ec8d]">
-                  {landingContent.servicesPreview.badge}
-                </span>
-              </div>
-            </Reveal>
-
-            <SplitHeading
-              as="h2"
-              className="text-[clamp(28px,3.6vw,44px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-3"
-            >
-              {landingContent.servicesPreview.title}
-            </SplitHeading>
-
-            <Reveal delay={0.15}>
-              <p className="text-base text-[#A1A1AA] font-normal leading-relaxed">
-                {landingContent.servicesPreview.description}
-              </p>
-            </Reveal>
-
-            <motion.div
-              initial={{ scaleX: 0 }}
-              whileInView={{ scaleX: 1 }}
-              viewport={{ once: true, amount: 0.15 }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-              className="w-24 h-[1px] bg-gradient-to-r from-[#d8ec8d]/50 to-transparent origin-left mt-6"
-            />
-            <Reveal delay={0.25} className="hidden sm:block mt-6">
-              <Link
-                href="/services"
-                className="group text-sm font-semibold text-[#d8ec8d] hover:text-white inline-flex items-center min-h-[44px] gap-1.5 transition-colors"
-              >
-                <span>View all services in full catalog</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </Reveal>
+        {/* Header Block */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+          <div className="max-w-xl text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-4">
+              <span className="w-2 h-2 rounded-full bg-[#d8ec8d]" />
+              <span className="text-[13px] font-medium text-[#d8ec8d]">
+                Instant Estimate
+              </span>
+            </div>
+            <h2 className="text-[clamp(28px,3.8vw,48px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-4">
+              Live price calculator
+            </h2>
+            <p className="text-base sm:text-lg text-[#A1A1AA] font-normal leading-relaxed">
+              Calculate exact INR prices for any service before ordering. No hidden fees, instant dispatch.
+            </p>
           </div>
 
-          <div className="flex flex-col items-end shrink-0">
-            {/* Reserved docking slot beside heading / side gutter: never inside text column */}
+          <div className="hidden lg:flex items-center justify-end">
             <CrownSlot
               id="services"
-              className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-36 lg:h-36 xl:translate-x-16 2xl:translate-x-28"
+              className="w-28 h-28 pointer-events-none"
             />
           </div>
         </div>
 
-        {/* Platform Tabs: Edge fade masks on desktop, wrapped within safe left corridor on mobile */}
-        <div className="relative mb-8 pr-16 xl:pr-0">
-          {/* Edge fade masks on horizontal scrolling desktop/tablet */}
-          <div className="hidden sm:block absolute left-0 top-0 bottom-2 w-8 bg-gradient-to-r from-[#131313] to-transparent z-20 pointer-events-none" />
-          <div className="hidden sm:block absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-[#131313] to-transparent z-20 pointer-events-none" />
-
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 max-w-[290px] sm:max-w-none sm:overflow-x-auto pb-3 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:snap-x sm:snap-mandatory px-1 md:pr-1">
-            {platforms.map((p) => {
-              const isSelected = selectedPlatform === p.id;
-              return (
-                <button
-                  key={p.id}
-                  ref={(el) => {
-                    tabRefs.current[p.id] = el;
-                  }}
-                  type="button"
-                  onClick={() => setSelectedPlatform(p.id)}
-                  className={`relative h-11 min-h-[44px] px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 sm:gap-2 z-10 shrink-0 sm:snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d8ec8d] ${
-                    isSelected ? "text-[#171e00]" : "text-[#A1A1AA] hover:text-white"
-                  }`}
-                >
-                  {isSelected && (
-                    <motion.div
-                      layoutId="services-platform-tab"
-                      transition={{ type: "spring", stiffness: 450, damping: 32 }}
-                      className="absolute inset-0 bg-[#d8ec8d] rounded-xl -z-10 shadow-sm"
-                    />
-                  )}
-                  {p.id !== "ALL" && <PlatformIcon platform={p.id} size={15} />}
-                  <span>
-                    {p.id === "ALL" ? (
-                      <>
-                        <span className="sm:hidden">All</span>
-                        <span className="hidden sm:inline">All Platforms</span>
-                      </>
-                    ) : (
-                      p.label
-                    )}
-                  </span>
-                </button>
-              );
-            })}
+        {/* Empty state safeguard */}
+        {services.length === 0 ? (
+          <div className="p-12 text-center rounded-2xl bg-[#1c1b1b]/80 border border-white/[0.08]">
+            <p className="text-lg text-white/80">Services opening soon</p>
           </div>
-        </div>
-
-        {/* Tablet & Desktop Table (md+) */}
-        <div className="hidden md:block rounded-[20px] border border-white/[0.08] bg-white/[0.02] overflow-hidden mr-16 xl:mr-0">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-white/[0.08] text-xs font-medium text-[#A1A1AA]">
-                <th className="py-4 px-6">Service</th>
-                <th className="py-4 px-6">Rate / 1,000</th>
-                <th className="py-4 px-6">Min – Max</th>
-                <th className="py-4 px-6">Start Time</th>
-                <th className="py-4 px-6 text-right">Order</th>
-              </tr>
-            </thead>
-            <AnimatePresence mode="wait">
-              <motion.tbody
-                key={selectedPlatform}
-                initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -8 }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
-                className="divide-y divide-white/[0.06] text-sm"
-              >
-                {filteredServices.map((service, i) => (
-                  <motion.tr
-                    key={service.id}
-                    initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: i * 0.03, ease: [0.22, 1, 0.36, 1] }}
-                    className="hover:bg-white/[0.03] transition-colors group"
-                  >
-                    <td className="py-4 px-6 font-medium text-white">
-                      <div className="flex items-center gap-2.5">
-                        <PlatformIcon platform={service.platform} size={16} />
-                        <span>{service.serviceName}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 font-semibold tabular-nums text-white">
-                      {formatINR(service.ratePer1000, 2)}
-                    </td>
-                    <td className="py-4 px-6 text-[#A1A1AA] text-xs tabular-nums font-mono">
-                      {service.minQty.toLocaleString("en-US")} – {service.maxQty.toLocaleString("en-US")}
-                    </td>
-                    <td className="py-4 px-6 text-[#A1A1AA] text-xs">
-                      {service.avgSpeed}
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      <Link
-                        href="/register"
-                        className="inline-flex items-center gap-1.5 h-11 min-h-[44px] px-5 rounded-xl bg-white/[0.06] hover:bg-[#d8ec8d] hover:text-[#171e00] text-xs font-semibold text-white transition-all group-hover:border-[#d8ec8d]/40 focus-visible:ring-2 focus-visible:ring-[#d8ec8d]"
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Left 7 Columns: Calculator Interface */}
+            <div className="lg:col-span-7 bg-[#1c1b1b]/80 border border-white/[0.12] backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col gap-6">
+              {/* 1. Platform Tabs */}
+              <div>
+                <label className="text-xs uppercase tracking-widest text-[#A1A1AA] font-mono block mb-3">
+                  1. Select Platform
+                </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  {platforms.map((p) => {
+                    const isSelected = selectedPlatform === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setSelectedPlatform(p.id)}
+                        className={`min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d8ec8d] ${
+                          isSelected
+                            ? "bg-[#d8ec8d] text-[#171e00] font-semibold shadow-sm"
+                            : "bg-white/[0.03] text-white/80 hover:bg-white/[0.06] hover:text-white border border-white/[0.08]"
+                        }`}
                       >
-                        <span>Order</span>
-                        <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                      </Link>
-                    </td>
-                  </motion.tr>
-                ))}
-              </motion.tbody>
-            </AnimatePresence>
-          </table>
-        </div>
-
-        {/* Phone Stacked Cards (< md): Rate large, Order button >= 44px, min-max and start time visible */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`mobile-${selectedPlatform}`}
-            initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -8 }}
-            transition={{ duration: 0.25 }}
-            className="md:hidden flex flex-col gap-3.5 pr-16 sm:pr-0"
-          >
-            {filteredServices.map((service) => (
-              <div
-                key={service.id}
-                className="rounded-[18px] p-4 border border-white/[0.08] bg-white/[0.02] flex flex-col gap-3 hover:border-white/[0.16] transition-colors"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <PlatformIcon platform={service.platform} size={18} />
-                    <span className="text-sm font-semibold text-white leading-snug">
-                      {service.serviceName}
-                    </span>
-                  </div>
-                  {/* Large Rate */}
-                  <span className="text-base font-bold tabular-nums text-[#d8ec8d] shrink-0">
-                    {formatINR(service.ratePer1000, 2)}
-                  </span>
+                        <PlatformIcon platform={p.id} size={16} />
+                        <span>{p.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
+              </div>
 
-                {/* Min-Max, Start Time and Order Action */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-[#A1A1AA] gap-3 pt-2.5 border-t border-white/[0.06]">
-                  <div className="flex flex-col gap-0.5">
-                    <span>
-                      Min: <strong className="text-white font-mono">{service.minQty.toLocaleString("en-US")}</strong> · Max: <strong className="text-white font-mono">{service.maxQty.toLocaleString("en-US")}</strong>
+              {/* 2. Service Select */}
+              {activeService && (
+                <div>
+                  <label className="text-xs uppercase tracking-widest text-[#A1A1AA] font-mono block mb-3">
+                    2. Choose Service
+                  </label>
+                  <div className="flex flex-col gap-2">
+                    {availableServices.map((s) => {
+                      const isSelected = s.id === activeService.id;
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => setSelectedServiceId(s.id)}
+                          className={`w-full min-h-[48px] p-3.5 rounded-xl text-left border transition-all flex items-center justify-between gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d8ec8d] ${
+                            isSelected
+                              ? "bg-white/[0.08] border-[#d8ec8d]/50 text-white shadow-sm"
+                              : "bg-white/[0.02] border-white/[0.06] text-white/70 hover:bg-white/[0.04] hover:text-white"
+                          }`}
+                        >
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-white">
+                              {s.serviceName}
+                            </span>
+                            <span className="text-xs text-[#A1A1AA] font-mono mt-0.5">
+                              Min: {s.minQty.toLocaleString("en-IN")} · Max: {s.maxQty.toLocaleString("en-IN")}
+                            </span>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <span className="text-sm font-semibold text-[#d8ec8d] font-mono">
+                              {formatINR(s.ratePer1000)}
+                            </span>
+                            <span className="text-xs text-[#A1A1AA] block">
+                              per 1,000
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Quantity Slider & Input */}
+              {activeService && (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-xs uppercase tracking-widest text-[#A1A1AA] font-mono">
+                      3. Quantity
+                    </label>
+                    <span className="text-xs font-mono text-[#d8ec8d]">
+                      {quantity.toLocaleString("en-IN")} units
                     </span>
-                    <span>Start: <span className="text-white">{service.avgSpeed}</span></span>
                   </div>
 
-                  <div className="self-start sm:self-auto">
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="range"
+                      min={activeService.minQty}
+                      max={activeService.maxQty}
+                      step={Math.max(10, Math.floor(activeService.minQty / 2))}
+                      value={quantity}
+                      onChange={(e) => setQuantity(Number(e.target.value))}
+                      className="w-full min-h-[44px] h-11 py-3 bg-transparent cursor-pointer accent-[#d8ec8d] focus:outline-none"
+                      aria-label="Service quantity slider"
+                    />
+                    <input
+                      type="number"
+                      min={activeService.minQty}
+                      max={activeService.maxQty}
+                      value={quantity}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setQuantity(
+                          Math.max(
+                            activeService.minQty,
+                            Math.min(val, activeService.maxQty)
+                          )
+                        );
+                      }}
+                      className="w-28 min-h-[44px] px-3 rounded-xl bg-white/[0.04] border border-white/[0.1] text-white text-right font-mono text-sm focus:outline-none focus:border-[#d8ec8d]"
+                      aria-label="Exact quantity input"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right 5 Columns: Price Summary Card */}
+            {activeService && (
+              <div className="lg:col-span-5 flex flex-col gap-6">
+                <div className="bg-[#1c1b1b]/90 border border-white/[0.14] rounded-3xl p-6 sm:p-8 backdrop-blur-2xl shadow-2xl flex flex-col justify-between relative overflow-hidden">
+                  {/* Subtle lime glow accent */}
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#d8ec8d]/10 blur-3xl pointer-events-none rounded-full" />
+
+                  <div>
+                    <span className="text-xs uppercase tracking-widest text-[#A1A1AA] font-mono block mb-2">
+                      Total Estimated Price
+                    </span>
+                    <div className="text-4xl sm:text-5xl font-bold text-white font-mono tracking-tight my-2">
+                      {formatINR(totalPrice)}
+                    </div>
+                    <div className="text-xs text-[#A1A1AA] flex items-center gap-2 mt-3">
+                      <Clock className="w-3.5 h-3.5 text-[#d8ec8d]" />
+                      <span>Speed: {activeService.avgSpeed}</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 mt-6 border-t border-white/[0.08] flex flex-col gap-3">
                     <Link
                       href="/register"
-                      className="inline-flex items-center justify-center gap-1.5 h-11 min-h-[44px] px-6 rounded-xl bg-[#d8ec8d] text-[#171e00] text-xs font-semibold hover:brightness-105 active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-[#d8ec8d]"
+                      className="w-full min-h-[48px] px-6 rounded-xl bg-[#d8ec8d] text-[#171e00] font-semibold text-sm hover:brightness-105 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg"
                     >
-                      <span>Order</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <span>Create account to order</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+
+                    <Link
+                      href="/services"
+                      className="w-full min-h-[44px] px-4 rounded-xl text-center text-xs text-[#A1A1AA] hover:text-white transition-colors flex items-center justify-center"
+                    >
+                      View all services in full catalog →
                     </Link>
                   </div>
                 </div>
               </div>
-            ))}
-          </motion.div>
-        </AnimatePresence>
-
-        <div className="sm:hidden mt-6 text-center pr-16 sm:pr-0">
-          <Link
-            href="/services"
-            className="text-xs font-semibold text-[#d8ec8d] inline-flex items-center justify-center min-h-[44px] px-5 py-2.5 rounded-xl border border-white/10 bg-white/[0.03] gap-1.5 active:scale-95 transition-all"
-          >
-            <span>View all services in full catalog</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

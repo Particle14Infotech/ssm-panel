@@ -54,7 +54,7 @@ export function HeroSection() {
     <section
       ref={heroRef}
       id="hero"
-      className="relative w-full pt-28 pb-14 sm:pt-32 sm:pb-16 md:pt-36 md:pb-24 overflow-hidden bg-[#131313]"
+      className="relative w-full pt-28 pb-14 sm:pt-32 sm:pb-16 md:pt-36 md:pb-24 overflow-hidden bg-transparent"
     >
       {/* Very faint background grid (3% opacity) */}
       <div

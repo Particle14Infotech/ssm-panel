@@ -64,3 +64,17 @@
 - [x] 9.2 Monitor Railway multi-service deployments (web, api, worker) -> `done`
 - [x] 9.3 Perform live smoke testing across health, auth, simulated payment, order lifecycle -> `done`
 - [x] 9.4 Finalize `MORNING_REPORT.md` -> `done`
+
+---
+
+## Master Landing Page Cinematic 3D Rebuild (Section-by-Section)
+- [x] **Section 1: NAV** — Sticky blur + hairline after 40px, scrollspy strictly inactive at scroll 0, thin lime progress bar, mobile animated drawer (`qa/nav-*.png`) -> `done`
+- [x] **Section 2: HERO** — Eyebrow chip, H1 with brand lime accent, plain subtext, CTAs, 3 fact chips, 3D crown stage with orbiting real platform tiles (`qa/hero-*.png`) -> `done`
+- [x] **Section 3: PLATFORM STRIP** — Real logos marquee with edge fade masks and hover pause (`qa/platform-strip-*.png`) -> `done`
+- [x] **Section 4: STORY** — Pinned 4-step walkthrough with real app previews (/previews/*.png), crossfade animations, side progress rail (`qa/story-*.png`) -> `done`
+- [x] **Section 5: PRICE CALCULATOR** — Platform tabs, service selector, quantity slider, live INR rate calculation, "Create account to order" CTA (`qa/calculator-*.png`) -> `done`
+- [x] **Section 6: PAYMENTS + WALLET** — Bento grid with large "Pay in INR" tile, official payment plates, "Automatic refunds" tile, "Live tracking" timeline tile with 3D tilt (`qa/payments-*.png`) -> `done`
+- [x] **Section 7: FAQ** — 6 real questions, smooth height animated accordion, centered 800px, FAQPage JSON-LD (`qa/faq-*.png`) -> `done`
+- [x] **Section 8: FINAL CTA** — Centered large crown stage, "Ready to place your first order?", primary CTA button, soft lime light pool -> `done`
+- [x] **Section 9: FOOTER** — Logo, one sentence, 3 link columns, bottom bar, single trademark disclaimer -> `done`
+- [x] **Hard QA Invariants** — Playwright assertions verified on 390x844 (mobile), 820x1180 (tablet), 1440x900 (desktop): zero overflow, tap targets >= 44px, exactly 1 canvas, zero console errors, reduced motion compliance -> `done`

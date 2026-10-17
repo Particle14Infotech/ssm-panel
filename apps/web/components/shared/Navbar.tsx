@@ -24,6 +24,11 @@ export function Navbar() {
       const currentScrollY = window.scrollY;
       setScrolled(currentScrollY > 40);
 
+      // At top of page (hero), no nav link should be active
+      if (currentScrollY < 120) {
+        setActiveSection(null);
+      }
+
       if (currentScrollY > 160 && currentScrollY > lastScrollY.current + 10) {
         setHidden(true);
       } else if (currentScrollY < lastScrollY.current - 10) {
