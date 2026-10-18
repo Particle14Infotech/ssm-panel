@@ -18,6 +18,11 @@ export const EnvSchema = z.object({
   RAZORPAY_KEY_ID: z.string().optional(),
   RAZORPAY_KEY_SECRET: z.string().optional(),
   PAYMENT_WEBHOOK_SECRET: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default("SMM Panel <no-reply@smmpanel.internal>"),
+  EMAIL_REPLY_TO: z.string().optional(),
+  SUPPORT_EMAIL: z.string().default("support@smmpanel.internal"),
+  RESEND_WEBHOOK_SECRET: z.string().optional(),
 });
 
 export type ValidatedEnv = z.infer<typeof EnvSchema>;
@@ -70,6 +75,12 @@ export function validateEnvironment(env: Record<string, string | undefined> = pr
       });
     }
 
+    // Production guard for Email (Resend HTTPS API)
+    const resendKey = env.RESEND_API_KEY;
+    if (!resendKey || resendKey.trim() === "" || resendKey.startsWith("REPLACE_ME")) {
+      missing.push("RESEND_API_KEY (Required in production for transactional emails)");
+    }
+
     if (missing.length > 0) {
       console.error("\n=======================================================");
       console.error("FATAL: PRODUCTION BOOT REFUSED - MISSING SECRETS");
@@ -77,6 +88,12 @@ export function validateEnvironment(env: Record<string, string | undefined> = pr
       missing.forEach((v) => console.error(`  - Missing or placeholder: ${v}`));
       console.error("\nSet valid production credentials in the environment.\n");
       process.exit(1);
+    }
+  } else {
+    // Non-production warning if RESEND_API_KEY is not configured
+    const resendKey = env.RESEND_API_KEY;
+    if (!resendKey || resendKey.trim() === "" || resendKey.startsWith("REPLACE_ME")) {
+      console.warn("[Email Guard] RESEND_API_KEY is not set. Operating in LOG-ONLY simulated mode (safe for development & tests).");
     }
   }
 

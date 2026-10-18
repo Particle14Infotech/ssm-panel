@@ -43,6 +43,18 @@ export class AuthController {
     return this.authService.resetPassword(body);
   }
 
+  @Post("verify-email")
+  @ApiOperation({ summary: "Verify Email via Single-Use Token" })
+  async verifyEmail(@Body() body: { token: string; email: string }) {
+    return this.authService.verifyEmail(body.token, body.email);
+  }
+
+  @Post("resend-verification")
+  @ApiOperation({ summary: "Resend Email Verification Link" })
+  async resendVerification(@Body("email") email: string) {
+    return this.authService.resendVerification(email);
+  }
+
   @Post("2fa/setup")
   @ApiOperation({ summary: "Initiate Two-Factor Authentication Setup" })
   async setup2fa(@Body("userId") userId: string) {

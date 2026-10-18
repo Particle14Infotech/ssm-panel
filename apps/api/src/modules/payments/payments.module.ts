@@ -5,9 +5,10 @@ import { SimulatedPaymentProvider } from "./simulated-payment.provider";
 import { RazorpayPaymentProvider } from "./razorpay-payment.provider";
 import { PrismaService } from "../../common/prisma.service";
 import { WalletModule } from "../wallet/wallet.module";
+import { EmailModule } from "../email/email.module";
 
 @Module({
-  imports: [WalletModule],
+  imports: [WalletModule, EmailModule],
   controllers: [PaymentsController],
   providers: [
     PaymentsService,

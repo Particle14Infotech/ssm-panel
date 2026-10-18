@@ -13,6 +13,8 @@ import { TransactionType, PaymentStatus } from "@prisma/client";
 import { SimulatedPaymentProvider } from "./simulated-payment.provider";
 import { RazorpayPaymentProvider } from "./razorpay-payment.provider";
 import { PaymentProvider } from "./payment-provider.interface";
+import { EmailService } from "../email/email.service";
+import { Optional } from "@nestjs/common";
 
 @Injectable()
 export class PaymentsService {
@@ -23,7 +25,8 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly walletService: WalletService,
     private readonly simulatedProvider: SimulatedPaymentProvider = new SimulatedPaymentProvider(),
-    private readonly razorpayProvider: RazorpayPaymentProvider = new RazorpayPaymentProvider()
+    private readonly razorpayProvider: RazorpayPaymentProvider = new RazorpayPaymentProvider(),
+    @Optional() private readonly emailService?: EmailService
   ) {}
 
   private getProvider(): PaymentProvider {
@@ -289,6 +292,21 @@ export class PaymentsService {
         balance: newBalance.toNumber(),
       };
     });
+
+    if (!result.alreadyCredited && this.emailService) {
+      this.prisma.user.findUnique({ where: { id: input.userId } }).then((user) => {
+        if (user) {
+          this.emailService!.sendWalletCreditedEmail(
+            user,
+            `₹${totalCredit.toFixed(2)}`,
+            input.paymentId,
+            `₹${Number(result.balance).toFixed(2)}`
+          ).catch((err) => {
+            this.logger.warn(`Failed to dispatch wallet credit email: ${err.message}`);
+          });
+        }
+      }).catch(() => null);
+    }
 
     return {
       success: true,

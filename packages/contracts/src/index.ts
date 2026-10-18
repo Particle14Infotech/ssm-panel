@@ -7,3 +7,4 @@ export * from "./pricing";
 export * from "./tickets";
 export * from "./profile";
 export * from "./brand";
+export * from "./email";

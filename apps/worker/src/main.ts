@@ -5,6 +5,13 @@ import { Queue, Worker as BullWorker, Job } from "bullmq";
 import pino from "pino";
 import { Decimal } from "decimal.js";
 import { decryptProviderKey } from "./crypto.util";
+import {
+  EmailProvider,
+  ResendProvider,
+  LogOnlyEmailProvider,
+  getOrderRefundTemplate,
+  EmailSendOptions,
+} from "@smm/contracts";
 
 dotenv.config();
 
@@ -25,6 +32,9 @@ export class SMMWorkerEngine {
   private redis: Redis | null = null;
   private bullWorker: BullWorker | null = null;
   private orderQueue: Queue | null = null;
+  private emailQueue: Queue | null = null;
+  private emailWorker: BullWorker | null = null;
+  private emailProvider: EmailProvider = new LogOnlyEmailProvider();
 
   async start() {
     this.isRunning = true;
@@ -85,6 +95,48 @@ export class SMMWorkerEngine {
 
         this.bullWorker.on("error", (err) => {
           logger.warn({ err: err.message }, "BullMQ worker error event");
+        });
+
+        // Initialize Resend / Log-Only Email Provider
+        const resendKey = process.env.RESEND_API_KEY;
+        const emailFrom = process.env.EMAIL_FROM || "SMM Panel <no-reply@smmpanel.internal>";
+        const emailReplyTo = process.env.EMAIL_REPLY_TO || process.env.SUPPORT_EMAIL;
+
+        if (resendKey && resendKey.trim() !== "" && !resendKey.startsWith("REPLACE_ME")) {
+          this.emailProvider = new ResendProvider(resendKey, emailFrom, emailReplyTo);
+          logger.info(`[Worker Email] Provider initialized: Resend HTTPS API (From: ${emailFrom})`);
+        } else {
+          this.emailProvider = new LogOnlyEmailProvider();
+          logger.warn("[Worker Email] RESEND_API_KEY not configured. Running in log-only simulated mode.");
+        }
+
+        // Initialize BullMQ Queue listener for "email"
+        this.emailQueue = new Queue("email", { connection: this.redis });
+        this.emailWorker = new BullWorker(
+          "email",
+          async (job: Job) => {
+            logger.info({ jobId: job.id, jobName: job.name, to: job.data?.to, type: job.data?.type }, "[BullMQ Email] Processing email job");
+            if (job.name === "send-email" && job.data) {
+              await this.processEmailJob(job.data);
+            }
+            return { processed: true, completedAt: new Date().toISOString() };
+          },
+          {
+            connection: this.redis,
+            concurrency: 5,
+          }
+        );
+
+        this.emailWorker.on("ready", () => {
+          logger.info("[BullMQ Email] Worker ready on queue 'email'");
+        });
+
+        this.emailWorker.on("failed", (job, err) => {
+          logger.error({ jobId: job?.id, to: job?.data?.to, err: err.message }, "[BullMQ Email] Job execution failed");
+        });
+
+        this.emailWorker.on("error", (err) => {
+          logger.warn({ err: err.message }, "[BullMQ Email] Worker error event");
         });
       } catch (err: any) {
         logger.error({ err: err.message }, "Failed to initialize BullMQ worker listener");
@@ -406,6 +458,32 @@ export class SMMWorkerEngine {
         },
       });
     });
+
+    // Notify customer via transactional email (refund notice)
+    try {
+      const user = await prisma.user.findUnique({ where: { id: order.userId } });
+      if (user?.email) {
+        const frontendUrl = process.env.FRONTEND_URL || "https://smmpanel.internal";
+        const tpl = getOrderRefundTemplate({
+          name: user.name || "Customer",
+          orderId: order.id,
+          amountFormatted: `₹${refundAmount.toFixed(2)}`,
+          reason: `Order failed upstream: ${reason}`,
+          ordersUrl: `${frontendUrl}/orders`,
+        });
+        await this.enqueueEmail({
+          to: user.email,
+          userId: user.id,
+          type: "ORDER_REFUND",
+          subject: tpl.subject,
+          html: tpl.html,
+          text: tpl.text,
+          idempotencyKey: `order_refund_fail_${order.id}`,
+        });
+      }
+    } catch (notifyErr: any) {
+      logger.warn({ err: notifyErr.message }, `[Worker] Failed to enqueue refund email for order #${order.id}`);
+    }
   }
 
   /**
@@ -589,6 +667,34 @@ export class SMMWorkerEngine {
         },
       });
     });
+
+    // Notify customer via transactional email (partial refund notice)
+    try {
+      if (refundAmount.greaterThan(0)) {
+        const user = await prisma.user.findUnique({ where: { id: order.userId } });
+        if (user?.email) {
+          const frontendUrl = process.env.FRONTEND_URL || "https://smmpanel.internal";
+          const tpl = getOrderRefundTemplate({
+            name: user.name || "Customer",
+            orderId: order.id,
+            amountFormatted: `₹${refundAmount.toFixed(2)}`,
+            reason: `Partial fulfillment (${totalQuantity - effectiveRemains}/${totalQuantity} delivered)`,
+            ordersUrl: `${frontendUrl}/orders`,
+          });
+          await this.enqueueEmail({
+            to: user.email,
+            userId: user.id,
+            type: "ORDER_REFUND",
+            subject: tpl.subject,
+            html: tpl.html,
+            text: tpl.text,
+            idempotencyKey: `order_refund_partial_${order.id}_${effectiveRemains}`,
+          });
+        }
+      }
+    } catch (notifyErr: any) {
+      logger.warn({ err: notifyErr.message }, `[Worker] Failed to enqueue partial refund email for order #${order.id}`);
+    }
 
     logger.info(`[Worker Sync] Order #${order.id} processed as PARTIAL with ₹${refundAmount.toFixed(2)} refund`);
   }
@@ -827,9 +933,158 @@ export class SMMWorkerEngine {
     if (this.pollInterval) clearInterval(this.pollInterval);
     if (this.syncInterval) clearInterval(this.syncInterval);
     if (this.bullWorker) await this.bullWorker.close();
+    if (this.emailWorker) await this.emailWorker.close();
+    if (this.emailQueue) await this.emailQueue.close();
     if (this.redis) await this.redis.quit();
     await prisma.$disconnect();
     logger.info("[Worker] SMM PANEL Production Worker shutdown gracefully");
+  }
+
+  /**
+   * Helper: Processes an email job sent via BullMQ or directly
+   */
+  async processEmailJob(jobData: any) {
+    const { logId, to, subject, html, text, type, userId, replyTo, idempotencyKey } = jobData;
+
+    // 1. Suppression check
+    const suppression = await prisma.emailSuppression.findUnique({
+      where: { email: to.toLowerCase().trim() },
+    });
+    if (suppression) {
+      logger.warn({ email: to, reason: suppression.reason }, "[Worker Email] Recipient is suppressed. Skipping send.");
+      if (logId) {
+        await prisma.emailLog.update({
+          where: { id: logId },
+          data: {
+            status: "FAILED",
+            error: `Recipient suppressed due to ${suppression.reason}`,
+          },
+        }).catch(() => null);
+      }
+      return;
+    }
+
+    // 2. Double check idempotency
+    if (logId) {
+      const currentLog = await prisma.emailLog.findUnique({ where: { id: logId } });
+      if (currentLog && (currentLog.status === "SENT" || currentLog.status === "DELIVERED")) {
+        logger.info({ logId, idempotencyKey }, "[Worker Email] Email already sent (idempotent check). Skipping.");
+        return;
+      }
+    }
+
+    // 3. Dispatch via configured email provider
+    const result = await this.emailProvider.send({
+      to,
+      subject,
+      html,
+      text,
+      type,
+      userId,
+      replyTo,
+      idempotencyKey,
+    });
+
+    if (result.success && result.messageId) {
+      if (logId) {
+        await prisma.emailLog.update({
+          where: { id: logId },
+          data: {
+            status: "SENT",
+            providerMessageId: result.messageId,
+            attempts: { increment: 1 },
+          },
+        }).catch(() => null);
+      }
+      logger.info({ logId, to, messageId: result.messageId }, "[Worker Email] Email sent successfully");
+    } else {
+      if (logId) {
+        await prisma.emailLog.update({
+          where: { id: logId },
+          data: {
+            status: "FAILED",
+            error: result.error || "Unknown provider error",
+            attempts: { increment: 1 },
+          },
+        }).catch(() => null);
+      }
+      logger.error({ logId, to, error: result.error }, "[Worker Email] Email dispatch failed");
+      throw new Error(result.error || "Email dispatch failed");
+    }
+  }
+
+  /**
+   * Helper: Enqueue an email job into BullMQ with rate-limit and suppression checks
+   */
+  async enqueueEmail(options: EmailSendOptions) {
+    try {
+      const cleanTo = options.to.toLowerCase().trim();
+
+      // 1. Suppression check
+      const isSuppressed = await prisma.emailSuppression.findUnique({
+        where: { email: cleanTo },
+      });
+      if (isSuppressed) {
+        logger.warn({ email: cleanTo }, "[Worker] Recipient is suppressed. Skipping email enqueue.");
+        return;
+      }
+
+      // 2. Idempotency check
+      if (options.idempotencyKey) {
+        const existing = await prisma.emailLog.findUnique({
+          where: { idempotencyKey: options.idempotencyKey },
+        });
+        if (existing) {
+          logger.info({ idempotencyKey: options.idempotencyKey }, "[Worker] Email already logged/sent.");
+          return;
+        }
+      }
+
+      // 3. Daily quota check
+      const today = new Date().toISOString().slice(0, 10);
+      const counter = await prisma.emailDailyCounter.upsert({
+        where: { date: today },
+        update: { count: { increment: 1 } },
+        create: { date: today, count: 1 },
+      });
+
+      let delayMs = 0;
+      if (counter.count > 100) {
+        const now = new Date();
+        const tomorrowUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 5, 0));
+        delayMs = Math.max(1000, tomorrowUtc.getTime() - now.getTime());
+      }
+
+      // 4. Create PENDING log
+      const emailLog = await prisma.emailLog.create({
+        data: {
+          to: cleanTo,
+          userId: options.userId,
+          type: options.type,
+          subject: options.subject,
+          status: "PENDING",
+          idempotencyKey: options.idempotencyKey,
+        },
+      });
+
+      const jobData = {
+        ...options,
+        to: cleanTo,
+        logId: emailLog.id,
+      };
+
+      if (this.emailQueue) {
+        await this.emailQueue.add("send-email", jobData, {
+          delay: delayMs,
+          attempts: 3,
+          backoff: { type: "exponential", delay: 2000 },
+        });
+      } else {
+        await this.processEmailJob(jobData);
+      }
+    } catch (err: any) {
+      logger.error({ err: err.message }, "[Worker] Error enqueuing email");
+    }
   }
 }
 

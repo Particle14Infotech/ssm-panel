@@ -76,6 +76,7 @@ export class HealthController {
     let lastOrderDispatch: any = null;
     let providersTelemetry: any[] = [];
     let lastCatalogSyncTime: string | null = null;
+    let emailTelemetry: any = null;
 
     try {
       await this.prisma.$queryRawUnsafe("SELECT 1");
@@ -154,6 +155,53 @@ export class HealthController {
       if (lastSvc) {
         lastCatalogSyncTime = lastSvc.updatedAt.toISOString();
       }
+
+      // Email telemetry
+      const today = new Date().toISOString().slice(0, 10);
+      const emailDailyCounter = await this.prisma.emailDailyCounter.findUnique({
+        where: { date: today },
+      });
+      const emailPending = await this.prisma.emailLog.count({ where: { status: "PENDING" } });
+      const emailSentToday = emailDailyCounter?.count || 0;
+      const emailFailedToday = await this.prisma.emailLog.count({
+        where: {
+          status: "FAILED",
+          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+        },
+      });
+      const emailSuppressed = await this.prisma.emailSuppression.count();
+      const lastEmailLog = await this.prisma.emailLog.findFirst({
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          to: true,
+          type: true,
+          status: true,
+          providerMessageId: true,
+          error: true,
+          createdAt: true,
+        },
+      });
+
+      emailTelemetry = {
+        provider: process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.startsWith("REPLACE_ME") ? "Resend HTTPS API" : "Log-Only (Dev)",
+        dailyLimit: 100,
+        sentToday: emailSentToday,
+        pendingCount: emailPending,
+        failedToday: emailFailedToday,
+        suppressedCount: emailSuppressed,
+        lastDispatch: lastEmailLog
+          ? {
+              id: lastEmailLog.id,
+              to: lastEmailLog.to,
+              type: lastEmailLog.type,
+              status: lastEmailLog.status,
+              providerMessageId: lastEmailLog.providerMessageId,
+              error: lastEmailLog.error,
+              timestamp: lastEmailLog.createdAt.toISOString(),
+            }
+          : null,
+      };
     } catch {
       dbConnected = false;
     }
@@ -186,6 +234,7 @@ export class HealthController {
           failedCount: outboxFailed,
           lastError: lastOutboxError,
         },
+        email: emailTelemetry,
         providers: providersTelemetry,
         lastCatalogSync: {
           lastSyncAt: lastCatalogSyncTime,

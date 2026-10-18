@@ -4,6 +4,8 @@ import * as argon2 from "argon2";
 import * as jwt from "jsonwebtoken";
 import crypto from "crypto";
 
+import { EmailService } from "../email/email.service";
+
 const JWT_SECRET = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || "smm_panel_jwt_secret_dev_environment_key_32bytes";
 const JWT_EXPIRES_IN = "15m";
 const REFRESH_EXPIRES_DAYS = 7;
@@ -11,7 +13,22 @@ const REFRESH_EXPIRES_DAYS = 7;
 @Injectable()
 export class AuthService {
   private sandboxUsers = new Map<string, any>();
-  constructor(private readonly prisma: PrismaService) {}
+  private rateLimitMap = new Map<string, number[]>();
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly emailService: EmailService
+  ) {}
+
+  private checkRateLimit(key: string, maxAttempts = 3, windowSeconds = 900): void {
+    const now = Date.now();
+    const timestamps = (this.rateLimitMap.get(key) || []).filter((t) => now - t < windowSeconds * 1000);
+    if (timestamps.length >= maxAttempts) {
+      throw new BadRequestException("Too many requests. Please wait before attempting this action again.");
+    }
+    timestamps.push(now);
+    this.rateLimitMap.set(key, timestamps);
+  }
 
   /**
    * Verify credentials against DB using Argon2id, create rotating Session
@@ -199,6 +216,10 @@ export class AuthService {
       parallelism: 4,
     });
 
+    const rawVerifyToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(rawVerifyToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
     const user = await this.prisma.user.create({
       data: {
         email: cleanEmail,
@@ -206,6 +227,9 @@ export class AuthService {
         passwordHash,
         role: "CUSTOMER",
         tier: "BRONZE",
+        emailVerified: false,
+        emailVerificationTokenHash: tokenHash,
+        emailVerificationExpiresAt: expiresAt,
         wallet: {
           create: {
             balance: 0.0,
@@ -216,9 +240,14 @@ export class AuthService {
       include: { wallet: true },
     });
 
+    // Enqueue verification email asynchronously
+    await this.emailService.sendVerificationEmail(user, rawVerifyToken).catch((err) => {
+      console.warn("[Auth] Failed to dispatch verification email on registration:", err.message);
+    });
+
     return {
       success: true,
-      message: "Account provisioned successfully.",
+      message: "Account provisioned successfully. Please verify your email address.",
       user: {
         id: user.id,
         email: user.email,
@@ -227,6 +256,7 @@ export class AuthService {
         tier: user.tier,
         balance: 0,
       },
+      verificationToken: process.env.NODE_ENV !== "production" ? rawVerifyToken : undefined,
     };
   }
 
@@ -300,15 +330,39 @@ export class AuthService {
 
   async forgotPassword(email: string) {
     if (!email) throw new BadRequestException("Email is required.");
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Rate limit: max 3 requests per 15 minutes per email
+    this.checkRateLimit(`forgot_${cleanEmail}`, 3, 900);
+
     const user = await this.prisma.user.findFirst({
-      where: { email: email.toLowerCase().trim(), isDeleted: false },
+      where: { email: cleanEmail, isDeleted: false },
     });
+
+    let rawToken: string | undefined;
+    if (user) {
+      rawToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordResetTokenHash: tokenHash,
+          passwordResetExpiresAt: expiresAt,
+        },
+      });
+
+      await this.emailService.sendPasswordResetEmail(user, rawToken).catch((err) => {
+        console.warn("[Auth] Failed to dispatch password reset email:", err.message);
+      });
+    }
+
     // Return success to avoid email enumeration
-    const resetToken = user ? crypto.randomBytes(32).toString("hex") : "dummy_token";
     return {
       success: true,
       message: "If the email is registered, password reset instructions have been dispatched.",
-      resetToken: process.env.NODE_ENV !== "production" ? resetToken : undefined,
+      resetToken: process.env.NODE_ENV !== "production" ? rawToken : undefined,
     };
   }
 
@@ -321,6 +375,27 @@ export class AuthService {
       throw new BadRequestException("Password must be at least 8 characters long.");
     }
 
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const whereClause: any = {
+      passwordResetTokenHash: tokenHash,
+      isDeleted: false,
+    };
+    if (email) {
+      whereClause.email = email.toLowerCase().trim();
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: whereClause,
+    });
+
+    if (!user) {
+      throw new BadRequestException("Invalid or expired password reset token.");
+    }
+
+    if (!user.passwordResetExpiresAt || user.passwordResetExpiresAt < new Date()) {
+      throw new BadRequestException("Password reset token has expired. Please request a new reset link.");
+    }
+
     const newHash = await argon2.hash(newPassword, {
       type: argon2.argon2id,
       memoryCost: 65536,
@@ -328,14 +403,101 @@ export class AuthService {
       parallelism: 4,
     });
 
-    if (email) {
-      await this.prisma.user.updateMany({
-        where: { email: email.toLowerCase().trim() },
-        data: { passwordHash: newHash },
-      });
+    // Invalidate reset token (single-use) and update password
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: newHash,
+        passwordResetTokenHash: null,
+        passwordResetExpiresAt: null,
+      },
+    });
+
+    // Revoke all active sessions for security
+    await this.prisma.session.updateMany({
+      where: { userId: user.id },
+      data: { isRevoked: true },
+    });
+
+    return {
+      success: true,
+      message: "Password updated successfully. Please login with new credentials.",
+    };
+  }
+
+  async verifyEmail(token: string, email: string) {
+    if (!token || !email) {
+      throw new BadRequestException("Verification token and email are required.");
+    }
+    const cleanEmail = email.toLowerCase().trim();
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: cleanEmail,
+        emailVerificationTokenHash: tokenHash,
+        isDeleted: false,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException("Invalid or expired verification token.");
     }
 
-    return { success: true, message: "Password updated successfully. Please login with new credentials." };
+    if (!user.emailVerificationExpiresAt || user.emailVerificationExpiresAt < new Date()) {
+      throw new BadRequestException("Verification token has expired. Please request a new verification link.");
+    }
+
+    // Mark verified & invalidate token (single-use)
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: true,
+        emailVerificationTokenHash: null,
+        emailVerificationExpiresAt: null,
+      },
+    });
+
+    // Send welcome email upon successful verification
+    await this.emailService.sendWelcomeEmail(updated).catch(() => null);
+
+    return {
+      success: true,
+      message: "Email verified successfully. Your account is fully active.",
+    };
+  }
+
+  async resendVerification(email: string) {
+    if (!email) throw new BadRequestException("Email is required.");
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Rate limit: max 3 requests per 15 minutes
+    this.checkRateLimit(`resend_${cleanEmail}`, 3, 900);
+
+    const user = await this.prisma.user.findFirst({
+      where: { email: cleanEmail, isDeleted: false },
+    });
+
+    if (user && !user.emailVerified) {
+      const rawVerifyToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(rawVerifyToken).digest("hex");
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerificationTokenHash: tokenHash,
+          emailVerificationExpiresAt: expiresAt,
+        },
+      });
+
+      await this.emailService.sendVerificationEmail(user, rawVerifyToken).catch(() => null);
+    }
+
+    return {
+      success: true,
+      message: "If the email is registered and unverified, a verification link has been dispatched.",
+    };
   }
 
   async setup2fa(userId: string) {

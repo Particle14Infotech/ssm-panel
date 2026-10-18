@@ -48,20 +48,34 @@ enum OutboxStatus {
   FAILED
 }
 
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  DELIVERED
+  BOUNCED
+  COMPLAINED
+}
+
 model User {
-  id               String    @id @default(uuid())
-  email            String    @unique
-  passwordHash     String
-  name             String
-  role             Role      @default(CUSTOMER)
-  tier             String    @default("BRONZE")
-  apiKeyHash       String?   @unique
-  twoFactorSecret  String?
-  twoFactorEnabled Boolean   @default(false)
-  isDeleted        Boolean   @default(false)
-  deletedAt        DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                         String    @id @default(uuid())
+  email                      String    @unique
+  passwordHash               String
+  name                       String
+  role                       Role      @default(CUSTOMER)
+  tier                       String    @default("BRONZE")
+  apiKeyHash                 String?   @unique
+  emailVerified              Boolean   @default(false)
+  emailVerificationTokenHash String?
+  emailVerificationExpiresAt DateTime?
+  passwordResetTokenHash     String?
+  passwordResetExpiresAt     DateTime?
+  twoFactorSecret            String?
+  twoFactorEnabled           Boolean   @default(false)
+  isDeleted                  Boolean   @default(false)
+  deletedAt                  DateTime?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
 
   wallet    Wallet?
   orders    Order[]
@@ -69,6 +83,7 @@ model User {
   tickets   Ticket[]
   sessions  Session[]
   auditLogs AuditLog[]
+  emailLogs EmailLog[]
 
   @@index([email, isDeleted])
   @@index([role])
@@ -326,4 +341,39 @@ model TicketMessage {
   createdAt DateTime @default(now())
 
   @@index([ticketId, createdAt])
+}
+
+model EmailLog {
+  id                String      @id @default(uuid())
+  userId            String?
+  user              User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  to                String
+  type              String      // VERIFY_EMAIL, PASSWORD_RESET, WELCOME, PAYMENT_RECEIPT, ORDER_REFUND, SUPPORT_REPLY
+  subject           String
+  status            EmailStatus @default(PENDING)
+  providerMessageId String?
+  idempotencyKey    String?     @unique
+  error             String?
+  attempts          Int         @default(0)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([to, status])
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+model EmailSuppression {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  reason    String   // BOUNCE, COMPLAINT
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model EmailDailyCounter {
+  date      String   @id // YYYY-MM-DD
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
 }

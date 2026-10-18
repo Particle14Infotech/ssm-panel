@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Send,
   Cpu,
+  Mail,
 } from "lucide-react";
 import { GlassCard } from "@/components/shared/GlassCard";
 
@@ -112,8 +113,8 @@ export default function AdminSystemHealthPage() {
           </span>
         </div>
 
-        {/* 4 Core Pillars Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 5 Core Pillars Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* 1. Database */}
           <div className="glass-panel rounded-3xl p-5 space-y-3">
             <div className="flex items-center justify-between">
@@ -197,6 +198,29 @@ export default function AdminSystemHealthPage() {
               <div className="mt-1">Skip-Locked Polling: Active</div>
             </div>
           </div>
+
+          {/* 5. Transactional Email */}
+          <div className="glass-panel rounded-3xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                <Mail className="w-4 h-4 text-[#D8EC8D]" />
+                <span>Transactional Email</span>
+              </div>
+              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                (comp?.email?.failedToday ?? 0) === 0
+                  ? "bg-emerald-500/20 text-emerald-300"
+                  : "bg-red-500/20 text-red-300"
+              }`}>
+                {comp?.email?.dailyLimit ? `${comp.email.sentToday}/${comp.email.dailyLimit} Sent` : "Active"}
+              </span>
+            </div>
+            <div className="text-xs text-slate-400 font-mono">
+              <div>Provider: {comp?.email?.provider || "Resend HTTPS API"}</div>
+              <div className="mt-1">
+                Queue: {comp?.email?.pendingCount ?? 0} pend • {comp?.email?.suppressedCount ?? 0} supr
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Detailed Operational Panels */}
@@ -269,6 +293,68 @@ export default function AdminSystemHealthPage() {
                       : "Sync on boot active"}
                   </span>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Transactional Email & Delivery Telemetry */}
+          <div className="glass-panel rounded-3xl p-6 space-y-4 lg:col-span-2">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-[#D8EC8D]" />
+                <h3 className="text-sm font-semibold text-white">Transactional Email Delivery Supervisor (Resend HTTPS API)</h3>
+              </div>
+              <span className="text-xs text-[#D8EC8D] font-mono">
+                {comp?.email?.provider || "Resend Provider"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                <div className="text-slate-400 text-[10px] uppercase font-semibold">Daily Quota (Free Plan 100/day)</div>
+                <div className="flex items-end justify-between">
+                  <span className="text-2xl font-bold text-white">{comp?.email?.sentToday ?? 0}</span>
+                  <span className="text-slate-400">/ {comp?.email?.dailyLimit ?? 100} limit</span>
+                </div>
+                <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${
+                      (comp?.email?.sentToday ?? 0) >= 80 ? "bg-amber-400" : "bg-[#D8EC8D]"
+                    }`}
+                    style={{ width: `${Math.min(100, ((comp?.email?.sentToday ?? 0) / (comp?.email?.dailyLimit ?? 100)) * 100)}%` }}
+                  />
+                </div>
+                {(comp?.email?.sentToday ?? 0) >= 80 && (
+                  <div className="text-amber-400 text-[10px]">Warning: 80% quota threshold reached</div>
+                )}
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                <div className="text-slate-400 text-[10px] uppercase font-semibold">Queue & Suppression Metrics</div>
+                <div className="text-slate-300 space-y-1">
+                  <div>Pending in Queue: <span className="text-white font-bold">{comp?.email?.pendingCount ?? 0}</span></div>
+                  <div>Failed Today: <span className={(comp?.email?.failedToday ?? 0) > 0 ? "text-red-400 font-bold" : "text-emerald-400 font-bold"}>{comp?.email?.failedToday ?? 0}</span></div>
+                  <div>Suppression List: <span className="text-white font-bold">{comp?.email?.suppressedCount ?? 0}</span> addresses</div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                <div className="text-slate-400 text-[10px] uppercase font-semibold">Last Email Dispatched</div>
+                {comp?.email?.lastDispatch ? (
+                  <div className="text-slate-300 space-y-0.5 text-[11px]">
+                    <div className="text-white font-bold truncate">To: {comp.email.lastDispatch.to}</div>
+                    <div>Type: <span className="text-[#D8EC8D]">{comp.email.lastDispatch.type}</span></div>
+                    <div>Status: <span className={comp.email.lastDispatch.status === "SENT" || comp.email.lastDispatch.status === "DELIVERED" ? "text-emerald-400" : "text-amber-400"}>{comp.email.lastDispatch.status}</span></div>
+                    {comp.email.lastDispatch.providerMessageId && (
+                      <div className="text-[10px] text-slate-400 truncate">MsgId: {comp.email.lastDispatch.providerMessageId}</div>
+                    )}
+                    {comp.email.lastDispatch.error && (
+                      <div className="text-[10px] text-red-400 truncate">Err: {comp.email.lastDispatch.error}</div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-slate-400 italic">No email dispatches recorded</div>
+                )}
               </div>
             </div>
           </div>

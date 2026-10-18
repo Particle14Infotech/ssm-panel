@@ -14,6 +14,7 @@ import { AnnouncementsModule } from "./modules/announcements/announcements.modul
 import { SettingsModule } from "./modules/settings/settings.module";
 import { ReportsModule } from "./modules/reports/reports.module";
 import { ResellerModule } from "./modules/reseller/reseller.module";
+import { EmailModule } from "./modules/email/email.module";
 import { RequestIdMiddleware } from "./common/request-id.middleware";
 import { RateLimiterMiddleware } from "./common/rate-limiter.middleware";
 
@@ -34,6 +35,7 @@ import { RateLimiterMiddleware } from "./common/rate-limiter.middleware";
     SettingsModule,
     ReportsModule,
     ResellerModule,
+    EmailModule,
   ],
   controllers: [],
   providers: [],

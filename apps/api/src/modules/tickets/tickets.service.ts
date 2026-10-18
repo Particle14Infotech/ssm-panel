@@ -1,10 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException, Optional } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
+import { EmailService } from "../email/email.service";
 
 @Injectable()
 export class TicketsService {
   private sandboxTickets = new Map<string, any>();
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly emailService?: EmailService
+  ) {}
 
   async create(userId: string, body: { subject: string; message: string; priority?: string }) {
     if (!userId) {
@@ -121,6 +125,20 @@ export class TicketsService {
       where: { id },
       data: { updatedAt: new Date(), status: "ANSWERED" },
     });
+
+    if (this.emailService && senderId !== existing.userId) {
+      this.prisma.user.findUnique({ where: { id: existing.userId } }).then((recipient) => {
+        if (recipient) {
+          this.emailService!.sendSupportReplyEmail(
+            recipient,
+            id,
+            existing.subject,
+            message
+          ).catch(() => null);
+        }
+      }).catch(() => null);
+    }
+
     return { success: true, message: msg };
   }
 

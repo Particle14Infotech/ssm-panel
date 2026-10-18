@@ -93,3 +93,96 @@ Test malicious or malformed inputs to confirm server-side enforcement:
    - Attempt to POST directly to `/api/v1/orders` with `isDripFeed: false` while passing `runs: 5`:
    - **Expected Result**: API rejects with HTTP 400:
      `{"message": "runs cannot be supplied when isDripFeed is false"}`.
+
+---
+
+# Section B: Transactional Email Manual Acceptance Checklist
+
+Follow these 6 steps to verify the Resend HTTPS transactional email integration on the deployed stack.
+
+---
+
+### Step 1: Environment Variables on Railway
+1. Open your **Railway Dashboard** -> Services -> `api` and `worker`.
+2. Ensure the following environment variables are set:
+   - `RESEND_API_KEY`: `re_...` (valid Resend API key)
+   - `EMAIL_FROM`: `SMM Panel <no-reply@mail.yourdomain.com>`
+   - `EMAIL_REPLY_TO`: `support@yourdomain.com`
+   - `SUPPORT_EMAIL`: `support@yourdomain.com`
+   - `RESEND_WEBHOOK_SECRET`: `whsec_...` (Svix webhook secret)
+   - `FRONTEND_URL`: `https://smm-production-bca7.up.railway.app`
+3. Restart both services. Check deployment logs:
+   - Worker log must show: `[Worker Email] Provider initialized: Resend HTTPS API`
+   - API log must show: `[Email] Provider initialized: Resend HTTPS API`
+
+---
+
+### Step 2: Register a New User & Verify Real Inbox Delivery
+1. Navigate to the registration page: `/register`.
+2. Fill in account details using your **real inbox email address** (e.g. Gmail/Outlook).
+3. Click **Create Account**.
+4. **Expected Result**:
+   - Registration completes and displays: `"Verification email sent. Please check your inbox."`
+   - Within 5 seconds, an email arrives in your inbox from `SMM Panel <no-reply@mail.yourdomain.com>`.
+   - **Visual Check**:
+     - Subject: `Verify your email - SMM Panel`
+     - Brand styling: Dark background `#131313`, lime button `#D8EC8D`, crisp white typography.
+     - Content: Zero emojis, professional phrasing, expiration note (24 hours).
+   - In PostgreSQL, query:
+     ```sql
+     SELECT id, "to", type, status, "providerMessageId", error, "createdAt" 
+     FROM "EmailLog" 
+     ORDER BY "createdAt" DESC LIMIT 1;
+     ```
+     Status must be `SENT`, and `providerMessageId` must contain the Resend message ID.
+
+---
+
+### Step 3: Click Verification Link & Confirm Welcome Email
+1. In your inbox, click the **Verify Email** button.
+2. The browser opens `/verify?token=...`.
+3. **Expected Result**:
+   - Page displays: `"Email verified successfully. Welcome to SMM Panel!"`
+   - Database record for user shows `emailVerified: true` and `emailVerificationTokenHash: null`.
+   - A second email immediately arrives in your inbox: **Welcome to SMM Panel** with link to dashboard.
+4. **Single-Use Check**:
+   - Refresh the verification link in the browser.
+   - **Expected Result**: Page rejects with: `"Verification link has expired or has already been used."`
+
+---
+
+### Step 4: Password Reset Flow
+1. Navigate to `/forgot-password`.
+2. Enter your registered email and click **Send Reset Link**.
+3. **Expected Result**:
+   - Page displays uniform anti-enumeration message: `"If an account exists with that email, reset instructions have been sent."`
+   - Reset email arrives in your inbox with subject: `Password reset instructions - SMM Panel`.
+   - Message explicitly states: `"This link will expire in 30 minutes."`
+4. Click the reset link -> Enter a new password.
+5. Log in with your new password to verify success.
+6. Try opening the reset link a second time:
+   - **Expected Result**: System rejects the token as already used.
+
+---
+
+### Step 5: Wallet Credit Receipt (Payment Confirmation)
+1. In the admin dashboard (`/admin/wallets`), credit ₹100.00 to the user's wallet (or complete a deposit in `/wallet`).
+2. **Expected Result**:
+   - A payment receipt email arrives with subject: `Payment receipt: ₹100.00 credited to your wallet`.
+   - Email table displays:
+     - Amount Credited: `₹100.00`
+     - Reference ID: Transaction UUID
+     - Updated Balance: Exact current balance
+     - Button: **View Wallet Ledger**
+
+---
+
+### Step 6: Admin Health Supervisor Inspection
+1. Navigate to `/admin/health` as an Administrator.
+2. Inspect the **Transactional Email** supervisor cards:
+   - Provider: `Resend HTTPS API`
+   - Daily Quota: Displays current count (e.g. `3 / 100 limit`) with green progress bar.
+   - Queue: `0 pend`
+   - Failures Today: `0`
+   - Suppression List: Total count of bounced/complained addresses.
+   - Last Email Dispatched: Shows the latest recipient, type, status (`SENT`), and Resend message ID.
