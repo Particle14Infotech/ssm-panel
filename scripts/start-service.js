@@ -11,6 +11,12 @@ function run(cmd) {
 if (service === "web") {
   run("pnpm --filter @smm/web start");
 } else if (service === "worker") {
+  try {
+    console.log("[start-service] Ensuring reviewed Prisma migrations are deployed...");
+    run("pnpm exec prisma migrate deploy");
+  } catch (err) {
+    console.warn("[start-service] Note: db migration warning on worker boot:", err.message);
+  }
   run("pnpm --filter @smm/worker start");
 } else {
   // smm / api: deploy reviewed migrations, run seed, then start server
@@ -28,5 +34,5 @@ if (service === "web") {
   } catch (err) {
     console.warn("[start-service] Note: db seed warning:", err.message);
   }
-  run("node apps/api/dist/src/main.js || node apps/api/dist/main.js || pnpm --filter @smm/api start:prod");
+  run("node apps/api/dist/main.js || node apps/api/dist/src/main.js || node apps/api/dist/api/src/main.js || pnpm --filter @smm/api start:prod");
 }

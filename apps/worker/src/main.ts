@@ -82,6 +82,10 @@ export class SMMWorkerEngine {
         this.bullWorker.on("failed", (job, err) => {
           logger.error({ jobId: job?.id, err: err.message }, "BullMQ order job execution failed");
         });
+
+        this.bullWorker.on("error", (err) => {
+          logger.warn({ err: err.message }, "BullMQ worker error event");
+        });
       } catch (err: any) {
         logger.error({ err: err.message }, "Failed to initialize BullMQ worker listener");
       }
@@ -107,9 +111,18 @@ export class SMMWorkerEngine {
       }
     }, 8000);
 
-    // Initial triggers
-    await this.processOutboxEvents();
-    await this.syncNonFinalOrders();
+    // Initial triggers (safely handled without terminating boot)
+    try {
+      await this.processOutboxEvents();
+    } catch (err: any) {
+      logger.warn({ err: err.message }, "[Worker] Initial outbox event processing deferred to interval");
+    }
+
+    try {
+      await this.syncNonFinalOrders();
+    } catch (err: any) {
+      logger.warn({ err: err.message }, "[Worker] Initial status sync deferred to interval");
+    }
   }
 
   async verifyRedisPolicy() {
@@ -823,7 +836,8 @@ export class SMMWorkerEngine {
 if (require.main === module) {
   const engine = new SMMWorkerEngine();
   engine.start().catch((err) => {
-    logger.fatal({ err: err.message }, "Worker failed to initialize");
+    logger.fatal({ err: err.message, stack: err.stack }, "Worker failed to initialize");
+    console.error("[FATAL] Worker failed to initialize:", err);
     process.exit(1);
   });
 
