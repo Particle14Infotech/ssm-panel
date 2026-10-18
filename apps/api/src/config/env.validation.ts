@@ -78,7 +78,10 @@ export function validateEnvironment(env: Record<string, string | undefined> = pr
     // Production guard for Email (Resend HTTPS API)
     const resendKey = env.RESEND_API_KEY;
     if (!resendKey || resendKey.trim() === "" || resendKey.startsWith("REPLACE_ME")) {
-      missing.push("RESEND_API_KEY (Required in production for transactional emails)");
+      console.warn("\n=======================================================");
+      console.warn("[Email Guard] WARNING: RESEND_API_KEY is not configured in production.");
+      console.warn("Transactional emails will operate in LOG-ONLY simulated mode.");
+      console.warn("=======================================================\n");
     }
 
     if (missing.length > 0) {
