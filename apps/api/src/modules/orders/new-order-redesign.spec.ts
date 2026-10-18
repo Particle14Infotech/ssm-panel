@@ -6,10 +6,11 @@ import { ConflictException, BadRequestException } from "@nestjs/common";
 describe("New Order Redesign & Hygiene Unit Tests", () => {
   describe("1. Service Name Hygiene & Cleaning", () => {
     it("strips emojis, decorative symbols, and junk bracket spam while preserving meaningful tags", () => {
-      const raw = "🔥 [Instagram] Followers ★ Best Quality ⚡ [30 days refill] [] 🚀";
+      // Fire, star, lightning, rocket expressed via codepoints
+      const raw = "\u{1F525} [Instagram] Followers \u2605 Best Quality \u26A1 [30 days refill] [] \u{1F680}";
       const { displayName, tags } = cleanServiceName(raw);
 
-      expect(displayName).not.toMatch(/🔥|★|⚡|🚀/);
+      expect(displayName).not.toMatch(/[\u{1F525}\u2605\u26A1\u{1F680}]/u);
       expect(displayName).not.toContain("[]");
       expect(displayName).toContain("[30 days refill]");
       expect(tags).toContain("30 days refill");

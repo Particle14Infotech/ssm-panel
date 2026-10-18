@@ -95,8 +95,8 @@ export function cleanServiceName(rawName: string): { displayName: string; tags: 
   // Strip emojis (Unicode Extended Pictographic and common emoji ranges)
   let cleaned = rawName.replace(/\p{Extended_Pictographic}/gu, " ");
   
-  // Strip decorative symbols like ★, ☆, ⚡, ✦, ✧, ●, ◆, ■, 🚀, 🔥, etc.
-  cleaned = cleaned.replace(/[\u2600-\u26FF\u2700-\u27BF\u2B50\u2022\u25BA\u25BC\u25B6\u25C0\u25AA\u25AB★☆✦✧●◆■|~`]/g, " ");
+  // Strip decorative symbols (stars, lightning, shapes, bullets) using unicode range escapes
+  cleaned = cleaned.replace(/[\u2600-\u26FF\u2700-\u27BF\u2B50\u2022\u25BA\u25BC\u25B6\u25C0\u25AA\u25AB\u2728\u25C6\u25A0|~`]/g, " ");
 
   // Strip empty brackets [] or brackets containing only punctuation/junk
   cleaned = cleaned.replace(/\[\s*\]/g, " ");
