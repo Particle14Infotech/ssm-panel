@@ -2,12 +2,18 @@ import { Injectable, BadRequestException, NotFoundException, ConflictException, 
 import { PrismaService } from "../../common/prisma.service";
 import { WalletService } from "../wallet/wallet.service";
 import { SettingsService } from "../settings/settings.service";
-import { calculateOrderCharge } from "../../common/money.util";
+import { PricingService } from "../pricing/pricing.service";
 import { OrderStatus, OutboxStatus } from "@prisma/client";
+import {
+  calculateOrderFinancialSnapshot,
+  calculateCustomerCharge,
+  DEFAULT_PRICING_SETTINGS,
+} from "@smm/contracts";
 import { Decimal } from "decimal.js";
 
 export interface CreateOrderDto {
   userId?: string;
+  requesterRole?: string;
   serviceId: string;
   target: string;
   quantity: number;
@@ -15,6 +21,8 @@ export interface CreateOrderDto {
   runs?: number;
   interval?: number;
   idempotencyKey?: string;
+  expectedRate?: number;
+  comments?: string;
 }
 
 export interface OrderFilterDto {
@@ -33,8 +41,32 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly walletService: WalletService,
-    private readonly settingsService?: SettingsService
+    private readonly settingsService?: SettingsService,
+    private readonly pricingService?: PricingService
   ) {}
+
+  private sanitizeOrderForRole(order: any, role?: string) {
+    if (role === "ADMIN") return order;
+    if (!order) return order;
+    const {
+      costRatePer1k,
+      fxRateUsed,
+      providerCurrency,
+      estimatedProviderCost,
+      estimatedGrossProfit,
+      paymentFeeEstimate,
+      estimatedNetProfit,
+      actualProviderCost,
+      actualProfit,
+      costUnknown,
+      ...safeOrder
+    } = order;
+    if (safeOrder.service) {
+      const { providerCostPer1k, costINR, marginPercentOverride, fixedSellingRateOverride, ...safeService } = safeOrder.service;
+      safeOrder.service = safeService;
+    }
+    return safeOrder;
+  }
 
   async findAll(userId?: string, requesterRole?: string, filters?: OrderFilterDto) {
     if (!this.prisma.isConnected) {
@@ -97,11 +129,12 @@ export class OrdersService {
         include.providerEvents = { orderBy: { createdAt: "asc" } };
       }
 
-      return await this.prisma.order.findMany({
+      const orders = await this.prisma.order.findMany({
         where,
         include,
         orderBy: { createdAt: "desc" },
       });
+      return orders.map((order) => this.sanitizeOrderForRole(order, requesterRole));
     } catch (err: any) {
       this.logger.error(`Error querying orders: ${err.message}`);
       return [];
@@ -115,7 +148,7 @@ export class OrdersService {
         if (requesterRole !== "ADMIN" && requesterUserId && sandboxOrder.userId !== requesterUserId) {
           throw new NotFoundException(`Order #${id} not found.`);
         }
-        return sandboxOrder;
+        return this.sanitizeOrderForRole(sandboxOrder, requesterRole);
       }
       throw new NotFoundException(`Order #${id} not found.`);
     }
@@ -147,7 +180,7 @@ export class OrdersService {
       throw new NotFoundException(`Order #${id} not found.`);
     }
 
-    return order;
+    return this.sanitizeOrderForRole(order, requesterRole);
   }
 
   /**
@@ -185,6 +218,42 @@ export class OrdersService {
 
     if (service.status !== "ACTIVE" || service.isDeleted || service.active === false) {
       throw new BadRequestException("Service is currently unavailable.");
+    }
+
+    if (service.priceBelowCost) {
+      throw new BadRequestException("This service is temporarily unavailable due to pricing adjustment.");
+    }
+
+    // Quote = Charge validation: if client submitted expectedRate, ensure DB rate matches
+    if (input.expectedRate !== undefined && input.expectedRate !== null) {
+      const currentRate = new Decimal(service.ratePer1000.toString()).toNumber();
+      const expected = new Decimal(input.expectedRate).toNumber();
+      if (Math.abs(currentRate - expected) > 0.001) {
+        throw new ConflictException("Price updated, please confirm the new price before placing the order.");
+      }
+    }
+
+    // Handle Custom Comments service type
+    const isCustomComments = service.serviceType === "CUSTOM_COMMENTS" || service.serviceType === "COMMENTS";
+    if (isCustomComments) {
+      if (input.isDripFeed) {
+        throw new BadRequestException("Drip-feed is not supported for custom comments.");
+      }
+      if (!input.comments || !input.comments.trim()) {
+        throw new BadRequestException("Comments are required for this service (one comment per line).");
+      }
+      const commentLines = input.comments
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+      if (commentLines.length === 0) {
+        throw new BadRequestException("At least one comment line is required.");
+      }
+      if (commentLines.length !== input.quantity) {
+        throw new BadRequestException(
+          `Number of comment lines (${commentLines.length}) must match the requested quantity (${input.quantity}).`
+        );
+      }
     }
 
     if (input.quantity < service.minQty || input.quantity > service.maxQty) {
@@ -245,8 +314,35 @@ export class OrdersService {
       }
     }
 
-    // 4. Compute accurate financial charge: ceil2(rate * (quantity * runs) / 1000)
-    const charge = calculateOrderCharge(input.quantity, service.ratePer1000, runs);
+    // 4. Compute financial snapshot & customer charge
+    const pricingSettings = this.pricingService
+      ? await this.pricingService.getSettings()
+      : DEFAULT_PRICING_SETTINGS;
+
+    const fxRate = service.providerCostCurrency === "USD" ? pricingSettings.usdInrRate : 1.0;
+    const costRate = service.costINR
+      ? new Decimal(service.costINR.toString()).toNumber()
+      : (service.providerCostPer1k
+          ? new Decimal(service.providerCostPer1k.toString()).mul(fxRate).toNumber()
+          : new Decimal(service.ratePer1000.toString()).toNumber());
+
+    const snapshot = calculateOrderFinancialSnapshot({
+      sellRatePer1k: service.ratePer1000,
+      costRatePer1k: costRate,
+      fxRateUsed: fxRate,
+      providerCurrency: service.providerCostCurrency || "INR",
+      quantityPerRun: input.quantity,
+      runs,
+      dripSurchargePercent: isDripFeed ? (pricingSettings.dripSurchargePercent || 0) : 0,
+      paymentFeePercent: pricingSettings.paymentFeePercent,
+    });
+
+    const charge = snapshot.charge;
+
+    // Check minimum order charge guardrail
+    if (charge.lessThan(pricingSettings.minOrderCharge)) {
+      throw new BadRequestException(`Order total charge cannot be less than ₹${pricingSettings.minOrderCharge}.`);
+    }
 
     // 5. Idempotency Key & Fingerprint Check
     if (input.idempotencyKey && this.prisma.isConnected) {
@@ -272,7 +368,7 @@ export class OrdersService {
         if (!sameParams) {
           throw new ConflictException("Idempotency key already used with different order parameters.");
         }
-        return existingOrder;
+        return this.sanitizeOrderForRole(existingOrder, input.requesterRole);
       }
     }
 
@@ -284,7 +380,7 @@ export class OrdersService {
         orderId,
         charge,
         input.idempotencyKey,
-        `Order Charge #${orderId} for ${service.name}${isDripFeed ? ` (Drip-feed: ${runs}x${input.quantity})` : ""}`
+        `Order Charge #${orderId} for ${service.displayName || service.name}${isDripFeed ? ` (Drip-feed: ${runs}x${input.quantity})` : ""}`
       );
       const order = {
         id: orderId,
@@ -298,6 +394,16 @@ export class OrdersService {
         quantityPerRun: input.quantity,
         totalQuantity,
         charge: typeof charge === "object" && "toNumber" in charge ? (charge as any).toNumber() : Number(charge),
+        sellRatePer1k: snapshot.sellRatePer1k,
+        costRatePer1k: snapshot.costRatePer1k,
+        fxRateUsed: snapshot.fxRateUsed,
+        providerCurrency: snapshot.providerCurrency,
+        dripSurchargePercent: snapshot.dripSurchargePercent,
+        estimatedProviderCost: snapshot.estimatedProviderCost,
+        estimatedGrossProfit: snapshot.estimatedGrossProfit,
+        paymentFeeEstimate: snapshot.paymentFeeEstimate,
+        estimatedNetProfit: snapshot.estimatedNetProfit,
+        costUnknown: !service.costINR && !service.providerCostPer1k,
         status: OrderStatus.PENDING,
         startCount: 0,
         remains: totalQuantity,
@@ -320,7 +426,7 @@ export class OrdersService {
         ],
       };
       this.sandboxOrders.set(orderId, order);
-      return order;
+      return this.sanitizeOrderForRole(order, input.requesterRole);
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -337,6 +443,16 @@ export class OrdersService {
           quantityPerRun: input.quantity,
           totalQuantity,
           charge,
+          sellRatePer1k: snapshot.sellRatePer1k,
+          costRatePer1k: snapshot.costRatePer1k,
+          fxRateUsed: snapshot.fxRateUsed,
+          providerCurrency: snapshot.providerCurrency,
+          dripSurchargePercent: snapshot.dripSurchargePercent,
+          estimatedProviderCost: snapshot.estimatedProviderCost,
+          estimatedGrossProfit: snapshot.estimatedGrossProfit,
+          paymentFeeEstimate: snapshot.paymentFeeEstimate,
+          estimatedNetProfit: snapshot.estimatedNetProfit,
+          costUnknown: !service.costINR && !service.providerCostPer1k,
           status: OrderStatus.PENDING,
           providerId: service.providerId || null,
           startCount: 0,
@@ -387,7 +503,7 @@ export class OrdersService {
           type: "ORDER_CHARGE",
           orderId: order.id,
           idempotencyKey: input.idempotencyKey,
-          description: `Order Charge #${order.id} for ${service.name}${isDripFeed ? ` (Drip-feed: ${runs}x${input.quantity})` : ""}`,
+          description: `Order Charge #${order.id} for ${service.displayName || service.name}${isDripFeed ? ` (Drip-feed: ${runs}x${input.quantity})` : ""}`,
         },
       });
 
@@ -408,6 +524,7 @@ export class OrdersService {
             totalQuantity,
             providerId: service.providerId,
             providerServiceId: service.providerServiceId,
+            comments: input.comments || null,
           },
           status: OutboxStatus.PENDING,
         },
@@ -416,7 +533,7 @@ export class OrdersService {
       return order;
     });
 
-    return result;
+    return this.sanitizeOrderForRole(result, input.requesterRole);
   }
 
   async refill(id: string, requesterUserId?: string, requesterRole?: string) {

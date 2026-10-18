@@ -56,9 +56,10 @@ interface CustomerContextType {
     runs?: number;
     interval?: number;
     comments?: string;
+    expectedRate?: number;
     couponCode?: string;
     idempotencyKey?: string;
-  }) => Promise<{ success: boolean; orderId?: string; error?: string }>;
+  }) => Promise<{ success: boolean; orderId?: string; order?: any; error?: string }>;
   cancelOrder: (orderId: string) => Promise<boolean>;
   refillOrder: (orderId: string) => Promise<boolean>;
   initiateDeposit: (input: {
@@ -304,6 +305,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     runs?: number;
     interval?: number;
     comments?: string;
+    expectedRate?: number;
     couponCode?: string;
     idempotencyKey?: string;
   }) => {
@@ -317,6 +319,13 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         quantity: input.quantity,
         idempotencyKey: input.idempotencyKey || `ord_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       };
+
+      if (input.expectedRate !== undefined) {
+        payload.expectedRate = Number(input.expectedRate);
+      }
+      if (input.comments !== undefined) {
+        payload.comments = input.comments;
+      }
 
       const isDripFeed = Boolean(input.isDripFeed ?? input.dripFeed);
       if (isDripFeed) {
@@ -340,7 +349,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       }
 
       await refreshData();
-      return { success: true, orderId: data.id };
+      return { success: true, orderId: data.id, order: data };
     } catch (err: any) {
       return { success: false, error: err.message || "Network error while creating order." };
     }

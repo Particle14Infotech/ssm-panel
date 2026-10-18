@@ -127,3 +127,32 @@ If the upstream provider rejects the dispatch (e.g. `Incorrect quantity`, `Inter
 Standard orders have a 24-hour stuck-in-processing threshold. Because drip-feed orders take hours or days to complete naturally:
 $$\text{WatchdogThreshold} = 24\text{h} + ((\text{runs} - 1) \times \text{intervalMinutes})$$
 This prevents legitimate ongoing drip campaigns from being prematurely flagged as stalled or refunded while runs are actively executing upstream.
+
+---
+
+## 7. Frontend Integration & Contract Validation
+
+### 7.1 Payload Bug Resolution (`CustomerContext.createOrder`)
+Previously, `CustomerContext.createOrder` intermittently omitted drip-feed fields when interacting with legacy wrappers. The implementation now strictly passes:
+```typescript
+const payload: Record<string, any> = {
+  serviceId: input.serviceId,
+  target: input.target,
+  quantity: input.quantity,
+  isDripFeed: Boolean(input.isDripFeed ?? input.dripFeed),
+  ...(input.isDripFeed ? { runs: Number(input.runs), interval: Number(input.interval) } : {}),
+  ...(input.expectedRate !== undefined ? { expectedRate: Number(input.expectedRate) } : {}),
+  ...(input.comments !== undefined ? { comments: input.comments } : {}),
+  idempotencyKey: input.idempotencyKey || `ord_${Date.now()}_...`,
+};
+```
+
+### 7.2 Quote = Charge Verification
+If a customer previews a rate on the client and submits with `expectedRate`, the backend compares `Math.abs(expectedRate - service.ratePer1000) <= 0.001`. If a catalog sync repriced the service in the interim, the backend returns HTTP 409 Conflict: *"Price updated, please confirm the new price before placing the order."*
+
+### 7.3 Financial Snapshot & Profit Reconciliation
+For drip-feed orders:
+- `totalQuantity = quantityPerRun * runs`
+- `estimatedProviderCost = (costRatePer1k * totalQuantity) / 1000`
+- `actualProviderCost` is updated upon receiving upstream status reports.
+- Proportional refunds on partial delivery recalculate realized profit using `totalQuantity` strictly.

@@ -219,6 +219,36 @@
         ]
       }
     },
+    "/api/v1/auth/verify-email": {
+      "post": {
+        "operationId": "AuthController_verifyEmail",
+        "summary": "Verify Email via Single-Use Token",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Authentication & Security"
+        ]
+      }
+    },
+    "/api/v1/auth/resend-verification": {
+      "post": {
+        "operationId": "AuthController_resendVerification",
+        "summary": "Resend Email Verification Link",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Authentication & Security"
+        ]
+      }
+    },
     "/api/v1/auth/2fa/setup": {
       "post": {
         "operationId": "AuthController_setup2fa",
@@ -309,6 +339,39 @@
         },
         "tags": [
           "Authentication & Security"
+        ]
+      }
+    },
+    "/api/v1/webhooks/resend": {
+      "post": {
+        "operationId": "EmailController_handleResendWebhook",
+        "summary": "Resend Inbound Webhook Listener (Delivered, Bounced, Complained)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Webhook event processed"
+          },
+          "400": {
+            "description": "Invalid webhook signature or expired timestamp"
+          }
+        },
+        "tags": [
+          "Email Webhooks & Admin Telemetry"
+        ]
+      }
+    },
+    "/api/v1/admin/email/telemetry": {
+      "get": {
+        "operationId": "EmailController_getEmailTelemetry",
+        "summary": "Get Email Service Telemetry & Quota Status",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Email telemetry returned"
+          }
+        },
+        "tags": [
+          "Email Webhooks & Admin Telemetry"
         ]
       }
     },
@@ -871,6 +934,167 @@
         },
         "tags": [
           "Platform Settings"
+        ]
+      }
+    },
+    "/api/v1/admin/pricing/settings": {
+      "get": {
+        "operationId": "PricingController_getSettings",
+        "summary": "Get Global Pricing Engine Settings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Pricing & Profit Engine"
+        ]
+      },
+      "put": {
+        "operationId": "PricingController_updateSettings",
+        "summary": "Update Global Pricing Engine Settings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Pricing & Profit Engine"
+        ]
+      }
+    },
+    "/api/v1/admin/pricing/what-if": {
+      "post": {
+        "operationId": "PricingController_whatIfSimulator",
+        "summary": "Interactive Pricing What-If Simulator",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Pricing & Profit Engine"
+        ]
+      }
+    },
+    "/api/v1/admin/pricing/pending": {
+      "get": {
+        "operationId": "PricingController_getPendingChanges",
+        "summary": "List Pending Price Changes Awaiting Approval",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Pricing & Profit Engine"
+        ]
+      }
+    },
+    "/api/v1/admin/pricing/pending/{id}/approve": {
+      "post": {
+        "operationId": "PricingController_approvePending",
+        "summary": "Approve a Pending Price Fluctuated Service",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Pricing & Profit Engine"
+        ]
+      }
+    },
+    "/api/v1/admin/pricing/pending/{id}/reject": {
+      "post": {
+        "operationId": "PricingController_rejectPending",
+        "summary": "Reject a Pending Price Fluctuated Service",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Pricing & Profit Engine"
+        ]
+      }
+    },
+    "/api/v1/admin/pricing/bulk-margin": {
+      "post": {
+        "operationId": "PricingController_bulkMargin",
+        "summary": "Preview or Apply Bulk Margin Rules",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Pricing & Profit Engine"
+        ]
+      }
+    },
+    "/api/v1/admin/profit/summary": {
+      "get": {
+        "operationId": "PricingController_getProfitSummary",
+        "summary": "Get Executive Profit and Financial Telemetry",
+        "parameters": [
+          {
+            "name": "startDate",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dripFeedOnly",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Pricing & Profit Engine"
         ]
       }
     },

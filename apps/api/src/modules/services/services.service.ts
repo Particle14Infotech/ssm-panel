@@ -119,27 +119,42 @@ export class ServicesService {
         orderBy,
       });
 
-      return services.map((s) => ({
-        id: s.id,
-        name: s.name,
-        categoryId: s.categoryId,
-        categoryName: s.category?.name || "General",
-        platform: s.platform as ServicePlatform,
-        ratePer1000: Number(s.ratePer1000),
-        minQty: s.minQty,
-        maxQty: s.maxQty,
-        description: s.description || "",
-        refillable: s.refillable,
-        cancellable: s.cancellable,
-        dripFeedSupported: s.dripFeedSupported,
-        dripFeedMinRuns: s.dripFeedMinRuns,
-        dripFeedMaxRuns: s.dripFeedMaxRuns,
-        dripFeedMinInterval: s.dripFeedMinInterval,
-        dripFeedMaxInterval: s.dripFeedMaxInterval,
-        avgStartTime: s.avgTime || "Instant",
-        avgProcessingSpeed: "High Speed",
-        status: (s.status === "ACTIVE" ? "ACTIVE" : "DISABLED") as any,
-      }));
+      return services.map((s) => {
+        let linkType = s.linkType;
+        if (!linkType) {
+          const lower = (s.name || "").toLowerCase();
+          if (lower.includes("follower") || lower.includes("subscriber") || lower.includes("member")) {
+            linkType = s.platform === "YOUTUBE" ? "CHANNEL" : "PROFILE";
+          } else {
+            linkType = "POST_OR_REEL";
+          }
+        }
+
+        return {
+          id: s.id,
+          name: s.name,
+          displayName: s.displayName || s.name,
+          categoryId: s.categoryId,
+          categoryName: s.category?.name || "General",
+          platform: s.platform as ServicePlatform,
+          ratePer1000: Number(s.ratePer1000),
+          minQty: s.minQty,
+          maxQty: s.maxQty,
+          description: s.description || "",
+          refillable: s.refillable,
+          cancellable: s.cancellable,
+          dripFeedSupported: s.dripFeedSupported,
+          dripFeedMinRuns: s.dripFeedMinRuns,
+          dripFeedMaxRuns: s.dripFeedMaxRuns,
+          dripFeedMinInterval: s.dripFeedMinInterval,
+          dripFeedMaxInterval: s.dripFeedMaxInterval,
+          serviceType: s.serviceType || "DEFAULT",
+          linkType: linkType as any,
+          avgStartTime: s.avgTime || "Instant",
+          avgProcessingSpeed: "High Speed",
+          status: (s.status === "ACTIVE" ? "ACTIVE" : "DISABLED") as any,
+        };
+      });
     } catch (err: any) {
       this.logger.error(`Error querying services: ${err.message}`);
       return [];
@@ -161,9 +176,20 @@ export class ServicesService {
 
     if (!s || s.isDeleted) return null;
 
+    let linkType = s.linkType;
+    if (!linkType) {
+      const lower = (s.name || "").toLowerCase();
+      if (lower.includes("follower") || lower.includes("subscriber") || lower.includes("member")) {
+        linkType = s.platform === "YOUTUBE" ? "CHANNEL" : "PROFILE";
+      } else {
+        linkType = "POST_OR_REEL";
+      }
+    }
+
     return {
       id: s.id,
       name: s.name,
+      displayName: s.displayName || s.name,
       categoryId: s.categoryId,
       categoryName: s.category?.name || "General",
       platform: s.platform as ServicePlatform,
@@ -178,6 +204,8 @@ export class ServicesService {
       dripFeedMaxRuns: s.dripFeedMaxRuns,
       dripFeedMinInterval: s.dripFeedMinInterval,
       dripFeedMaxInterval: s.dripFeedMaxInterval,
+      serviceType: s.serviceType || "DEFAULT",
+      linkType: linkType as any,
       avgStartTime: s.avgTime || "Instant",
       avgProcessingSpeed: "High Speed",
       status: (s.status === "ACTIVE" ? "ACTIVE" : "DISABLED") as any,

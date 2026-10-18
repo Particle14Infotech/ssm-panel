@@ -539,7 +539,7 @@ export class SMMWorkerEngine {
    */
   async applyStatusTransition(
     order: any,
-    statusRes: { status: string; start_count?: number | string; remains?: number | string }
+    statusRes: { status: string; start_count?: number | string; remains?: number | string; charge?: number | string; currency?: string; [key: string]: any }
   ) {
     const rawStatus = (statusRes.status || "").toLowerCase();
     let newStatus: OrderStatus = order.status;
@@ -570,14 +570,32 @@ export class SMMWorkerEngine {
     }
 
     // Normal progression (IN_PROGRESS or COMPLETED)
+    const updateData: any = {
+      status: newStatus,
+      startCount,
+      remains,
+    };
+
+    if (statusRes.charge !== undefined && statusRes.charge !== null) {
+      const rawCharge = parseFloat(String(statusRes.charge));
+      if (!isNaN(rawCharge)) {
+        const fx = order.fxRateUsed ? parseFloat(order.fxRateUsed.toString()) : 1.0;
+        const actualCostINR = new Decimal(rawCharge).mul(fx).toDecimalPlaces(4, Decimal.ROUND_HALF_UP);
+        const customerCharge = new Decimal(order.charge.toString());
+        const paymentFee = order.paymentFeeEstimate
+          ? new Decimal(order.paymentFeeEstimate.toString())
+          : customerCharge.mul(0.0236);
+        const actualProfit = customerCharge.minus(actualCostINR).minus(paymentFee).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+
+        updateData.actualProviderCost = actualCostINR;
+        updateData.actualProfit = actualProfit;
+      }
+    }
+
     await prisma.$transaction([
       prisma.order.update({
         where: { id: order.id },
-        data: {
-          status: newStatus,
-          startCount,
-          remains,
-        },
+        data: updateData,
       }),
       prisma.orderStatusHistory.create({
         data: {
@@ -585,7 +603,7 @@ export class SMMWorkerEngine {
           status: newStatus,
           startCount,
           remains,
-          notes: `Status updated to ${newStatus} from upstream provider`,
+          notes: `Status updated to ${newStatus} from upstream provider${updateData.actualProviderCost ? ` (Actual Cost: ₹${updateData.actualProviderCost})` : ""}`,
         },
       }),
     ]);
@@ -646,13 +664,24 @@ export class SMMWorkerEngine {
         });
       }
 
-      // 4. Update order
+      // 4. Update order with proportional realized cost and profit
+      const realizedRevenue = orderCharge.minus(refundAmount);
+      let partialActualCost: Decimal | null = null;
+      let partialActualProfit: Decimal | null = null;
+      if (order.estimatedProviderCost) {
+        const estCost = new Decimal(order.estimatedProviderCost.toString());
+        partialActualCost = estCost.mul(totalQuantity - effectiveRemains).div(totalQuantity).toDecimalPlaces(4, Decimal.ROUND_HALF_UP);
+        const paymentFee = realizedRevenue.mul(0.0236);
+        partialActualProfit = realizedRevenue.minus(partialActualCost).minus(paymentFee).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+      }
+
       await tx.order.update({
         where: { id: order.id },
         data: {
           status: OrderStatus.PARTIAL,
           startCount,
           remains: effectiveRemains,
+          ...(partialActualCost ? { actualProviderCost: partialActualCost, actualProfit: partialActualProfit } : {}),
         },
       });
 

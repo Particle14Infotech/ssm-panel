@@ -29,9 +29,13 @@ export type ServiceType = z.infer<typeof ServiceTypeSchema>;
 export const ServiceStatusSchema = z.enum(["ACTIVE", "DISABLED", "MAINTENANCE"]);
 export type ServiceStatus = z.infer<typeof ServiceStatusSchema>;
 
+export const ServiceLinkTypeSchema = z.enum(["PROFILE", "POST_OR_REEL", "CHANNEL", "CUSTOM"]);
+export type ServiceLinkType = z.infer<typeof ServiceLinkTypeSchema>;
+
 export const ServiceItemSchema = z.object({
   id: z.string(),
   name: z.string(),
+  displayName: z.string().optional(),
   categoryId: z.string(),
   categoryName: z.string(),
   platform: ServicePlatformSchema,
@@ -46,10 +50,16 @@ export const ServiceItemSchema = z.object({
   dripFeedMaxRuns: z.number().int().positive().nullable().optional(),
   dripFeedMinInterval: z.number().int().positive().nullable().optional(),
   dripFeedMaxInterval: z.number().int().positive().nullable().optional(),
+  serviceType: z.string().optional(),
+  linkType: ServiceLinkTypeSchema.optional(),
   avgStartTime: z.string().optional(),
   avgProcessingSpeed: z.string().optional(),
   status: ServiceStatusSchema,
   badge: z.string().optional(),
+  providerCostPer1k: z.number().optional(),
+  costINR: z.number().optional(),
+  marginPercent: z.number().optional(),
+  priceBelowCost: z.boolean().optional(),
 });
 export type ServiceItem = z.infer<typeof ServiceItemSchema>;
 
@@ -61,3 +71,38 @@ export const CategoryItemSchema = z.object({
   serviceCount: z.number().optional(),
 });
 export type CategoryItem = z.infer<typeof CategoryItemSchema>;
+
+/**
+ * Strips emojis, decorative symbols, bracket spam, and repeated spaces from raw service names.
+ * Keeps meaningful bracketed tags (e.g. [30 days refill], [Instant], [Non Drop]).
+ */
+export function cleanServiceName(rawName: string): { displayName: string; tags: string[] } {
+  if (!rawName) return { displayName: "", tags: [] };
+
+  const tags: string[] = [];
+  
+  // Extract meaningful tags inside brackets: [30 days refill], [HQ], [Non-Drop], etc.
+  const tagRegex = /\[([^\]]+)\]/g;
+  let match: RegExpExecArray | null;
+  while ((match = tagRegex.exec(rawName)) !== null) {
+    const content = match[1].trim();
+    // Ignore empty or purely punctuation brackets
+    if (content.length > 0 && !/^[\s\-_*~]+$/.test(content)) {
+      tags.push(content);
+    }
+  }
+
+  // Strip emojis (Unicode Extended Pictographic and common emoji ranges)
+  let cleaned = rawName.replace(/\p{Extended_Pictographic}/gu, " ");
+  
+  // Strip decorative symbols like ★, ☆, ⚡, ✦, ✧, ●, ◆, ■, 🚀, 🔥, etc.
+  cleaned = cleaned.replace(/[\u2600-\u26FF\u2700-\u27BF\u2B50\u2022\u25BA\u25BC\u25B6\u25C0\u25AA\u25AB★☆✦✧●◆■|~`]/g, " ");
+
+  // Strip empty brackets [] or brackets containing only punctuation/junk
+  cleaned = cleaned.replace(/\[\s*\]/g, " ");
+
+  // Collapse consecutive whitespaces and trim
+  cleaned = cleaned.replace(/\s+/g, " ").trim();
+
+  return { displayName: cleaned || rawName, tags };
+}

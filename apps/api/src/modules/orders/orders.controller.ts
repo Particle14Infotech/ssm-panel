@@ -65,6 +65,8 @@ export class OrdersController {
       runs?: number;
       interval?: number;
       idempotencyKey?: string;
+      expectedRate?: number;
+      comments?: string;
     },
     @CurrentUser() user: CurrentUserData
   ) {
@@ -76,7 +78,10 @@ export class OrdersController {
       runs: body.runs,
       interval: body.interval,
       idempotencyKey: body.idempotencyKey,
+      expectedRate: body.expectedRate,
+      comments: body.comments,
       userId: user.id,
+      requesterRole: user.role,
     });
   }
 
@@ -93,6 +98,8 @@ export class OrdersController {
       runs?: number;
       interval?: number;
       idempotencyKey?: string;
+      expectedRate?: number;
+      comments?: string;
     },
     @CurrentUser() user: CurrentUserData
   ) {
@@ -104,7 +111,10 @@ export class OrdersController {
       runs: body.runs,
       interval: body.interval,
       idempotencyKey: body.idempotencyKey,
+      expectedRate: body.expectedRate,
+      comments: body.comments,
       userId: user.id,
+      requesterRole: user.role,
     });
   }
 

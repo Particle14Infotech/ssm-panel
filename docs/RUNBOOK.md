@@ -128,3 +128,30 @@ pg_dump "$DATABASE_URL" --format=custom | openssl enc -aes-256-cbc -salt -pbkdf2
      `refund = (remains / totalQuantity) * charge`.
    - The database constraint `unique_refund_per_order` guarantees refunds execute exactly once.
 
+---
+
+## 7. Pricing & Profit Engine Operations
+
+### 7.1 Exchange Rate & FX Updates
+- Upstream provider costs in USD are converted to INR using `USD_INR_RATE`.
+- To update the exchange rate, navigate to **Admin > Pricing & Profit** (`/admin/pricing`) or send `PUT /api/v1/admin/pricing/settings` with `{ usdInrRate: 85.5 }`.
+- Changing the exchange rate updates future order quotes immediately. Historical orders retain their immutable snapshot (`fxRateUsed`, `costRatePer1k`).
+
+### 7.2 Catalog Sync & Price Change Inbox
+- When catalog sync runs:
+  - If a service's provider cost moves by more than `PRICE_CHANGE_ALERT_PERCENT` (default 10%), it is queued in `PendingPriceChange` as `PENDING`.
+  - Admins can inspect old vs new cost, old vs new sell rate, and click **Approve** or **Reject** in `/admin/pricing` under **Pending Approvals**.
+  - Any service whose selling rate would fall below real provider cost is automatically deactivated with `priceBelowCost = true` and flagged until repriced.
+
+### 7.3 Bulk Repricing & Margin Overrides
+- Admins can bulk-apply margin adjustments to a specific platform or the entire catalog via the **Bulk Repricing Tool** in `/admin/pricing`.
+- Clicking **Preview Diff** displays the old vs proposed selling price before committing changes.
+
+### 7.4 Profit Telemetry & Reconciliation
+- The **Profit Analytics Dashboard** (`/admin/reports/profit`) queries immutable order snapshots and status reconciliation to report:
+  - Delivered Gross Revenue
+  - Upstream Provider Cost & Gateway Fees (default 2.36%)
+  - Net Realized Profit & Net Margin %
+  - Normal vs Drip-Feed profit breakdown
+  - Estimated Cash Runway based on provider burn.
+

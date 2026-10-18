@@ -152,6 +152,7 @@ model Service {
   categoryId        String
   category          Category  @relation(fields: [categoryId], references: [id])
   name              String
+  displayName       String?
   description       String?
   platform          String // INSTAGRAM, YOUTUBE, TIKTOK, etc.
   ratePer1000       Decimal   @db.Decimal(10, 2)
@@ -168,6 +169,15 @@ model Service {
   dripFeedMaxRuns   Int?
   dripFeedMinInterval Int?
   dripFeedMaxInterval Int?
+  serviceType       String    @default("DEFAULT") // DEFAULT, CUSTOM_COMMENTS, NEEDS_REVIEW
+  linkType          String    @default("POST_OR_REEL") // PROFILE, POST_OR_REEL, CHANNEL, CUSTOM
+  providerCostPer1k Decimal?  @db.Decimal(12, 4)
+  providerCostCurrency String? @default("USD")
+  costINR           Decimal?  @db.Decimal(12, 2)
+  marginPercentOverride Decimal? @db.Decimal(5, 2)
+  fixedSellingRateOverride Decimal? @db.Decimal(10, 2)
+  priceBelowCost    Boolean   @default(false)
+  priceChangeStatus String    @default("NORMAL") // NORMAL, PENDING_APPROVAL, BELOW_COST
   active            Boolean   @default(true)
   status            String    @default("ACTIVE") // ACTIVE, INACTIVE
   isDeleted         Boolean   @default(false)
@@ -175,7 +185,9 @@ model Service {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  orders Order[]
+  orders            Order[]
+  priceHistory      ServicePriceHistory[]
+  pendingPriceChanges PendingPriceChange[]
 
   @@index([platform, categoryId, status])
   @@index([isDeleted])
@@ -220,6 +232,21 @@ model Order {
   startCount      Int                  @default(0)
   remains         Int                  @default(0)
   idempotencyKey  String?
+  
+  // Financial Snapshot Fields
+  sellRatePer1k        Decimal         @default(0.00) @db.Decimal(10, 2)
+  costRatePer1k        Decimal         @default(0.00) @db.Decimal(10, 2)
+  fxRateUsed           Decimal         @default(1.0000) @db.Decimal(10, 4)
+  providerCurrency     String          @default("INR")
+  dripSurchargePercent Decimal         @default(0.00) @db.Decimal(5, 2)
+  estimatedProviderCost Decimal        @default(0.00) @db.Decimal(12, 2)
+  estimatedGrossProfit Decimal         @default(0.00) @db.Decimal(12, 2)
+  paymentFeeEstimate   Decimal         @default(0.00) @db.Decimal(12, 2)
+  estimatedNetProfit   Decimal         @default(0.00) @db.Decimal(12, 2)
+  actualProviderCost   Decimal?        @db.Decimal(12, 2)
+  actualProfit         Decimal?        @db.Decimal(12, 2)
+  costUnknown          Boolean         @default(false)
+
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
 
@@ -377,3 +404,41 @@ model EmailDailyCounter {
   count     Int      @default(0)
   updatedAt DateTime @updatedAt
 }
+
+model SystemSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model ServicePriceHistory {
+  id          String   @id @default(uuid())
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  oldCostRate Decimal? @db.Decimal(12, 4)
+  newCostRate Decimal? @db.Decimal(12, 4)
+  oldSellRate Decimal? @db.Decimal(10, 2)
+  newSellRate Decimal? @db.Decimal(10, 2)
+  reason      String?
+  changedBy   String?
+  createdAt   DateTime @default(now())
+
+  @@index([serviceId, createdAt])
+}
+
+model PendingPriceChange {
+  id               String   @id @default(uuid())
+  serviceId        String
+  service          Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  oldCostRate      Decimal? @db.Decimal(12, 4)
+  newCostRate      Decimal? @db.Decimal(12, 4)
+  oldSellRate      Decimal? @db.Decimal(10, 2)
+  proposedSellRate Decimal? @db.Decimal(10, 2)
+  percentageChange Decimal? @db.Decimal(5, 2)
+  status           String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([serviceId, status])
+}
+
