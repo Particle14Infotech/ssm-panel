@@ -37,5 +37,13 @@ if (service === "web") {
   } catch (err) {
     console.warn("[start-service] Note: db seed warning:", err.message);
   }
+
+  const fs = require("fs");
+  if (!fs.existsSync("apps/api/dist/main.js") && !fs.existsSync("apps/api/dist/src/main.js")) {
+    console.log("[start-service] Compiling @smm/api dist before launch...");
+    run("pnpm --filter @smm/contracts build");
+    run("pnpm exec prisma generate");
+    run("pnpm --filter @smm/api build");
+  }
   run("node apps/api/dist/main.js || node apps/api/dist/src/main.js || node apps/api/dist/api/src/main.js || pnpm --filter @smm/api start:prod");
 }
