@@ -29,6 +29,14 @@ async function bootstrap() {
 
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.set("trust proxy", 1);
+  expressApp.get("/", (_req: any, res: any) => {
+    res.status(200).json({
+      status: "ok",
+      service: "smm-api",
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    });
+  });
   expressApp.get("/health", (_req: any, res: any) => {
     res.status(200).json({
       status: "ok",
