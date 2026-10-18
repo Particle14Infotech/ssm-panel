@@ -86,11 +86,28 @@ function NewOrderContent() {
     }
   }, [initialServiceParam, services, selectedPlatform]);
 
+  // Drip-feed parameters and boundaries
+  const dripFeedSupported = Boolean(activeService?.dripFeedSupported);
+  const minRuns = activeService?.dripFeedMinRuns || 2;
+  const maxRuns = activeService?.dripFeedMaxRuns || 100;
+  const minInterval = activeService?.dripFeedMinInterval || 5;
+  const maxInterval = activeService?.dripFeedMaxInterval || 1440;
+
   // Rate and balance math
   const unitRate = activeService ? activeService.ratePer1000 : 0;
-  const totalPrice = Number(((quantity / 1000) * unitRate).toFixed(2));
+  const totalUnits = isDripFeed && dripFeedSupported ? quantity * dripRuns : quantity;
+  // Round customer charge UP to 2 decimal places
+  const totalPrice = Number((Math.ceil(((totalUnits / 1000) * unitRate) * 100) / 100).toFixed(2));
   const remainingBalance = Number((user.balance - totalPrice).toFixed(2));
   const hasSufficientFunds = user.balance >= totalPrice;
+
+  const estimatedDripMinutes = isDripFeed ? (dripRuns - 1) * dripInterval : 0;
+  const formatDuration = (mins: number) => {
+    if (mins < 60) return `${mins} min`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  };
 
   const categories = Array.from(
     new Set(
@@ -121,8 +138,23 @@ function NewOrderContent() {
     }
 
     if (quantity < (activeService.minQty || 10) || quantity > (activeService.maxQty || 1000000)) {
-      setErrorMessage(`Quantity must be between ${activeService.minQty} and ${activeService.maxQty}.`);
+      setErrorMessage(`Quantity must be between ${activeService.minQty} and ${activeService.maxQty} per run.`);
       return;
+    }
+
+    if (isDripFeed) {
+      if (!dripFeedSupported) {
+        setErrorMessage("The selected service does not support drip-feed delivery.");
+        return;
+      }
+      if (dripRuns < minRuns || dripRuns > maxRuns) {
+        setErrorMessage(`Runs must be between ${minRuns} and ${maxRuns}.`);
+        return;
+      }
+      if (dripInterval < minInterval || dripInterval > maxInterval) {
+        setErrorMessage(`Interval must be between ${minInterval} and ${maxInterval} minutes.`);
+        return;
+      }
     }
 
     if (!hasSufficientFunds) {
@@ -135,9 +167,9 @@ function NewOrderContent() {
       serviceId: activeService.id,
       target: targetUrl.trim(),
       quantity,
-      dripFeed: isDripFeed,
-      runs: isDripFeed ? dripRuns : undefined,
-      interval: isDripFeed ? dripInterval : undefined,
+      isDripFeed: isDripFeed && dripFeedSupported,
+      runs: isDripFeed && dripFeedSupported ? dripRuns : undefined,
+      interval: isDripFeed && dripFeedSupported ? dripInterval : undefined,
       comments: keywords.trim() ? keywords.trim() : undefined,
     });
     setSubmitting(false);
@@ -344,7 +376,7 @@ function NewOrderContent() {
               />
             </FormField>
 
-            <FormField label="Quantity Allocation" required>
+            <FormField label={isDripFeed ? "Quantity Per Run" : "Quantity Allocation"} required helperText={isDripFeed ? `Allowed: ${activeService?.minQty || 10} to ${activeService?.maxQty || 1000000} per single run` : undefined}>
               <div className="relative">
                 <input
                   type="number"
@@ -379,6 +411,83 @@ function NewOrderContent() {
             </div>
           </div>
 
+          {/* Step 4: Drip-Feed Automation */}
+          <div className="glass-panel p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono block">
+                  04 • Drip-Feed Delivery (Provider Native)
+                </label>
+                <span className="text-[11px] text-slate-400 block mt-0.5">
+                  Split your order into automated periodic batches executed directly by upstream networks.
+                </span>
+              </div>
+
+              {dripFeedSupported ? (
+                <button
+                  type="button"
+                  onClick={() => setIsDripFeed(!isDripFeed)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-mono font-bold transition-all ${
+                    isDripFeed
+                      ? "btn-primary-gradient text-[#171e00] shadow-sm shadow-[#D8EC8D]/20"
+                      : "bg-white/10 text-slate-300 hover:text-white border border-white/10"
+                  }`}
+                >
+                  {isDripFeed ? "ENABLED" : "OFF"}
+                </button>
+              ) : (
+                <span className="text-[11px] font-mono text-slate-400 px-2.5 py-1 rounded-full bg-white/5 border border-white/5">
+                  Not supported by service
+                </span>
+              )}
+            </div>
+
+            {dripFeedSupported && isDripFeed && (
+              <div className="pt-2 space-y-4 border-t border-white/5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField
+                    label="Number of Runs"
+                    required
+                    helperText={`Allowed: ${minRuns} – ${maxRuns} runs`}
+                  >
+                    <input
+                      type="number"
+                      min={minRuns}
+                      max={maxRuns}
+                      value={dripRuns}
+                      onChange={(e) => setDripRuns(Math.max(1, Number(e.target.value)))}
+                      className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
+                    />
+                  </FormField>
+
+                  <FormField
+                    label="Interval (Minutes)"
+                    required
+                    helperText={`Allowed: ${minInterval}m – ${maxInterval}m`}
+                  >
+                    <input
+                      type="number"
+                      min={minInterval}
+                      max={maxInterval}
+                      value={dripInterval}
+                      onChange={(e) => setDripInterval(Math.max(1, Number(e.target.value)))}
+                      className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
+                    />
+                  </FormField>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-1.5 text-xs font-mono">
+                  <div className="text-slate-300 font-medium">
+                    {quantity.toLocaleString()} per run × {dripRuns} runs = <span className="text-[#D8EC8D] font-bold">{totalUnits.toLocaleString()} total units</span>
+                  </div>
+                  <div className="text-slate-400 text-[11px]">
+                    Delivery pattern: 1 batch every {dripInterval} min • Duration approx {formatDuration(estimatedDripMinutes)}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Error Message */}
           {errorMessage && (
             <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
@@ -409,9 +518,34 @@ function NewOrderContent() {
                 <span className="text-xs font-mono text-[#D8EC8D]">INR</span>
               </div>
               <div className="text-[11px] text-slate-400 font-mono">
-                ₹{unitRate.toFixed(2)}/1k × {quantity.toLocaleString()} units
+                {isDripFeed ? (
+                  <>
+                    ₹{unitRate.toFixed(2)}/1k × {quantity.toLocaleString()} per run × {dripRuns} runs ({totalUnits.toLocaleString()} units)
+                  </>
+                ) : (
+                  <>
+                    ₹{unitRate.toFixed(2)}/1k × {quantity.toLocaleString()} units
+                  </>
+                )}
               </div>
             </div>
+
+            {isDripFeed && (
+              <div className="p-3 rounded-xl bg-[#D8EC8D]/10 border border-[#D8EC8D]/20 space-y-1.5 text-xs font-mono">
+                <div className="flex justify-between text-slate-300">
+                  <span>Drip-feed Schedule</span>
+                  <span className="text-[#D8EC8D] font-bold">{dripRuns} runs / {dripInterval}m interval</span>
+                </div>
+                <div className="flex justify-between text-slate-400 text-[11px]">
+                  <span>Total Delivery Units</span>
+                  <span>{totalUnits.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-slate-400 text-[11px]">
+                  <span>Estimated Total Time</span>
+                  <span>{formatDuration(estimatedDripMinutes)} (+ start time)</span>
+                </div>
+              </div>
+            )}
 
             <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 space-y-2 text-xs font-mono">
               <div className="flex justify-between text-slate-400">

@@ -35,6 +35,7 @@ export default function AdminServicesPage() {
   const [newMin, setNewMin] = useState<number>(100);
   const [newMax, setNewMax] = useState<number>(100000);
   const [newDescription, setNewDescription] = useState<string>("");
+  const [newDripFeed, setNewDripFeed] = useState<boolean>(false);
 
   const filteredServices = services.filter((s) => {
     const p = s.platform.toLowerCase().replace("_", "");
@@ -70,6 +71,7 @@ export default function AdminServicesPage() {
       avgProcessingSpeed: "50k / Day",
       status: "ACTIVE",
       badge: "Non-Drop",
+      dripFeedSupported: newDripFeed,
     };
 
     addService(created);
@@ -231,6 +233,19 @@ export default function AdminServicesPage() {
                   className="w-full bg-surface-container-highest border border-white/10 rounded-xl px-3 py-2 text-white"
                 />
               </div>
+
+              <div className="sm:col-span-4 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="newDripFeed"
+                  checked={newDripFeed}
+                  onChange={(e) => setNewDripFeed(e.target.checked)}
+                  className="rounded border-white/20 bg-surface-container-highest text-[#D8EC8D] focus:ring-[#D8EC8D]"
+                />
+                <label htmlFor="newDripFeed" className="text-xs text-white cursor-pointer font-medium">
+                  Support Provider-Native Drip-Feed Delivery
+                </label>
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
@@ -301,6 +316,7 @@ export default function AdminServicesPage() {
                   <th className="py-3 px-3">Service Name</th>
                   <th className="py-3 px-3">Rate / 1k (INR)</th>
                   <th className="py-3 px-3">Min / Max</th>
+                  <th className="py-3 px-3">Drip-Feed</th>
                   <th className="py-3 px-3">Status</th>
                   <th className="py-3 px-3 text-right">Actions</th>
                 </tr>
@@ -345,6 +361,24 @@ export default function AdminServicesPage() {
                       </td>
                       <td className="py-4 px-3 font-mono text-on-surface-variant whitespace-nowrap">
                         {service.minQty.toLocaleString()} – {service.maxQty.toLocaleString()}
+                      </td>
+                      <td className="py-4 px-3 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateService(service.id, {
+                              dripFeedSupported: !service.dripFeedSupported,
+                            })
+                          }
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold transition-all ${
+                            service.dripFeedSupported
+                              ? "bg-[#D8EC8D]/15 text-[#D8EC8D] border border-[#D8EC8D]/30"
+                              : "bg-white/5 text-slate-500 border border-white/5 hover:text-white"
+                          }`}
+                          title="Click to toggle Drip-Feed capability"
+                        >
+                          {service.dripFeedSupported ? "Supported" : "Disabled"}
+                        </button>
                       </td>
                       <td className="py-4 px-3 whitespace-nowrap">
                         <button

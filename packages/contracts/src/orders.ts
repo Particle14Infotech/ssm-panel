@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Decimal } from "decimal.js";
 
 export const OrderStatusSchema = z.enum([
   "PENDING",
@@ -49,21 +50,25 @@ export function assertValidTransition(from: OrderStatus, to: OrderStatus): void 
 /**
  * Shared, authoritative pricing calculation
  * Example: rate 50/1000 x 5000 qty = 250
+ * Rounds UP (ceil) to 2 decimal places.
  */
 export function calculateOrderCharge(
   ratePer1000: number,
   quantity: number,
-  discountPercent: number = 0
+  discountPercent: number = 0,
+  runs: number = 1
 ): number {
-  if (ratePer1000 <= 0 || quantity <= 0) return 0;
-  const raw = (ratePer1000 * quantity) / 1000;
-  const withDiscount = raw * (1 - Math.max(0, Math.min(100, discountPercent)) / 100);
-  return Math.round(withDiscount * 10000) / 10000;
+  if (ratePer1000 <= 0 || quantity <= 0 || runs <= 0) return 0;
+  const totalUnits = new Decimal(quantity).times(runs);
+  const raw = totalUnits.times(ratePer1000).dividedBy(1000);
+  const discountFactor = new Decimal(100).minus(Math.max(0, Math.min(100, discountPercent))).dividedBy(100);
+  const withDiscount = raw.times(discountFactor);
+  return withDiscount.toDecimalPlaces(2, Decimal.ROUND_UP).toNumber();
 }
 
 /**
  * Shared partial refund calculation formula:
- * refund = charge x (remains / quantity)
+ * refund = charge x (remains / totalQuantity)
  */
 export function calculatePartialRefund(
   charge: number,
@@ -72,19 +77,67 @@ export function calculatePartialRefund(
 ): number {
   if (charge <= 0 || quantity <= 0 || remains <= 0) return 0;
   const clampedRemains = Math.min(quantity, Math.max(0, remains));
-  const refundAmount = (charge * clampedRemains) / quantity;
-  return Math.round(refundAmount * 10000) / 10000;
+  const refundAmount = new Decimal(charge).times(clampedRemains).dividedBy(quantity);
+  return refundAmount.toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toNumber();
 }
 
-export const CreateOrderInputSchema = z.object({
+export const CreateOrderInputBaseSchema = z.object({
   serviceId: z.string().min(1, "Service is required"),
   target: z.string().min(1, "A valid target link or handle is required"),
   quantity: z.number().int().positive("Quantity must be greater than 0"),
+  isDripFeed: z.boolean().default(false),
   runs: z.number().int().positive().optional(),
   interval: z.number().int().positive().optional(),
   comments: z.string().optional(),
   couponCode: z.string().optional(),
   idempotencyKey: z.string().optional(),
+});
+
+export const CreateOrderInputSchema = CreateOrderInputBaseSchema.superRefine((data, ctx) => {
+  if (data.isDripFeed) {
+    if (data.runs === undefined || data.runs === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Runs parameter is required when drip-feed is enabled",
+        path: ["runs"],
+      });
+    } else if (data.runs < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Runs must be at least 2 for drip-feed orders",
+        path: ["runs"],
+      });
+    }
+
+    if (data.interval === undefined || data.interval === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Interval parameter is required when drip-feed is enabled",
+        path: ["interval"],
+      });
+    } else if (data.interval < 5) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Interval must be at least 5 minutes for drip-feed orders",
+        path: ["interval"],
+      });
+    }
+  } else {
+    if (data.runs !== undefined && data.runs !== null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Runs cannot be specified for non-drip-feed orders",
+        path: ["runs"],
+      });
+    }
+    if (data.interval !== undefined && data.interval !== null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Interval cannot be specified for non-drip-feed orders",
+        path: ["interval"],
+      });
+    }
+  }
 });
 export type CreateOrderInput = z.infer<typeof CreateOrderInputSchema>;
 
@@ -97,6 +150,11 @@ export const OrderItemSchema = z.object({
   platform: z.string(),
   target: z.string(),
   quantity: z.number(),
+  isDripFeed: z.boolean().optional(),
+  runs: z.number().nullable().optional(),
+  intervalMinutes: z.number().nullable().optional(),
+  quantityPerRun: z.number().nullable().optional(),
+  totalQuantity: z.number().optional(),
   charge: z.number(),
   startCount: z.number().nullable().optional(),
   remains: z.number().nullable().optional(),
@@ -108,5 +166,6 @@ export const OrderItemSchema = z.object({
   updatedAt: z.string(),
   refillable: z.boolean().optional(),
   cancellable: z.boolean().optional(),
+  providerEvents: z.array(z.any()).optional(),
 });
 export type OrderItem = z.infer<typeof OrderItemSchema>;

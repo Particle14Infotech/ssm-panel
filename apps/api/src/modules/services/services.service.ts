@@ -131,6 +131,11 @@ export class ServicesService {
         description: s.description || "",
         refillable: s.refillable,
         cancellable: s.cancellable,
+        dripFeedSupported: s.dripFeedSupported,
+        dripFeedMinRuns: s.dripFeedMinRuns,
+        dripFeedMaxRuns: s.dripFeedMaxRuns,
+        dripFeedMinInterval: s.dripFeedMinInterval,
+        dripFeedMaxInterval: s.dripFeedMaxInterval,
         avgStartTime: s.avgTime || "Instant",
         avgProcessingSpeed: "High Speed",
         status: (s.status === "ACTIVE" ? "ACTIVE" : "DISABLED") as any,
@@ -168,6 +173,11 @@ export class ServicesService {
       description: s.description || "",
       refillable: s.refillable,
       cancellable: s.cancellable,
+      dripFeedSupported: s.dripFeedSupported,
+      dripFeedMinRuns: s.dripFeedMinRuns,
+      dripFeedMaxRuns: s.dripFeedMaxRuns,
+      dripFeedMinInterval: s.dripFeedMinInterval,
+      dripFeedMaxInterval: s.dripFeedMaxInterval,
       avgStartTime: s.avgTime || "Instant",
       avgProcessingSpeed: "High Speed",
       status: (s.status === "ACTIVE" ? "ACTIVE" : "DISABLED") as any,
@@ -202,6 +212,11 @@ export class ServicesService {
         avgTime: input.avgTime || input.avgStartTime || "Instant",
         refillable: Boolean(input.refillable),
         cancellable: Boolean(input.cancellable),
+        dripFeedSupported: Boolean(input.dripFeedSupported),
+        dripFeedMinRuns: input.dripFeedMinRuns ? parseInt(String(input.dripFeedMinRuns), 10) : null,
+        dripFeedMaxRuns: input.dripFeedMaxRuns ? parseInt(String(input.dripFeedMaxRuns), 10) : null,
+        dripFeedMinInterval: input.dripFeedMinInterval ? parseInt(String(input.dripFeedMinInterval), 10) : null,
+        dripFeedMaxInterval: input.dripFeedMaxInterval ? parseInt(String(input.dripFeedMaxInterval), 10) : null,
         active: input.active !== false,
         status: input.status || "ACTIVE",
         providerId: input.providerId || null,
@@ -229,6 +244,11 @@ export class ServicesService {
     if (input.avgTime !== undefined) data.avgTime = input.avgTime;
     if (input.refillable !== undefined) data.refillable = Boolean(input.refillable);
     if (input.cancellable !== undefined) data.cancellable = Boolean(input.cancellable);
+    if (input.dripFeedSupported !== undefined) data.dripFeedSupported = Boolean(input.dripFeedSupported);
+    if (input.dripFeedMinRuns !== undefined) data.dripFeedMinRuns = input.dripFeedMinRuns ? parseInt(String(input.dripFeedMinRuns), 10) : null;
+    if (input.dripFeedMaxRuns !== undefined) data.dripFeedMaxRuns = input.dripFeedMaxRuns ? parseInt(String(input.dripFeedMaxRuns), 10) : null;
+    if (input.dripFeedMinInterval !== undefined) data.dripFeedMinInterval = input.dripFeedMinInterval ? parseInt(String(input.dripFeedMinInterval), 10) : null;
+    if (input.dripFeedMaxInterval !== undefined) data.dripFeedMaxInterval = input.dripFeedMaxInterval ? parseInt(String(input.dripFeedMaxInterval), 10) : null;
     if (input.active !== undefined) data.active = Boolean(input.active);
     if (input.status !== undefined) data.status = input.status;
     if (input.providerId !== undefined) data.providerId = input.providerId;

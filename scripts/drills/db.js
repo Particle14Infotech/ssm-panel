@@ -102,6 +102,11 @@ function createTestDatabase() {
       "minQty" INTEGER NOT NULL DEFAULT 10,
       "maxQty" INTEGER NOT NULL DEFAULT 100000,
       "providerId" VARCHAR(64),
+      "dripFeedSupported" BOOLEAN DEFAULT false,
+      "dripFeedMinRuns" INTEGER,
+      "dripFeedMaxRuns" INTEGER,
+      "dripFeedMinInterval" INTEGER,
+      "dripFeedMaxInterval" INTEGER,
       status VARCHAR(32) DEFAULT 'ACTIVE'
     );
 
@@ -111,6 +116,11 @@ function createTestDatabase() {
       "serviceId" VARCHAR(64) NOT NULL,
       target VARCHAR(255) NOT NULL,
       quantity INTEGER NOT NULL,
+      "isDripFeed" BOOLEAN DEFAULT false,
+      runs INTEGER,
+      "intervalMinutes" INTEGER,
+      "quantityPerRun" INTEGER,
+      "totalQuantity" INTEGER DEFAULT 0,
       charge NUMERIC(10, 2) NOT NULL,
       status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
       "providerId" VARCHAR(64),

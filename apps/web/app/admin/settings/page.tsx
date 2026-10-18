@@ -31,6 +31,11 @@ interface SystemSettingsData {
   resellerDiscountPct: number;
   providerFailover: boolean;
   sessionTimeoutMinutes: number;
+  dripFeedEnabled: boolean;
+  dripFeedMinRuns: number;
+  dripFeedMaxRuns: number;
+  dripFeedMinInterval: number;
+  dripFeedMaxInterval: number;
 }
 
 const DEFAULT_SETTINGS: SystemSettingsData = {
@@ -45,6 +50,11 @@ const DEFAULT_SETTINGS: SystemSettingsData = {
   resellerDiscountPct: 15,
   providerFailover: true,
   sessionTimeoutMinutes: 1440,
+  dripFeedEnabled: true,
+  dripFeedMinRuns: 2,
+  dripFeedMaxRuns: 100,
+  dripFeedMinInterval: 5,
+  dripFeedMaxInterval: 1440,
 };
 
 function getApiBase(): string {
@@ -318,6 +328,83 @@ export default function AdminSettingsPage() {
                 >
                   {settings.providerFailover ? "ACTIVE" : "PAUSED"}
                 </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Drip-Feed Automation Engine */}
+          <div className="p-6 rounded-3xl bg-[#1a1a1a]/80 border border-white/10 backdrop-blur-md space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <RefreshCw className="w-5 h-5 text-[#D8EC8D]" />
+                <h3 className="text-base font-bold text-white tracking-tight">Drip-Feed Provider Automation Policy</h3>
+              </div>
+              <span className="text-xs font-mono text-slate-500">FEATURE FLAG & THRESHOLDS</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-xs font-bold text-white">DRIPFEED_ENABLED Master Switch</div>
+                <div className="text-[11px] text-slate-400">Controls availability of drip-feed across customer ordering and reseller v2 API</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSettings({ ...settings, dripFeedEnabled: !settings.dripFeedEnabled })}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold font-mono transition-all ${
+                  settings.dripFeedEnabled
+                    ? "btn-primary-gradient text-[#171e00]"
+                    : "bg-white/10 text-slate-400 border border-white/10"
+                }`}
+              >
+                {settings.dripFeedEnabled ? "ENABLED" : "DISABLED"}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-1">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">Min Runs Allowed</label>
+                <input
+                  type="number"
+                  min={2}
+                  value={settings.dripFeedMinRuns}
+                  onChange={(e) => setSettings({ ...settings, dripFeedMinRuns: Number(e.target.value) })}
+                  className="w-full bg-[#202020] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D8EC8D] font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">Max Runs Allowed</label>
+                <input
+                  type="number"
+                  min={2}
+                  max={1000}
+                  value={settings.dripFeedMaxRuns}
+                  onChange={(e) => setSettings({ ...settings, dripFeedMaxRuns: Number(e.target.value) })}
+                  className="w-full bg-[#202020] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D8EC8D] font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">Min Interval (Minutes)</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={settings.dripFeedMinInterval}
+                  onChange={(e) => setSettings({ ...settings, dripFeedMinInterval: Number(e.target.value) })}
+                  className="w-full bg-[#202020] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D8EC8D] font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300">Max Interval (Minutes)</label>
+                <input
+                  type="number"
+                  min={10}
+                  max={10080}
+                  value={settings.dripFeedMaxInterval}
+                  onChange={(e) => setSettings({ ...settings, dripFeedMaxInterval: Number(e.target.value) })}
+                  className="w-full bg-[#202020] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D8EC8D] font-mono"
+                />
               </div>
             </div>
           </div>

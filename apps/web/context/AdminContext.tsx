@@ -123,6 +123,12 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
             updatedAt: o.updatedAt,
             refillable: o.service?.refillable ?? false,
             cancellable: o.service?.cancellable ?? false,
+            isDripFeed: o.isDripFeed ?? false,
+            runs: o.runs ?? undefined,
+            intervalMinutes: o.intervalMinutes ?? undefined,
+            quantityPerRun: o.quantityPerRun ?? undefined,
+            totalQuantity: o.totalQuantity ?? o.quantity,
+            providerEvents: o.providerEvents ?? [],
           }));
           setOrders(mappedOrders);
         }
@@ -170,6 +176,11 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
               cancellable: s.cancellable,
               description: s.description || "",
               status: s.status,
+              dripFeedSupported: s.dripFeedSupported ?? false,
+              dripFeedMinRuns: s.dripFeedMinRuns ?? null,
+              dripFeedMaxRuns: s.dripFeedMaxRuns ?? null,
+              dripFeedMinInterval: s.dripFeedMinInterval ?? null,
+              dripFeedMaxInterval: s.dripFeedMaxInterval ?? null,
             }))
           );
         }

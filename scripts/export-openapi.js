@@ -5,7 +5,10 @@ const path = require("path");
 
 async function exportOpenApi() {
   process.env.NODE_ENV = "test";
-  const { AppModule } = require("../apps/api/dist/app.module");
+  const appModulePath = fs.existsSync(path.resolve(__dirname, "../apps/api/dist/src/app.module.js"))
+    ? "../apps/api/dist/src/app.module"
+    : "../apps/api/dist/app.module";
+  const { AppModule } = require(appModulePath);
 
   const app = await NestFactory.create(AppModule, { logger: false });
   app.setGlobalPrefix("api/v1");

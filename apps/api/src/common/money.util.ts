@@ -22,12 +22,17 @@ export function formatINR(rupees: number | string | Decimal, decimals: number = 
 
 /**
  * Calculates order charge strictly:
- * charge = round_half_up(quantity * ratePer1000 / 1000)
+ * charge = ceil2(rate * (quantity * runs) / 1000)
  */
-export function calculateOrderCharge(quantity: number, ratePer1000: number | Decimal): Decimal {
+export function calculateOrderCharge(
+  quantity: number,
+  ratePer1000: number | Decimal,
+  runs: number = 1
+): Decimal {
   const qty = new Decimal(quantity);
   const rate = new Decimal(ratePer1000.toString());
-  return qty.times(rate).dividedBy(1000).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  const r = new Decimal(runs);
+  return qty.times(r).times(rate).dividedBy(1000).toDecimalPlaces(2, Decimal.ROUND_UP);
 }
 
 /**

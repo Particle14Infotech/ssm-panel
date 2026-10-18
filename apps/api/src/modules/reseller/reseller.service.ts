@@ -55,26 +55,37 @@ export class ResellerService {
   }
 
   async getPublicServices() {
-    const pricing = await this.getPricing();
-    return pricing.map((p) => ({
-      service: p.serviceId,
-      name: p.name,
+    const services = await this.servicesService.findAll();
+    return services.map((s) => ({
+      service: s.id,
+      name: s.name,
       type: "Default",
-      category: p.platform,
-      rate: p.resellerRate,
-      min: 100,
-      max: 500000,
+      category: s.platform,
+      rate: Number((s.ratePer1000 * 0.85).toFixed(2)),
+      min: s.minQty,
+      max: s.maxQty,
+      dripfeed: Boolean(s.dripFeedSupported),
     }));
   }
 
-  async createPublicOrder(body: { service: string; link: string; quantity: number }) {
+  async createPublicOrder(body: {
+    service: string;
+    link: string;
+    quantity: number;
+    runs?: number;
+    interval?: number;
+  }) {
     if (!body.service || !body.link || !body.quantity) {
       throw new BadRequestException("service, link, and quantity parameters are required.");
     }
+    const isDrip = body.runs !== undefined || body.interval !== undefined;
     const order = await this.ordersService.create({
       serviceId: body.service,
       target: body.link,
       quantity: Number(body.quantity),
+      isDripFeed: isDrip,
+      runs: body.runs !== undefined ? Number(body.runs) : undefined,
+      interval: body.interval !== undefined ? Number(body.interval) : undefined,
     });
     return { order: order.id };
   }

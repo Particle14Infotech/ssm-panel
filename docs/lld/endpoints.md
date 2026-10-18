@@ -1,12 +1,13 @@
 # System API Endpoints Specification
 
 > **Generated from OpenAPI 3.0 specification** (`docs/openapi.json`)
-> Total Documented Endpoints: 72 route patterns
+> Total Documented Endpoints: 73 route patterns
 
 | Method | Path | Role | Request | Response | Errors | Rate Limit | Idempotency | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `GET` | `/api/v1/health/live` | Public | None | 200 | 503 | 120 req/min | Safe (Read-Only) | Implemented & Verified |
 | `GET` | `/api/v1/health/ready` | Public | None | 200, 503 | 503 | 120 req/min | Safe (Read-Only) | Implemented & Verified |
+| `GET` | `/api/v1/health/system` | Public | None | 200 | 503 | 120 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/auth/login` | Public | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 10 req/min | No | Implemented & Verified |
 | `POST` | `/api/v1/auth/register` | Public | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 10 req/min | No | Implemented & Verified |
 | `POST` | `/api/v1/auth/refresh` | Authenticated | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 10 req/min | No | Implemented & Verified |
@@ -26,7 +27,7 @@
 | `GET` | `/api/v1/services/{id}` | Authenticated | id (path) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `PUT` | `/api/v1/services/{id}` | Admin | id (path) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
 | `DELETE` | `/api/v1/services/{id}` | Admin | id (path) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
-| `GET` | `/api/v1/orders` | Customer / Admin | status (query), q (query), startDate (query), endDate (query) | 200 | 401, 403, 404, 429, 500 | 30 req/min | Safe (Read-Only) | Implemented & Verified |
+| `GET` | `/api/v1/orders` | Customer / Admin | userId (query), status (query), q (query), startDate (query), endDate (query) | 200 | 401, 403, 404, 429, 500 | 30 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/orders` | Customer / Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 30 req/min | Yes (X-Idempotency-Key) | Implemented & Verified |
 | `GET` | `/api/v1/orders/{id}` | Authenticated | id (path) | 200 | 401, 403, 404, 429, 500 | 30 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/orders/create` | Customer / Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 30 req/min | Yes (X-Idempotency-Key) | Implemented & Verified |

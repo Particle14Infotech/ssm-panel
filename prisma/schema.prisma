@@ -148,6 +148,11 @@ model Service {
   providerServiceId String?
   refillable        Boolean   @default(false)
   cancellable       Boolean   @default(false)
+  dripFeedSupported Boolean   @default(false)
+  dripFeedMinRuns   Int?
+  dripFeedMaxRuns   Int?
+  dripFeedMinInterval Int?
+  dripFeedMaxInterval Int?
   active            Boolean   @default(true)
   status            String    @default("ACTIVE") // ACTIVE, INACTIVE
   isDeleted         Boolean   @default(false)
@@ -187,6 +192,11 @@ model Order {
   service         Service              @relation(fields: [serviceId], references: [id])
   target          String
   quantity        Int
+  isDripFeed      Boolean              @default(false)
+  runs            Int?
+  intervalMinutes Int?
+  quantityPerRun  Int?
+  totalQuantity   Int                  @default(0)
   charge          Decimal              @db.Decimal(10, 2)
   status          OrderStatus          @default(PENDING)
   providerId      String?
@@ -198,12 +208,27 @@ model Order {
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
 
-  history OrderStatusHistory[]
-  refunds Refund[]
+  history        OrderStatusHistory[]
+  refunds        Refund[]
+  providerEvents OrderProviderEvent[]
 
   @@unique([userId, idempotencyKey], name: "unique_order_idempotency_per_user")
   @@index([userId, status, createdAt])
   @@index([providerId, status])
+}
+
+model OrderProviderEvent {
+  id              String   @id @default(uuid())
+  orderId         String
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  providerId      String?
+  action          String
+  requestPayload  Json
+  responsePayload Json?
+  error           String?
+  createdAt       DateTime @default(now())
+
+  @@index([orderId, createdAt])
 }
 
 model OrderStatusHistory {

@@ -323,6 +323,8 @@ export class ProvidersService {
           },
         });
 
+        const dripFeedSupported = item.dripfeed === true || item.dripfeed === 1 || String(item.dripfeed).toLowerCase() === "true" || String(item.dripfeed) === "1";
+
         if (existingService) {
           await this.prisma.service.update({
             where: { id: existingService.id },
@@ -335,6 +337,7 @@ export class ProvidersService {
               maxQty,
               refillable: Boolean(item.refill),
               cancellable: Boolean(item.cancel),
+              dripFeedSupported,
               description: item.description || existingService.description || "",
               active: true,
               isDeleted: false,
@@ -354,6 +357,7 @@ export class ProvidersService {
               providerServiceId: String(item.service),
               refillable: Boolean(item.refill),
               cancellable: Boolean(item.cancel),
+              dripFeedSupported,
               description: item.description || "",
               active: true,
             },

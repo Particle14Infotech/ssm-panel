@@ -10,6 +10,7 @@ export interface SmmProviderServiceItem {
   max: string | number;
   refill?: boolean;
   cancel?: boolean;
+  dripfeed?: boolean | string | number;
   description?: string;
 }
 
@@ -99,13 +100,18 @@ export class SmmProviderClient {
     apiKey: string,
     service: string | number,
     link: string,
-    quantity: number
+    quantity: number,
+    runs?: number,
+    interval?: number
   ): Promise<SmmAddOrderResponse> {
-    return this.request<SmmAddOrderResponse>(apiUrl, apiKey, "add", {
+    const params: Record<string, any> = {
       service,
       link,
       quantity,
-    });
+    };
+    if (runs !== undefined && runs !== null) params.runs = runs;
+    if (interval !== undefined && interval !== null) params.interval = interval;
+    return this.request<SmmAddOrderResponse>(apiUrl, apiKey, "add", params);
   }
 
   async getOrderStatus(apiUrl: string, apiKey: string, orderId: string | number): Promise<SmmOrderStatusResponse> {

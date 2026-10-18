@@ -3,10 +3,11 @@ import { OrdersController } from "./orders.controller";
 import { OrdersService } from "./orders.service";
 import { ServicesModule } from "../services/services.module";
 import { WalletModule } from "../wallet/wallet.module";
+import { SettingsModule } from "../settings/settings.module";
 import { PrismaService } from "../../common/prisma.service";
 
 @Module({
-  imports: [ServicesModule, WalletModule],
+  imports: [ServicesModule, WalletModule, SettingsModule],
   controllers: [OrdersController],
   providers: [OrdersService, PrismaService],
   exports: [OrdersService],

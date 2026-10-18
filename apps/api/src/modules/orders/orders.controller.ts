@@ -30,10 +30,17 @@ export class OrdersController {
     @Query("status") status?: string,
     @Query("q") query?: string,
     @Query("startDate") startDate?: string,
-    @Query("endDate") endDate?: string
+    @Query("endDate") endDate?: string,
+    @Query("dripFeedOnly") dripFeedOnly?: string
   ) {
     const targetUserId = user.role === Role.ADMIN ? (queryUserId || undefined) : user.id;
-    return this.ordersService.findAll(targetUserId, user.role, { status, query, startDate, endDate });
+    return this.ordersService.findAll(targetUserId, user.role, {
+      status,
+      query,
+      startDate,
+      endDate,
+      dripFeedOnly: dripFeedOnly === "true" || dripFeedOnly === "1",
+    });
   }
 
   @Get(":id")
@@ -49,13 +56,25 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Dispatch New Order Vector (Canonical)" })
   async createCanonical(
-    @Body() body: { serviceId: string; target: string; quantity: number; idempotencyKey?: string },
+    @Body()
+    body: {
+      serviceId: string;
+      target: string;
+      quantity: number;
+      isDripFeed?: boolean;
+      runs?: number;
+      interval?: number;
+      idempotencyKey?: string;
+    },
     @CurrentUser() user: CurrentUserData
   ) {
     return await this.ordersService.create({
       serviceId: body.serviceId,
       target: body.target,
       quantity: body.quantity,
+      isDripFeed: body.isDripFeed,
+      runs: body.runs,
+      interval: body.interval,
       idempotencyKey: body.idempotencyKey,
       userId: user.id,
     });
@@ -65,13 +84,25 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Dispatch New Order Vector (Legacy)" })
   async create(
-    @Body() body: { serviceId: string; target: string; quantity: number; idempotencyKey?: string },
+    @Body()
+    body: {
+      serviceId: string;
+      target: string;
+      quantity: number;
+      isDripFeed?: boolean;
+      runs?: number;
+      interval?: number;
+      idempotencyKey?: string;
+    },
     @CurrentUser() user: CurrentUserData
   ) {
     return await this.ordersService.create({
       serviceId: body.serviceId,
       target: body.target,
       quantity: body.quantity,
+      isDripFeed: body.isDripFeed,
+      runs: body.runs,
+      interval: body.interval,
       idempotencyKey: body.idempotencyKey,
       userId: user.id,
     });

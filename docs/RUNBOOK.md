@@ -101,3 +101,30 @@ pg_dump "$DATABASE_URL" --format=custom | openssl enc -aes-256-cbc -salt -pbkdf2
 ## 5. Security & Secret Rotation
 - **JWT Secrets**: Rotate `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` by updating `.env` and reloading `smm-api`. Existing refresh tokens in `Session` table can be revoked via `UPDATE "Session" SET "isRevoked" = true;`.
 - **Provider Encryption Keys**: Provider API secrets are AES-256-GCM encrypted in the database using `PROVIDER_KEY_SECRET`. To rotate, re-encrypt provider tokens using the new secret before updating `.env`.
+
+---
+
+## 6. Drip-Feed Provider-Native Operations & Watchdog
+
+### 6.1 Drip-Feed Architecture & Model
+- **Provider-Native Fulfillment**: The panel does **not** run an internal cron/scheduler to dispatch individual runs. The upstream provider executes the schedule natively (`action=add` with `runs` and `interval`).
+- **Idempotency & Fingerprinting**: Orders include `runs` and `intervalMinutes` in the idempotency fingerprint. Retrying with identical parameters returns the existing order. Retrying with altered parameters is rejected with HTTP 409.
+- **Financial Integrity**: Total charge is calculated using `Decimal` and rounded UP to 2 decimal places: `ceil2(ratePer1000 * (quantity * runs) / 1000)`.
+
+### 6.2 Watchdog & Slow-Order Alerting
+- Drip-feed orders naturally take `((runs - 1) * intervalMinutes)` minutes to complete plus initial buffer.
+- The worker watchdog threshold dynamically extends for drip-feed orders:
+  `Threshold = (24h base + ((runs - 1) * intervalMinutes))`.
+- An order is **not** flagged as stuck while its natural schedule is still executing.
+
+### 6.3 Operational Troubleshooting
+1. **Customer reports slow delivery**:
+   - Check if order has `isDripFeed=true` in Admin Orders Ledger (`/admin/orders`).
+   - Click **Trace** to inspect the exact `OrderProviderEvent` request payload and upstream provider response.
+2. **Provider Parameter Rejection**:
+   - If the upstream provider rejects drip parameters (e.g., minimum interval or runs violated on upstream), the worker immediately transitions the order to `FAILED`, records the sanitized rejection in `OrderProviderEvent`, and issues an automatic ledger refund to the customer's wallet.
+3. **Partial Delivery Refunds**:
+   - For orders that end in `PARTIAL`, proportional refund is automatically calculated against `totalQuantity = quantity * runs`:
+     `refund = (remains / totalQuantity) * charge`.
+   - The database constraint `unique_refund_per_order` guarantees refunds execute exactly once.
+

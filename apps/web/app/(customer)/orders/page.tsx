@@ -243,11 +243,34 @@ export default function OrdersPage() {
 
                     {/* Quantity */}
                     <td className="py-3.5 px-3 font-mono">
-                      <span className="text-white font-medium">{order.quantity.toLocaleString()}</span>
-                      {order.remains !== null && order.remains !== undefined && (
-                        <span className="text-[10px] text-slate-400 block font-mono">
-                          Remains: {order.remains.toLocaleString()}
-                        </span>
+                      {order.isDripFeed ? (
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-1.5 py-0.2 rounded bg-[#D8EC8D]/15 text-[#D8EC8D] text-[10px] font-semibold">
+                              Drip-feed
+                            </span>
+                            <span className="text-white font-medium">
+                              {order.totalQuantity ?? (order.runs ? order.quantity * order.runs : order.quantity)} total
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-400">
+                            {order.quantityPerRun ?? order.quantity} × {order.runs} runs ({order.intervalMinutes}m)
+                          </div>
+                          {order.remains !== null && order.remains !== undefined && (
+                            <span className="text-[10px] text-slate-400 block font-mono">
+                              Remains: {order.remains.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-white font-medium">{order.quantity.toLocaleString()}</span>
+                          {order.remains !== null && order.remains !== undefined && (
+                            <span className="text-[10px] text-slate-400 block font-mono">
+                              Remains: {order.remains.toLocaleString()}
+                            </span>
+                          )}
+                        </>
                       )}
                     </td>
 
@@ -384,10 +407,31 @@ export default function OrdersPage() {
                 <span>Target Vector</span>
                 <span className="text-[#D8EC8D] truncate max-w-[200px]">{activeModalOrder.target}</span>
               </div>
-              <div className="flex justify-between text-slate-400">
-                <span>Quantity</span>
-                <span className="text-white">{activeModalOrder.quantity.toLocaleString()}</span>
-              </div>
+              {activeModalOrder.isDripFeed ? (
+                <>
+                  <div className="flex justify-between text-slate-400">
+                    <span>Delivery Mode</span>
+                    <span className="text-[#D8EC8D] font-bold">Drip-feed ({activeModalOrder.runs} runs / {activeModalOrder.intervalMinutes}m)</span>
+                  </div>
+                  <div className="flex justify-between text-slate-400">
+                    <span>Per-Run Quantity</span>
+                    <span className="text-white font-medium">{(activeModalOrder.quantityPerRun ?? activeModalOrder.quantity).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-400">
+                    <span>Total Quantity</span>
+                    <span className="text-white font-bold">{(activeModalOrder.totalQuantity ?? (activeModalOrder.runs ? activeModalOrder.quantity * activeModalOrder.runs : activeModalOrder.quantity)).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-400">
+                    <span>Estimated Schedule</span>
+                    <span className="text-white">{((activeModalOrder.runs || 1) - 1) * (activeModalOrder.intervalMinutes || 0)} mins</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between text-slate-400">
+                  <span>Quantity</span>
+                  <span className="text-white">{activeModalOrder.quantity.toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex justify-between text-slate-400">
                 <span>Start Count</span>
                 <span className="text-white">{activeModalOrder.startCount ?? 0}</span>

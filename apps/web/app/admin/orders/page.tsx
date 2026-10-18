@@ -3,7 +3,7 @@
 
 import React, { useState } from "react";
 import { useAdmin } from "@/context/AdminContext";
-import { OrderStatus } from "@smm/contracts";
+import { OrderStatus, OrderItem } from "@smm/contracts";
 import {
   Search,
   Filter,
@@ -26,6 +26,8 @@ export default function AdminOrdersPage() {
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [editStatusValue, setEditStatusValue] = useState<OrderStatus>("PENDING");
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [dripFeedOnly, setDripFeedOnly] = useState<boolean>(false);
+  const [selectedTraceOrder, setSelectedTraceOrder] = useState<OrderItem | null>(null);
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -43,6 +45,7 @@ export default function AdminOrdersPage() {
 
   const filteredOrders = orders.filter((o) => {
     const matchesStatus = selectedStatus === "ALL" || o.status === selectedStatus;
+    const matchesDrip = !dripFeedOnly || Boolean(o.isDripFeed);
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       q === "" ||
@@ -54,7 +57,7 @@ export default function AdminOrdersPage() {
       o.serviceName.toLowerCase().includes(q) ||
       o.target.toLowerCase().includes(q);
 
-    return matchesStatus && matchesSearch;
+    return matchesStatus && matchesDrip && matchesSearch;
   });
 
   const handleSaveStatus = (orderId: string) => {
@@ -109,6 +112,21 @@ export default function AdminOrdersPage() {
           </div>
 
           <div className="flex items-center gap-2 w-full md:w-auto">
+            <button
+              type="button"
+              onClick={() => setDripFeedOnly(!dripFeedOnly)}
+              className={`px-3.5 py-2 rounded-2xl text-xs font-mono font-semibold transition-all flex items-center gap-2 ${
+                dripFeedOnly
+                  ? "btn-primary-gradient text-[#171e00] shadow-sm shadow-[#D8EC8D]/20"
+                  : "bg-surface-container-highest/80 border border-white/10 text-slate-400 hover:text-white"
+              }`}
+            >
+              <span>Drip-feed Only</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/30 font-bold">
+                {orders.filter((o) => o.isDripFeed).length}
+              </span>
+            </button>
+
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
@@ -175,10 +193,31 @@ export default function AdminOrdersPage() {
                       </a>
                     </td>
                     <td className="py-4 px-3 font-mono text-white">
-                      <div>{order.quantity.toLocaleString()} units</div>
-                      <div className="text-[10px] text-on-surface-variant">
-                        Remains: {order.remains ?? 0}
-                      </div>
+                      {order.isDripFeed ? (
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-1.5 py-0.2 rounded bg-[#D8EC8D]/15 text-[#D8EC8D] text-[10px] font-semibold">
+                              Drip-feed
+                            </span>
+                            <span className="font-semibold text-[#D8EC8D]">
+                              {(order.totalQuantity ?? (order.runs ? order.quantity * order.runs : order.quantity)).toLocaleString()} units
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-on-surface-variant">
+                            {order.quantityPerRun ?? order.quantity} / run × {order.runs} runs ({order.intervalMinutes}m)
+                          </div>
+                          <div className="text-[10px] text-on-surface-variant">
+                            Remains: {order.remains ?? 0}
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div>{order.quantity.toLocaleString()} units</div>
+                          <div className="text-[10px] text-on-surface-variant">
+                            Remains: {order.remains ?? 0}
+                          </div>
+                        </>
+                      )}
                     </td>
                     <td className="py-4 px-3 font-mono font-semibold text-[#D8EC8D] whitespace-nowrap">
                       ₹{order.charge.toFixed(2)}
@@ -232,6 +271,14 @@ export default function AdminOrdersPage() {
                     <td className="py-4 px-3 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
+                          type="button"
+                          onClick={() => setSelectedTraceOrder(order)}
+                          className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[10px] font-mono transition-colors"
+                          title="View Provider Execution Trace & Events"
+                        >
+                          Trace
+                        </button>
+                        <button
                           onClick={() => handleResend(order.id)}
                           className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-white text-[10px] font-mono transition-all flex items-center gap-1"
                           title="Resend to Provider Node"
@@ -259,6 +306,93 @@ export default function AdminOrdersPage() {
             </table>
           </div>
         </div>
+
+        {/* Provider Execution Trace Modal */}
+        {selectedTraceOrder && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-[#1c1b1b] border border-white/15 rounded-3xl p-6 md:p-8 max-w-2xl w-full space-y-5 shadow-2xl relative text-xs">
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div>
+                  <span className="text-[10px] font-mono text-[#D8EC8D] font-bold uppercase block">
+                    Provider Execution Trace
+                  </span>
+                  <h3 className="text-base font-semibold text-white">Order #{selectedTraceOrder.id}</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTraceOrder(null)}
+                  className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-mono"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-[11px]">
+                <div className="bg-white/5 p-2.5 rounded-xl">
+                  <span className="text-slate-400 block text-[10px]">Service</span>
+                  <span className="text-white font-medium truncate block">{selectedTraceOrder.serviceName}</span>
+                </div>
+                <div className="bg-white/5 p-2.5 rounded-xl">
+                  <span className="text-slate-400 block text-[10px]">Mode</span>
+                  <span className={selectedTraceOrder.isDripFeed ? "text-[#D8EC8D] font-bold" : "text-white"}>
+                    {selectedTraceOrder.isDripFeed ? `Drip-feed (${selectedTraceOrder.runs} runs)` : "Direct Single"}
+                  </span>
+                </div>
+                <div className="bg-white/5 p-2.5 rounded-xl">
+                  <span className="text-slate-400 block text-[10px]">Total Qty</span>
+                  <span className="text-white font-bold">{selectedTraceOrder.totalQuantity ?? selectedTraceOrder.quantity}</span>
+                </div>
+                <div className="bg-white/5 p-2.5 rounded-xl">
+                  <span className="text-slate-400 block text-[10px]">Provider Ref</span>
+                  <span className="text-emerald-300 font-bold">#{selectedTraceOrder.providerOrderId || "None"}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <span className="text-[10px] font-mono text-slate-400 uppercase font-semibold block">
+                  Sanitized Upstream Events ({selectedTraceOrder.providerEvents?.length || 0})
+                </span>
+                {(!selectedTraceOrder.providerEvents || selectedTraceOrder.providerEvents.length === 0) ? (
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 text-slate-400 text-center font-mono">
+                    No provider telemetry events recorded yet for this order.
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {selectedTraceOrder.providerEvents.map((evt: any, idx: number) => (
+                      <div key={idx} className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-1.5 font-mono text-[11px]">
+                        <div className="flex items-center justify-between text-slate-400">
+                          <span className="text-[#D8EC8D] font-bold uppercase">{evt.action}</span>
+                          <span>{evt.createdAt ? new Date(evt.createdAt).toLocaleTimeString() : ""}</span>
+                        </div>
+                        {evt.requestPayload && (
+                          <div>
+                            <span className="text-[10px] text-slate-500 block">Request Params:</span>
+                            <pre className="text-[10px] bg-white/5 p-1.5 rounded overflow-x-auto text-slate-300">
+                              {typeof evt.requestPayload === "string" ? evt.requestPayload : JSON.stringify(evt.requestPayload, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                        {evt.responsePayload && (
+                          <div>
+                            <span className="text-[10px] text-slate-500 block">Provider Response:</span>
+                            <pre className="text-[10px] bg-white/5 p-1.5 rounded overflow-x-auto text-emerald-300">
+                              {typeof evt.responsePayload === "string" ? evt.responsePayload : JSON.stringify(evt.responsePayload, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                        {evt.error && (
+                          <div className="text-rose-400 text-[10px]">
+                            Error: {evt.error}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

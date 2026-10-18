@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException, ConflictException, Logger } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { WalletService } from "../wallet/wallet.service";
+import { SettingsService } from "../settings/settings.service";
 import { calculateOrderCharge } from "../../common/money.util";
 import { OrderStatus, OutboxStatus } from "@prisma/client";
 import { Decimal } from "decimal.js";
@@ -10,6 +11,9 @@ export interface CreateOrderDto {
   serviceId: string;
   target: string;
   quantity: number;
+  isDripFeed?: boolean;
+  runs?: number;
+  interval?: number;
   idempotencyKey?: string;
 }
 
@@ -18,6 +22,7 @@ export interface OrderFilterDto {
   query?: string;
   startDate?: string;
   endDate?: string;
+  dripFeedOnly?: boolean;
 }
 
 @Injectable()
@@ -27,7 +32,8 @@ export class OrdersService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly walletService: WalletService
+    private readonly walletService: WalletService,
+    private readonly settingsService?: SettingsService
   ) {}
 
   async findAll(userId?: string, requesterRole?: string, filters?: OrderFilterDto) {
@@ -59,6 +65,10 @@ export class OrdersService {
         ];
       }
 
+      if (filters?.dripFeedOnly) {
+        where.isDripFeed = true;
+      }
+
       if (filters?.startDate || filters?.endDate) {
         where.createdAt = {};
         if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
@@ -84,6 +94,7 @@ export class OrdersService {
       if (requesterRole === "ADMIN") {
         include.provider = { select: { id: true, name: true } };
         include.user = { select: { id: true, email: true, name: true } };
+        include.providerEvents = { orderBy: { createdAt: "asc" } };
       }
 
       return await this.prisma.order.findMany({
@@ -120,6 +131,7 @@ export class OrdersService {
     if (requesterRole === "ADMIN") {
       include.provider = { select: { id: true, name: true } };
       include.user = { select: { id: true, email: true, name: true } };
+      include.providerEvents = { orderBy: { createdAt: "asc" } };
     }
 
     const order = await this.prisma.order.findUnique({
@@ -181,10 +193,90 @@ export class OrdersService {
       );
     }
 
-    // 3. Compute accurate financial charge
-    const charge = calculateOrderCharge(input.quantity, service.ratePer1000);
+    // 3. Drip-feed validation & parameter resolution
+    const isDripFeed = Boolean(input.isDripFeed);
+    const settings = this.settingsService?.getSettings() || {
+      dripFeedEnabled: true,
+      dripFeedMinRuns: 2,
+      dripFeedMaxRuns: 100,
+      dripFeedMinInterval: 5,
+      dripFeedMaxInterval: 1440,
+    };
 
-    // 4. Atomic Execution: Debit wallet + Insert Order + Record History + Write Ledger + Enqueue Outbox
+    let runs = 1;
+    let intervalMinutes: number | null = null;
+    let totalQuantity = input.quantity;
+
+    if (isDripFeed) {
+      if (settings.dripFeedEnabled === false) {
+        throw new BadRequestException("Drip-feed ordering is currently disabled.");
+      }
+      if (!service.dripFeedSupported) {
+        throw new BadRequestException("This service does not support drip-feed fulfillment.");
+      }
+      if (!input.runs || typeof input.runs !== "number" || !Number.isInteger(input.runs)) {
+        throw new BadRequestException("Runs parameter is required and must be an integer for drip-feed orders.");
+      }
+      if (!input.interval || typeof input.interval !== "number" || !Number.isInteger(input.interval)) {
+        throw new BadRequestException("Interval parameter (minutes) is required and must be an integer for drip-feed orders.");
+      }
+
+      const minRuns = service.dripFeedMinRuns ?? settings.dripFeedMinRuns ?? 2;
+      const maxRuns = service.dripFeedMaxRuns ?? settings.dripFeedMaxRuns ?? 100;
+      if (input.runs < minRuns || input.runs > maxRuns) {
+        throw new BadRequestException(`Runs must be between ${minRuns} and ${maxRuns}.`);
+      }
+
+      const minInterval = service.dripFeedMinInterval ?? settings.dripFeedMinInterval ?? 5;
+      const maxInterval = service.dripFeedMaxInterval ?? settings.dripFeedMaxInterval ?? 1440;
+      if (input.interval < minInterval || input.interval > maxInterval) {
+        throw new BadRequestException(`Interval must be between ${minInterval} and ${maxInterval} minutes.`);
+      }
+
+      runs = input.runs;
+      intervalMinutes = input.interval;
+      totalQuantity = input.quantity * runs;
+    } else {
+      if (input.runs !== undefined && input.runs !== null) {
+        throw new BadRequestException("Runs cannot be specified for non-drip-feed orders.");
+      }
+      if (input.interval !== undefined && input.interval !== null) {
+        throw new BadRequestException("Interval cannot be specified for non-drip-feed orders.");
+      }
+    }
+
+    // 4. Compute accurate financial charge: ceil2(rate * (quantity * runs) / 1000)
+    const charge = calculateOrderCharge(input.quantity, service.ratePer1000, runs);
+
+    // 5. Idempotency Key & Fingerprint Check
+    if (input.idempotencyKey && this.prisma.isConnected) {
+      const existingOrder = await this.prisma.order.findUnique({
+        where: {
+          unique_order_idempotency_per_user: {
+            userId,
+            idempotencyKey: input.idempotencyKey,
+          },
+        },
+        include: { service: true, history: true, refunds: true },
+      });
+
+      if (existingOrder) {
+        const sameParams =
+          existingOrder.serviceId === service.id &&
+          existingOrder.target === input.target &&
+          existingOrder.quantity === input.quantity &&
+          Boolean(existingOrder.isDripFeed) === isDripFeed &&
+          (existingOrder.runs ?? null) === (isDripFeed ? runs : null) &&
+          (existingOrder.intervalMinutes ?? null) === (isDripFeed ? intervalMinutes : null);
+
+        if (!sameParams) {
+          throw new ConflictException("Idempotency key already used with different order parameters.");
+        }
+        return existingOrder;
+      }
+    }
+
+    // 6. Atomic Execution: Debit wallet + Insert Order + Record History + Write Ledger + Enqueue Outbox
     if (!this.prisma.isConnected) {
       const orderId = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
       await this.walletService.debitForOrder(
@@ -192,7 +284,7 @@ export class OrdersService {
         orderId,
         charge,
         input.idempotencyKey,
-        `Order Charge #${orderId} for ${service.name}`
+        `Order Charge #${orderId} for ${service.name}${isDripFeed ? ` (Drip-feed: ${runs}x${input.quantity})` : ""}`
       );
       const order = {
         id: orderId,
@@ -200,10 +292,15 @@ export class OrdersService {
         serviceId: service.id,
         target: input.target,
         quantity: input.quantity,
+        isDripFeed,
+        runs: isDripFeed ? runs : null,
+        intervalMinutes: isDripFeed ? intervalMinutes : null,
+        quantityPerRun: input.quantity,
+        totalQuantity,
         charge: typeof charge === "object" && "toNumber" in charge ? (charge as any).toNumber() : Number(charge),
         status: OrderStatus.PENDING,
         startCount: 0,
-        remains: input.quantity,
+        remains: totalQuantity,
         idempotencyKey: input.idempotencyKey || null,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -214,8 +311,10 @@ export class OrdersService {
             orderId,
             status: OrderStatus.PENDING,
             startCount: 0,
-            remains: input.quantity,
-            notes: "Order placed and queued for provider dispatch",
+            remains: totalQuantity,
+            notes: isDripFeed
+              ? `Drip-feed order placed: ${runs} runs of ${input.quantity} every ${intervalMinutes}m (${totalQuantity} total). Queued for provider dispatch.`
+              : "Order placed and queued for provider dispatch",
             createdAt: new Date(),
           },
         ],
@@ -225,35 +324,42 @@ export class OrdersService {
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
-      // 4a. Create order in PENDING status
+      // 6a. Create order in PENDING status
       const order = await tx.order.create({
         data: {
           userId,
           serviceId: service.id,
           target: input.target,
           quantity: input.quantity,
+          isDripFeed,
+          runs: isDripFeed ? runs : null,
+          intervalMinutes: isDripFeed ? intervalMinutes : null,
+          quantityPerRun: input.quantity,
+          totalQuantity,
           charge,
           status: OrderStatus.PENDING,
           providerId: service.providerId || null,
           startCount: 0,
-          remains: input.quantity,
+          remains: totalQuantity,
           idempotencyKey: input.idempotencyKey || null,
         },
         include: { service: true },
       });
 
-      // 4b. Record initial status history
+      // 6b. Record initial status history
       await tx.orderStatusHistory.create({
         data: {
           orderId: order.id,
           status: OrderStatus.PENDING,
           startCount: 0,
-          remains: input.quantity,
-          notes: "Order placed and queued for provider dispatch",
+          remains: totalQuantity,
+          notes: isDripFeed
+            ? `Drip-feed order placed: ${runs} runs of ${input.quantity} every ${intervalMinutes}m (${totalQuantity} total). Queued for provider dispatch.`
+            : "Order placed and queued for provider dispatch",
         },
       });
 
-      // 4c. Debit wallet with row-level lock
+      // 6c. Debit wallet with row-level lock
       const [walletRow] = await tx.$queryRawUnsafe<any[]>(
         `SELECT id, balance FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
         userId
@@ -273,7 +379,7 @@ export class OrdersService {
         data: { balance: newBalance },
       });
 
-      // 4d. Write immutable ledger record
+      // 6d. Write immutable ledger record
       await tx.ledgerEntry.create({
         data: {
           walletId: walletRow.id,
@@ -281,11 +387,11 @@ export class OrdersService {
           type: "ORDER_CHARGE",
           orderId: order.id,
           idempotencyKey: input.idempotencyKey,
-          description: `Order Charge #${order.id} for ${service.name}`,
+          description: `Order Charge #${order.id} for ${service.name}${isDripFeed ? ` (Drip-feed: ${runs}x${input.quantity})` : ""}`,
         },
       });
 
-      // 4e. Enqueue Outbox event
+      // 6e. Enqueue Outbox event
       await tx.outboxEvent.create({
         data: {
           aggregate: "ORDER",
@@ -295,6 +401,11 @@ export class OrdersService {
             serviceId: service.id,
             target: order.target,
             quantity: order.quantity,
+            isDripFeed,
+            runs: isDripFeed ? runs : null,
+            intervalMinutes: isDripFeed ? intervalMinutes : null,
+            quantityPerRun: input.quantity,
+            totalQuantity,
             providerId: service.providerId,
             providerServiceId: service.providerServiceId,
           },

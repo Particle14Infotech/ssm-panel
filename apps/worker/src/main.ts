@@ -257,10 +257,19 @@ export class SMMWorkerEngine {
           apiKey,
           order.service.providerServiceId || order.service.id,
           order.target,
-          order.quantity
+          order.quantity,
+          order.isDripFeed ? order.runs : undefined,
+          order.isDripFeed ? order.intervalMinutes : undefined,
+          order.id,
+          order.provider.id
         );
       } catch (err: any) {
         logger.error(`[Worker Engine] Upstream provider dispatch failed for #${order.id}: ${err.message}`);
+        // If provider explicitly rejected the request, mark FAILED and refund automatically
+        if (err.message && err.message.includes("Upstream provider error:")) {
+          await this.handleFinalOrderFailure(order.id, err.message);
+          return;
+        }
         await prisma.orderStatusHistory.create({
           data: {
             orderId: order.id,
@@ -273,6 +282,22 @@ export class SMMWorkerEngine {
     } else {
       // Internal or simulated fulfillment
       providerOrderId = `sim_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+      await prisma.orderProviderEvent.create({
+        data: {
+          orderId: order.id,
+          providerId: order.provider?.id || null,
+          action: "add",
+          requestPayload: {
+            service: order.service.providerServiceId || order.service.id,
+            link: order.target,
+            quantity: order.quantity,
+            isDripFeed: order.isDripFeed,
+            runs: order.isDripFeed ? order.runs : undefined,
+            interval: order.isDripFeed ? order.intervalMinutes : undefined,
+          },
+          responsePayload: { order: providerOrderId },
+        },
+      }).catch(() => null);
     }
 
     // Update order status to PROCESSING and record history
@@ -389,6 +414,21 @@ export class SMMWorkerEngine {
 
     for (const order of activeOrders) {
       try {
+        // Watchdog check for stuck orders accounting for drip-feed duration
+        const baseWatchdogMinutes = 24 * 60; // 24 hours
+        const dripDurationMinutes =
+          order.isDripFeed && order.runs && order.intervalMinutes
+            ? (order.runs - 1) * order.intervalMinutes
+            : 0;
+        const stuckThresholdMs = (baseWatchdogMinutes + dripDurationMinutes) * 60 * 1000;
+        const orderAgeMs = Date.now() - new Date(order.createdAt).getTime();
+
+        if (orderAgeMs > stuckThresholdMs) {
+          logger.warn(
+            `[Worker Watchdog] Order #${order.id} exceeded stuck threshold (${Math.round(stuckThresholdMs / 60000)} mins). Age: ${Math.round(orderAgeMs / 60000)} mins. Flagging for review.`
+          );
+        }
+
         if (order.provider && order.providerOrderId && order.provider.active) {
           const apiKey = decryptProviderKey(order.provider.apiKeyEncrypted);
           const statusRes = await this.callUpstreamOrderStatus(order.provider.apiUrl, apiKey, order.providerOrderId);
@@ -466,11 +506,11 @@ export class SMMWorkerEngine {
    * Handles proportional refund for PARTIAL orders
    */
   async handlePartialRefund(order: any, remains: number, startCount: number) {
-    const quantity = order.quantity || 1;
-    const effectiveRemains = Math.min(Math.max(remains, 0), quantity);
+    const totalQuantity = order.totalQuantity || (order.isDripFeed && order.runs ? order.quantity * order.runs : order.quantity) || 1;
+    const effectiveRemains = Math.min(Math.max(remains, 0), totalQuantity);
     const orderCharge = new Decimal(order.charge.toString());
-    // Proportional refund = (remains / quantity) * charge
-    const refundAmount = orderCharge.mul(effectiveRemains).div(quantity).toDecimalPlaces(2);
+    // Proportional refund = (remains / totalQuantity) * charge
+    const refundAmount = orderCharge.mul(effectiveRemains).div(totalQuantity).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 
     await prisma.$transaction(async (tx) => {
       // 1. Lock wallet
@@ -501,7 +541,7 @@ export class SMMWorkerEngine {
             amount: refundAmount,
             type: "REFUND",
             orderId: order.id,
-            description: `Partial Refund (${effectiveRemains}/${quantity} undelivered) for Order #${order.id}`,
+            description: `Partial Refund (${effectiveRemains}/${totalQuantity} undelivered) for Order #${order.id}`,
           },
         });
 
@@ -510,7 +550,7 @@ export class SMMWorkerEngine {
             orderId: order.id,
             userId: order.userId,
             amount: refundAmount,
-            reason: `Partial fulfillment refund (${effectiveRemains}/${quantity})`,
+            reason: `Partial fulfillment refund (${effectiveRemains}/${totalQuantity})`,
           },
         });
       }
@@ -532,7 +572,7 @@ export class SMMWorkerEngine {
           status: OrderStatus.PARTIAL,
           startCount,
           remains: effectiveRemains,
-          notes: `Order completed partially (${quantity - effectiveRemains}/${quantity} delivered). Refunded ₹${refundAmount.toFixed(2)}.`,
+          notes: `Order completed partially (${totalQuantity - effectiveRemains}/${totalQuantity} delivered). Refunded ₹${refundAmount.toFixed(2)}.`,
         },
       });
     });
@@ -544,6 +584,7 @@ export class SMMWorkerEngine {
    * Simulates progression for internal sandbox testing
    */
   async simulateOrderProgression(order: any) {
+    const totalQuantity = order.totalQuantity || (order.isDripFeed && order.runs ? order.quantity * order.runs : order.quantity) || 1;
     if (order.status === OrderStatus.PROCESSING) {
       await prisma.$transaction([
         prisma.order.update({
@@ -551,7 +592,7 @@ export class SMMWorkerEngine {
           data: {
             status: OrderStatus.IN_PROGRESS,
             startCount: 100,
-            remains: Math.floor(order.quantity * 0.7),
+            remains: Math.floor(totalQuantity * 0.7),
           },
         }),
         prisma.orderStatusHistory.create({
@@ -559,7 +600,7 @@ export class SMMWorkerEngine {
             orderId: order.id,
             status: OrderStatus.IN_PROGRESS,
             startCount: 100,
-            remains: Math.floor(order.quantity * 0.7),
+            remains: Math.floor(totalQuantity * 0.7),
             notes: "Delivery initiated by network cluster",
           },
         }),
@@ -596,10 +637,33 @@ export class SMMWorkerEngine {
     apiKey: string,
     service: string | number,
     link: string,
-    quantity: number
+    quantity: number,
+    runs?: number | null,
+    interval?: number | null,
+    orderId?: string,
+    providerId?: string
   ): Promise<string> {
     if (apiUrl.includes("example.com") || apiUrl.includes("test") || apiUrl.startsWith("simulated://")) {
-      return `prov_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+      const simId = `prov_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+      if (orderId) {
+        await prisma.orderProviderEvent.create({
+          data: {
+            orderId,
+            providerId: providerId || null,
+            action: "add",
+            requestPayload: {
+              service,
+              link,
+              quantity,
+              runs: runs || undefined,
+              interval: interval || undefined,
+              key: "[REDACTED]",
+            },
+            responsePayload: { order: simId },
+          },
+        }).catch(() => null);
+      }
+      return simId;
     }
 
     const cleanLink = link.trim();
@@ -611,12 +675,18 @@ export class SMMWorkerEngine {
       quantity,
     };
 
+    if (runs !== undefined && runs !== null) {
+      payload.runs = runs;
+    }
+    if (interval !== undefined && interval !== null) {
+      payload.interval = interval;
+    }
+
     // If upstream expects username or link is a profile handle/URL
     if (cleanLink.includes("instagram.com/")) {
       const postMatch = cleanLink.match(/instagram\.com\/(?:p|reel|tv)\/([a-zA-Z0-9_-]+)/i);
       if (postMatch && postMatch[1]) {
         payload.link = cleanLink;
-        // Some upstream auto-likes services require a username parameter even for posts
         payload.username = postMatch[1];
       } else {
         const profileMatch = cleanLink.match(/instagram\.com\/([a-zA-Z0-9._]+)\/?(?:\?.*)?$/i);
@@ -634,34 +704,67 @@ export class SMMWorkerEngine {
       payload.link = cleanLink.replace(/^@/, "");
     }
 
-    let response = await fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams(payload as any).toString(),
-      signal: AbortSignal.timeout(15000),
-    });
+    const sanitizedPayload = { ...payload, key: "[REDACTED]" };
+    let response: Response;
+    let data: any;
 
-    if (!response.ok) {
-      throw new Error(`Upstream SMM API returned HTTP ${response.status}`);
-    }
+    try {
+      response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(payload as any).toString(),
+        signal: AbortSignal.timeout(15000),
+      });
 
-    let data: any = await response.json();
+      if (!response.ok) {
+        throw new Error(`Upstream SMM API returned HTTP ${response.status}`);
+      }
 
-    // If upstream provider specifically reports "Missing username", retry once with extracted handle/target
-    if (data.error && data.error.toLowerCase().includes("missing username") && !payload.username) {
-      const fallbackUser = cleanLink.replace(/^https?:\/\/(?:www\.)?instagram\.com\//i, "").replace(/\/.*$/, "").replace(/^@/, "");
-      if (fallbackUser && fallbackUser.length > 0) {
-        payload.username = fallbackUser;
-        const retryRes = await fetch(apiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams(payload as any).toString(),
-          signal: AbortSignal.timeout(15000),
-        });
-        if (retryRes.ok) {
-          data = await retryRes.json();
+      data = await response.json();
+
+      // If upstream provider specifically reports "Missing username", retry once with extracted handle/target
+      if (data.error && data.error.toLowerCase().includes("missing username") && !payload.username) {
+        const fallbackUser = cleanLink.replace(/^https?:\/\/(?:www\.)?instagram\.com\//i, "").replace(/\/.*$/, "").replace(/^@/, "");
+        if (fallbackUser && fallbackUser.length > 0) {
+          payload.username = fallbackUser;
+          const retryRes = await fetch(apiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams(payload as any).toString(),
+            signal: AbortSignal.timeout(15000),
+          });
+          if (retryRes.ok) {
+            data = await retryRes.json();
+          }
         }
       }
+
+      if (orderId) {
+        await prisma.orderProviderEvent.create({
+          data: {
+            orderId,
+            providerId: providerId || null,
+            action: "add",
+            requestPayload: sanitizedPayload,
+            responsePayload: data || null,
+            error: data?.error ? String(data.error) : null,
+          },
+        }).catch(() => null);
+      }
+    } catch (err: any) {
+      if (orderId) {
+        await prisma.orderProviderEvent.create({
+          data: {
+            orderId,
+            providerId: providerId || null,
+            action: "add",
+            requestPayload: sanitizedPayload,
+            responsePayload: data || null,
+            error: err.message,
+          },
+        }).catch(() => null);
+      }
+      throw err;
     }
 
     if (data.error) {

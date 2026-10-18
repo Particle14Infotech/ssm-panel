@@ -99,7 +99,7 @@ export function AdminHeader() {
             >
               <RefreshCw className={`w-3.5 h-3.5 text-[#D8EC8D] ${isSyncing ? "animate-spin" : ""}`} />
               <span className="text-[#D8EC8D] font-semibold">
-                {isSyncing ? "Syncing..." : syncSuccess ? "Synced ✓" : "Live Sync"}
+                {isSyncing ? "Syncing..." : syncSuccess ? "Synced" : "Live Sync"}
               </span>
               {syncSuccess && <span className="w-1.5 h-1.5 rounded-full bg-[#D8EC8D] animate-ping" />}
             </button>

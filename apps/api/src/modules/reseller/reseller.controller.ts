@@ -50,8 +50,29 @@ export class ResellerController {
   @ApiSecurity("reseller-api-key")
   @UseGuards(ApiKeyAuthGuard)
   @ApiOperation({ summary: "Public Reseller v1 Place Order" })
-  createPublicOrder(@Body() body: { service: string; link: string; quantity: number }) {
+  createPublicOrder(@Body() body: { service: string; link: string; quantity: number; runs?: number; interval?: number }) {
     return this.resellerService.createPublicOrder(body);
+  }
+
+  @Post("v2")
+  @ApiSecurity("reseller-api-key")
+  @UseGuards(ApiKeyAuthGuard)
+  @ApiOperation({ summary: "Standard SMM API v2 (action-based dispatch)" })
+  async smmV2(@Body() body: any) {
+    const action = body.action || "services";
+    if (action === "services") {
+      return await this.resellerService.getPublicServices();
+    }
+    if (action === "add") {
+      return await this.resellerService.createPublicOrder(body);
+    }
+    if (action === "status") {
+      return await this.resellerService.getPublicOrderStatus(body.order);
+    }
+    if (action === "balance") {
+      return await this.resellerService.getPublicBalance();
+    }
+    return { error: `Unsupported action: ${action}` };
   }
 
   @Get("v1/orders/:id")

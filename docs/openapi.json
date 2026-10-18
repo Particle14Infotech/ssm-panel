@@ -114,6 +114,21 @@
         ]
       }
     },
+    "/api/v1/health/system": {
+      "get": {
+        "operationId": "HealthController_getSystemTelemetry",
+        "summary": "Admin Detailed System Health Matrix",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "operationId": "AuthController_login",
@@ -475,6 +490,14 @@
         "summary": "Get User Orders Stream",
         "parameters": [
           {
+            "name": "userId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "status",
             "required": true,
             "in": "query",
@@ -500,6 +523,14 @@
           },
           {
             "name": "endDate",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dripFeedOnly",
             "required": true,
             "in": "query",
             "schema": {
@@ -812,6 +843,34 @@
         },
         "tags": [
           "Wallet & Billing"
+        ]
+      }
+    },
+    "/api/v1/settings": {
+      "get": {
+        "operationId": "SettingsController_getSettings",
+        "summary": "Get System Settings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform Settings"
+        ]
+      },
+      "put": {
+        "operationId": "SettingsController_updateSettings",
+        "summary": "Admin Update System Settings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform Settings"
         ]
       }
     },
@@ -1618,34 +1677,6 @@
         ]
       }
     },
-    "/api/v1/settings": {
-      "get": {
-        "operationId": "SettingsController_getSettings",
-        "summary": "Get System Settings",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Platform Settings"
-        ]
-      },
-      "put": {
-        "operationId": "SettingsController_updateSettings",
-        "summary": "Admin Update System Settings",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "Platform Settings"
-        ]
-      }
-    },
     "/api/v1/reports/summary": {
       "get": {
         "operationId": "ReportsController_getSummary",
@@ -1782,6 +1813,26 @@
       "post": {
         "operationId": "ResellerController_createPublicOrder",
         "summary": "Public Reseller v1 Place Order",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reseller Portal & API"
+        ],
+        "security": [
+          {
+            "reseller-api-key": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reseller/v2": {
+      "post": {
+        "operationId": "ResellerController_smmV2",
+        "summary": "Standard SMM API v2 (action-based dispatch)",
         "parameters": [],
         "responses": {
           "201": {

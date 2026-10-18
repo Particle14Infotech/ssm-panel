@@ -51,6 +51,7 @@ interface CustomerContextType {
     serviceId: string;
     target: string;
     quantity: number;
+    isDripFeed?: boolean;
     dripFeed?: boolean;
     runs?: number;
     interval?: number;
@@ -196,6 +197,11 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
               updatedAt: o.updatedAt,
               refillable: o.service?.refillable ?? false,
               cancellable: o.service?.cancellable ?? false,
+              isDripFeed: o.isDripFeed ?? false,
+              runs: o.runs ?? undefined,
+              intervalMinutes: o.intervalMinutes ?? undefined,
+              quantityPerRun: o.quantityPerRun ?? undefined,
+              totalQuantity: o.totalQuantity ?? o.quantity,
             }))
           );
         }
@@ -269,6 +275,11 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
               cancellable: s.cancellable,
               description: s.description || "",
               status: s.status,
+              dripFeedSupported: s.dripFeedSupported ?? false,
+              dripFeedMinRuns: s.dripFeedMinRuns ?? null,
+              dripFeedMaxRuns: s.dripFeedMaxRuns ?? null,
+              dripFeedMinInterval: s.dripFeedMinInterval ?? null,
+              dripFeedMaxInterval: s.dripFeedMaxInterval ?? null,
             }))
           );
         }
@@ -288,6 +299,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     serviceId: string;
     target: string;
     quantity: number;
+    isDripFeed?: boolean;
     dripFeed?: boolean;
     runs?: number;
     interval?: number;
@@ -299,18 +311,27 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     if (!token) return { success: false, error: "Please log in to place an order." };
 
     try {
+      const payload: Record<string, any> = {
+        serviceId: input.serviceId,
+        target: input.target,
+        quantity: input.quantity,
+        idempotencyKey: input.idempotencyKey || `ord_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      };
+
+      const isDripFeed = Boolean(input.isDripFeed ?? input.dripFeed);
+      if (isDripFeed) {
+        payload.isDripFeed = true;
+        if (input.runs !== undefined) payload.runs = Number(input.runs);
+        if (input.interval !== undefined) payload.interval = Number(input.interval);
+      }
+
       const res = await fetch(`${API_BASE}/orders`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          serviceId: input.serviceId,
-          target: input.target,
-          quantity: input.quantity,
-          idempotencyKey: input.idempotencyKey || `ord_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();

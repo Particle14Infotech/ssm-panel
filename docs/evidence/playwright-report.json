@@ -4,9 +4,7 @@
       "C:\\Program Files\\nodejs\\node.exe",
       "D:\\projects\\internship projects\\SMM\\node_modules\\@playwright\\test\\cli.js",
       "test",
-      "e2e/phase5-responsive-crown.spec.ts",
-      "-g",
-      "1440-desktop"
+      "e2e/phase5-responsive-crown.spec.ts"
     ],
     "configFile": "D:\\projects\\internship projects\\SMM\\playwright.config.ts",
     "rootDir": "D:/projects/internship projects/SMM/e2e",
@@ -127,8 +125,8 @@
           "column": 6,
           "specs": [
             {
-              "title": "Viewport 1440-desktop (1440x900): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
-              "ok": true,
+              "title": "Viewport 320-phone (320x640): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -141,13 +139,634 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 5569,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 104,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 104,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31",
+                        "location": {
+                          "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                          "column": 31,
+                          "line": 81
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 79 |\u001b[39m         \u001b[36mreturn\u001b[39m tooSmall\u001b[33m;\u001b[39m\n \u001b[90m 80 |\u001b[39m       })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 81 |\u001b[39m       expect(smallTapTargets)\u001b[33m.\u001b[39mtoEqual([])\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 82 |\u001b[39m\n \u001b[90m 83 |\u001b[39m       \u001b[90m// Assertion 3: Body text >= 14px anywhere\u001b[39m\n \u001b[90m 84 |\u001b[39m       \u001b[36mconst\u001b[39m tinyText \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                            "column": 31,
+                            "line": 81
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 104,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  79 |         return tooSmall;\n  80 |       });\n> 81 |       expect(smallTapTargets).toEqual([]);\n     |                               ^\n  82 |\n  83 |       // Assertion 3: Body text >= 14px anywhere\n  84 |       const tinyText = await page.evaluate(() => {\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T16:46:03.706Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-6d05c-own-bounds-non-intersection-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-6d05c-own-bounds-non-intersection-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                        "column": 31,
+                        "line": 81
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "a48f85d08fee4991bbce-a3a1c01055b307edfe73",
+              "file": "phase5-responsive-crown.spec.ts",
+              "line": 30,
+              "column": 9
+            },
+            {
+              "title": "Viewport 375-phone (375x667): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 6312,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 125,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 125,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31",
+                        "location": {
+                          "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                          "column": 31,
+                          "line": 81
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 79 |\u001b[39m         \u001b[36mreturn\u001b[39m tooSmall\u001b[33m;\u001b[39m\n \u001b[90m 80 |\u001b[39m       })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 81 |\u001b[39m       expect(smallTapTargets)\u001b[33m.\u001b[39mtoEqual([])\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 82 |\u001b[39m\n \u001b[90m 83 |\u001b[39m       \u001b[90m// Assertion 3: Body text >= 14px anywhere\u001b[39m\n \u001b[90m 84 |\u001b[39m       \u001b[36mconst\u001b[39m tinyText \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                            "column": 31,
+                            "line": 81
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 125,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  79 |         return tooSmall;\n  80 |       });\n> 81 |       expect(smallTapTargets).toEqual([]);\n     |                               ^\n  82 |\n  83 |       // Assertion 3: Body text >= 14px anywhere\n  84 |       const tinyText = await page.evaluate(() => {\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T16:46:11.093Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-bfb82-own-bounds-non-intersection-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-bfb82-own-bounds-non-intersection-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                        "column": 31,
+                        "line": 81
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "a48f85d08fee4991bbce-02cee63cabb85404987a",
+              "file": "phase5-responsive-crown.spec.ts",
+              "line": 30,
+              "column": 9
+            },
+            {
+              "title": "Viewport 390-phone (390x844): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 7054,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 130,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 130,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31",
+                        "location": {
+                          "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                          "column": 31,
+                          "line": 81
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 79 |\u001b[39m         \u001b[36mreturn\u001b[39m tooSmall\u001b[33m;\u001b[39m\n \u001b[90m 80 |\u001b[39m       })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 81 |\u001b[39m       expect(smallTapTargets)\u001b[33m.\u001b[39mtoEqual([])\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 82 |\u001b[39m\n \u001b[90m 83 |\u001b[39m       \u001b[90m// Assertion 3: Body text >= 14px anywhere\u001b[39m\n \u001b[90m 84 |\u001b[39m       \u001b[36mconst\u001b[39m tinyText \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                            "column": 31,
+                            "line": 81
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 130,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  79 |         return tooSmall;\n  80 |       });\n> 81 |       expect(smallTapTargets).toEqual([]);\n     |                               ^\n  82 |\n  83 |       // Assertion 3: Body text >= 14px anywhere\n  84 |       const tinyText = await page.evaluate(() => {\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T16:46:19.485Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-a55d7-own-bounds-non-intersection-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-a55d7-own-bounds-non-intersection-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                        "column": 31,
+                        "line": 81
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "a48f85d08fee4991bbce-9a6ab7e2aed6ad1362d0",
+              "file": "phase5-responsive-crown.spec.ts",
+              "line": 30,
+              "column": 9
+            },
+            {
+              "title": "Viewport 412-phone (412x915): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 6929,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31",
+                        "location": {
+                          "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                          "column": 31,
+                          "line": 81
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 79 |\u001b[39m         \u001b[36mreturn\u001b[39m tooSmall\u001b[33m;\u001b[39m\n \u001b[90m 80 |\u001b[39m       })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 81 |\u001b[39m       expect(smallTapTargets)\u001b[33m.\u001b[39mtoEqual([])\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 82 |\u001b[39m\n \u001b[90m 83 |\u001b[39m       \u001b[90m// Assertion 3: Body text >= 14px anywhere\u001b[39m\n \u001b[90m 84 |\u001b[39m       \u001b[36mconst\u001b[39m tinyText \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                            "column": 31,
+                            "line": 81
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  79 |         return tooSmall;\n  80 |       });\n> 81 |       expect(smallTapTargets).toEqual([]);\n     |                               ^\n  82 |\n  83 |       // Assertion 3: Body text >= 14px anywhere\n  84 |       const tinyText = await page.evaluate(() => {\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T16:46:29.671Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-ccc1e-own-bounds-non-intersection-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-ccc1e-own-bounds-non-intersection-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                        "column": 31,
+                        "line": 81
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "a48f85d08fee4991bbce-7c5915f2c1690eba10e5",
+              "file": "phase5-responsive-crown.spec.ts",
+              "line": 30,
+              "column": 9
+            },
+            {
+              "title": "Viewport 844-landscape (844x390): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 4820,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31",
+                        "location": {
+                          "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                          "column": 31,
+                          "line": 81
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 79 |\u001b[39m         \u001b[36mreturn\u001b[39m tooSmall\u001b[33m;\u001b[39m\n \u001b[90m 80 |\u001b[39m       })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 81 |\u001b[39m       expect(smallTapTargets)\u001b[33m.\u001b[39mtoEqual([])\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 82 |\u001b[39m\n \u001b[90m 83 |\u001b[39m       \u001b[90m// Assertion 3: Body text >= 14px anywhere\u001b[39m\n \u001b[90m 84 |\u001b[39m       \u001b[36mconst\u001b[39m tinyText \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                            "column": 31,
+                            "line": 81
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  79 |         return tooSmall;\n  80 |       });\n> 81 |       expect(smallTapTargets).toEqual([]);\n     |                               ^\n  82 |\n  83 |       // Assertion 3: Body text >= 14px anywhere\n  84 |       const tinyText = await page.evaluate(() => {\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T16:46:39.141Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-1250c-own-bounds-non-intersection-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-1250c-own-bounds-non-intersection-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                        "column": 31,
+                        "line": 81
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "a48f85d08fee4991bbce-537758e30035911fccfe",
+              "file": "phase5-responsive-crown.spec.ts",
+              "line": 30,
+              "column": 9
+            },
+            {
+              "title": "Viewport 744-sm-tablet (744x1133): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 8917,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31",
+                        "location": {
+                          "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                          "column": 31,
+                          "line": 81
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 79 |\u001b[39m         \u001b[36mreturn\u001b[39m tooSmall\u001b[33m;\u001b[39m\n \u001b[90m 80 |\u001b[39m       })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 81 |\u001b[39m       expect(smallTapTargets)\u001b[33m.\u001b[39mtoEqual([])\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 82 |\u001b[39m\n \u001b[90m 83 |\u001b[39m       \u001b[90m// Assertion 3: Body text >= 14px anywhere\u001b[39m\n \u001b[90m 84 |\u001b[39m       \u001b[36mconst\u001b[39m tinyText \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                            "column": 31,
+                            "line": 81
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  79 |         return tooSmall;\n  80 |       });\n> 81 |       expect(smallTapTargets).toEqual([]);\n     |                               ^\n  82 |\n  83 |       // Assertion 3: Body text >= 14px anywhere\n  84 |       const tinyText = await page.evaluate(() => {\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T16:46:45.167Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-15689-own-bounds-non-intersection-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-15689-own-bounds-non-intersection-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                        "column": 31,
+                        "line": 81
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "a48f85d08fee4991bbce-ab7d389ae161840f8886",
+              "file": "phase5-responsive-crown.spec.ts",
+              "line": 30,
+              "column": 9
+            },
+            {
+              "title": "Viewport 820-tablet (820x1180): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 38581,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeNull\u001b[2m()\u001b[22m\n\nReceived: \u001b[31m{\"collidedTag\": \"A\", \"collidedText\": \"View all services in full cata\", \"crownRect\": {\"bottom\": 518.2962607526938, \"height\": 68, \"left\": 746, \"right\": 814, \"top\": 450.2962607526938, \"width\": 68}, \"elemRect\": {\"height\": 44, \"left\": 57, \"top\": 415.25, \"width\": 706}}\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeNull\u001b[2m()\u001b[22m\n\nReceived: \u001b[31m{\"collidedTag\": \"A\", \"collidedText\": \"View all services in full cata\", \"crownRect\": {\"bottom\": 518.2962607526938, \"height\": 68, \"left\": 746, \"right\": 814, \"top\": 450.2962607526938, \"width\": 68}, \"elemRect\": {\"height\": 44, \"left\": 57, \"top\": 415.25, \"width\": 706}}\u001b[39m\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:164:34",
+                        "location": {
+                          "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                          "column": 34,
+                          "line": 164
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 162 |\u001b[39m         })\u001b[33m;\u001b[39m\n \u001b[90m 163 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 164 |\u001b[39m         expect(intersectionInfo)\u001b[33m.\u001b[39mtoBeNull()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 165 |\u001b[39m       }\n \u001b[90m 166 |\u001b[39m\n \u001b[90m 167 |\u001b[39m       \u001b[90m// Check no element stuck at opacity 0 after 2s\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                            "column": 34,
+                            "line": 164
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeNull\u001b[2m()\u001b[22m\n\nReceived: \u001b[31m{\"collidedTag\": \"A\", \"collidedText\": \"View all services in full cata\", \"crownRect\": {\"bottom\": 518.2962607526938, \"height\": 68, \"left\": 746, \"right\": 814, \"top\": 450.2962607526938, \"width\": 68}, \"elemRect\": {\"height\": 44, \"left\": 57, \"top\": 415.25, \"width\": 706}}\u001b[39m\n\n  162 |         });\n  163 |\n> 164 |         expect(intersectionInfo).toBeNull();\n      |                                  ^\n  165 |       }\n  166 |\n  167 |       // Check no element stuck at opacity 0 after 2s\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:164:34"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T16:46:57.681Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-71767-own-bounds-non-intersection-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-71767-own-bounds-non-intersection-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                        "column": 34,
+                        "line": 164
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "a48f85d08fee4991bbce-be22b48dc8fb6b77c9f7",
+              "file": "phase5-responsive-crown.spec.ts",
+              "line": 30,
+              "column": 9
+            },
+            {
+              "title": "Viewport 1024-tablet-pro (1024x1366): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 9690,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31",
+                        "location": {
+                          "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                          "column": 31,
+                          "line": 81
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 79 |\u001b[39m         \u001b[36mreturn\u001b[39m tooSmall\u001b[33m;\u001b[39m\n \u001b[90m 80 |\u001b[39m       })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 81 |\u001b[39m       expect(smallTapTargets)\u001b[33m.\u001b[39mtoEqual([])\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 82 |\u001b[39m\n \u001b[90m 83 |\u001b[39m       \u001b[90m// Assertion 3: Body text >= 14px anywhere\u001b[39m\n \u001b[90m 84 |\u001b[39m       \u001b[36mconst\u001b[39m tinyText \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                            "column": 31,
+                            "line": 81
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  79 |         return tooSmall;\n  80 |       });\n> 81 |       expect(smallTapTargets).toEqual([]);\n     |                               ^\n  82 |\n  83 |       // Assertion 3: Body text >= 14px anywhere\n  84 |       const tinyText = await page.evaluate(() => {\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T16:47:56.889Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-19296-own-bounds-non-intersection-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-19296-own-bounds-non-intersection-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                        "column": 31,
+                        "line": 81
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "a48f85d08fee4991bbce-6624270c268bf836625d",
+              "file": "phase5-responsive-crown.spec.ts",
+              "line": 30,
+              "column": 9
+            },
+            {
+              "title": "Viewport 1280-laptop (1280x720): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 9694,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31",
+                        "location": {
+                          "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                          "column": 31,
+                          "line": 81
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 79 |\u001b[39m         \u001b[36mreturn\u001b[39m tooSmall\u001b[33m;\u001b[39m\n \u001b[90m 80 |\u001b[39m       })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 81 |\u001b[39m       expect(smallTapTargets)\u001b[33m.\u001b[39mtoEqual([])\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 82 |\u001b[39m\n \u001b[90m 83 |\u001b[39m       \u001b[90m// Assertion 3: Body text >= 14px anywhere\u001b[39m\n \u001b[90m 84 |\u001b[39m       \u001b[36mconst\u001b[39m tinyText \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                            "column": 31,
+                            "line": 81
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  79 |         return tooSmall;\n  80 |       });\n> 81 |       expect(smallTapTargets).toEqual([]);\n     |                               ^\n  82 |\n  83 |       // Assertion 3: Body text >= 14px anywhere\n  84 |       const tinyText = await page.evaluate(() => {\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T16:48:09.611Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-b8e5e-own-bounds-non-intersection-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-b8e5e-own-bounds-non-intersection-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                        "column": 31,
+                        "line": 81
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "a48f85d08fee4991bbce-bbd56a6ff36f3ac5d0eb",
+              "file": "phase5-responsive-crown.spec.ts",
+              "line": 30,
+              "column": 9
+            },
+            {
+              "title": "Viewport 1440-desktop (1440x900): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 75618,
+                      "duration": 66746,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-10-17T16:25:03.886Z",
+                      "startTime": "2026-10-17T16:48:22.993Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -165,6 +784,155 @@
               "file": "phase5-responsive-crown.spec.ts",
               "line": 30,
               "column": 9
+            },
+            {
+              "title": "Viewport 1920-fhd (1920x1080): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 9856,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31",
+                        "location": {
+                          "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                          "column": 31,
+                          "line": 81
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 79 |\u001b[39m         \u001b[36mreturn\u001b[39m tooSmall\u001b[33m;\u001b[39m\n \u001b[90m 80 |\u001b[39m       })\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 81 |\u001b[39m       expect(smallTapTargets)\u001b[33m.\u001b[39mtoEqual([])\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 82 |\u001b[39m\n \u001b[90m 83 |\u001b[39m       \u001b[90m// Assertion 3: Body text >= 14px anywhere\u001b[39m\n \u001b[90m 84 |\u001b[39m       \u001b[36mconst\u001b[39m tinyText \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                            "column": 31,
+                            "line": 81
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 8\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"h\": 36,\u001b[39m\n\u001b[31m+     \"tag\": \"BUTTON\",\u001b[39m\n\u001b[31m+     \"text\": \"Top Up ₹1,000\",\u001b[39m\n\u001b[31m+     \"w\": 135,\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  79 |         return tooSmall;\n  80 |       });\n> 81 |       expect(smallTapTargets).toEqual([]);\n     |                               ^\n  82 |\n  83 |       // Assertion 3: Body text >= 14px anywhere\n  84 |       const tinyText = await page.evaluate(() => {\n    at D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts:81:31"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T16:49:32.957Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-00e8a-own-bounds-non-intersection-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-00e8a-own-bounds-non-intersection-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\projects\\internship projects\\SMM\\e2e\\phase5-responsive-crown.spec.ts",
+                        "column": 31,
+                        "line": 81
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "a48f85d08fee4991bbce-96b1d47a3d8e2a4f643b",
+              "file": "phase5-responsive-crown.spec.ts",
+              "line": 30,
+              "column": 9
+            },
+            {
+              "title": "Viewport 2560-qhd (2560x1440): 12+ scroll positions, zero overflow, no clipped text, crown bounds non-intersection",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 91955,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T16:49:45.471Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-1d2fc-own-bounds-non-intersection-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a48f85d08fee4991bbce-b350520fcb4723ec5dbe",
+              "file": "phase5-responsive-crown.spec.ts",
+              "line": 30,
+              "column": 9
+            },
+            {
+              "title": "Reduced Motion: Static crown in hero slot, zero crown travel, all content visible",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2869,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-17T16:51:18.707Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\projects\\internship projects\\SMM\\test-results\\phase5-responsive-crown-Ph-7ef98--travel-all-content-visible-chromium\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a48f85d08fee4991bbce-289ba83573f999c219e0",
+              "file": "phase5-responsive-crown.spec.ts",
+              "line": 188,
+              "column": 7
             }
           ]
         }
@@ -173,11 +941,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-17T16:25:03.282Z",
-    "duration": 81095.491,
-    "expected": 1,
+    "startTime": "2026-10-17T16:46:03.239Z",
+    "duration": 318636.267,
+    "expected": 3,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 10,
     "flaky": 0
   }
 }
