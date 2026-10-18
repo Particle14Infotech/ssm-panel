@@ -73,11 +73,13 @@ export function calculateOrderCharge(
 export function calculatePartialRefund(
   charge: number,
   quantity: number,
-  remains: number
+  remains: number,
+  totalQuantity?: number
 ): number {
-  if (charge <= 0 || quantity <= 0 || remains <= 0) return 0;
-  const clampedRemains = Math.min(quantity, Math.max(0, remains));
-  const refundAmount = new Decimal(charge).times(clampedRemains).dividedBy(quantity);
+  const effectiveTotal = totalQuantity !== undefined && totalQuantity > 0 ? totalQuantity : quantity;
+  if (charge <= 0 || effectiveTotal <= 0 || remains <= 0) return 0;
+  const clampedRemains = Math.min(effectiveTotal, Math.max(0, remains));
+  const refundAmount = new Decimal(charge).times(clampedRemains).dividedBy(effectiveTotal);
   return refundAmount.toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toNumber();
 }
 
