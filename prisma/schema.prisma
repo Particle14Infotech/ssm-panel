@@ -38,6 +38,7 @@ enum TransactionType {
 
 enum PackageStatus {
   ACTIVE
+  PAUSED
   COMPLETED
   CANCELLED
   PARTIAL
@@ -121,6 +122,7 @@ model User {
   emailLogs EmailLog[]
   favorites Favorite[]
   packages  Package[]
+  instagramConnections InstagramConnection[]
 
   @@index([email, isDeleted])
   @@index([role])
@@ -545,46 +547,146 @@ model SuggestionDismissal {
   @@index([userId])
 }
 
-model Package {
-  id             String        @id @default(uuid())
-  userId         String
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name           String
-  status         PackageStatus @default(ACTIVE)
-  totalRuns      Int
-  completedRuns  Int           @default(0)
-  failedRuns     Int           @default(0)
-  cancelledRuns  Int           @default(0)
-  totalCharge    Decimal       @db.Decimal(10, 2)
-  refundedAmount Decimal       @default(0.00) @db.Decimal(10, 2)
-  idempotencyKey String?
-  startDate      DateTime      @default(now())
-  endDate        DateTime
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+model InstagramConnection {
+  id                  String           @id @default(uuid())
+  userId              String
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platformAccountId   String           // Instagram IG User ID
+  username            String           // @username
+  accountType         String           @default("BUSINESS") // PERSONAL, BUSINESS, CREATOR
+  encryptedAccessToken String?
+  tokenExpiresAt      DateTime?
+  grantedScopes       String[]         @default([])
+  connectionStatus    String           @default("CONNECTED") // CONNECTED, EXPIRED, DISCONNECTED, RECONNECT_REQUIRED
+  lastDetectedAt      DateTime?
+  lastDetectionCursor String?
+  connectedAt         DateTime         @default(now())
+  disconnectedAt      DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
-  items          PackageItem[]
-  runs           PackageRun[]
+  packages            Package[]
+  media               MonitoredMedia[]
+
+  @@unique([userId, platformAccountId])
+  @@index([userId, connectionStatus])
+  @@index([username])
+}
+
+model Package {
+  id                    String                @id @default(uuid())
+  userId                String
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connectionId          String?
+  connection            InstagramConnection?  @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  name                  String
+  status                PackageStatus         @default(ACTIVE)
+  durationDays          Int                   @default(30)
+  autoPostEnabled       Boolean               @default(true)
+  totalRuns             Int
+  completedRuns         Int                   @default(0)
+  failedRuns            Int                   @default(0)
+  cancelledRuns         Int                   @default(0)
+  postsDetected         Int                   @default(0)
+  postsProcessed        Int                   @default(0)
+  totalCharge           Decimal               @db.Decimal(10, 2)
+  refundedAmount        Decimal               @default(0.00) @db.Decimal(10, 2)
+  idempotencyKey        String?
+  configurationSnapshot Json?
+  entitlementSnapshot   Json?
+  startDate             DateTime              @default(now())
+  endDate               DateTime
+  cancelledAt           DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  items                 PackageItem[]
+  runs                  PackageRun[]
+  media                 MonitoredMedia[]
+  executions            AutomationExecution[]
 
   @@unique([userId, idempotencyKey], name: "unique_package_idempotency_per_user")
   @@index([userId, status, createdAt])
+  @@index([connectionId, status])
 }
 
 model PackageItem {
-  id                    String      @id @default(uuid())
+  id                    String                @id @default(uuid())
   packageId             String
-  package               Package     @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  package               Package               @relation(fields: [packageId], references: [id], onDelete: Cascade)
   serviceId             String
-  service               Service     @relation(fields: [serviceId], references: [id])
+  service               Service               @relation(fields: [serviceId], references: [id])
+  enabled               Boolean               @default(true)
   target                String
-  targetType            String      // PROFILE, POST_OR_REEL
+  targetType            String                // PROFILE, POST_OR_REEL
   totalQuantity         Int
-  charge                Decimal     @db.Decimal(10, 2)
-  sellRatePer1kSnapshot Decimal     @db.Decimal(10, 2)
+  quantityPerPost       Int                   @default(0)
+  maximumPostsToProcess Int                   @default(100)
+  delayAfterPublication Int                   @default(0) // in minutes
+  eligibleMediaTypes    String[]              @default(["IMAGE", "VIDEO", "REEL"])
+  configuration         Json?
+  usageLimit            Int                   @default(0)
+  usageConsumed         Int                   @default(0)
+  charge                Decimal               @db.Decimal(10, 2)
+  sellRatePer1kSnapshot Decimal               @db.Decimal(10, 2)
   runs                  PackageRun[]
+  executions            AutomationExecution[]
 
   @@index([packageId])
   @@index([serviceId])
+}
+
+model MonitoredMedia {
+  id              String                @id @default(uuid())
+  connectionId    String
+  connection      InstagramConnection   @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  packageId       String?
+  package         Package?              @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  mediaId         String                // Instagram platform media ID
+  permalink       String?
+  mediaType       String                // IMAGE, VIDEO, REEL, CAROUSEL_ALBUM
+  caption         String?
+  publishedAt     DateTime
+  firstDetectedAt DateTime              @default(now())
+  metadata        Json?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  executions      AutomationExecution[]
+
+  @@unique([connectionId, mediaId])
+  @@index([connectionId, publishedAt])
+  @@index([packageId])
+}
+
+model AutomationExecution {
+  id               String          @id @default(uuid())
+  packageId        String
+  package          Package         @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  packageItemId    String
+  packageItem      PackageItem     @relation(fields: [packageItemId], references: [id], onDelete: Cascade)
+  mediaId          String          // Platform media ID
+  monitoredMediaId String?
+  monitoredMedia   MonitoredMedia? @relation(fields: [monitoredMediaId], references: [id], onDelete: SetNull)
+  actionType       String          // LIKES, VIEWS, COMMENTS
+  status           String          @default("PENDING") // PENDING, SCHEDULED, PROCESSING, COMPLETED, FAILED, SKIPPED, CANCELLED
+  idempotencyKey   String          @unique
+  quantity         Int             @default(0)
+  scheduledAt      DateTime        @default(now())
+  startedAt        DateTime?
+  completedAt      DateTime?
+  attempts         Int             @default(0)
+  childOrderId     String?
+  providerReference String?
+  errorCode        String?
+  errorMessage     String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@unique([packageId, mediaId, packageItemId])
+  @@index([status, scheduledAt])
+  @@index([packageId])
+  @@index([packageItemId])
 }
 
 model PackageRun {

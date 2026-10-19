@@ -8,3 +8,5 @@ export { MagneticButton as Magnetic, MagneticButton } from "./MagneticButton";
 export { CountUpNumber as CountUp, CountUpNumber } from "./CountUpNumber";
 export * from "./SmoothScroll";
 export * from "./useMotionPreference";
+export * from "./BorderBeam";
+export * from "./BentoCard";

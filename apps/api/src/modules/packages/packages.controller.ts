@@ -44,6 +44,16 @@ export class PackagesController {
     return this.packagesService.purchasePackage(user.id, parseRes.data);
   }
 
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Create & Purchase Package" })
+  async createPackage(
+    @CurrentUser() user: CurrentUserData,
+    @Body() body: any
+  ) {
+    return this.purchasePackage(user, body);
+  }
+
   @Get()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "List User Growth Packages" })
@@ -59,6 +69,46 @@ export class PackagesController {
     @Param("id") id: string
   ) {
     return this.packagesService.getPackage(user.id, id);
+  }
+
+  @Post(":id/pause")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Pause Auto-Post Package Monitoring" })
+  async pausePackage(
+    @CurrentUser() user: CurrentUserData,
+    @Param("id") id: string
+  ) {
+    return this.packagesService.pausePackage(user.id, id);
+  }
+
+  @Post(":id/resume")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Resume Paused Auto-Post Package Monitoring" })
+  async resumePackage(
+    @CurrentUser() user: CurrentUserData,
+    @Param("id") id: string
+  ) {
+    return this.packagesService.resumePackage(user.id, id);
+  }
+
+  @Get(":id/posts")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "List Detected Posts for Package" })
+  async getPackagePosts(
+    @CurrentUser() user: CurrentUserData,
+    @Param("id") id: string
+  ) {
+    return this.packagesService.getPackagePosts(user.id, id);
+  }
+
+  @Get(":id/executions")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "List Workflow Execution History for Package" })
+  async getPackageExecutions(
+    @CurrentUser() user: CurrentUserData,
+    @Param("id") id: string
+  ) {
+    return this.packagesService.getPackageExecutions(user.id, id);
   }
 
   @Post(":id/cancel")

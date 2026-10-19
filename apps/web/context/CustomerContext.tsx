@@ -53,11 +53,18 @@ interface CustomerContextType {
   favorites: FavoriteItem[];
   favoriteSuggestions: FavoriteSuggestion[];
   packages: any[];
+  instagramAccounts: any[];
   isLoading: boolean;
   logout: () => void;
   refreshData: () => Promise<void>;
   refreshFavorites: () => Promise<void>;
   refreshPackages: () => Promise<void>;
+  refreshInstagramAccounts: () => Promise<void>;
+  connectInstagramAccount: (data: any) => Promise<{ success: boolean; connection?: any; error?: string }>;
+  disconnectInstagramAccount: (connectionId: string) => Promise<boolean>;
+  pollInstagramConnection: (connectionId: string) => Promise<any>;
+  pausePackage: (packageId: string) => Promise<boolean>;
+  resumePackage: (packageId: string) => Promise<boolean>;
   fetchPackageQuote: (input: PackageQuoteInput) => Promise<PackageQuoteResponse | null>;
   purchasePackage: (input: PackagePurchaseInput) => Promise<{ success: boolean; package?: any; error?: string }>;
   cancelPackage: (packageId: string) => Promise<{ success: boolean; refundedAmount?: number; error?: string }>;
@@ -116,6 +123,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [favoriteSuggestions, setFavoriteSuggestions] = useState<FavoriteSuggestion[]>([]);
   const [packages, setPackages] = useState<any[]>([]);
+  const [instagramAccounts, setInstagramAccounts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const getAuthToken = useCallback(() => {
@@ -190,8 +198,8 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         }));
       }
 
-      // 2. Fetch Orders, Ledger, Tickets, Services, Favorites, Packages concurrently
-      const [ordersRes, ledgerRes, ticketsRes, servicesRes, favoritesRes, suggestionsRes, packagesRes] = await Promise.all([
+      // 2. Fetch Orders, Ledger, Tickets, Services, Favorites, Packages, Instagram concurrently
+      const [ordersRes, ledgerRes, ticketsRes, servicesRes, favoritesRes, suggestionsRes, packagesRes, instagramRes] = await Promise.all([
         fetch(`${API_BASE}/orders`, { headers: authHeaders, cache: "no-store" }),
         fetch(`${API_BASE}/wallet/ledger`, { headers: authHeaders, cache: "no-store" }),
         fetch(`${API_BASE}/tickets`, { headers: authHeaders, cache: "no-store" }),
@@ -199,6 +207,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         fetch(`${API_BASE}/favorites`, { headers: authHeaders, cache: "no-store" }),
         fetch(`${API_BASE}/favorites/suggestions`, { headers: authHeaders, cache: "no-store" }),
         fetch(`${API_BASE}/packages`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/integrations/instagram/status`, { headers: authHeaders, cache: "no-store" }).catch(() => null),
       ]);
 
       if (ordersRes.ok) {
@@ -329,6 +338,13 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         const rawPackages = await packagesRes.json();
         if (Array.isArray(rawPackages)) {
           setPackages(rawPackages);
+        }
+      }
+
+      if (instagramRes && instagramRes.ok) {
+        const rawIg = await instagramRes.json();
+        if (Array.isArray(rawIg.accounts)) {
+          setInstagramAccounts(rawIg.accounts);
         }
       }
     } catch {
@@ -716,6 +732,122 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const pausePackage = async (packageId: string) => {
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API_BASE}/packages/${packageId}/pause`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        await refreshPackages();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  const resumePackage = async (packageId: string) => {
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API_BASE}/packages/${packageId}/resume`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        await refreshPackages();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  const refreshInstagramAccounts = async () => {
+    const token = getAuthToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/integrations/instagram/status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.accounts)) setInstagramAccounts(data.accounts);
+      }
+    } catch {}
+  };
+
+  const connectInstagramAccount = async (data: any) => {
+    const token = getAuthToken();
+    if (!token) return { success: false, error: "Please log in." };
+    try {
+      const res = await fetch(`${API_BASE}/integrations/instagram/connect`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      const resData = await res.json();
+      if (res.ok) {
+        await refreshInstagramAccounts();
+        return { success: true, connection: resData };
+      }
+      return { success: false, error: resData.message || "Failed to connect account." };
+    } catch {
+      return { success: false, error: "Network error connecting account." };
+    }
+  };
+
+  const disconnectInstagramAccount = async (connectionId: string) => {
+    const token = getAuthToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${API_BASE}/integrations/instagram/disconnect`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ connectionId }),
+      });
+      if (res.ok) {
+        await refreshInstagramAccounts();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  const pollInstagramConnection = async (connectionId: string) => {
+    const token = getAuthToken();
+    if (!token) return null;
+    try {
+      const res = await fetch(`${API_BASE}/integrations/instagram/poll-now`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ connectionId }),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
   const regenerateApiKey = () => {
     const newKey = `smm_live_${Math.random().toString(36).substring(2, 15)}`;
     setUser((prev) => ({ ...prev, apiKey: newKey }));
@@ -733,11 +865,18 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         favorites,
         favoriteSuggestions,
         packages,
+        instagramAccounts,
         isLoading,
         logout,
         refreshData,
         refreshFavorites,
         refreshPackages,
+        refreshInstagramAccounts,
+        connectInstagramAccount,
+        disconnectInstagramAccount,
+        pollInstagramConnection,
+        pausePackage,
+        resumePackage,
         fetchPackageQuote,
         purchasePackage,
         cancelPackage,

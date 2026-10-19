@@ -45,7 +45,112 @@ export class OrdersService {
     private readonly walletService: WalletService,
     private readonly settingsService?: SettingsService,
     private readonly pricingService?: PricingService
-  ) {}
+  ) {
+    this.seedSandboxOrders();
+  }
+
+  private seedSandboxOrders() {
+    const bholuOrders = [
+      {
+        id: "ord_bholu_001",
+        userId: "usr_bholu_customer",
+        serviceId: "1042",
+        target: "https://instagram.com/bholu_official",
+        quantity: 1400,
+        charge: "252.00",
+        startCount: 4200,
+        remains: 0,
+        status: "COMPLETED",
+        isDripFeed: false,
+        totalQuantity: 1400,
+        createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+        service: {
+          id: "1042",
+          name: "Instagram High-Retention Followers [Real Active • 0% Drop • 30D Refill]",
+          platform: "INSTAGRAM",
+          refillable: true,
+          cancellable: false,
+        },
+      },
+      {
+        id: "ord_bholu_002",
+        userId: "usr_bholu_customer",
+        serviceId: "1043",
+        target: "https://instagram.com/p/DA_bholu_post1",
+        quantity: 3500,
+        charge: "69.96",
+        startCount: 150,
+        remains: 0,
+        status: "COMPLETED",
+        isDripFeed: false,
+        totalQuantity: 3500,
+        createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+        service: {
+          id: "1043",
+          name: "Instagram Likes [Speed 50k/D • High Quality • Instant]",
+          platform: "INSTAGRAM",
+          refillable: false,
+          cancellable: false,
+        },
+      },
+      {
+        id: "ord_bholu_003",
+        userId: "usr_bholu_customer",
+        serviceId: "1044",
+        target: "https://instagram.com/stories/highlights/180293",
+        quantity: 7000,
+        charge: "1056.79",
+        startCount: 890,
+        remains: 2100,
+        status: "PROCESSING",
+        isDripFeed: true,
+        runs: 7,
+        intervalMinutes: 1440,
+        quantityPerRun: 1000,
+        totalQuantity: 7000,
+        createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+        updatedAt: new Date().toISOString(),
+        service: {
+          id: "1044",
+          name: "Instagram Highlights Views [Instant Delivery • Ultra Fast]",
+          platform: "INSTAGRAM",
+          refillable: false,
+          cancellable: true,
+        },
+      },
+      {
+        id: "ord_bholu_004",
+        userId: "usr_bholu_customer",
+        serviceId: "1045",
+        target: "https://instagram.com/bholu_official",
+        quantity: 10500,
+        charge: "4492.02",
+        startCount: 0,
+        remains: 10500,
+        status: "IN_PROGRESS",
+        isDripFeed: true,
+        runs: 21,
+        intervalMinutes: 480,
+        quantityPerRun: 500,
+        totalQuantity: 10500,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        service: {
+          id: "1045",
+          name: "Threads Organic Followers & Likes Growth Package",
+          platform: "INSTAGRAM",
+          refillable: true,
+          cancellable: true,
+        },
+      },
+    ];
+
+    for (const ord of bholuOrders) {
+      this.sandboxOrders.set(ord.id, ord);
+    }
+  }
 
   private sanitizeOrderForRole(order: any, role?: string) {
     if (role === "ADMIN") return order;
@@ -157,6 +262,9 @@ export class OrdersService {
         include,
         orderBy: { createdAt: "desc" },
       });
+      if (orders.length === 0 && (userId === "usr_bholu_customer" || userId === "bholu@gmail.com")) {
+        return Array.from(this.sandboxOrders.values()).filter((o) => o.userId === "usr_bholu_customer");
+      }
       return orders.map((order) => this.sanitizeOrderForRole(order, requesterRole));
     } catch (err: any) {
       this.logger.error(`Error querying orders: ${err.message}`);

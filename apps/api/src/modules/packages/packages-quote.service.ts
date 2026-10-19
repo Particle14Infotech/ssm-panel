@@ -12,12 +12,44 @@ export class PackagesQuoteService {
    * Guarantees:
    * 1. Quantity Invariant: sum(run.quantity) === item.totalQuantity for every item.
    * 2. Financial Invariant: sum(run.chargeShare) === item.charge and sum(item.charge) === totalCharge.
-   * 3. Provider Limits: every run quantity satisfies minQty <= qty <= maxQty.
+   * 3. Provider Limits: every run/post quantity satisfies minQty <= qty <= maxQty.
    */
   async calculateQuote(input: PackageQuoteInput): Promise<PackageQuoteResponse> {
     const days = input.days;
     const intervalHours = input.intervalHours || 24;
     const warnings: string[] = [];
+
+    // Optional connected account validation & snapshot
+    let connectionData: PackageQuoteResponse["connection"] = null;
+    if (input.connectionId) {
+      if (this.prisma.isConnected) {
+        const conn = await this.prisma.instagramConnection.findUnique({
+          where: { id: input.connectionId },
+        });
+        if (conn) {
+          connectionData = {
+            id: conn.id,
+            username: conn.username,
+            accountType: conn.accountType,
+            connectionStatus: conn.connectionStatus,
+          };
+          if (conn.connectionStatus !== "CONNECTED") {
+            warnings.push(
+              `Instagram account @${conn.username} is ${conn.connectionStatus}. Reconnection may be required.`
+            );
+          }
+        } else {
+          warnings.push("Connected Instagram account ID could not be found.");
+        }
+      } else {
+        connectionData = {
+          id: input.connectionId,
+          username: input.accountUsername || "demo_account",
+          accountType: "BUSINESS",
+          connectionStatus: "CONNECTED",
+        };
+      }
+    }
 
     // 1. Fetch all requested services
     const serviceIds = [...new Set(input.items.map((i) => i.serviceId))];
@@ -65,6 +97,20 @@ export class PackagesQuoteService {
         throw new BadRequestException(
           `Quantity per run exceeds maximum limit of ${svc.maxQty} on "${svc.displayName || svc.name}".`
         );
+      }
+
+      // If quantityPerPost is configured for auto-post engine
+      if (item.quantityPerPost !== undefined && item.quantityPerPost > 0) {
+        if (item.quantityPerPost < svc.minQty) {
+          throw new BadRequestException(
+            `Quantity per post (${item.quantityPerPost}) on "${svc.displayName || svc.name}" is below service minimum of ${svc.minQty}.`
+          );
+        }
+        if (item.quantityPerPost > svc.maxQty) {
+          throw new BadRequestException(
+            `Quantity per post (${item.quantityPerPost}) on "${svc.displayName || svc.name}" exceeds service maximum of ${svc.maxQty}.`
+          );
+        }
       }
 
       // Target link type advisory warning
@@ -145,6 +191,9 @@ export class PackagesQuoteService {
         target: item.target,
         targetType: item.targetType,
         totalQuantity: item.quantity,
+        quantityPerPost: item.quantityPerPost,
+        delayAfterPublication: item.delayAfterPublication,
+        eligibleMediaTypes: item.eligibleMediaTypes,
         charge: itemCharge.toNumber(),
         ratePer1000: ratePer1k.toNumber(),
         runs: days,
@@ -161,6 +210,8 @@ export class PackagesQuoteService {
       totalCharge: packageTotalCharge.toNumber(),
       totalRuns: allRuns.length,
       days,
+      autoPostEnabled: input.autoPostEnabled ?? true,
+      connection: connectionData,
       items: calculatedItems,
       timeline: allRuns,
       warnings,

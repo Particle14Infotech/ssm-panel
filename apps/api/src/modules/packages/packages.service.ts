@@ -1,6 +1,12 @@
-import { Injectable, BadRequestException, NotFoundException, ConflictException } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { PackagesQuoteService } from "./packages-quote.service";
+import { InstagramService } from "../instagram/instagram.service";
 import { PackageQuoteInput, PackagePurchaseInput } from "@smm/contracts";
 import { Decimal } from "decimal.js";
 import { TransactionType, PackageStatus, PackageRunStatus } from "@prisma/client";
@@ -11,7 +17,8 @@ export class PackagesService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly quoteService: PackagesQuoteService
+    private readonly quoteService: PackagesQuoteService,
+    private readonly instagramService: InstagramService
   ) {}
 
   /**
@@ -24,15 +31,21 @@ export class PackagesService {
   /**
    * Purchases a package:
    * 1. Re-calculates and locks quotes.
-   * 2. Atomic Transaction:
+   * 2. Re-validates Instagram connected account ownership and eligibility.
+   * 3. Atomic Transaction:
    *    - Row lock on Wallet (SELECT ... FOR UPDATE).
    *    - Verifies balance >= totalCharge.
    *    - Debits wallet.
    *    - Creates immutable PACKAGE_PURCHASE ledger record.
-   *    - Creates Package, PackageItem, and PackageRun rows.
+   *    - Creates Package, PackageItem, and PackageRun rows with configuration & entitlement snapshots.
    */
   async purchasePackage(userId: string, input: PackagePurchaseInput) {
-    // 1. Calculate guaranteed quote
+    // 1. Validate connection if auto-post is enabled
+    if (input.connectionId) {
+      await this.instagramService.verifyConnectionEligibility(userId, input.connectionId);
+    }
+
+    // 2. Calculate authoritative quote on server
     const quote = await this.quoteService.calculateQuote(input);
     const totalCharge = new Decimal(quote.totalCharge);
 
@@ -43,11 +56,16 @@ export class PackagesService {
         id: packageId,
         userId,
         name: input.name || `Custom Growth Package (${input.days} Days)`,
+        connectionId: input.connectionId || null,
+        autoPostEnabled: input.autoPostEnabled ?? true,
+        durationDays: input.days,
         status: "ACTIVE",
         totalRuns: quote.totalRuns,
         completedRuns: 0,
         failedRuns: 0,
         cancelledRuns: 0,
+        postsDetected: 0,
+        postsProcessed: 0,
         totalCharge: quote.totalCharge,
         refundedAmount: 0,
         startDate: new Date().toISOString(),
@@ -65,7 +83,7 @@ export class PackagesService {
       return { success: true, package: pkg };
     }
 
-    // 2. Check Idempotency
+    // 3. Check Idempotency
     if (input.idempotencyKey) {
       const existing = await this.prisma.package.findUnique({
         where: {
@@ -81,9 +99,9 @@ export class PackagesService {
       }
     }
 
-    // 3. Atomic Purchase Execution
+    // 4. Atomic Purchase Execution
     return await this.prisma.$transaction(async (tx) => {
-      // 3a. Pessimistic lock on User's Wallet
+      // 4a. Pessimistic lock on User's Wallet
       const [walletRow] = await tx.$queryRawUnsafe<any[]>(
         `SELECT id, balance, currency FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
         userId
@@ -102,33 +120,42 @@ export class PackagesService {
 
       const newBalance = currentBalance.minus(totalCharge);
 
-      // 3b. Debit wallet balance
+      // 4b. Debit wallet balance
       await tx.wallet.update({
         where: { id: walletRow.id },
         data: { balance: newBalance },
       });
 
-      // 3c. Create Package record
+      // 4c. Create Package record with snapshots
       const startDate = new Date();
-      const endDate = new Date(startDate.getTime() + input.days * (input.intervalHours || 24) * 3600 * 1000);
+      const endDate = new Date(
+        startDate.getTime() + input.days * (input.intervalHours || 24) * 3600 * 1000
+      );
       const pkg = await tx.package.create({
         data: {
           userId,
+          connectionId: input.connectionId || null,
           name: input.name || `Growth Package (${input.days} Days)`,
           status: PackageStatus.ACTIVE,
+          durationDays: input.days,
+          autoPostEnabled: input.autoPostEnabled ?? true,
           totalRuns: quote.totalRuns,
           completedRuns: 0,
           failedRuns: 0,
           cancelledRuns: 0,
+          postsDetected: 0,
+          postsProcessed: 0,
           totalCharge,
           refundedAmount: new Decimal(0),
+          configurationSnapshot: input as any,
+          entitlementSnapshot: quote.items as any,
           idempotencyKey: input.idempotencyKey || null,
           startDate,
           endDate,
         },
       });
 
-      // 3d. Write Ledger Entry (Immutable double-entry debit)
+      // 4d. Write Ledger Entry (Immutable double-entry debit)
       await tx.ledgerEntry.create({
         data: {
           walletId: walletRow.id,
@@ -140,8 +167,9 @@ export class PackagesService {
         },
       });
 
-      // 3e. Insert Package Items and Runs
+      // 4e. Insert Package Items and initial Runs
       for (const item of quote.items) {
+        const matchingInputItem = input.items.find((i) => i.serviceId === item.serviceId);
         const pkgItem = await tx.packageItem.create({
           data: {
             packageId: pkg.id,
@@ -151,10 +179,19 @@ export class PackagesService {
             totalQuantity: item.totalQuantity,
             charge: new Decimal(item.charge),
             sellRatePer1kSnapshot: new Decimal(item.ratePer1000),
+            enabled: matchingInputItem?.enabled ?? true,
+            quantityPerPost: matchingInputItem?.quantityPerPost ?? 0,
+            maximumPostsToProcess: matchingInputItem?.maximumPostsToProcess ?? 100,
+            delayAfterPublication: matchingInputItem?.delayAfterPublication || 0,
+            eligibleMediaTypes: matchingInputItem?.eligibleMediaTypes || ["REEL", "IMAGE", "VIDEO"],
+            usageLimit: item.totalQuantity,
+            usageConsumed: 0,
           },
         });
 
-        const itemRuns = quote.timeline.filter((t) => t.serviceId === item.serviceId && t.target === item.target);
+        const itemRuns = quote.timeline.filter(
+          (t) => t.serviceId === item.serviceId && t.target === item.target
+        );
         const runsData = itemRuns.map((r) => ({
           packageId: pkg.id,
           packageItemId: pkgItem.id,
@@ -176,6 +213,7 @@ export class PackagesService {
         package: {
           id: pkg.id,
           name: pkg.name,
+          connectionId: pkg.connectionId,
           totalCharge: totalCharge.toNumber(),
           totalRuns: quote.totalRuns,
           days: input.days,
@@ -197,6 +235,14 @@ export class PackagesService {
     const packages = await this.prisma.package.findMany({
       where: { userId },
       include: {
+        connection: {
+          select: {
+            id: true,
+            username: true,
+            platformAccountId: true,
+            connectionStatus: true,
+          },
+        },
         items: {
           include: {
             service: {
@@ -217,10 +263,16 @@ export class PackagesService {
       id: p.id,
       name: p.name,
       status: p.status,
+      connectionId: p.connectionId,
+      connectedAccount: p.connection ? `@${p.connection.username}` : null,
+      autoPostEnabled: p.autoPostEnabled,
+      durationDays: p.durationDays,
       totalRuns: p.totalRuns,
       completedRuns: p.completedRuns,
       failedRuns: p.failedRuns,
       cancelledRuns: p.cancelledRuns,
+      postsDetected: p.postsDetected,
+      postsProcessed: p.postsProcessed,
       totalCharge: Number(p.totalCharge),
       refundedAmount: Number(p.refundedAmount),
       startDate: p.startDate.toISOString(),
@@ -234,13 +286,18 @@ export class PackagesService {
         target: i.target,
         targetType: i.targetType,
         totalQuantity: i.totalQuantity,
+        quantityPerPost: i.quantityPerPost,
+        delayAfterPublication: i.delayAfterPublication,
+        eligibleMediaTypes: i.eligibleMediaTypes,
+        usageLimit: i.usageLimit,
+        usageConsumed: i.usageConsumed,
         charge: Number(i.charge),
       })),
     }));
   }
 
   /**
-   * Retrieves single package with items and full run timeline
+   * Retrieves single package with items, runs, and execution status
    */
   async getPackage(userId: string, packageId: string) {
     if (!this.prisma.isConnected) {
@@ -252,6 +309,15 @@ export class PackagesService {
     const pkg = await this.prisma.package.findFirst({
       where: { id: packageId, userId },
       include: {
+        connection: {
+          select: {
+            id: true,
+            username: true,
+            platformAccountId: true,
+            connectionStatus: true,
+            lastDetectedAt: true,
+          },
+        },
         items: {
           include: {
             service: {
@@ -290,10 +356,26 @@ export class PackagesService {
       id: pkg.id,
       name: pkg.name,
       status: pkg.status,
+      connectionId: pkg.connectionId,
+      connection: pkg.connection
+        ? {
+            id: pkg.connection.id,
+            username: pkg.connection.username,
+            platformAccountId: pkg.connection.platformAccountId,
+            connectionStatus: pkg.connection.connectionStatus,
+            lastDetectedAt: pkg.connection.lastDetectedAt
+              ? pkg.connection.lastDetectedAt.toISOString()
+              : null,
+          }
+        : null,
+      autoPostEnabled: pkg.autoPostEnabled,
+      durationDays: pkg.durationDays,
       totalRuns: pkg.totalRuns,
       completedRuns: pkg.completedRuns,
       failedRuns: pkg.failedRuns,
       cancelledRuns: pkg.cancelledRuns,
+      postsDetected: pkg.postsDetected,
+      postsProcessed: pkg.postsProcessed,
       totalCharge: Number(pkg.totalCharge),
       refundedAmount: Number(pkg.refundedAmount),
       startDate: pkg.startDate.toISOString(),
@@ -307,6 +389,11 @@ export class PackagesService {
         target: i.target,
         targetType: i.targetType,
         totalQuantity: i.totalQuantity,
+        quantityPerPost: i.quantityPerPost,
+        delayAfterPublication: i.delayAfterPublication,
+        eligibleMediaTypes: i.eligibleMediaTypes,
+        usageLimit: i.usageLimit,
+        usageConsumed: i.usageConsumed,
         charge: Number(i.charge),
       })),
       runs: pkg.runs.map((r) => ({
@@ -323,6 +410,171 @@ export class PackagesService {
         childOrderStatus: r.childOrder?.status || null,
       })),
     };
+  }
+
+  /**
+   * Pauses an active package
+   */
+  async pausePackage(userId: string, packageId: string) {
+    if (!this.prisma.isConnected) {
+      const pkg = this.sandboxPackages.get(packageId);
+      if (!pkg || pkg.userId !== userId) throw new NotFoundException("Package not found.");
+      pkg.status = "PAUSED";
+      return { success: true, status: "PAUSED" };
+    }
+
+    const pkg = await this.prisma.package.findFirst({
+      where: { id: packageId, userId },
+    });
+    if (!pkg) throw new NotFoundException("Package not found.");
+    if (pkg.status !== PackageStatus.ACTIVE) {
+      throw new BadRequestException(`Cannot pause package with status "${pkg.status}".`);
+    }
+
+    await this.prisma.package.update({
+      where: { id: packageId },
+      data: { status: PackageStatus.PAUSED },
+    });
+
+    return { success: true, status: "PAUSED" };
+  }
+
+  /**
+   * Resumes a paused package
+   */
+  async resumePackage(userId: string, packageId: string) {
+    if (!this.prisma.isConnected) {
+      const pkg = this.sandboxPackages.get(packageId);
+      if (!pkg || pkg.userId !== userId) throw new NotFoundException("Package not found.");
+      pkg.status = "ACTIVE";
+      return { success: true, status: "ACTIVE" };
+    }
+
+    const pkg = await this.prisma.package.findFirst({
+      where: { id: packageId, userId },
+    });
+    if (!pkg) throw new NotFoundException("Package not found.");
+    if (pkg.status !== PackageStatus.PAUSED) {
+      throw new BadRequestException(`Cannot resume package with status "${pkg.status}".`);
+    }
+
+    await this.prisma.package.update({
+      where: { id: packageId },
+      data: { status: PackageStatus.ACTIVE },
+    });
+
+    return { success: true, status: "ACTIVE" };
+  }
+
+  /**
+   * Retrieves all detected posts associated with this package's connection
+   */
+  async getPackagePosts(userId: string, packageId: string) {
+    if (!this.prisma.isConnected) {
+      return [];
+    }
+
+    const pkg = await this.prisma.package.findFirst({
+      where: { id: packageId, userId },
+    });
+    if (!pkg) throw new NotFoundException("Package not found.");
+
+    if (!pkg.connectionId) {
+      return [];
+    }
+
+    const posts = await this.prisma.monitoredMedia.findMany({
+      where: { connectionId: pkg.connectionId },
+      orderBy: { publishedAt: "desc" },
+      include: {
+        executions: {
+          where: { packageId },
+          select: {
+            id: true,
+            status: true,
+            actionType: true,
+            scheduledAt: true,
+            completedAt: true,
+            attempts: true,
+            errorMessage: true,
+          },
+        },
+      },
+    });
+
+    return posts.map((p) => ({
+      id: p.id,
+      mediaId: p.mediaId,
+      permalink: p.permalink,
+      mediaType: p.mediaType,
+      caption: p.caption,
+      publishedAt: p.publishedAt.toISOString(),
+      firstDetectedAt: p.firstDetectedAt.toISOString(),
+      executions: p.executions.map((e) => ({
+        id: e.id,
+        status: e.status,
+        actionType: e.actionType,
+        scheduledAt: e.scheduledAt.toISOString(),
+        completedAt: e.completedAt ? e.completedAt.toISOString() : null,
+        attempts: e.attempts,
+        errorMessage: e.errorMessage,
+      })),
+    }));
+  }
+
+  /**
+   * Retrieves full automation execution history for this package
+   */
+  async getPackageExecutions(userId: string, packageId: string) {
+    if (!this.prisma.isConnected) {
+      return [];
+    }
+
+    const pkg = await this.prisma.package.findFirst({
+      where: { id: packageId, userId },
+    });
+    if (!pkg) throw new NotFoundException("Package not found.");
+
+    const executions = await this.prisma.automationExecution.findMany({
+      where: { packageId },
+      orderBy: { scheduledAt: "desc" },
+      include: {
+        packageItem: {
+          select: {
+            serviceId: true,
+            quantityPerPost: true,
+            service: { select: { displayName: true, name: true, platform: true } },
+          },
+        },
+        monitoredMedia: {
+          select: {
+            mediaId: true,
+            permalink: true,
+            mediaType: true,
+            publishedAt: true,
+          },
+        },
+      },
+    });
+
+    return executions.map((e) => ({
+      id: e.id,
+      packageId: e.packageId,
+      mediaId: e.mediaId,
+      mediaPermalink: e.monitoredMedia?.permalink || null,
+      mediaType: e.monitoredMedia?.mediaType || null,
+      serviceName:
+        e.packageItem?.service?.displayName || e.packageItem?.service?.name || "Service",
+      actionType: e.actionType,
+      status: e.status,
+      scheduledAt: e.scheduledAt.toISOString(),
+      startedAt: e.startedAt ? e.startedAt.toISOString() : null,
+      completedAt: e.completedAt ? e.completedAt.toISOString() : null,
+      attempts: e.attempts,
+      providerReference: e.providerReference,
+      errorCode: e.errorCode,
+      errorMessage: e.errorMessage,
+    }));
   }
 
   /**
@@ -368,30 +620,41 @@ export class PackagesService {
         },
       });
 
-      if (scheduledRuns.length === 0) {
-        throw new BadRequestException("No remaining scheduled runs to cancel.");
-      }
+      // 3. Cancel any pending or scheduled AutomationExecution records
+      await tx.automationExecution.updateMany({
+        where: {
+          packageId: pkg.id,
+          status: { in: ["SCHEDULED", "PENDING"] },
+        },
+        data: {
+          status: "CANCELLED",
+        },
+      });
 
-      // 3. Calculate exact refund amount
+      // 4. Calculate exact refund amount
       let refundAmount = new Decimal(0);
       for (const run of scheduledRuns) {
         refundAmount = refundAmount.plus(new Decimal(run.chargeShare.toString()));
       }
 
-      // 4. Mark runs as CANCELLED
-      await tx.packageRun.updateMany({
-        where: {
-          packageId: pkg.id,
-          status: PackageRunStatus.SCHEDULED,
-        },
-        data: {
-          status: PackageRunStatus.CANCELLED,
-        },
-      });
+      // 5. Mark runs as CANCELLED
+      if (scheduledRuns.length > 0) {
+        await tx.packageRun.updateMany({
+          where: {
+            packageId: pkg.id,
+            status: PackageRunStatus.SCHEDULED,
+          },
+          data: {
+            status: PackageRunStatus.CANCELLED,
+          },
+        });
+      }
 
-      // 5. Update package status and refund stats
+      // 6. Update package status and refund stats
       const newStatus =
-        pkg.completedRuns > 0 ? PackageStatus.PARTIAL : PackageStatus.CANCELLED;
+        pkg.completedRuns > 0 || pkg.postsProcessed > 0
+          ? PackageStatus.PARTIAL
+          : PackageStatus.CANCELLED;
 
       await tx.package.update({
         where: { id: pkg.id },
@@ -402,7 +665,7 @@ export class PackagesService {
         },
       });
 
-      // 6. Credit wallet and write PACKAGE_REFUND ledger record
+      // 7. Credit wallet and write PACKAGE_REFUND ledger record
       if (refundAmount.greaterThan(0)) {
         const currentBalance = new Decimal(walletRow.balance.toString());
         const newBalance = currentBalance.plus(refundAmount);

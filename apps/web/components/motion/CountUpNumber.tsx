@@ -10,6 +10,7 @@ interface CountUpNumberProps {
   prefix?: string;
   suffix?: string;
   decimals?: number;
+  locale?: string;
   className?: string;
 }
 
@@ -19,6 +20,7 @@ export function CountUpNumber({
   prefix = "",
   suffix = "",
   decimals = 0,
+  locale = "en-IN",
   className = "",
 }: CountUpNumberProps) {
   const { reduced } = useMotionPreference();
@@ -59,8 +61,8 @@ export function CountUpNumber({
   }, [isInView, value, duration, reduced]);
 
   const formatted = decimals > 0
-    ? displayValue.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
-    : Math.floor(displayValue).toLocaleString("en-US");
+    ? displayValue.toLocaleString(locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+    : Math.floor(displayValue).toLocaleString(locale);
 
   return (
     <span ref={ref} className={className}>
