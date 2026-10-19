@@ -1,158 +1,177 @@
-# Drip-Feed Provider-Native Implementation
+# DRIP-FEED IMPLEMENTATION SPECIFICATION & ARCHITECTURE
 
-## 1. Overview & Architectural Philosophy
-
-The SMM platform implements **Provider-Native Drip-Feed** fulfillment. 
-
-### Why Provider-Native?
-A panel-side cron or scheduler that splits orders and dispatches individual runs manually introduces severe operational hazards:
-- **Double-dispatch risks**: Worker crashes or restarts during run transitions can re-dispatch runs or miss runs.
-- **Partial synchronization failures**: If run $k$ succeeds on upstream but the panel network blips before recording the ID, run $k$ is retried or left unmonitored.
-- **Clock and Drift Hazards**: Jitter and race conditions across multiple scheduler instances.
-
-In the **Provider-Native** approach:
-1. The customer configures:
-   - **Quantity per run** ($Q_{run}$)
-   - **Number of runs** ($R$)
-   - **Interval** ($I_{min}$, in minutes)
-2. Total quantity is defined as:
-   $$\text{TotalQuantity} = Q_{run} \times R$$
-3. The panel passes `action=add`, `service`, `link`, `quantity` ($= Q_{run}$), `runs`, and `interval` directly to the upstream provider in a single atomic dispatch request.
-4. The upstream provider executes the runs natively on its network and returns **one single upstream order ID**.
-5. The panel monitors the aggregate progress via status polling and logs provider interactions in the `OrderProviderEvent` ledger.
+**Status:** IMPLEMENTED & TESTED  
+**Date:** 2026-10-19  
+**Source of Truth:** `@smm/contracts`, `prisma/schema.prisma`  
 
 ---
 
-## 2. Data Model & Schema Fields
+## 1. Architectural Overview: Dual-Mode Drip-Feed
 
-### 2.1 Database Entities (`prisma/schema.prisma`)
+The platform provides a dual-mode drip-feed architecture:
 
-#### `Service` Model
-- `dripFeedSupported`: `Boolean` (default `false`). Set automatically from upstream provider `dripfeed: true` during catalog sync, admin can manually override.
-- `dripFeedMinRuns`: `Int?` (nullable). Service-specific override for minimum allowable runs.
-- `dripFeedMaxRuns`: `Int?` (nullable). Service-specific override for maximum allowable runs.
-- `dripFeedMinInterval`: `Int?` (nullable). Service-specific override for minimum interval (minutes).
-- `dripFeedMaxInterval`: `Int?` (nullable). Service-specific override for maximum interval (minutes).
-
-#### `Order` Model
-- `isDripFeed`: `Boolean` (default `false`). Indicates whether order is dispatched as a native drip-feed.
-- `runs`: `Int?` (nullable). Number of runs requested ($R$).
-- `intervalMinutes`: `Int?` (nullable). Interval between runs in minutes ($I_{min}$).
-- `quantityPerRun`: `Int?` (nullable). Per-run quantity ($Q_{run}$).
-- `totalQuantity`: `Int`. Total units delivered across all runs ($Q_{run} \times R$ for drip-feed, $Q$ for standard orders).
-- `quantity`: Existing column repurposed to hold $Q_{run}$ for drip orders, preserving upstream API parameter mapping where `quantity` represents the per-run amount.
-
-#### `OrderProviderEvent` Model
-Audit trail of provider interactions:
-- `id`: `String` (CUID/UUID primary key).
-- `orderId`: Foreign key to `Order`.
-- `providerId`: Foreign key to `Provider`.
-- `eventType`: `DISPATCH_REQUEST`, `DISPATCH_RESPONSE`, `STATUS_SYNC`, `CANCEL_REQUEST`, or `REFILL_REQUEST`.
-- `payload`: Redacted request parameters (API tokens replaced with `[REDACTED]`).
-- `response`: Upstream provider JSON response.
-- `errorMessage`: Sanitized upstream error string if rejected.
-- `createdAt`: `DateTime`.
-
----
-
-## 3. Limits & Global Settings
-
-Global limits are managed via `SettingsService` and editable by administrators:
-- `DRIPFEED_ENABLED`: Feature flag (`Boolean`, default `true`).
-- `DRIPFEED_MIN_RUNS`: Default `2` runs.
-- `DRIPFEED_MAX_RUNS`: Default `100` runs.
-- `DRIPFEED_MIN_INTERVAL`: Default `5` minutes.
-- `DRIPFEED_MAX_INTERVAL`: Default `1440` minutes (24 hours).
-
-### Validation Fallback Cascade
-When validating an order, the system evaluates:
-1. `effectiveMinRuns = service.dripFeedMinRuns ?? global.DRIPFEED_MIN_RUNS`
-2. `effectiveMaxRuns = service.dripFeedMaxRuns ?? global.DRIPFEED_MAX_RUNS`
-3. `effectiveMinInterval = service.dripFeedMinInterval ?? global.DRIPFEED_MIN_INTERVAL`
-4. `effectiveMaxInterval = service.dripFeedMaxInterval ?? global.DRIPFEED_MAX_INTERVAL`
+```
+┌────────────────────────────────────────────────────────┐
+│                   Customer Order Form                  │
+│       Selects Service + Enables Drip-Feed Toggle       │
+└───────────────────────────┬────────────────────────────┘
+                            │
+               ┌────────────┴────────────┐
+               ▼                         ▼
+   service.dripFeedSupported?    service.allowManagedDrip?
+        [YES: 20 services]           [YES: Allowlisted]
+               │                         │
+               ▼                         ▼
+      dripMode: NATIVE          dripMode: MANAGED
+               │                         │
+               ▼                         ▼
+   Single Order Record       Parent Order + OrderRun Records
+   Pass runs/interval        (runIndex 0..N-1, scheduledAt,
+   in upstream action=add    chargeShare, status: SCHEDULED)
+               │                         │
+               ▼                         ▼
+   Upstream schedules        Background Worker Polls Runs
+   executions internally     (FOR UPDATE SKIP LOCKED LIMIT 50)
+                             Dispatches run 0 immediately,
+                             run 1..N-1 at scheduled intervals.
+```
 
 ---
 
-## 4. Financial Calculation & Rounding Rules
+## 2. Modes Comparison Matrix
 
-All monetary calculations use `decimal.js` with 18 decimal places of internal precision and round **UP** (`Decimal.ROUND_UP`) to 2 decimal places to guarantee the business never undercharges:
+| Feature | `dripMode: NATIVE` | `dripMode: MANAGED` |
+|:---|:---|:---|
+| **Applicability** | Only services where provider returns `dripfeed: true` (20 Likes/Views/Story services) | Any service allowlisted by Admin (`allowManagedDrip = true`), including Followers |
+| **Database Structure** | 1 `Order` row (`isDripFeed: true`, `runs`, `intervalMinutes`) | 1 `Order` row + N `OrderRun` rows (`runIndex`, `quantity`, `chargeShare`, `scheduledAt`, `status`) |
+| **Upstream Dispatch** | 1 API call with `runs` & `interval` | N independent API calls dispatched sequentially over time |
+| **Min / Max Runs** | 2 / 100 | 2 / 30 (`DRIPFEED_MANAGED_MAX_RUNS`) |
+| **Min Interval** | 5 minutes | 30 minutes (`DRIPFEED_MANAGED_MIN_INTERVAL`) |
+| **Link Overlap Safety**| Handled upstream | Automated detection via `isLinkRestrictionError` with 10-minute postponement |
+| **Partial Cancellation**| Request upstream cancel | Customer can cancel remaining scheduled runs with instant wallet refund |
+| **Refill Policy** | Allowed if service supports refill | Disabled (`refillable = false`) to prevent link collision and provider conflicts |
 
-```typescript
-export function calculateOrderCharge(ratePer1000: string | number, quantity: number, runs?: number): string {
-  const unitsPerRun = new Decimal(quantity);
-  const totalUnits = runs && runs > 1 ? unitsPerRun.times(runs) : unitsPerRun;
-  const rate = new Decimal(ratePer1000);
-  const rawCharge = totalUnits.times(rate).dividedBy(1000);
-  return rawCharge.toDecimalPlaces(2, Decimal.ROUND_UP).toFixed(2);
+---
+
+## 3. Data Model & Migrations
+
+### 3.1 Schema (`prisma/schema.prisma`)
+```prisma
+enum DripMode {
+  NONE
+  NATIVE
+  MANAGED
+}
+
+enum OrderRunStatus {
+  SCHEDULED
+  DISPATCHING
+  UNCERTAIN
+  PROCESSING
+  COMPLETED
+  PARTIAL
+  FAILED
+  CANCELED
+}
+
+model Order {
+  // Existing order columns ...
+  dripMode        DripMode        @default(NONE)
+  runsList        OrderRun[]
+}
+
+model OrderRun {
+  id              String          @id @default(uuid())
+  orderId         String
+  order           Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  runIndex        Int
+  quantity        Int
+  scheduledAt     DateTime
+  status          OrderRunStatus  @default(SCHEDULED)
+  providerOrderId String?
+  attempts        Int             @default(0)
+  nextAttemptAt   DateTime?
+  lastError       String?
+  delivered       Int             @default(0)
+  chargeShare     Decimal         @db.Decimal(12, 2)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@unique([orderId, runIndex])
+  @@index([status, scheduledAt])
+  @@index([providerOrderId])
+}
+
+model Service {
+  // Existing columns ...
+  allowManagedDrip  Boolean       @default(false)
+  rawMeta           Json?
 }
 ```
 
-### Example Calculations:
-- Rate: ₹70.00 / 1000, 100 units/run, 5 runs = 500 units total:
-  $$\text{Charge} = \frac{500 \times 70.00}{1000} = ₹35.00$$
-- Rate: ₹26.05 / 1000, 88 units/run, 2 runs = 176 units total:
-  $$\text{Raw} = \frac{176 \times 26.05}{1000} = 4.5848 \implies ₹4.59 \text{ (Rounded UP)}$$
+### 3.2 Migration SQL File
+Generated at `prisma/migrations/20261019020000_panel_managed_dripfeed/migration.sql` for controlled execution via `prisma migrate deploy`.
 
 ---
 
-## 5. Refunds & Remainder Semantics
+## 4. Financial Integrity: Exact Mathematical Split
 
-### 5.1 Provider Behavior & Remainder Semantics
-In standard upstream SMM APIs (e.g. cheapestsmmpanels, JAP, SMM-World):
-- When an upstream order is returned with status `Partial`, the provider's `remains` field represents the **total undelivered units across all runs**, not the per-run undelivered amount.
-- For example, if an order of 100 units x 5 runs (500 total) delivered 3 runs (300 units) and then stalled, upstream reports `remains: 200`.
+Customer charge is debited **once upfront** during order creation:
+$$\text{Total Charge} = \text{ceil2}\left(\frac{\text{sellRate} \times \text{quantity} \times \text{runs}}{1000}\right)$$
 
-### 5.2 Proportional Refund Math
-Refunds are calculated strictly against `totalQuantity`:
-$$\text{ProportionalRefund} = \min\left(\text{Charge}, \frac{\text{Remains}}{\text{TotalQuantity}} \times \text{Charge}\right)$$
+To guarantee **zero rounding leakage** or unallocated fractions:
+1. `baseShare = floor(totalCharge / runs * 100) / 100`
+2. Runs $0 \dots (N-2)$ receive `baseShare`.
+3. Run $(N-1)$ receives $\text{totalCharge} - \sum_{i=0}^{N-2} \text{share}_i$.
+4. **Invariant:** $\sum_{i=0}^{N-1} \text{share}_i \equiv \text{Total Charge}$ exactly.
 
-Calculated with Decimal and rounded **DOWN** (`Decimal.ROUND_DOWN`) to prevent over-crediting:
-```typescript
-const proportionalRefund = new Decimal(remains)
-  .dividedBy(new Decimal(totalQuantity))
-  .times(new Decimal(order.charge))
-  .toDecimalPlaces(2, Decimal.ROUND_DOWN);
+---
+
+## 5. Background Scheduler & Worker Concurrency
+
+The background worker (`apps/worker/src/main.ts`) runs every 15 seconds:
+
+```sql
+SELECT * FROM "OrderRun"
+WHERE "status" = 'SCHEDULED'
+  AND ("nextAttemptAt" IS NULL OR "nextAttemptAt" <= NOW())
+  AND "scheduledAt" <= NOW()
+ORDER BY "scheduledAt" ASC
+LIMIT 50
+FOR UPDATE SKIP LOCKED;
 ```
 
-### 5.3 Provider Rejection Auto-Refund
-If the upstream provider rejects the dispatch (e.g. `Incorrect quantity`, `Interval too small`, or `Service does not support drip-feed`), the worker:
-1. Records the rejection reason in `OrderProviderEvent`.
-2. Marks the order `FAILED`.
-3. Issues a 100% full refund of the order charge back to the customer's wallet via the atomic double-entry ledger.
+### 5.1 Concurrency & Worker Fault Isolation
+- **`FOR UPDATE SKIP LOCKED`**: Multiple worker nodes or cluster workers never pick up or dispatch the same run.
+- **Persist `DISPATCHING` Before Call**: Status is committed to the database before the upstream network call is initiated.
+- **Timeout Protection**: If an HTTP call aborts or times out, the run is flagged as `UNCERTAIN` instead of retrying blindly. It alerts the admin supervisor.
+- **HTTP 200 + Error Handling**: Upstream SMM v2 APIs return HTTP 200 with `{ "error": "..." }`. The adapter parses `res.data.error` as a definitive failure or postponement.
 
 ---
 
-## 6. Watchdog & Stuck Order Protection
+## 6. Provider Link Restriction Postponement
 
-Standard orders have a 24-hour stuck-in-processing threshold. Because drip-feed orders take hours or days to complete naturally:
-$$\text{WatchdogThreshold} = 24\text{h} + ((\text{runs} - 1) \times \text{intervalMinutes})$$
-This prevents legitimate ongoing drip campaigns from being prematurely flagged as stalled or refunded while runs are actively executing upstream.
+Many upstream providers reject consecutive orders on identical links (e.g., *"There is already an active order with this link"*):
+- Detected strings: `active order exists`, `order on this link`, `active order with this link`, `link is already in progress`, `order already in progress`, `duplicate link`, `processing queue`.
+- **Action**: When detected, the worker increments `attempts` and sets `nextAttemptAt = now + 10 minutes`.
+- **Exhaustion**: After 5 attempts, the run transitions to `FAILED`, and its exact `chargeShare` is refunded once to the user's wallet.
 
 ---
 
-## 7. Frontend Integration & Contract Validation
+## 7. Customer Cancellation Mid-Schedule
 
-### 7.1 Payload Bug Resolution (`CustomerContext.createOrder`)
-Previously, `CustomerContext.createOrder` intermittently omitted drip-feed fields when interacting with legacy wrappers. The implementation now strictly passes:
-```typescript
-const payload: Record<string, any> = {
-  serviceId: input.serviceId,
-  target: input.target,
-  quantity: input.quantity,
-  isDripFeed: Boolean(input.isDripFeed ?? input.dripFeed),
-  ...(input.isDripFeed ? { runs: Number(input.runs), interval: Number(input.interval) } : {}),
-  ...(input.expectedRate !== undefined ? { expectedRate: Number(input.expectedRate) } : {}),
-  ...(input.comments !== undefined ? { comments: input.comments } : {}),
-  idempotencyKey: input.idempotencyKey || `ord_${Date.now()}_...`,
-};
-```
+If a customer cancels a managed drip-feed order:
+1. All runs with `status = 'SCHEDULED'` are immediately updated to `status = 'CANCELED'`.
+2. The exact sum of their `chargeShare` amounts is credited back to the customer's wallet in a single atomic database transaction.
+3. Runs that are already `DISPATCHING`, `PROCESSING`, or `COMPLETED` are preserved without disruption.
+4. The parent order status transitions to `PARTIAL` (if any run succeeded) or `CANCELLED` (if run 0 failed or was canceled).
 
-### 7.2 Quote = Charge Verification
-If a customer previews a rate on the client and submits with `expectedRate`, the backend compares `Math.abs(expectedRate - service.ratePer1000) <= 0.001`. If a catalog sync repriced the service in the interim, the backend returns HTTP 409 Conflict: *"Price updated, please confirm the new price before placing the order."*
+---
 
-### 7.3 Financial Snapshot & Profit Reconciliation
-For drip-feed orders:
-- `totalQuantity = quantityPerRun * runs`
-- `estimatedProviderCost = (costRatePer1k * totalQuantity) / 1000`
-- `actualProviderCost` is updated upon receiving upstream status reports.
-- Proportional refunds on partial delivery recalculate realized profit using `totalQuantity` strictly.
+## 8. Supervisor Health & Telemetry
+
+Surfaced via `GET /api/v1/health/system` and rendered in `/admin/health`:
+- **Due Runs**: `status = 'SCHEDULED'` and `scheduledAt <= now`.
+- **Late Runs**: `status = 'SCHEDULED'` and `scheduledAt <= now - 10m` (indicates queue starvation or worker stall).
+- **Uncertain Runs**: `status = 'UNCERTAIN'` (network timeout during upstream call, requires verification).
+- **Failed Runs**: Total runs that failed all retries and were refunded.

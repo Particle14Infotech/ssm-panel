@@ -243,19 +243,31 @@ export default function OrdersPage() {
 
                     {/* Quantity */}
                     <td className="py-3.5 px-3 font-mono">
-                      {order.isDripFeed ? (
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-1.5">
-                            <span className="px-1.5 py-0.2 rounded bg-[#D8EC8D]/15 text-[#D8EC8D] text-[10px] font-semibold">
-                              Drip-feed
+                      {order.isDripFeed || order.dripMode === "MANAGED" || order.dripMode === "NATIVE" ? (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="px-1.5 py-0.5 rounded bg-[#D8EC8D]/15 text-[#D8EC8D] text-[10px] font-semibold">
+                              Drip-feed ({order.dripMode || "MANAGED"})
                             </span>
                             <span className="text-white font-medium">
                               {order.totalQuantity ?? (order.runs ? order.quantity * order.runs : order.quantity)} total
                             </span>
                           </div>
-                          <div className="text-[10px] text-slate-400">
-                            {order.quantityPerRun ?? order.quantity} × {order.runs} runs ({order.intervalMinutes}m)
-                          </div>
+                          {order.runsList && order.runsList.length > 0 ? (
+                            <div className="text-[10px] text-slate-300">
+                              {order.runsList.filter((r: any) => r.status === "COMPLETED").length} of {order.runsList.length} runs done
+                              {" "}({order.runsList.reduce((acc: number, r: any) => acc + (r.delivered || 0), 0)} / {order.totalQuantity ?? order.quantity * (order.runs || 1)})
+                            </div>
+                          ) : (
+                            <div className="text-[10px] text-slate-400">
+                              {order.quantityPerRun ?? order.quantity} × {order.runs} runs ({order.intervalMinutes}m)
+                            </div>
+                          )}
+                          {order.runsList?.find((r: any) => r.status === "SCHEDULED") && (
+                            <div className="text-[10px] text-[#D8EC8D] font-mono">
+                              Next run: {new Date(order.runsList.find((r: any) => r.status === "SCHEDULED")!.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          )}
                           {order.remains !== null && order.remains !== undefined && (
                             <span className="text-[10px] text-slate-400 block font-mono">
                               Remains: {order.remains.toLocaleString()}
@@ -445,6 +457,65 @@ export default function OrdersPage() {
                 <span>₹{activeModalOrder.charge.toFixed(2)}</span>
               </div>
             </div>
+
+            {/* Per-Run Execution Timeline */}
+            {activeModalOrder.runsList && activeModalOrder.runsList.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 font-semibold">
+                    Run Timeline ({activeModalOrder.runsList.length} runs)
+                  </span>
+                  {activeModalOrder.dripMode === "MANAGED" && activeModalOrder.runsList.some((r: any) => r.status === "SCHEDULED") && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (confirm("Cancel all remaining scheduled runs? Delivered runs will be kept, and unsent runs will be refunded immediately to your wallet.")) {
+                          await cancelOrder(activeModalOrder.id);
+                          setActiveModalOrder(null);
+                        }
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 text-[10px] font-mono transition-colors"
+                    >
+                      Cancel Remaining Runs
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-1.5 no-scrollbar">
+                  {activeModalOrder.runsList.map((run: any) => (
+                    <div key={run.id} className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between text-[11px] font-mono">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-white font-semibold">Run #{run.runIndex + 1}</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                            run.status === "COMPLETED" ? "bg-emerald-500/15 text-emerald-300" :
+                            run.status === "DISPATCHING" || run.status === "PROCESSING" ? "bg-amber-500/15 text-amber-300" :
+                            run.status === "FAILED" || run.status === "CANCELED" ? "bg-rose-500/15 text-rose-300" :
+                            "bg-white/10 text-slate-300"
+                          }`}>
+                            {run.status}
+                          </span>
+                        </div>
+                        <div className="text-slate-500 text-[10px] mt-0.5">
+                          {run.providerOrderId ? `Provider #${run.providerOrderId} · ` : ""}
+                          {new Date(run.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {run.lastError ? ` · Error: ${run.lastError}` : ""}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-white font-medium">{run.quantity} units</span>
+                        <div className="text-[10px] text-slate-400">
+                          {run.status === "FAILED" || run.status === "CANCELED" ? (
+                            <span className="text-rose-400">₹{run.chargeShare.toFixed(2)} refunded</span>
+                          ) : (
+                            <span>₹{run.chargeShare.toFixed(2)}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-3 pt-2">
               <Link

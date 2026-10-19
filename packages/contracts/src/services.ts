@@ -60,6 +60,8 @@ export const ServiceItemSchema = z.object({
   costINR: z.number().optional(),
   marginPercent: z.number().optional(),
   priceBelowCost: z.boolean().optional(),
+  allowManagedDrip: z.boolean().optional(),
+  rawMeta: z.record(z.any()).optional(),
 });
 export type ServiceItem = z.infer<typeof ServiceItemSchema>;
 

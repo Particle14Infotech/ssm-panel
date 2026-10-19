@@ -25,6 +25,7 @@ import {
   Info,
   Check,
   ChevronUp,
+  Calendar,
 } from "lucide-react";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
@@ -130,6 +131,7 @@ function NewOrderContent() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successOrder, setSuccessOrder] = useState<any | null>(null);
+  const [dripScheduleMode, setDripScheduleMode] = useState<"DAYS" | "CUSTOM">("DAYS");
 
   // Restore preserved form state from sessionStorage if returning from Add Funds
   useEffect(() => {
@@ -227,7 +229,9 @@ function NewOrderContent() {
     return cleanServiceName(activeService?.displayName || activeService?.name || "");
   }, [activeService]);
 
-  const isDripSupported = Boolean(activeService?.dripFeedSupported);
+  const isNativeDrip = Boolean(activeService?.dripFeedSupported);
+  const isManagedDrip = Boolean(activeService?.allowManagedDrip);
+  const isDripSupported = isNativeDrip || isManagedDrip;
   const isCustomComments =
     activeService?.serviceType === "CUSTOM_COMMENTS" ||
     activeService?.serviceType === "COMMENTS" ||
@@ -235,9 +239,9 @@ function NewOrderContent() {
 
   const minQty = activeService?.minQty || 10;
   const maxQty = activeService?.maxQty || 1000000;
-  const minRuns = activeService?.dripFeedMinRuns || 2;
-  const maxRuns = activeService?.dripFeedMaxRuns || 100;
-  const minInterval = activeService?.dripFeedMinInterval || 5;
+  const minRuns = isManagedDrip && !isNativeDrip ? 2 : (activeService?.dripFeedMinRuns || 2);
+  const maxRuns = isManagedDrip && !isNativeDrip ? 30 : (activeService?.dripFeedMaxRuns || 100);
+  const minInterval = isManagedDrip && !isNativeDrip ? 30 : (activeService?.dripFeedMinInterval || 5);
   const maxInterval = activeService?.dripFeedMaxInterval || 1440;
 
   // Custom comments processing
@@ -834,7 +838,11 @@ function NewOrderContent() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-medium text-white">
-                    {state.isDripFeed && isDripSupported ? "Quantity per run" : "Quantity"}
+                    {state.isDripFeed && isDripSupported
+                      ? dripScheduleMode === "DAYS"
+                        ? "Daily Quantity (Followers / Day)"
+                        : "Quantity per run"
+                      : "Quantity"}
                   </label>
                   <span className="text-[11px] text-slate-500 font-mono">
                     Min: {formatIndianNumber(minQty)} · Max: {formatIndianNumber(maxQty)}
@@ -883,6 +891,13 @@ function NewOrderContent() {
                         {formatIndianNumber(preset)}
                       </button>
                     ))}
+                  </div>
+                )}
+
+                {state.isDripFeed && isDripSupported && dripScheduleMode === "DAYS" && (
+                  <div className="mt-2.5 p-2 rounded-xl bg-[#D8EC8D]/10 border border-[#D8EC8D]/20 text-xs font-mono text-[#D8EC8D] flex items-center justify-between">
+                    <span>Daily Delivery: {formatIndianNumber(state.quantity)} / day × {state.dripRuns} days</span>
+                    <span className="font-bold text-white">{formatIndianNumber(totalUnits)} Total</span>
                   </div>
                 )}
 
@@ -936,86 +951,232 @@ function NewOrderContent() {
 
                 {state.isDripFeed && (
                   <div className="border-t border-white/5 pt-4 space-y-4">
-                    {/* Runs Input */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-medium text-white">Number of runs</label>
-                        <span className="text-[11px] text-slate-500 font-mono">
-                          Min: {minRuns} · Max: {maxRuns}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => dispatch({ type: "SET_DRIP_RUNS", runs: Math.max(minRuns, state.dripRuns - 1) })}
-                          className="min-h-[40px] min-w-[40px] rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold flex items-center justify-center"
-                        >
-                          -
-                        </button>
-                        <input
-                          type="number"
-                          value={state.dripRuns}
-                          onChange={(e) => dispatch({ type: "SET_DRIP_RUNS", runs: parseInt(e.target.value, 10) || minRuns })}
-                          min={minRuns}
-                          max={maxRuns}
-                          className="flex-1 min-h-[40px] px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-sm text-white font-mono text-center focus:outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => dispatch({ type: "SET_DRIP_RUNS", runs: Math.min(maxRuns, state.dripRuns + 1) })}
-                          className="min-h-[40px] min-w-[40px] rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold flex items-center justify-center"
-                        >
-                          +
-                        </button>
-                      </div>
+                    {/* Schedule Strategy Mode Selector */}
+                    <div className="grid grid-cols-2 gap-2 p-1 bg-white/[0.04] border border-white/10 rounded-xl text-xs">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDripScheduleMode("DAYS");
+                          dispatch({ type: "SET_DRIP_INTERVAL", interval: 1440 });
+                        }}
+                        className={`py-2 px-3 rounded-lg font-medium transition-all text-center flex items-center justify-center gap-2 ${
+                          dripScheduleMode === "DAYS"
+                            ? "bg-[#D8EC8D] text-[#171e00] font-bold shadow-sm"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>Spread across days</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDripScheduleMode("CUSTOM");
+                          if (state.dripInterval === 1440) {
+                            dispatch({ type: "SET_DRIP_INTERVAL", interval: 60 });
+                          }
+                        }}
+                        className={`py-2 px-3 rounded-lg font-medium transition-all text-center flex items-center justify-center gap-2 ${
+                          dripScheduleMode === "CUSTOM"
+                            ? "bg-[#D8EC8D] text-[#171e00] font-bold shadow-sm"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Custom intervals</span>
+                      </button>
                     </div>
 
-                    {/* Interval Presets + Custom input */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-medium text-white">Interval between runs</label>
-                        <span className="text-[11px] text-slate-500 font-mono">
-                          {formatDuration(state.dripInterval)}
-                        </span>
+                    {dripScheduleMode === "DAYS" ? (
+                      /* DAYS MODE: Select how many days to spread growth */
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-xs font-medium text-white">How many days to spread growth?</label>
+                            <span className="text-[11px] text-[#D8EC8D] font-mono font-semibold">
+                              {state.dripRuns} days (~{formatIndianNumber(state.quantity)} / day)
+                            </span>
+                          </div>
+
+                          {/* Quick Day Presets */}
+                          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-2">
+                            {[2, 3, 5, 7, 10, 14, 30]
+                              .filter((d) => d <= maxRuns)
+                              .map((d) => (
+                                <button
+                                  key={d}
+                                  type="button"
+                                  onClick={() => {
+                                    dispatch({ type: "SET_DRIP_RUNS", runs: d });
+                                    dispatch({ type: "SET_DRIP_INTERVAL", interval: 1440 });
+                                  }}
+                                  className={`min-h-[36px] py-1 px-2 rounded-lg text-xs font-medium border text-center transition-colors ${
+                                    state.dripRuns === d && state.dripInterval === 1440
+                                      ? "bg-[#D8EC8D]/20 border-[#D8EC8D] text-white font-bold"
+                                      : "bg-white/[0.02] border-white/10 text-slate-400 hover:text-white"
+                                  }`}
+                                >
+                                  {d} Days
+                                </button>
+                              ))}
+                          </div>
+
+                          {/* Stepper for Days */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                dispatch({ type: "SET_DRIP_RUNS", runs: Math.max(minRuns, state.dripRuns - 1) });
+                                dispatch({ type: "SET_DRIP_INTERVAL", interval: 1440 });
+                              }}
+                              className="min-h-[40px] min-w-[40px] rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold flex items-center justify-center"
+                            >
+                              -
+                            </button>
+                            <div className="flex-1 min-h-[40px] px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-xs text-white font-mono text-center flex items-center justify-center gap-1.5">
+                              <span className="font-bold text-[#D8EC8D]">{state.dripRuns}</span>
+                              <span className="text-slate-400">days (delivered once every 24 hours)</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                dispatch({ type: "SET_DRIP_RUNS", runs: Math.min(maxRuns, state.dripRuns + 1) });
+                                dispatch({ type: "SET_DRIP_INTERVAL", interval: 1440 });
+                              }}
+                              className="min-h-[40px] min-w-[40px] rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold flex items-center justify-center"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                        {[
-                          { label: "30 min", mins: 30 },
-                          { label: "1 h", mins: 60 },
-                          { label: "2 h", mins: 120 },
-                          { label: "6 h", mins: 360 },
-                          { label: "12 h", mins: 720 },
-                          { label: "24 h", mins: 1440 },
-                        ].map((preset) => (
-                          <button
-                            key={preset.mins}
-                            type="button"
-                            onClick={() => dispatch({ type: "SET_DRIP_INTERVAL", interval: preset.mins })}
-                            className={`min-h-[36px] py-1 px-2 rounded-lg text-xs font-medium border text-center transition-colors ${
-                              state.dripInterval === preset.mins
-                                ? "bg-[#D8EC8D]/20 border-[#D8EC8D] text-white"
-                                : "bg-white/[0.02] border-white/10 text-slate-400 hover:text-white"
-                            }`}
-                          >
-                            {preset.label}
-                          </button>
-                        ))}
+                    ) : (
+                      /* CUSTOM MODE: Number of runs and intervals in minutes/hours */
+                      <div className="space-y-4">
+                        {/* Runs Input */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-xs font-medium text-white">Number of runs</label>
+                            <span className="text-[11px] text-slate-500 font-mono">
+                              Min: {minRuns} · Max: {maxRuns}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => dispatch({ type: "SET_DRIP_RUNS", runs: Math.max(minRuns, state.dripRuns - 1) })}
+                              className="min-h-[40px] min-w-[40px] rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold flex items-center justify-center"
+                            >
+                              -
+                            </button>
+                            <input
+                              type="number"
+                              value={state.dripRuns}
+                              onChange={(e) => dispatch({ type: "SET_DRIP_RUNS", runs: parseInt(e.target.value, 10) || minRuns })}
+                              min={minRuns}
+                              max={maxRuns}
+                              className="flex-1 min-h-[40px] px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-sm text-white font-mono text-center focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => dispatch({ type: "SET_DRIP_RUNS", runs: Math.min(maxRuns, state.dripRuns + 1) })}
+                              className="min-h-[40px] min-w-[40px] rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold flex items-center justify-center"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Interval Presets + Custom input */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-xs font-medium text-white">Interval between runs</label>
+                            <span className="text-[11px] text-slate-500 font-mono">
+                              {formatDuration(state.dripInterval)}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                            {[
+                              { label: "30 min", mins: 30 },
+                              { label: "1 h", mins: 60 },
+                              { label: "2 h", mins: 120 },
+                              { label: "6 h", mins: 360 },
+                              { label: "12 h", mins: 720 },
+                              { label: "24 h", mins: 1440 },
+                            ].map((preset) => (
+                              <button
+                                key={preset.mins}
+                                type="button"
+                                onClick={() => dispatch({ type: "SET_DRIP_INTERVAL", interval: preset.mins })}
+                                className={`min-h-[36px] py-1 px-2 rounded-lg text-xs font-medium border text-center transition-colors ${
+                                  state.dripInterval === preset.mins
+                                    ? "bg-[#D8EC8D]/20 border-[#D8EC8D] text-white"
+                                    : "bg-white/[0.02] border-white/10 text-slate-400 hover:text-white"
+                                }`}
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Live Schedule Preview & Mini Timeline */}
-                    <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 space-y-2 text-xs">
-                      <div className="text-slate-300">
-                        Run 1 starts after the usual start time, then every{" "}
-                        <span className="text-[#D8EC8D] font-semibold">{formatDuration(state.dripInterval)}</span>, for{" "}
-                        <span className="text-[#D8EC8D] font-semibold">{state.dripRuns} runs</span>.
-                      </div>
-                      <div className="font-mono text-slate-400 flex items-center justify-between text-[11px]">
+                    <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-2.5 text-xs">
+                      {isManagedDrip && !isNativeDrip && (
+                        <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] leading-relaxed">
+                          Runs are sent one after another at the planned times; each run may start a few minutes late.
+                        </div>
+                      )}
+                      
+                      <div className="text-slate-300 flex items-center justify-between">
                         <span>
-                          {formatIndianNumber(state.quantity)} x {state.dripRuns} runs ={" "}
+                          {dripScheduleMode === "DAYS" ? (
+                            <>Growth Plan: <strong className="text-white">{state.dripRuns} Days</strong></>
+                          ) : (
+                            <>Every <span className="text-[#D8EC8D] font-semibold">{formatDuration(state.dripInterval)}</span> for <span className="text-[#D8EC8D] font-semibold">{state.dripRuns} runs</span></>
+                          )}
+                        </span>
+                        <span className="text-[#D8EC8D] font-mono font-semibold">
+                          {dripScheduleMode === "DAYS" ? `~${formatIndianNumber(state.quantity)} / day` : ""}
+                        </span>
+                      </div>
+
+                      {/* Per-Run / Per-Day Timeline Preview */}
+                      <div className="space-y-1 pt-1 max-h-36 overflow-y-auto no-scrollbar font-mono text-[11px]">
+                        {Array.from({ length: Math.min(state.dripRuns, 8) }).map((_, idx) => {
+                          const scheduledTime = new Date(Date.now() + idx * state.dripInterval * 60 * 1000);
+                          const label = dripScheduleMode === "DAYS"
+                            ? (idx === 0 ? "Day 1 (Today)" : idx === 1 ? "Day 2 (Tomorrow)" : `Day ${idx + 1}`)
+                            : `Run ${idx + 1}`;
+                          return (
+                            <div key={idx} className="flex justify-between items-center text-slate-400 py-0.5 border-b border-white/[0.03]">
+                              <span className="text-slate-300">{label}: {formatIndianNumber(state.quantity)} units</span>
+                              <span className="text-slate-500">
+                                {dripScheduleMode === "DAYS" && idx > 0
+                                  ? `${scheduledTime.toLocaleDateString([], { month: 'short', day: 'numeric' })} at `
+                                  : ""}
+                                {scheduledTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          );
+                        })}
+                        {state.dripRuns > 8 && (
+                          <div className="text-[10px] text-slate-500 text-center italic py-0.5">
+                            + {state.dripRuns - 8} more {dripScheduleMode === "DAYS" ? "days" : "runs"} scheduled
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="font-mono text-slate-400 flex items-center justify-between text-[11px] pt-1.5 border-t border-white/5">
+                        <span>
+                          {formatIndianNumber(state.quantity)} {dripScheduleMode === "DAYS" ? "/ day" : "per run"} × {state.dripRuns} {dripScheduleMode === "DAYS" ? "days" : "runs"} ={" "}
                           <strong className="text-white">{formatIndianNumber(totalUnits)} total</strong>
                         </span>
-                        <span>Est. span: {formatDuration((state.dripRuns - 1) * state.dripInterval)}</span>
+                        <span>
+                          Est. finish: {new Date(Date.now() + (state.dripRuns - 1) * state.dripInterval * 60 * 1000).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        </span>
                       </div>
                     </div>
                   </div>

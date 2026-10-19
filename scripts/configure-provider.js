@@ -35,7 +35,11 @@ function encryptProviderKey(plainKey) {
 async function configureProvider() {
   const name = process.env.PROVIDER_NAME || "cheapestsmmpanels";
   const apiUrl = process.env.PROVIDER_API_URL || "https://cheapestsmmpanels.com/api/v2";
-  const apiKey = process.env.PROVIDER_API_KEY || "e69190fdf34d3a2dcb81ea5c6d0d64ff";
+  const apiKey = process.env.PROVIDER_API_KEY;
+  if (!apiKey) {
+    console.error("PROVIDER_API_KEY environment variable required");
+    process.exit(1);
+  }
 
   console.log(`[Config] Configuring Upstream Provider '${name}'...`);
 

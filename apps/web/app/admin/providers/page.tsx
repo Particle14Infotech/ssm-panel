@@ -437,6 +437,20 @@ export default function AdminProvidersPage() {
                       <span>Mapped Services</span>
                       <span className="text-white font-bold">{p.serviceCount} items</span>
                     </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Drip / Refill / Cancel</span>
+                      <span className="text-[#D8EC8D] font-bold">
+                        {p.dripFeedCount ?? 0} / {p.refillCount ?? 0} / {p.cancelCount ?? 0}
+                      </span>
+                    </div>
+                    {p.lastSyncAt && (
+                      <div className="flex justify-between text-slate-400">
+                        <span>Last Synced</span>
+                        <span className="text-slate-300 font-mono text-[10px]">
+                          {new Date(p.lastSyncAt).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-slate-400 truncate">
                       <span>API Endpoint</span>
                       <span className="text-white truncate max-w-[140px]">{p.apiUrl}</span>

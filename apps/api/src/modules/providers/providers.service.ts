@@ -3,6 +3,7 @@ import { PrismaService } from "../../common/prisma.service";
 import { encryptProviderKey, decryptProviderKey } from "../../common/crypto.util";
 import { SmmProviderClient } from "./smm-provider.client";
 import { Decimal } from "decimal.js";
+import { coerceBoolean } from "@smm/contracts";
 
 export interface ProviderDto {
   id: string;
@@ -13,6 +14,9 @@ export interface ProviderDto {
   currency: string;
   active: boolean;
   serviceCount: number;
+  dripFeedCount?: number;
+  refillCount?: number;
+  cancelCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -46,27 +50,38 @@ export class ProvidersService {
         orderBy: { createdAt: "desc" },
       });
 
-      return providers.map((p) => {
-        let plain = "";
-        try {
-          plain = decryptProviderKey(p.apiKeyEncrypted);
-        } catch {
-          plain = "••••••••";
-        }
+      return Promise.all(
+        providers.map(async (p) => {
+          let plain = "";
+          try {
+            plain = decryptProviderKey(p.apiKeyEncrypted);
+          } catch {
+            plain = "••••••••";
+          }
 
-        return {
-          id: p.id,
-          name: p.name,
-          apiUrl: p.apiUrl,
-          apiKeyMasked: this.maskKey(plain),
-          balance: Number(p.balance),
-          currency: p.currency,
-          active: p.active,
-          serviceCount: p._count.services,
-          createdAt: p.createdAt.toISOString(),
-          updatedAt: p.updatedAt.toISOString(),
-        };
-      });
+          const [dripFeedCount, refillCount, cancelCount] = await Promise.all([
+            this.prisma.service.count({ where: { providerId: p.id, dripFeedSupported: true, isDeleted: false } }).catch(() => 0),
+            this.prisma.service.count({ where: { providerId: p.id, refillable: true, isDeleted: false } }).catch(() => 0),
+            this.prisma.service.count({ where: { providerId: p.id, cancellable: true, isDeleted: false } }).catch(() => 0),
+          ]);
+
+          return {
+            id: p.id,
+            name: p.name,
+            apiUrl: p.apiUrl,
+            apiKeyMasked: this.maskKey(plain),
+            balance: Number(p.balance),
+            currency: p.currency,
+            active: p.active,
+            serviceCount: p._count.services,
+            dripFeedCount,
+            refillCount,
+            cancelCount,
+            createdAt: p.createdAt.toISOString(),
+            updatedAt: p.updatedAt.toISOString(),
+          };
+        })
+      );
     } catch (err: any) {
       this.logger.error(`Failed to list providers: ${err.message}`);
       return [];
@@ -98,6 +113,12 @@ export class ProvidersService {
       plain = "••••••••";
     }
 
+    const [dripFeedCount, refillCount, cancelCount] = await Promise.all([
+      this.prisma.service.count({ where: { providerId: p.id, dripFeedSupported: true, isDeleted: false } }).catch(() => 0),
+      this.prisma.service.count({ where: { providerId: p.id, refillable: true, isDeleted: false } }).catch(() => 0),
+      this.prisma.service.count({ where: { providerId: p.id, cancellable: true, isDeleted: false } }).catch(() => 0),
+    ]);
+
     return {
       id: p.id,
       name: p.name,
@@ -107,6 +128,9 @@ export class ProvidersService {
       currency: p.currency,
       active: p.active,
       serviceCount: p._count.services,
+      dripFeedCount,
+      refillCount,
+      cancelCount,
       createdAt: p.createdAt.toISOString(),
       updatedAt: p.updatedAt.toISOString(),
     };
@@ -243,6 +267,9 @@ export class ProvidersService {
       importedCount: importRes.importedCount || 0,
       updatedCount: importRes.updatedCount || 0,
       errorsCount: importRes.errorsCount || 0,
+      dripFeedCount: importRes.dripFeedCount || 0,
+      refillCount: importRes.refillCount || 0,
+      cancelCount: importRes.cancelCount || 0,
       timestamp: new Date().toISOString(),
     };
   }
@@ -265,6 +292,9 @@ export class ProvidersService {
     let importedCount = 0;
     let updatedCount = 0;
     let errorsCount = 0;
+    let dripFeedCount = 0;
+    let refillCount = 0;
+    let cancelCount = 0;
 
     for (const item of upstreamServices) {
       try {
@@ -323,7 +353,21 @@ export class ProvidersService {
           },
         });
 
-        const dripFeedSupported = item.dripfeed === true || item.dripfeed === 1 || String(item.dripfeed).toLowerCase() === "true" || String(item.dripfeed) === "1";
+        // Robust boolean coercion for all provider flags
+        const dripFeedSupported = coerceBoolean(item.dripfeed);
+        const refillable = coerceBoolean(item.refill);
+        const cancellable = coerceBoolean(item.cancel);
+
+        if (dripFeedSupported) dripFeedCount++;
+        if (refillable) refillCount++;
+        if (cancellable) cancelCount++;
+
+        const rawMeta = {
+          rawDripfeed: item.dripfeed,
+          rawRefill: item.refill,
+          rawCancel: item.cancel,
+          rawType: item.type,
+        };
 
         if (existingService) {
           await this.prisma.service.update({
@@ -335,9 +379,10 @@ export class ProvidersService {
               ratePer1000: new Decimal(sellingRate),
               minQty,
               maxQty,
-              refillable: Boolean(item.refill),
-              cancellable: Boolean(item.cancel),
+              refillable,
+              cancellable,
               dripFeedSupported,
+              rawMeta: rawMeta as any,
               description: item.description || existingService.description || "",
               active: true,
               isDeleted: false,
@@ -355,9 +400,10 @@ export class ProvidersService {
               maxQty,
               providerId: p.id,
               providerServiceId: String(item.service),
-              refillable: Boolean(item.refill),
-              cancellable: Boolean(item.cancel),
+              refillable,
+              cancellable,
               dripFeedSupported,
+              rawMeta: rawMeta as any,
               description: item.description || "",
               active: true,
             },
@@ -370,6 +416,11 @@ export class ProvidersService {
       }
     }
 
+    this.logger.log(
+      `[Provider Sync #${id}] Import complete: ${importedCount} imported, ${updatedCount} updated, ${errorsCount} errors. ` +
+      `Distribution: dripFeedSupported=${dripFeedCount}, refillable=${refillCount}, cancellable=${cancelCount}`
+    );
+
     // Update active service count for provider
     const totalActive = await this.prisma.service.count({
       where: { providerId: p.id, active: true, isDeleted: false },
@@ -381,8 +432,28 @@ export class ProvidersService {
       importedCount,
       updatedCount,
       errorsCount,
+      dripFeedCount,
+      refillCount,
+      cancelCount,
       totalActiveServices: totalActive,
       marginPercent: margin,
     };
+  }
+
+  async setAllowManagedDrip(serviceId: string, allow: boolean) {
+    const service = await this.prisma.service.findUnique({ where: { id: serviceId } });
+    if (!service) throw new NotFoundException(`Service #${serviceId} not found.`);
+    return this.prisma.service.update({
+      where: { id: serviceId },
+      data: { allowManagedDrip: allow },
+    });
+  }
+
+  async bulkSetAllowManagedDripByCategory(categoryId: string, allow: boolean) {
+    const res = await this.prisma.service.updateMany({
+      where: { categoryId, isDeleted: false },
+      data: { allowManagedDrip: allow },
+    });
+    return { categoryId, updatedCount: res.count, allowManagedDrip: allow };
   }
 }

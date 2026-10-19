@@ -11,6 +11,8 @@ import {
   LogOnlyEmailProvider,
   getOrderRefundTemplate,
   EmailSendOptions,
+  isLinkRestrictionError,
+  aggregateRunStatuses,
 } from "@smm/contracts";
 
 dotenv.config();
@@ -29,6 +31,7 @@ export class SMMWorkerEngine {
   private isRunning = false;
   private pollInterval: NodeJS.Timeout | null = null;
   private syncInterval: NodeJS.Timeout | null = null;
+  private dripRunInterval: NodeJS.Timeout | null = null;
   private redis: Redis | null = null;
   private bullWorker: BullWorker | null = null;
   private orderQueue: Queue | null = null;
@@ -162,6 +165,16 @@ export class SMMWorkerEngine {
         logger.error({ err }, "Status-sync daemon cycle error");
       }
     }, 8000);
+
+    // 6. Panel-Managed Drip-Feed Run Dispatcher Daemon
+    this.dripRunInterval = setInterval(async () => {
+      if (!this.isRunning) return;
+      try {
+        await this.pollAndDispatchDueRuns();
+      } catch (err: any) {
+        logger.error({ err }, "Drip-feed run dispatcher cycle error");
+      }
+    }, 15000);
 
     // Initial triggers (safely handled without terminating boot)
     try {
@@ -311,6 +324,24 @@ export class SMMWorkerEngine {
     }
 
     logger.info(`[Worker Engine] Dispatching Order #${order.id} (Service: ${order.service.name})`);
+
+    // Managed drip-feed orders are dispatched run-by-run through the scheduler
+    if ((order as any).dripMode === "MANAGED") {
+      logger.info(`[Worker Engine] Order #${order.id} is MANAGED drip-feed. Transitioning to IN_PROGRESS and scheduling runs.`);
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { status: OrderStatus.IN_PROGRESS },
+      });
+      await prisma.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          status: OrderStatus.IN_PROGRESS,
+          notes: `Managed drip-feed initiated: ${order.runs} runs scheduled.`,
+        },
+      });
+      await this.pollAndDispatchDueRuns();
+      return;
+    }
 
     let providerOrderId: string | null = null;
 
@@ -520,6 +551,12 @@ export class SMMWorkerEngine {
           );
         }
 
+        if ((order as any).dripMode === "MANAGED") {
+          // Managed orders are synced through their individual child runs
+          await this.aggregateParentOrderStatus(order.id);
+          continue;
+        }
+
         if (order.provider && order.providerOrderId && order.provider.active) {
           const apiKey = decryptProviderKey(order.provider.apiKeyEncrypted);
           const statusRes = await this.callUpstreamOrderStatus(order.provider.apiUrl, apiKey, order.providerOrderId);
@@ -532,6 +569,70 @@ export class SMMWorkerEngine {
         logger.error(`[Worker Sync] Error syncing status for order #${order.id}: ${err.message}`);
       }
     }
+
+    // 2. Sync active managed runs with provider
+    try {
+      const activeRuns = await prisma.orderRun.findMany({
+        where: {
+          status: "PROCESSING" as any,
+          providerOrderId: { not: null },
+        },
+        include: {
+          order: {
+            include: { provider: true, user: true },
+          },
+        },
+        take: 20,
+      });
+
+      for (const run of activeRuns) {
+        if (!run.order.provider || !run.providerOrderId || !run.order.provider.active) continue;
+        try {
+          const apiKey = decryptProviderKey(run.order.provider.apiKeyEncrypted);
+          const statusRes = await this.callUpstreamOrderStatus(run.order.provider.apiUrl, apiKey, run.providerOrderId);
+
+          if (statusRes.error) {
+            logger.warn(`[Run Sync] Provider error for run #${run.id}: ${statusRes.error}`);
+            continue;
+          }
+
+          const rawStatus = (statusRes.status || "").toLowerCase();
+          if (rawStatus.includes("complete")) {
+            await prisma.orderRun.update({
+              where: { id: run.id },
+              data: { status: "COMPLETED" as any, delivered: run.quantity },
+            });
+            await this.aggregateParentOrderStatus(run.orderId);
+          } else if (rawStatus.includes("cancel")) {
+            await prisma.orderRun.update({
+              where: { id: run.id },
+              data: { status: "CANCELED" as any, lastError: "Cancelled upstream" },
+            });
+            await this.refundSingleRun(run.order, run, "Cancelled upstream");
+            await this.aggregateParentOrderStatus(run.orderId);
+          } else if (rawStatus.includes("partial")) {
+            const remains = statusRes.remains !== undefined ? parseInt(String(statusRes.remains), 10) : 0;
+            const delivered = Math.max(0, run.quantity - remains);
+            await prisma.orderRun.update({
+              where: { id: run.id },
+              data: { status: "PARTIAL" as any, delivered },
+            });
+            if (remains > 0 && run.quantity > 0) {
+              const partialShare = new Decimal(run.chargeShare.toString())
+                .mul(remains)
+                .div(run.quantity)
+                .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+              await this.refundSingleRun(run.order, { ...run, chargeShare: partialShare }, "Partial fulfillment upstream");
+            }
+            await this.aggregateParentOrderStatus(run.orderId);
+          }
+        } catch (err: any) {
+          logger.error(`[Run Sync] Error syncing run #${run.id}: ${err.message}`);
+        }
+      }
+    } catch (err: any) {
+      logger.error(`[Run Sync] Error during managed runs sync: ${err.message}`);
+    }
   }
 
   /**
@@ -539,7 +640,7 @@ export class SMMWorkerEngine {
    */
   async applyStatusTransition(
     order: any,
-    statusRes: { status: string; start_count?: number | string; remains?: number | string; charge?: number | string; currency?: string; [key: string]: any }
+    statusRes: { status?: string; start_count?: number | string; remains?: number | string; charge?: number | string; currency?: string; [key: string]: any }
   ) {
     const rawStatus = (statusRes.status || "").toLowerCase();
     let newStatus: OrderStatus = order.status;
@@ -778,6 +879,240 @@ export class SMMWorkerEngine {
   }
 
   /**
+   * Panel-Managed Drip-Feed: Poll and dispatch due runs
+   */
+  async pollAndDispatchDueRuns() {
+    let dueRuns: any[] = [];
+    try {
+      dueRuns = await prisma.$queryRawUnsafe<any[]>(`
+        SELECT r.id, r."orderId", r."runIndex", r.quantity, r."scheduledAt", r.attempts, r."chargeShare"
+        FROM "OrderRun" r
+        JOIN "Order" o ON o.id = r."orderId"
+        WHERE r.status = 'SCHEDULED'
+          AND r."scheduledAt" <= NOW()
+          AND (r."nextAttemptAt" IS NULL OR r."nextAttemptAt" <= NOW())
+          AND o.status IN ('PENDING', 'PROCESSING', 'IN_PROGRESS')
+        ORDER BY r."scheduledAt" ASC
+        LIMIT 50
+        FOR UPDATE OF r SKIP LOCKED
+      `);
+    } catch {
+      dueRuns = await prisma.orderRun.findMany({
+        where: {
+          status: "SCHEDULED" as any,
+          scheduledAt: { lte: new Date() },
+          OR: [{ nextAttemptAt: null }, { nextAttemptAt: { lte: new Date() } }],
+          order: {
+            status: { in: [OrderStatus.PENDING, OrderStatus.PROCESSING, OrderStatus.IN_PROGRESS] },
+          },
+        },
+        take: 50,
+        orderBy: { scheduledAt: "asc" },
+      });
+    }
+
+    if (!dueRuns || dueRuns.length === 0) return;
+
+    logger.info(`[Drip Scheduler] Found ${dueRuns.length} due run(s) to dispatch.`);
+    for (const run of dueRuns) {
+      await this.dispatchSingleRun(run);
+    }
+  }
+
+  /**
+   * Dispatches a single OrderRun to the upstream provider
+   */
+  async dispatchSingleRun(run: any) {
+    // 1. Persist DISPATCHING status before calling provider to prevent double-dispatches
+    await prisma.orderRun.update({
+      where: { id: run.id },
+      data: { status: "DISPATCHING" as any },
+    });
+
+    const order = await prisma.order.findUnique({
+      where: { id: run.orderId },
+      include: { service: true, provider: true },
+    });
+
+    if (!order || order.status === OrderStatus.CANCELLED || order.status === OrderStatus.REFUNDED) {
+      await prisma.orderRun.update({
+        where: { id: run.id },
+        data: { status: "CANCELED" as any, lastError: "Parent order cancelled" },
+      });
+      return;
+    }
+
+    // Check lateness
+    const lateThresholdMinutes = process.env.DRIPFEED_RUN_LATE_ALERT_MINUTES ? parseInt(process.env.DRIPFEED_RUN_LATE_ALERT_MINUTES, 10) : 10;
+    const latenessMs = Date.now() - new Date(run.scheduledAt).getTime();
+    if (latenessMs > lateThresholdMinutes * 60 * 1000) {
+      logger.warn(`[Drip Scheduler] Run #${run.runIndex} for Order #${order.id} is late by ${Math.round(latenessMs / 60000)} minutes.`);
+    }
+
+    try {
+      let providerOrderId: string | null = null;
+      if (order.provider && order.provider.active) {
+        const apiKey = decryptProviderKey(order.provider.apiKeyEncrypted);
+        providerOrderId = await this.callUpstreamAddOrder(
+          order.provider.apiUrl,
+          apiKey,
+          order.service.providerServiceId || order.service.id,
+          order.target,
+          run.quantity, // Send per-run quantity
+          undefined,   // No runs parameter for panel-managed runs
+          undefined,   // No interval parameter for panel-managed runs
+          order.id,
+          order.provider.id
+        );
+      } else {
+        providerOrderId = `sim_run_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+      }
+
+      // Success: atomically update run to PROCESSING with providerOrderId
+      await prisma.orderRun.update({
+        where: { id: run.id },
+        data: {
+          status: "PROCESSING" as any,
+          providerOrderId: String(providerOrderId),
+          attempts: (run.attempts || 0) + 1,
+          lastError: null,
+        },
+      });
+
+      if (order.status === OrderStatus.PENDING) {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { status: OrderStatus.IN_PROGRESS },
+        });
+      }
+
+      logger.info(`[Drip Scheduler] Dispatched run #${run.runIndex} for Order #${order.id} -> Provider Order ID: ${providerOrderId}`);
+    } catch (err: any) {
+      const errMsg = err.message || "Unknown provider dispatch error";
+      const isRestriction = isLinkRestrictionError(errMsg);
+      const currentAttempts = (run.attempts || 0) + 1;
+      const maxRetries = 5;
+
+      if (isRestriction && currentAttempts < maxRetries) {
+        // Active order on link: postpone by 10 minutes and retry
+        const postponeMinutes = 10;
+        const nextAttemptAt = new Date(Date.now() + postponeMinutes * 60 * 1000);
+        await prisma.orderRun.update({
+          where: { id: run.id },
+          data: {
+            status: "SCHEDULED" as any,
+            attempts: currentAttempts,
+            nextAttemptAt,
+            lastError: `Link restriction: ${errMsg}. Postponed 10m.`,
+          },
+        });
+        logger.warn(`[Drip Scheduler] Run #${run.runIndex} for Order #${order.id} postponed to ${nextAttemptAt.toISOString()} (Link restriction: ${errMsg})`);
+        return;
+      }
+
+      // If timeout or network uncertainty, mark UNCERTAIN and alert admin queue
+      if (errMsg.toLowerCase().includes("timeout") || errMsg.toLowerCase().includes("abort") || errMsg.toLowerCase().includes("econnreset")) {
+        await prisma.orderRun.update({
+          where: { id: run.id },
+          data: {
+            status: "UNCERTAIN" as any,
+            attempts: currentAttempts,
+            lastError: `Network timeout: ${errMsg}. Sent to admin queue.`,
+          },
+        });
+        logger.error(`[Drip Scheduler] Run #${run.runIndex} for Order #${order.id} marked UNCERTAIN due to timeout.`);
+        return;
+      }
+
+      // Definite failure: mark FAILED and refund chargeShare
+      await prisma.orderRun.update({
+        where: { id: run.id },
+        data: {
+          status: "FAILED" as any,
+          attempts: currentAttempts,
+          lastError: errMsg,
+        },
+      });
+
+      await this.refundSingleRun(order, run, errMsg);
+      await this.aggregateParentOrderStatus(order.id);
+    }
+  }
+
+  /**
+   * Refunds a single failed or cancelled OrderRun
+   */
+  async refundSingleRun(order: any, run: any, reason: string) {
+    const refundShare = new Decimal(run.chargeShare.toString());
+    if (refundShare.lessThanOrEqualTo(0)) return;
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        const [walletRow] = await tx.$queryRawUnsafe<any[]>(
+          `SELECT id, balance FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
+          order.userId
+        );
+        if (!walletRow) return;
+
+        const currentBalance = new Decimal(walletRow.balance.toString());
+        const newBalance = currentBalance.plus(refundShare);
+
+        await tx.wallet.update({
+          where: { id: walletRow.id },
+          data: { balance: newBalance },
+        });
+
+        await tx.ledgerEntry.create({
+          data: {
+            walletId: walletRow.id,
+            amount: refundShare,
+            type: "REFUND",
+            orderId: order.id,
+            description: `Refund for run #${run.runIndex} on Order #${order.id}: ${reason.slice(0, 80)}`,
+          },
+        });
+
+        await tx.refund.create({
+          data: {
+            orderId: order.id,
+            userId: order.userId,
+            amount: refundShare,
+            reason: `Drip run #${run.runIndex} refund: ${reason.slice(0, 100)}`,
+          },
+        });
+      });
+      logger.info(`[Drip Scheduler] Refunded ₹${refundShare.toFixed(2)} for run #${run.runIndex} on Order #${order.id}`);
+    } catch (refundErr: any) {
+      logger.error(`[Drip Scheduler] Failed to refund run #${run.runIndex} on Order #${order.id}: ${refundErr.message}`);
+    }
+  }
+
+  /**
+   * Aggregates child run statuses into the parent Order status
+   */
+  async aggregateParentOrderStatus(orderId: string) {
+    const runs = await prisma.orderRun.findMany({
+      where: { orderId },
+    });
+    if (!runs || runs.length === 0) return;
+
+    const statuses = runs.map((r) => r.status);
+    const newStatusStr = aggregateRunStatuses(statuses);
+    const newStatus = OrderStatus[newStatusStr as keyof typeof OrderStatus] || OrderStatus.IN_PROGRESS;
+
+    const totalDelivered = runs.reduce((acc, r) => acc + (r.delivered || 0), 0);
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: newStatus,
+      },
+    });
+
+    logger.info(`[Drip Scheduler] Aggregated Order #${orderId} status -> ${newStatus} (${totalDelivered} delivered)`);
+  }
+
+  /**
    * Helper: Calls upstream SMM API to add an order
    */
   async callUpstreamAddOrder(
@@ -932,7 +1267,7 @@ export class SMMWorkerEngine {
     apiUrl: string,
     apiKey: string,
     orderId: string
-  ): Promise<{ status: string; start_count?: number; remains?: number }> {
+  ): Promise<{ status?: string; start_count?: number; remains?: number; error?: string }> {
     if (apiUrl.includes("example.com") || apiUrl.includes("test") || apiUrl.startsWith("simulated://")) {
       return { status: "Completed", start_count: 50, remains: 0 };
     }
@@ -961,6 +1296,7 @@ export class SMMWorkerEngine {
     this.isRunning = false;
     if (this.pollInterval) clearInterval(this.pollInterval);
     if (this.syncInterval) clearInterval(this.syncInterval);
+    if (this.dripRunInterval) clearInterval(this.dripRunInterval);
     if (this.bullWorker) await this.bullWorker.close();
     if (this.emailWorker) await this.emailWorker.close();
     if (this.emailQueue) await this.emailQueue.close();

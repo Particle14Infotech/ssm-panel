@@ -104,29 +104,40 @@ pg_dump "$DATABASE_URL" --format=custom | openssl enc -aes-256-cbc -salt -pbkdf2
 
 ---
 
-## 6. Drip-Feed Provider-Native Operations & Watchdog
+## 6. Drip-Feed Operations: Native & Panel-Managed Architecture
 
-### 6.1 Drip-Feed Architecture & Model
-- **Provider-Native Fulfillment**: The panel does **not** run an internal cron/scheduler to dispatch individual runs. The upstream provider executes the schedule natively (`action=add` with `runs` and `interval`).
-- **Idempotency & Fingerprinting**: Orders include `runs` and `intervalMinutes` in the idempotency fingerprint. Retrying with identical parameters returns the existing order. Retrying with altered parameters is rejected with HTTP 409.
-- **Financial Integrity**: Total charge is calculated using `Decimal` and rounded UP to 2 decimal places: `ceil2(ratePer1000 * (quantity * runs) / 1000)`.
+### 6.1 Drip Modes Overview
+The platform supports two complementary delivery modes:
+1. **NATIVE (`dripMode: NATIVE`)**:
+   - For services where upstream provider returns `dripfeed: true` (e.g., verified on 20 catalog services for Likes, Views, Story Views).
+   - Parameters `runs` and `interval` are sent directly in upstream `action=add`. Upstream schedules child executions natively.
+2. **PANEL-MANAGED (`dripMode: MANAGED`)**:
+   - For services where upstream has `dripfeed: false` (including 100% of Instagram Followers services), enabled when an admin toggles `allowManagedDrip = true`.
+   - The platform creates child `OrderRun` records with mathematically exact charge splits (`splitChargeShare`).
+   - The background worker polls due runs every 15s using `FOR UPDATE SKIP LOCKED LIMIT 50` to guarantee zero duplicate dispatches across concurrent worker nodes.
 
-### 6.2 Watchdog & Slow-Order Alerting
-- Drip-feed orders naturally take `((runs - 1) * intervalMinutes)` minutes to complete plus initial buffer.
-- The worker watchdog threshold dynamically extends for drip-feed orders:
-  `Threshold = (24h base + ((runs - 1) * intervalMinutes))`.
-- An order is **not** flagged as stuck while its natural schedule is still executing.
+### 6.2 Idempotency & Financial Guarantees
+- **Atomic Upfront Debit**: Full customer charge is debited at order creation (`ceil2(ratePer1000 * quantity * runs / 1000)`).
+- **Exact Split**: Rounding remainder is mathematically allocated to the final run. Sum of run `chargeShare` values strictly equals the parent order charge.
+- **Idempotency Fingerprint**: Idempotency keys hash `serviceId:target:quantity:runs:interval`. Retries return the existing order.
 
-### 6.3 Operational Troubleshooting
-1. **Customer reports slow delivery**:
-   - Check if order has `isDripFeed=true` in Admin Orders Ledger (`/admin/orders`).
-   - Click **Trace** to inspect the exact `OrderProviderEvent` request payload and upstream provider response.
-2. **Provider Parameter Rejection**:
-   - If the upstream provider rejects drip parameters (e.g., minimum interval or runs violated on upstream), the worker immediately transitions the order to `FAILED`, records the sanitized rejection in `OrderProviderEvent`, and issues an automatic ledger refund to the customer's wallet.
-3. **Partial Delivery Refunds**:
-   - For orders that end in `PARTIAL`, proportional refund is automatically calculated against `totalQuantity = quantity * runs`:
-     `refund = (remains / totalQuantity) * charge`.
-   - The database constraint `unique_refund_per_order` guarantees refunds execute exactly once.
+### 6.3 Link Restriction Postponement & Upstream Errors
+- **Link Overlap Protection**: Many SMM providers reject orders on links with active orders (e.g. "active order exists", "already in progress").
+- **Automatic Postponement**: The worker detects these specific strings via `isLinkRestrictionError`, postpones the run by 10 minutes (`nextAttemptAt = now + 10m`), and increments attempt counter.
+- **Exhaustion Handling**: After 5 consecutive link postponements or definitive failures, the run transitions to `FAILED` and refunds its exact `chargeShare` to user wallet.
+- **Timeout Safety**: If an HTTP call times out, the run transitions to `UNCERTAIN` instead of blindly retrying. It is flagged for admin supervisor review.
+
+### 6.4 Customer Mid-Schedule Cancellation
+- Customers can click **Cancel Remaining Runs** on orders in `MANAGED` mode.
+- All runs in `SCHEDULED` status are marked `CANCELED`, and their exact `chargeShare` is credited back to the customer's wallet immediately.
+- Dispatched or completed runs remain delivered. Parent order status updates to `PARTIAL` or `CANCELLED`.
+
+### 6.5 Drip Health Supervisor Metrics
+Navigate to **Admin > System Health** (`/admin/health`):
+- **Due Runs**: `SCHEDULED` runs where `scheduledAt <= now`.
+- **Late Runs**: Runs waiting `>10 minutes` past schedule (alerts for worker starvation).
+- **Uncertain Runs**: Runs requiring manual confirmation after upstream network timeout.
+- **Failed Runs**: Total runs that failed all retries and were refunded.
 
 ---
 

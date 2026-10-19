@@ -239,6 +239,20 @@ export class HealthController {
         lastCatalogSync: {
           lastSyncAt: lastCatalogSyncTime,
         },
+        dripFeed: {
+          dueRuns: await (this.prisma as any).orderRun?.count({
+            where: { status: "SCHEDULED", scheduledAt: { lte: new Date() } },
+          }).catch(() => 0) || 0,
+          lateRuns: await (this.prisma as any).orderRun?.count({
+            where: { status: "SCHEDULED", scheduledAt: { lte: new Date(Date.now() - 10 * 60 * 1000) } },
+          }).catch(() => 0) || 0,
+          uncertainRuns: await (this.prisma as any).orderRun?.count({
+            where: { status: "UNCERTAIN" },
+          }).catch(() => 0) || 0,
+          failedRuns: await (this.prisma as any).orderRun?.count({
+            where: { status: "FAILED" },
+          }).catch(() => 0) || 0,
+        },
         lastDispatch: lastOrderDispatch,
       },
     };

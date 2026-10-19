@@ -27,7 +27,14 @@ export default function AdminOrdersPage() {
   const [editStatusValue, setEditStatusValue] = useState<OrderStatus>("PENDING");
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [dripFeedOnly, setDripFeedOnly] = useState<boolean>(false);
+  const [lateRunsOnly, setLateRunsOnly] = useState<boolean>(false);
   const [selectedTraceOrder, setSelectedTraceOrder] = useState<OrderItem | null>(null);
+
+  const isLate = (o: OrderItem) => {
+    if (!o.runsList || o.runsList.length === 0) return false;
+    const tenMinsAgo = Date.now() - 10 * 60 * 1000;
+    return o.runsList.some((r: any) => r.status === "SCHEDULED" && new Date(r.scheduledAt).getTime() <= tenMinsAgo);
+  };
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -46,6 +53,7 @@ export default function AdminOrdersPage() {
   const filteredOrders = orders.filter((o) => {
     const matchesStatus = selectedStatus === "ALL" || o.status === selectedStatus;
     const matchesDrip = !dripFeedOnly || Boolean(o.isDripFeed);
+    const matchesLate = !lateRunsOnly || isLate(o);
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       q === "" ||
@@ -57,7 +65,7 @@ export default function AdminOrdersPage() {
       o.serviceName.toLowerCase().includes(q) ||
       o.target.toLowerCase().includes(q);
 
-    return matchesStatus && matchesDrip && matchesSearch;
+    return matchesStatus && matchesDrip && matchesLate && matchesSearch;
   });
 
   const handleSaveStatus = (orderId: string) => {
@@ -124,6 +132,21 @@ export default function AdminOrdersPage() {
               <span>Drip-feed Only</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/30 font-bold">
                 {orders.filter((o) => o.isDripFeed).length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setLateRunsOnly(!lateRunsOnly)}
+              className={`px-3 py-2 rounded-2xl text-xs font-mono font-medium flex items-center gap-1.5 transition-all ${
+                lateRunsOnly
+                  ? "bg-amber-500 text-black font-bold shadow-sm shadow-amber-500/20"
+                  : "bg-surface-container-highest/80 border border-white/10 text-slate-400 hover:text-white"
+              }`}
+            >
+              <span>Late Runs</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/30 font-bold">
+                {orders.filter((o) => isLate(o)).length}
               </span>
             </button>
 
@@ -347,6 +370,54 @@ export default function AdminOrdersPage() {
                   <span className="text-emerald-300 font-bold">#{selectedTraceOrder.providerOrderId || "None"}</span>
                 </div>
               </div>
+
+              {/* Order Runs Execution Matrix for Drip Orders */}
+              {selectedTraceOrder.runsList && selectedTraceOrder.runsList.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-[10px] font-mono text-[#D8EC8D] uppercase font-bold block">
+                    Order Runs Execution Matrix ({selectedTraceOrder.runsList.length} runs)
+                  </span>
+                  <div className="overflow-x-auto rounded-xl border border-white/10 bg-black/40">
+                    <table className="w-full text-left border-collapse text-[11px] font-mono">
+                      <thead>
+                        <tr className="border-b border-white/10 text-[9px] uppercase text-slate-400">
+                          <th className="p-2">#</th>
+                          <th className="p-2">Qty</th>
+                          <th className="p-2">Status</th>
+                          <th className="p-2">Provider Ref</th>
+                          <th className="p-2">Scheduled</th>
+                          <th className="p-2">Att.</th>
+                          <th className="p-2">Share</th>
+                          <th className="p-2">Error</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {selectedTraceOrder.runsList.map((r: any) => (
+                          <tr key={r.id} className="hover:bg-white/[0.02]">
+                            <td className="p-2 text-white font-bold">{r.runIndex + 1}</td>
+                            <td className="p-2 text-slate-300">{r.quantity}</td>
+                            <td className="p-2">
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                r.status === "COMPLETED" ? "bg-emerald-500/15 text-emerald-300" :
+                                r.status === "FAILED" || r.status === "CANCELED" ? "bg-rose-500/15 text-rose-300" :
+                                r.status === "UNCERTAIN" ? "bg-purple-500/20 text-purple-300 border border-purple-500/40" :
+                                "bg-amber-500/15 text-amber-300"
+                              }`}>
+                                {r.status}
+                              </span>
+                            </td>
+                            <td className="p-2 text-slate-400">{r.providerOrderId ? `#${r.providerOrderId}` : "-"}</td>
+                            <td className="p-2 text-slate-400">{new Date(r.nextAttemptAt || r.scheduledAt).toLocaleTimeString()}</td>
+                            <td className="p-2 text-slate-300">{r.attempts}</td>
+                            <td className="p-2 text-white font-semibold">₹{r.chargeShare.toFixed(2)}</td>
+                            <td className="p-2 text-rose-400 max-w-[120px] truncate">{r.lastError || "-"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <span className="text-[10px] font-mono text-slate-400 uppercase font-semibold block">

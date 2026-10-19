@@ -8,6 +8,8 @@ import {
   calculateOrderFinancialSnapshot,
   calculateCustomerCharge,
   DEFAULT_PRICING_SETTINGS,
+  splitChargeShare,
+  generateRunSchedule,
 } from "@smm/contracts";
 import { Decimal } from "decimal.js";
 
@@ -121,6 +123,9 @@ export class OrdersService {
           orderBy: { createdAt: "asc" },
         },
         refunds: true,
+        runsList: {
+          orderBy: { runIndex: "asc" },
+        },
       };
 
       if (requesterRole === "ADMIN") {
@@ -159,6 +164,9 @@ export class OrdersService {
         orderBy: { createdAt: "asc" },
       },
       refunds: true,
+      runsList: {
+        orderBy: { runIndex: "asc" },
+      },
     };
 
     if (requesterRole === "ADMIN") {
@@ -275,14 +283,21 @@ export class OrdersService {
     let runs = 1;
     let intervalMinutes: number | null = null;
     let totalQuantity = input.quantity;
+    let dripMode: "NONE" | "NATIVE" | "MANAGED" = "NONE";
 
     if (isDripFeed) {
       if (settings.dripFeedEnabled === false) {
         throw new BadRequestException("Drip-feed ordering is currently disabled.");
       }
-      if (!service.dripFeedSupported) {
+
+      if (service.dripFeedSupported) {
+        dripMode = "NATIVE";
+      } else if (service.allowManagedDrip) {
+        dripMode = "MANAGED";
+      } else {
         throw new BadRequestException("This service does not support drip-feed fulfillment.");
       }
+
       if (!input.runs || typeof input.runs !== "number" || !Number.isInteger(input.runs)) {
         throw new BadRequestException("Runs parameter is required and must be an integer for drip-feed orders.");
       }
@@ -300,6 +315,42 @@ export class OrdersService {
       const maxInterval = service.dripFeedMaxInterval ?? settings.dripFeedMaxInterval ?? 1440;
       if (input.interval < minInterval || input.interval > maxInterval) {
         throw new BadRequestException(`Interval must be between ${minInterval} and ${maxInterval} minutes.`);
+      }
+
+      if (dripMode === "MANAGED") {
+        const managedEnabled = process.env.DRIPFEED_MANAGED_ENABLED === "true" || process.env.DRIPFEED_MANAGED_ENABLED === "1";
+        if (!managedEnabled) {
+          throw new BadRequestException("Managed drip-feed ordering is temporarily disabled by administrator.");
+        }
+
+        const maxManagedRuns = process.env.DRIPFEED_MANAGED_MAX_RUNS ? parseInt(process.env.DRIPFEED_MANAGED_MAX_RUNS, 10) : 30;
+        const minManagedInterval = process.env.DRIPFEED_MANAGED_MIN_INTERVAL ? parseInt(process.env.DRIPFEED_MANAGED_MIN_INTERVAL, 10) : 30;
+        const maxTotalHours = process.env.DRIPFEED_MANAGED_MAX_TOTAL_HOURS ? parseInt(process.env.DRIPFEED_MANAGED_MAX_TOTAL_HOURS, 10) : 168;
+
+        if (input.runs > maxManagedRuns) {
+          throw new BadRequestException(`Managed drip-feed runs cannot exceed ${maxManagedRuns}.`);
+        }
+        if (input.interval < minManagedInterval) {
+          throw new BadRequestException(`Managed drip-feed interval must be at least ${minManagedInterval} minutes.`);
+        }
+        const totalDurationHours = ((input.runs - 1) * input.interval) / 60;
+        if (totalDurationHours > maxTotalHours) {
+          throw new BadRequestException(`Total drip-feed duration cannot exceed ${maxTotalHours} hours.`);
+        }
+
+        const maxConcurrent = process.env.MAX_CONCURRENT_MANAGED_PER_USER ? parseInt(process.env.MAX_CONCURRENT_MANAGED_PER_USER, 10) : 5;
+        if (this.prisma.isConnected) {
+          const activeManagedCount = await this.prisma.order.count({
+            where: {
+              userId,
+              dripMode: "MANAGED",
+              status: { in: [OrderStatus.PENDING, OrderStatus.PROCESSING, OrderStatus.IN_PROGRESS] },
+            },
+          });
+          if (activeManagedCount >= maxConcurrent) {
+            throw new BadRequestException(`Maximum concurrent active managed drip orders reached (${maxConcurrent}). Please wait for existing runs to finish.`);
+          }
+        }
       }
 
       runs = input.runs;
@@ -389,6 +440,7 @@ export class OrdersService {
         target: input.target,
         quantity: input.quantity,
         isDripFeed,
+        dripMode,
         runs: isDripFeed ? runs : null,
         intervalMinutes: isDripFeed ? intervalMinutes : null,
         quantityPerRun: input.quantity,
@@ -411,6 +463,21 @@ export class OrdersService {
         createdAt: new Date(),
         updatedAt: new Date(),
         service,
+        runsList: isDripFeed && dripMode === "MANAGED"
+          ? generateRunSchedule(new Date(), runs, intervalMinutes || 30).map((s, idx) => ({
+              id: `run_${idx}`,
+              orderId,
+              runIndex: s.runIndex,
+              quantity: input.quantity,
+              scheduledAt: s.scheduledAt.toISOString(),
+              status: "SCHEDULED",
+              chargeShare: splitChargeShare(charge, runs)[idx],
+              attempts: 0,
+              delivered: 0,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            }))
+          : [],
         history: [
           {
             id: `hist_${Date.now()}`,
@@ -419,7 +486,7 @@ export class OrdersService {
             startCount: 0,
             remains: totalQuantity,
             notes: isDripFeed
-              ? `Drip-feed order placed: ${runs} runs of ${input.quantity} every ${intervalMinutes}m (${totalQuantity} total). Queued for provider dispatch.`
+              ? `Drip-feed order placed (${dripMode}): ${runs} runs of ${input.quantity} every ${intervalMinutes}m (${totalQuantity} total). Queued for provider dispatch.`
               : "Order placed and queued for provider dispatch",
             createdAt: new Date(),
           },
@@ -438,6 +505,7 @@ export class OrdersService {
           target: input.target,
           quantity: input.quantity,
           isDripFeed,
+          dripMode: dripMode as any,
           runs: isDripFeed ? runs : null,
           intervalMinutes: isDripFeed ? intervalMinutes : null,
           quantityPerRun: input.quantity,
@@ -462,7 +530,27 @@ export class OrdersService {
         include: { service: true },
       });
 
-      // 6b. Record initial status history
+      // 6b. If MANAGED drip, create all OrderRun rows upfront with exact split charges
+      if (dripMode === "MANAGED") {
+        const shares = splitChargeShare(charge, runs);
+        const schedule = generateRunSchedule(new Date(), runs, intervalMinutes || 30);
+        const runsData = schedule.map((s, idx) => ({
+          orderId: order.id,
+          runIndex: s.runIndex,
+          quantity: input.quantity,
+          scheduledAt: s.scheduledAt,
+          status: "SCHEDULED" as any,
+          chargeShare: new Decimal(shares[idx]),
+          attempts: 0,
+          delivered: 0,
+        }));
+
+        await tx.orderRun.createMany({
+          data: runsData,
+        });
+      }
+
+      // 6c. Record initial status history
       await tx.orderStatusHistory.create({
         data: {
           orderId: order.id,
@@ -470,12 +558,12 @@ export class OrdersService {
           startCount: 0,
           remains: totalQuantity,
           notes: isDripFeed
-            ? `Drip-feed order placed: ${runs} runs of ${input.quantity} every ${intervalMinutes}m (${totalQuantity} total). Queued for provider dispatch.`
+            ? `Drip-feed order placed (${dripMode}): ${runs} runs of ${input.quantity} every ${intervalMinutes}m (${totalQuantity} total). Queued for dispatch.`
             : "Order placed and queued for provider dispatch",
         },
       });
 
-      // 6c. Debit wallet with row-level lock
+      // 6d. Debit wallet with row-level lock
       const [walletRow] = await tx.$queryRawUnsafe<any[]>(
         `SELECT id, balance FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
         userId
@@ -495,7 +583,7 @@ export class OrdersService {
         data: { balance: newBalance },
       });
 
-      // 6d. Write immutable ledger record
+      // 6e. Write immutable ledger record
       await tx.ledgerEntry.create({
         data: {
           walletId: walletRow.id,
@@ -503,11 +591,11 @@ export class OrdersService {
           type: "ORDER_CHARGE",
           orderId: order.id,
           idempotencyKey: input.idempotencyKey,
-          description: `Order Charge #${order.id} for ${service.displayName || service.name}${isDripFeed ? ` (Drip-feed: ${runs}x${input.quantity})` : ""}`,
+          description: `Order Charge #${order.id} for ${service.displayName || service.name}${isDripFeed ? ` (${dripMode} Drip-feed: ${runs}x${input.quantity})` : ""}`,
         },
       });
 
-      // 6e. Enqueue Outbox event
+      // 6f. Enqueue Outbox event
       await tx.outboxEvent.create({
         data: {
           aggregate: "ORDER",
@@ -518,6 +606,7 @@ export class OrdersService {
             target: order.target,
             quantity: order.quantity,
             isDripFeed,
+            dripMode,
             runs: isDripFeed ? runs : null,
             intervalMinutes: isDripFeed ? intervalMinutes : null,
             quantityPerRun: input.quantity,
@@ -538,6 +627,9 @@ export class OrdersService {
 
   async refill(id: string, requesterUserId?: string, requesterRole?: string) {
     const order = await this.findOne(id, requesterUserId, requesterRole);
+    if (order.dripMode === "MANAGED") {
+      throw new BadRequestException("Refill is not supported on managed drip-feed orders.");
+    }
     if (!order.service?.refillable) {
       throw new BadRequestException("This service does not support refills.");
     }
@@ -578,6 +670,99 @@ export class OrdersService {
     }
     if (order.status === OrderStatus.COMPLETED && requesterRole !== "ADMIN") {
       throw new ConflictException("Completed orders cannot be cancelled.");
+    }
+
+    // Managed Drip cancellation: cancel remaining SCHEDULED runs and refund their charge shares
+    if (order.dripMode === "MANAGED" && this.prisma.isConnected) {
+      const result = await this.prisma.$transaction(async (tx) => {
+        const scheduledRuns = await tx.orderRun.findMany({
+          where: { orderId: order.id, status: "SCHEDULED" },
+        });
+
+        if (scheduledRuns.length === 0) {
+          throw new ConflictException("No scheduled runs remain to cancel.");
+        }
+
+        let refundAmount = new Decimal(0);
+        for (const run of scheduledRuns) {
+          refundAmount = refundAmount.plus(new Decimal(run.chargeShare.toString()));
+        }
+
+        await tx.orderRun.updateMany({
+          where: { orderId: order.id, status: "SCHEDULED" },
+          data: { status: "CANCELED" },
+        });
+
+        const activeCount = await tx.orderRun.count({
+          where: { orderId: order.id, status: { in: ["DISPATCHING", "UNCERTAIN", "PROCESSING"] } },
+        });
+        const completedCount = await tx.orderRun.count({
+          where: { orderId: order.id, status: "COMPLETED" },
+        });
+
+        const newOrderStatus = activeCount > 0 
+          ? OrderStatus.IN_PROGRESS 
+          : completedCount > 0 
+            ? OrderStatus.PARTIAL 
+            : OrderStatus.CANCELLED;
+
+        const [walletRow] = await tx.$queryRawUnsafe<any[]>(
+          `SELECT id, balance FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
+          order.userId
+        );
+        if (!walletRow) throw new BadRequestException("Wallet not found.");
+
+        const currentBalance = new Decimal(walletRow.balance.toString());
+        const newBalance = currentBalance.plus(refundAmount);
+
+        await tx.wallet.update({
+          where: { id: walletRow.id },
+          data: { balance: newBalance },
+        });
+
+        await tx.ledgerEntry.create({
+          data: {
+            walletId: walletRow.id,
+            amount: refundAmount,
+            type: "REFUND",
+            orderId: order.id,
+            description: `Refund for ${scheduledRuns.length} cancelled scheduled runs on Order #${order.id}`,
+          },
+        });
+
+        await tx.refund.create({
+          data: {
+            orderId: order.id,
+            userId: order.userId,
+            amount: refundAmount,
+            reason: `Customer cancelled ${scheduledRuns.length} scheduled drip runs`,
+          },
+        });
+
+        const updatedOrder = await tx.order.update({
+          where: { id },
+          data: { status: newOrderStatus },
+        });
+
+        await tx.orderStatusHistory.create({
+          data: {
+            orderId: id,
+            status: newOrderStatus,
+            remains: order.remains,
+            startCount: order.startCount,
+            notes: `Customer cancelled ${scheduledRuns.length} scheduled runs. Refunded ₹${refundAmount.toFixed(2)}.`,
+          },
+        });
+
+        return { updatedOrder, newBalance, refundAmount };
+      });
+
+      return {
+        success: true,
+        message: `Cancelled scheduled runs and refunded ₹${result.refundAmount.toFixed(2)}.`,
+        newBalance: result.newBalance,
+        order: result.updatedOrder,
+      };
     }
 
     if (!this.prisma.isConnected) {

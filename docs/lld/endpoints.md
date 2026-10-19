@@ -1,7 +1,7 @@
 # System API Endpoints Specification
 
 > **Generated from OpenAPI 3.0 specification** (`docs/openapi.json`)
-> Total Documented Endpoints: 73 route patterns
+> Total Documented Endpoints: 87 route patterns
 
 | Method | Path | Role | Request | Response | Errors | Rate Limit | Idempotency | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -14,11 +14,15 @@
 | `POST` | `/api/v1/auth/logout` | Customer / Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `POST` | `/api/v1/auth/forgot-password` | Public | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 10 req/min | No | Implemented & Verified |
 | `POST` | `/api/v1/auth/reset-password` | Public | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
+| `POST` | `/api/v1/auth/verify-email` | Authenticated | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
+| `POST` | `/api/v1/auth/resend-verification` | Authenticated | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `POST` | `/api/v1/auth/2fa/setup` | Customer / Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `POST` | `/api/v1/auth/2fa/verify` | Customer / Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `GET` | `/api/v1/auth/sessions` | Customer / Admin | x-user-id (header) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/auth/sessions/revoke` | Customer / Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `GET` | `/api/v1/auth/verify-key` | Authenticated | authorization (header) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
+| `POST` | `/api/v1/webhooks/resend` | Authenticated | None | 200, 400 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
+| `GET` | `/api/v1/admin/email/telemetry` | Authenticated | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `GET` | `/api/v1/services/platforms` | Public / Customer | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `GET` | `/api/v1/services/categories` | Public / Customer | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/services/categories` | Public / Customer | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
@@ -27,7 +31,7 @@
 | `GET` | `/api/v1/services/{id}` | Authenticated | id (path) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `PUT` | `/api/v1/services/{id}` | Admin | id (path) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
 | `DELETE` | `/api/v1/services/{id}` | Admin | id (path) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
-| `GET` | `/api/v1/orders` | Customer / Admin | userId (query), status (query), q (query), startDate (query), endDate (query) | 200 | 401, 403, 404, 429, 500 | 30 req/min | Safe (Read-Only) | Implemented & Verified |
+| `GET` | `/api/v1/orders` | Customer / Admin | userId (query), status (query), q (query), startDate (query), endDate (query), dripFeedOnly (query) | 200 | 401, 403, 404, 429, 500 | 30 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/orders` | Customer / Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 30 req/min | Yes (X-Idempotency-Key) | Implemented & Verified |
 | `GET` | `/api/v1/orders/{id}` | Authenticated | id (path) | 200 | 401, 403, 404, 429, 500 | 30 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/orders/create` | Customer / Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 30 req/min | Yes (X-Idempotency-Key) | Implemented & Verified |
@@ -42,6 +46,16 @@
 | `GET` | `/api/v1/wallet/ledger` | Customer | userId (query) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/wallet/adjust` | Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Yes (Ledger Ref) | Implemented & Verified |
 | `POST` | `/api/v1/wallet/deposit` | Sandbox-only (404 in Prod) | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
+| `GET` | `/api/v1/settings` | Admin | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
+| `PUT` | `/api/v1/settings` | Admin | None | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
+| `GET` | `/api/v1/admin/pricing/settings` | Authenticated | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
+| `PUT` | `/api/v1/admin/pricing/settings` | Authenticated | None | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
+| `POST` | `/api/v1/admin/pricing/what-if` | Authenticated | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
+| `GET` | `/api/v1/admin/pricing/pending` | Authenticated | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
+| `POST` | `/api/v1/admin/pricing/pending/{id}/approve` | Authenticated | id (path) | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
+| `POST` | `/api/v1/admin/pricing/pending/{id}/reject` | Authenticated | id (path) | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
+| `POST` | `/api/v1/admin/pricing/bulk-margin` | Authenticated | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
+| `GET` | `/api/v1/admin/profit/summary` | Authenticated | startDate (query), endDate (query), dripFeedOnly (query) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `GET` | `/api/v1/providers` | Admin | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/providers` | Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `POST` | `/api/v1/providers/create` | Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
@@ -51,6 +65,8 @@
 | `GET` | `/api/v1/providers/{id}/balance` | Admin | id (path) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/providers/{id}/sync` | Admin | id (path) | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `POST` | `/api/v1/providers/{id}/import` | Admin | id (path) | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
+| `PUT` | `/api/v1/providers/services/{serviceId}/managed-drip` | Admin | serviceId (path) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
+| `PUT` | `/api/v1/providers/categories/{categoryId}/managed-drip` | Admin | categoryId (path) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
 | `GET` | `/api/v1/users/me` | Customer / Admin | x-user-id (header) | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `PUT` | `/api/v1/users/me` | Customer / Admin | x-user-id (header) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
 | `GET` | `/api/v1/users` | Admin | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
@@ -82,8 +98,6 @@
 | `PUT` | `/api/v1/notifications/{id}/read` | Customer | id (path) | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
 | `GET` | `/api/v1/announcements` | Public / Customer | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/announcements` | Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
-| `GET` | `/api/v1/settings` | Admin | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
-| `PUT` | `/api/v1/settings` | Admin | None | 200 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | Idempotent (State-based) | Implemented & Verified |
 | `GET` | `/api/v1/reports/summary` | Admin | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `GET` | `/api/v1/reports/export-csv` | Admin | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
 | `GET` | `/api/v1/reseller/reports` | Reseller / Admin | None | 200 | 401, 403, 404, 429, 500 | 60 req/min | Safe (Read-Only) | Implemented & Verified |
@@ -93,6 +107,7 @@
 | `POST` | `/api/v1/reseller/api-key/rotate` | Reseller / Admin | x-user-id (header) | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `GET` | `/api/v1/reseller/v1/services` | Reseller (API Key) | None | 200 | 401, 403, 404, 429, 500 | 120 req/min | Safe (Read-Only) | Implemented & Verified |
 | `POST` | `/api/v1/reseller/v1/orders` | Reseller (API Key) | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 30 req/min | Yes (X-Idempotency-Key) | Implemented & Verified |
+| `POST` | `/api/v1/reseller/v2` | Reseller / Admin | None | 201 | 400, 401, 403, 404, 409, 429, 500 | 60 req/min | No | Implemented & Verified |
 | `GET` | `/api/v1/reseller/v1/orders/{id}` | Reseller (API Key) | id (path) | 200 | 401, 403, 404, 429, 500 | 30 req/min | Safe (Read-Only) | Implemented & Verified |
 | `GET` | `/api/v1/reseller/v1/balance` | Reseller (API Key) | None | 200 | 401, 403, 404, 429, 500 | 120 req/min | Safe (Read-Only) | Implemented & Verified |
 

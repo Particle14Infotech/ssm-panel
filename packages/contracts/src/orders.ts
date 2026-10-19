@@ -13,10 +13,43 @@ export const OrderStatusSchema = z.enum([
 ]);
 export type OrderStatus = z.infer<typeof OrderStatusSchema>;
 
+export const DripModeSchema = z.enum(["NONE", "NATIVE", "MANAGED"]);
+export type DripMode = z.infer<typeof DripModeSchema>;
+
+export const OrderRunStatusSchema = z.enum([
+  "SCHEDULED",
+  "DISPATCHING",
+  "UNCERTAIN",
+  "PROCESSING",
+  "COMPLETED",
+  "PARTIAL",
+  "FAILED",
+  "CANCELED",
+]);
+export type OrderRunStatus = z.infer<typeof OrderRunStatusSchema>;
+
+export const OrderRunItemSchema = z.object({
+  id: z.string(),
+  orderId: z.string(),
+  runIndex: z.number().int(),
+  quantity: z.number().int(),
+  scheduledAt: z.string(),
+  status: OrderRunStatusSchema,
+  providerOrderId: z.string().nullable().optional(),
+  attempts: z.number().int(),
+  nextAttemptAt: z.string().nullable().optional(),
+  lastError: z.string().nullable().optional(),
+  delivered: z.number().int(),
+  chargeShare: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type OrderRunItem = z.infer<typeof OrderRunItemSchema>;
+
 export const VALID_ORDER_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
-  PENDING: ["PROCESSING", "CANCELLED", "FAILED"] as const,
+  PENDING: ["PROCESSING", "IN_PROGRESS", "CANCELLED", "FAILED"] as const,
   PROCESSING: ["IN_PROGRESS", "COMPLETED", "PARTIAL", "CANCELLED", "FAILED"] as const,
-  IN_PROGRESS: ["COMPLETED", "PARTIAL", "CANCELLED"] as const,
+  IN_PROGRESS: ["COMPLETED", "PARTIAL", "CANCELLED", "FAILED"] as const,
   PARTIAL: ["REFUNDED"] as const,
   CANCELLED: ["REFUNDED"] as const,
   FAILED: ["REFUNDED"] as const,
@@ -161,6 +194,8 @@ export const OrderItemSchema = z.object({
   startCount: z.number().nullable().optional(),
   remains: z.number().nullable().optional(),
   status: OrderStatusSchema,
+  dripMode: DripModeSchema.optional(),
+  runsList: z.array(OrderRunItemSchema).optional(),
   providerOrderId: z.string().nullable().optional(),
   providerName: z.string().nullable().optional(),
   idempotencyKey: z.string().optional(),

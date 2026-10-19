@@ -113,8 +113,8 @@ export default function AdminSystemHealthPage() {
           </span>
         </div>
 
-        {/* 5 Core Pillars Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* 6 Core Pillars Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           {/* 1. Database */}
           <div className="glass-panel rounded-3xl p-5 space-y-3">
             <div className="flex items-center justify-between">
@@ -219,6 +219,28 @@ export default function AdminSystemHealthPage() {
               <div className="mt-1">
                 Queue: {comp?.email?.pendingCount ?? 0} pend • {comp?.email?.suppressedCount ?? 0} supr
               </div>
+            </div>
+          </div>
+
+          {/* 6. Drip-Feed Supervisor */}
+          <div className="glass-panel rounded-3xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                <Clock className="w-4 h-4 text-[#D8EC8D]" />
+                <span>Drip Supervisor</span>
+              </div>
+              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                (comp?.dripFeed?.lateRuns ?? 0) === 0 && (comp?.dripFeed?.uncertainRuns ?? 0) === 0
+                  ? "bg-emerald-500/20 text-emerald-300"
+                  : "bg-amber-500/20 text-amber-300"
+              }`}>
+                {comp?.dripFeed?.dueRuns ?? 0} Due
+              </span>
+            </div>
+            <div className="text-xs text-slate-400 font-mono space-y-0.5">
+              <div>Late (&gt;10m): <span className={comp?.dripFeed?.lateRuns ? "text-amber-400 font-bold" : "text-white"}>{comp?.dripFeed?.lateRuns ?? 0}</span></div>
+              <div>Uncertain: <span className={comp?.dripFeed?.uncertainRuns ? "text-purple-400 font-bold" : "text-white"}>{comp?.dripFeed?.uncertainRuns ?? 0}</span></div>
+              <div>Failed: <span className={comp?.dripFeed?.failedRuns ? "text-rose-400 font-bold" : "text-white"}>{comp?.dripFeed?.failedRuns ?? 0}</span></div>
             </div>
           </div>
         </div>

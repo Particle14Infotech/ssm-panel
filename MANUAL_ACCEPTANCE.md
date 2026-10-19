@@ -93,3 +93,71 @@
 - **Expected Result:**
   - Inspect network response payloads for `/api/v1/orders` and `/api/v1/services`.
   - Zero presence of `costRatePer1k`, `estimatedProviderCost`, `estimatedGrossProfit`, `actualProviderCost`, `providerCostPer1k`, or `costINR`.
+
+---
+
+## PART 3: Drip-Feed Manual Acceptance Protocol (6 Steps)
+
+### Step 1: Admin Providers Page Distribution Counts
+- **Action:** Navigate to **Admin > API Providers** (`/admin/providers`).
+- **Action:** Click **Sync Balance** on the `cheapestsmmpanels` provider node.
+- **Expected Result:**
+  - The provider card displays:
+    `Drip / Refill / Cancel: 20 / 47 / 1206`
+  - `Last Synced` updates with the exact current timestamp.
+
+### Step 2: Allowlist a Service for Managed Drip-Feed
+- **Action:** Navigate to **Admin > Services Catalog** (`/admin/services`).
+- **Action:** Find a fast-delivery service (e.g. Instagram Followers #4684 or Likes #701).
+- **Action:** Click the button in the Drip-Feed column: toggle from `"Managed: OFF"` to `"Managed: ALLOWED"`.
+- **Action:** Open the Customer **New Order** page (`/app/new-order`) and select this service.
+- **Expected Result:**
+  - The delivery option `"Deliver gradually (drip-feed)"` toggle is visible and active.
+  - Toggling it ON reveals:
+    - Runs selector (min 2, max 30)
+    - Interval selector (min 30 min, presets: 30m, 1h, 2h, 6h, 12h, 24h)
+    - Schedule preview with per-run timestamps:
+      `"Run 1: 100 units · 14:00"`, `"Run 2: 100 units · 14:30"`, etc.
+    - Note displayed: `"Runs are sent one after another at the planned times; each run may start a few minutes late."`
+
+### Step 3: Place a 2-Run Managed Drip Order
+- **Action:** Set Quantity = minimum (e.g. 100), Runs = 2, Interval = 30 minutes. Click **Place Order**.
+- **Expected Result:**
+  - Order is placed with `dripMode: MANAGED`. Total charge is debited once upfront.
+  - Navigate to **Orders History** (`/app/orders`).
+  - Order row displays:
+    - Badge: `"Drip-feed (MANAGED)"`
+    - Progress: `"0 of 2 runs done (0 / 200)"`
+    - `"Next run: [time]"`
+  - Background worker immediately picks up run 0:
+    - Run 0 transitions to `DISPATCHING` $\to$ `COMPLETED` with an assigned `providerOrderId`.
+    - Run 1 remains `SCHEDULED` for `+30 minutes`.
+
+### Step 4: Upstream Provider Panel Confirmation
+- **Action:** Log in to `https://cheapestsmmpanels.com` upstream dashboard.
+- **Action:** Open **Orders History** on the provider.
+- **Expected Result:**
+  - Run 0 appears as a distinct upstream order matching `providerOrderId` and quantity `100`.
+  - When Run 1 executes at its scheduled time, a second order appears upstream with the second `providerOrderId`.
+
+### Step 5: Customer Mid-Schedule Cancellation & Exact Refund
+- **Action:** Place a 3-run managed order.
+- **Action:** Wait for Run 0 to dispatch.
+- **Action:** Open order **Details** modal in `/app/orders`.
+- **Expected Result:**
+  - Modal shows **Run Timeline** listing Run #1 (Completed), Run #2 (Scheduled), Run #3 (Scheduled).
+  - Click **Cancel Remaining Runs** and confirm.
+  - Runs #2 and #3 immediately transition to `CANCELED`.
+  - The exact sum of their `chargeShare` values is credited back to the user wallet.
+  - Order status updates to `PARTIAL`.
+
+### Step 6: Admin Health Supervisor Verification
+- **Action:** Navigate to **Admin > System Health** (`/admin/health`).
+- **Expected Result:**
+  - **Drip Supervisor** card shows:
+    - `Due Runs: 0`
+    - `Late Runs (>10m): 0`
+    - `Uncertain Runs: 0`
+    - `Failed Runs: 0`
+  - Confirms zero stuck orders or unhandled scheduler exceptions.
+

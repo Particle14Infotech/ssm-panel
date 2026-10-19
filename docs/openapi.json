@@ -1281,6 +1281,54 @@
         ]
       }
     },
+    "/api/v1/providers/services/{serviceId}/managed-drip": {
+      "put": {
+        "operationId": "ProvidersController_setManagedDrip",
+        "summary": "Toggle Managed Drip-Feed for a specific service",
+        "parameters": [
+          {
+            "name": "serviceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Provider Node Sync"
+        ]
+      }
+    },
+    "/api/v1/providers/categories/{categoryId}/managed-drip": {
+      "put": {
+        "operationId": "ProvidersController_bulkSetManagedDripByCategory",
+        "summary": "Bulk toggle Managed Drip-Feed for all services in a category",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Provider Node Sync"
+        ]
+      }
+    },
     "/api/v1/users/me": {
       "get": {
         "operationId": "UsersController_getProfile",

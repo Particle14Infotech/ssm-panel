@@ -57,6 +57,23 @@ enum EmailStatus {
   COMPLAINED
 }
 
+enum DripMode {
+  NONE
+  NATIVE
+  MANAGED
+}
+
+enum OrderRunStatus {
+  SCHEDULED
+  DISPATCHING
+  UNCERTAIN
+  PROCESSING
+  COMPLETED
+  PARTIAL
+  FAILED
+  CANCELED
+}
+
 model User {
   id                         String    @id @default(uuid())
   email                      String    @unique
@@ -165,6 +182,8 @@ model Service {
   refillable        Boolean   @default(false)
   cancellable       Boolean   @default(false)
   dripFeedSupported Boolean   @default(false)
+  allowManagedDrip  Boolean   @default(false)
+  rawMeta           Json?
   dripFeedMinRuns   Int?
   dripFeedMaxRuns   Int?
   dripFeedMinInterval Int?
@@ -220,6 +239,7 @@ model Order {
   target          String
   quantity        Int
   isDripFeed      Boolean              @default(false)
+  dripMode        DripMode             @default(NONE)
   runs            Int?
   intervalMinutes Int?
   quantityPerRun  Int?
@@ -253,10 +273,34 @@ model Order {
   history        OrderStatusHistory[]
   refunds        Refund[]
   providerEvents OrderProviderEvent[]
+  runsList       OrderRun[]
 
   @@unique([userId, idempotencyKey], name: "unique_order_idempotency_per_user")
   @@index([userId, status, createdAt])
   @@index([providerId, status])
+}
+
+model OrderRun {
+  id              String         @id @default(uuid())
+  orderId         String
+  order           Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  runIndex        Int
+  quantity        Int
+  scheduledAt     DateTime
+  status          OrderRunStatus @default(SCHEDULED)
+  providerOrderId String?
+  attempts        Int            @default(0)
+  nextAttemptAt   DateTime?
+  lastError       String?
+  delivered       Int            @default(0)
+  chargeShare     Decimal        @db.Decimal(10, 2)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([orderId, runIndex])
+  @@index([status, scheduledAt])
+  @@index([orderId])
+  @@index([providerOrderId])
 }
 
 model OrderProviderEvent {

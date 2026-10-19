@@ -363,22 +363,33 @@ export default function AdminServicesPage() {
                         {service.minQty.toLocaleString()} – {service.maxQty.toLocaleString()}
                       </td>
                       <td className="py-4 px-3 whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updateService(service.id, {
-                              dripFeedSupported: !service.dripFeedSupported,
-                            })
-                          }
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold transition-all ${
-                            service.dripFeedSupported
-                              ? "bg-[#D8EC8D]/15 text-[#D8EC8D] border border-[#D8EC8D]/30"
-                              : "bg-white/5 text-slate-500 border border-white/5 hover:text-white"
-                          }`}
-                          title="Click to toggle Drip-Feed capability"
-                        >
-                          {service.dripFeedSupported ? "Supported" : "Disabled"}
-                        </button>
+                        <div className="flex flex-col gap-1 items-start">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold ${
+                              service.dripFeedSupported
+                                ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                                : "bg-white/5 text-slate-500"
+                            }`}
+                          >
+                            {service.dripFeedSupported ? "Native: ON" : "Native: OFF"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateService(service.id, {
+                                allowManagedDrip: !service.allowManagedDrip,
+                              })
+                            }
+                            className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold transition-all ${
+                              service.allowManagedDrip
+                                ? "bg-[#D8EC8D]/20 text-[#D8EC8D] border border-[#D8EC8D]/50"
+                                : "bg-white/5 text-slate-400 border border-white/5 hover:text-white"
+                            }`}
+                            title="Click to toggle Panel-Managed Drip-Feed"
+                          >
+                            {service.allowManagedDrip ? "Managed: ALLOWED" : "Managed: OFF"}
+                          </button>
+                        </div>
                       </td>
                       <td className="py-4 px-3 whitespace-nowrap">
                         <button

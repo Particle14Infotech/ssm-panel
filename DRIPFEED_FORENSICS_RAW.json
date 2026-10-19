@@ -1,0 +1,82 @@
+{
+  "providerUrl": "https://cheapestsmmpanels.com/api/v2",
+  "totalServices": 2533,
+  "allKeys": [
+    "service",
+    "name",
+    "type",
+    "rate",
+    "min",
+    "max",
+    "dripfeed",
+    "refill",
+    "cancel",
+    "category"
+  ],
+  "dripRelatedKeys": [
+    "dripfeed"
+  ],
+  "dripfeedAnalysis": {
+    "typeDistribution": {
+      "boolean": 2533
+    },
+    "valueDistribution": {
+      "false": 2513,
+      "true": 20
+    },
+    "truthyCount": 20,
+    "falsyCount": 2513
+  },
+  "refillAnalysis": {
+    "typeDistribution": {
+      "boolean": 2533
+    },
+    "valueDistribution": {
+      "true": 47,
+      "false": 2486
+    },
+    "truthyCount": 47,
+    "falsyCount": 2486
+  },
+  "cancelAnalysis": {
+    "typeDistribution": {
+      "boolean": 2533
+    },
+    "valueDistribution": {
+      "true": 1206,
+      "false": 1327
+    },
+    "truthyCount": 1206,
+    "falsyCount": 1327
+  },
+  "interpretations": {
+    "countStrictTrue": 20,
+    "countNum1": 0,
+    "countStr1": 0,
+    "countStrTrue": 0,
+    "countStrYes": 0,
+    "countAnyTruthy": 20
+  },
+  "mentionsDripCount": 220,
+  "typesDistribution": {
+    "Default": 2363,
+    "Subscriptions": 48,
+    "Custom Comments": 27,
+    "Invites from Groups": 21,
+    "Mentions User Followers": 9,
+    "Mentions Custom List": 5,
+    "Mentions Hashtag": 8,
+    "Mentions Media Likers": 3,
+    "Mentions with Hashtags": 2,
+    "Package": 44,
+    "Mentions": 2,
+    "Poll": 1
+  },
+  "balance": {
+    "balance": "103.2382100",
+    "currency": "INR"
+  },
+  "sampleError": {
+    "error": "Incorrect order ID"
+  }
+}

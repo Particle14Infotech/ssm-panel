@@ -60,4 +60,16 @@ export class ProvidersController {
   importServices(@Param("id") id: string, @Body() body: { marginPercent?: number }) {
     return this.providersService.importServices(id, body || {});
   }
+
+  @Put("services/:serviceId/managed-drip")
+  @ApiOperation({ summary: "Toggle Managed Drip-Feed for a specific service" })
+  setManagedDrip(@Param("serviceId") serviceId: string, @Body() body: { allow: boolean }) {
+    return this.providersService.setAllowManagedDrip(serviceId, Boolean(body.allow));
+  }
+
+  @Put("categories/:categoryId/managed-drip")
+  @ApiOperation({ summary: "Bulk toggle Managed Drip-Feed for all services in a category" })
+  bulkSetManagedDripByCategory(@Param("categoryId") categoryId: string, @Body() body: { allow: boolean }) {
+    return this.providersService.bulkSetAllowManagedDripByCategory(categoryId, Boolean(body.allow));
+  }
 }

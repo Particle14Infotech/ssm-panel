@@ -9,3 +9,4 @@ export * from "./profile";
 export * from "./brand";
 export * from "./email";
 export * from "./link-validation";
+export * from "./coercion";

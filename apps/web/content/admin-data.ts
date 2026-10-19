@@ -20,6 +20,9 @@ export interface AdminProvider {
   status: "CONNECTED" | "ERROR" | "SYNCING";
   serviceCount: number;
   lastSyncAt: string;
+  dripFeedCount?: number;
+  refillCount?: number;
+  cancelCount?: number;
 }
 
 export interface AdminCoupon {
