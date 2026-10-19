@@ -204,5 +204,26 @@ export const OrderItemSchema = z.object({
   refillable: z.boolean().optional(),
   cancellable: z.boolean().optional(),
   providerEvents: z.array(z.any()).optional(),
+  isPrepaid: z.boolean().optional(),
+  packageRunId: z.string().nullable().optional(),
+  packageRun: z
+    .object({
+      id: z.string(),
+      runIndex: z.number(),
+      packageId: z.string(),
+      package: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          status: z.string(),
+          totalRuns: z.number(),
+          completedRuns: z.number(),
+          failedRuns: z.number().optional(),
+          cancelledRuns: z.number().optional(),
+        })
+        .optional(),
+    })
+    .nullable()
+    .optional(),
 });
 export type OrderItem = z.infer<typeof OrderItemSchema>;

@@ -126,6 +126,24 @@ export class OrdersService {
         runsList: {
           orderBy: { runIndex: "asc" },
         },
+        packageRun: {
+          select: {
+            id: true,
+            runIndex: true,
+            packageId: true,
+            package: {
+              select: {
+                id: true,
+                name: true,
+                status: true,
+                totalRuns: true,
+                completedRuns: true,
+                failedRuns: true,
+                cancelledRuns: true,
+              },
+            },
+          },
+        },
       };
 
       if (requesterRole === "ADMIN") {
@@ -166,6 +184,24 @@ export class OrdersService {
       refunds: true,
       runsList: {
         orderBy: { runIndex: "asc" },
+      },
+      packageRun: {
+        select: {
+          id: true,
+          runIndex: true,
+          packageId: true,
+          package: {
+            select: {
+              id: true,
+              name: true,
+              status: true,
+              totalRuns: true,
+              completedRuns: true,
+              failedRuns: true,
+              cancelledRuns: true,
+            },
+          },
+        },
       },
     };
 
