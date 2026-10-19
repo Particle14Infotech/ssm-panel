@@ -188,6 +188,8 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
               backupProviderServiceId: s.backupProviderServiceId || null,
               backupProviderName: s.backupProviderName,
               dripFeedSupported: s.dripFeedSupported ?? false,
+              allowManagedDrip: s.allowManagedDrip ?? (s.serviceType !== "CUSTOM_COMMENTS" && !s.name?.toLowerCase().includes("comment")),
+              serviceType: s.serviceType || "DEFAULT",
               dripFeedMinRuns: s.dripFeedMinRuns ?? null,
               dripFeedMaxRuns: s.dripFeedMaxRuns ?? null,
               dripFeedMinInterval: s.dripFeedMinInterval ?? null,

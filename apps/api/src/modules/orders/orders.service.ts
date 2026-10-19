@@ -292,7 +292,7 @@ export class OrdersService {
 
       if (service.dripFeedSupported) {
         dripMode = "NATIVE";
-      } else if (service.allowManagedDrip) {
+      } else if (service.allowManagedDrip || (service.allowManagedDrip === undefined && service.serviceType !== "CUSTOM_COMMENTS" && !service.name?.toLowerCase().includes("comment"))) {
         dripMode = "MANAGED";
       } else {
         throw new BadRequestException("This service does not support drip-feed fulfillment.");
@@ -318,7 +318,7 @@ export class OrdersService {
       }
 
       if (dripMode === "MANAGED") {
-        const managedEnabled = process.env.DRIPFEED_MANAGED_ENABLED === "true" || process.env.DRIPFEED_MANAGED_ENABLED === "1";
+        const managedEnabled = process.env.DRIPFEED_MANAGED_ENABLED !== "false" && process.env.DRIPFEED_MANAGED_ENABLED !== "0";
         if (!managedEnabled) {
           throw new BadRequestException("Managed drip-feed ordering is temporarily disabled by administrator.");
         }

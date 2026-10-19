@@ -230,12 +230,12 @@ function NewOrderContent() {
   }, [activeService]);
 
   const isNativeDrip = Boolean(activeService?.dripFeedSupported);
-  const isManagedDrip = Boolean(activeService?.allowManagedDrip);
-  const isDripSupported = isNativeDrip || isManagedDrip;
   const isCustomComments =
     activeService?.serviceType === "CUSTOM_COMMENTS" ||
     activeService?.serviceType === "COMMENTS" ||
     (activeService?.name || "").toLowerCase().includes("custom comment");
+  const isManagedDrip = activeService?.allowManagedDrip !== false && !isCustomComments;
+  const isDripSupported = (isNativeDrip || isManagedDrip) && !isCustomComments;
 
   const minQty = activeService?.minQty || 10;
   const maxQty = activeService?.maxQty || 1000000;

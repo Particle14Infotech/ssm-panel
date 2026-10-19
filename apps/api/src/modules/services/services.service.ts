@@ -166,7 +166,7 @@ export class ServicesService {
           refillable: s.refillable,
           cancellable: s.cancellable,
           dripFeedSupported: s.dripFeedSupported,
-          allowManagedDrip: s.allowManagedDrip,
+          allowManagedDrip: s.allowManagedDrip !== null && s.allowManagedDrip !== undefined ? s.allowManagedDrip : (s.serviceType !== "CUSTOM_COMMENTS" && !s.name?.toLowerCase().includes("comment")),
           providerId: s.providerId || null,
           providerServiceId: s.providerServiceId || null,
           providerName,
@@ -252,7 +252,7 @@ export class ServicesService {
       refillable: s.refillable,
       cancellable: s.cancellable,
       dripFeedSupported: s.dripFeedSupported,
-      allowManagedDrip: s.allowManagedDrip,
+      allowManagedDrip: s.allowManagedDrip !== null && s.allowManagedDrip !== undefined ? s.allowManagedDrip : (s.serviceType !== "CUSTOM_COMMENTS" && !s.name?.toLowerCase().includes("comment")),
       providerId: s.providerId || null,
       providerServiceId: s.providerServiceId || null,
       providerName: s.provider?.name,
@@ -302,6 +302,7 @@ export class ServicesService {
         refillable: Boolean(input.refillable),
         cancellable: Boolean(input.cancellable),
         dripFeedSupported: Boolean(input.dripFeedSupported),
+        allowManagedDrip: input.allowManagedDrip !== undefined ? Boolean(input.allowManagedDrip) : true,
         dripFeedMinRuns: input.dripFeedMinRuns ? parseInt(String(input.dripFeedMinRuns), 10) : null,
         dripFeedMaxRuns: input.dripFeedMaxRuns ? parseInt(String(input.dripFeedMaxRuns), 10) : null,
         dripFeedMinInterval: input.dripFeedMinInterval ? parseInt(String(input.dripFeedMinInterval), 10) : null,
@@ -337,6 +338,7 @@ export class ServicesService {
     if (input.refillable !== undefined) data.refillable = Boolean(input.refillable);
     if (input.cancellable !== undefined) data.cancellable = Boolean(input.cancellable);
     if (input.dripFeedSupported !== undefined) data.dripFeedSupported = Boolean(input.dripFeedSupported);
+    if (input.allowManagedDrip !== undefined) data.allowManagedDrip = Boolean(input.allowManagedDrip);
     if (input.dripFeedMinRuns !== undefined) data.dripFeedMinRuns = input.dripFeedMinRuns ? parseInt(String(input.dripFeedMinRuns), 10) : null;
     if (input.dripFeedMaxRuns !== undefined) data.dripFeedMaxRuns = input.dripFeedMaxRuns ? parseInt(String(input.dripFeedMaxRuns), 10) : null;
     if (input.dripFeedMinInterval !== undefined) data.dripFeedMinInterval = input.dripFeedMinInterval ? parseInt(String(input.dripFeedMinInterval), 10) : null;
