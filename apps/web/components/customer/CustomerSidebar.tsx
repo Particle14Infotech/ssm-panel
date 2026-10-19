@@ -10,6 +10,7 @@ import {
   PlusCircle,
   Layers,
   ListOrdered,
+  Bookmark,
   Wallet,
   Receipt,
   HelpCircle,
@@ -31,6 +32,7 @@ export function CustomerSidebar() {
       items: [
         { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
         { name: "New Order", href: "/new-order", icon: PlusCircle },
+        { name: "Favorites", href: "/favorites", icon: Bookmark },
         { name: "Services", href: "/services-catalog", icon: Layers },
         { name: "Orders", href: "/orders", icon: ListOrdered },
       ],

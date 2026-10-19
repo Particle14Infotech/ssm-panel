@@ -22,6 +22,7 @@ import {
   XCircle,
   AlertCircle,
   X,
+  Bookmark,
 } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -30,13 +31,33 @@ import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { motion } from "framer-motion";
 
 export default function OrdersPage() {
-  const { orders, refillOrder, cancelOrder } = useCustomer();
+  const { orders, refillOrder, cancelOrder, addFavorite } = useCustomer();
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [selectedPlatform, setSelectedPlatform] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [refillingId, setRefillingId] = useState<string | null>(null);
   const [activeModalOrder, setActiveModalOrder] = useState<OrderItem | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const handleSaveOrderAsFavorite = async (order: OrderItem) => {
+    const res = await addFavorite({
+      serviceId: order.serviceId,
+      targetUrl: order.target,
+      defaultQuantity: order.quantity,
+      isDripFeed: order.isDripFeed,
+      dripRuns: order.runs || undefined,
+      dripInterval: order.intervalMinutes || undefined,
+      customName: order.serviceName,
+    });
+    if (res.success) {
+      setToastMessage("Saved to favorites!");
+      setTimeout(() => setToastMessage(null), 3000);
+    } else {
+      setToastMessage(res.error || "Could not save favorite");
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+  };
 
   const statusList = [
     { id: "ALL", label: "All Orders" },
@@ -87,6 +108,13 @@ export default function OrdersPage() {
       transition={{ duration: 0.35, ease: "easeOut" }}
       className="space-y-8 pb-16"
     >
+      {/* Floating Toast */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-[#171e00]/95 border border-[#D8EC8D]/40 text-[#D8EC8D] text-xs font-semibold shadow-xl backdrop-blur-md">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
       {/* Header Clean (Telemetry badge removed) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
@@ -328,6 +356,15 @@ export default function OrdersPage() {
                             Cancel
                           </button>
                         )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleSaveOrderAsFavorite(order)}
+                          className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-[#D8EC8D] transition-colors"
+                          title="Save as Favorite"
+                        >
+                          <Bookmark className="w-3.5 h-3.5" />
+                        </button>
 
                         <Link
                           href={`/support?orderId=${order.id}`}

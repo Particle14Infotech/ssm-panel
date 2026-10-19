@@ -101,6 +101,7 @@ model User {
   sessions  Session[]
   auditLogs AuditLog[]
   emailLogs EmailLog[]
+  favorites Favorite[]
 
   @@index([email, isDeleted])
   @@index([role])
@@ -210,6 +211,7 @@ model Service {
   orders            Order[]
   priceHistory      ServicePriceHistory[]
   pendingPriceChanges PendingPriceChange[]
+  favorites         Favorite[]
 
   @@index([platform, categoryId, status])
   @@index([isDeleted])
@@ -489,3 +491,33 @@ model PendingPriceChange {
   @@index([serviceId, status])
 }
 
+model Favorite {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceId       String
+  service         Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  customName      String?
+  targetUrl       String
+  defaultQuantity Int
+  isDripFeed      Boolean  @default(false)
+  dripRuns        Int?
+  dripInterval    Int?
+  comments        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, serviceId, targetUrl])
+  @@index([userId, createdAt])
+}
+
+model SuggestionDismissal {
+  id        String   @id @default(uuid())
+  userId    String
+  serviceId String
+  targetUrl String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, serviceId, targetUrl])
+  @@index([userId])
+}

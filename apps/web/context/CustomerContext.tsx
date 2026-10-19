@@ -11,6 +11,9 @@ import {
   PaymentMethod,
   PaymentGatewaySession,
   calculateDepositBonus,
+  FavoriteItem,
+  CreateFavoriteInput,
+  FavoriteSuggestion,
 } from "@smm/contracts";
 
 export const EMPTY_USER: UserProfile = {
@@ -44,9 +47,15 @@ interface CustomerContextType {
   services: ServiceItem[];
   transactions: TransactionItem[];
   tickets: Ticket[];
+  favorites: FavoriteItem[];
+  favoriteSuggestions: FavoriteSuggestion[];
   isLoading: boolean;
   logout: () => void;
   refreshData: () => Promise<void>;
+  refreshFavorites: () => Promise<void>;
+  addFavorite: (input: CreateFavoriteInput) => Promise<{ success: boolean; favorite?: FavoriteItem; error?: string }>;
+  removeFavorite: (id: string) => Promise<{ success: boolean; error?: string }>;
+  dismissSuggestion: (serviceId: string, targetUrl: string) => Promise<{ success: boolean }>;
   createOrder: (input: {
     serviceId: string;
     target: string;
@@ -96,6 +105,8 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
+  const [favoriteSuggestions, setFavoriteSuggestions] = useState<FavoriteSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const getAuthToken = useCallback(() => {
@@ -170,12 +181,14 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         }));
       }
 
-      // 2. Fetch Orders, Ledger, Tickets, Services concurrently
-      const [ordersRes, ledgerRes, ticketsRes, servicesRes] = await Promise.all([
+      // 2. Fetch Orders, Ledger, Tickets, Services, Favorites concurrently
+      const [ordersRes, ledgerRes, ticketsRes, servicesRes, favoritesRes, suggestionsRes] = await Promise.all([
         fetch(`${API_BASE}/orders`, { headers: authHeaders, cache: "no-store" }),
         fetch(`${API_BASE}/wallet/ledger`, { headers: authHeaders, cache: "no-store" }),
         fetch(`${API_BASE}/tickets`, { headers: authHeaders, cache: "no-store" }),
         fetch(`${API_BASE}/services`, { cache: "no-store" }),
+        fetch(`${API_BASE}/favorites`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/favorites/suggestions`, { headers: authHeaders, cache: "no-store" }),
       ]);
 
       if (ordersRes.ok) {
@@ -285,6 +298,20 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
               dripFeedMaxInterval: s.dripFeedMaxInterval ?? null,
             }))
           );
+        }
+      }
+
+      if (favoritesRes && favoritesRes.ok) {
+        const rawFavorites = await favoritesRes.json();
+        if (Array.isArray(rawFavorites)) {
+          setFavorites(rawFavorites);
+        }
+      }
+
+      if (suggestionsRes && suggestionsRes.ok) {
+        const rawSuggestions = await suggestionsRes.json();
+        if (Array.isArray(rawSuggestions)) {
+          setFavoriteSuggestions(rawSuggestions);
         }
       }
     } catch {
@@ -512,6 +539,94 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     setUser((prev) => ({ ...prev, ...updates }));
   };
 
+  const refreshFavorites = async () => {
+    const token = getAuthToken();
+    if (!token) return;
+    try {
+      const [favRes, sugRes] = await Promise.all([
+        fetch(`${API_BASE}/favorites`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_BASE}/favorites/suggestions`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+      if (favRes.ok) {
+        const rawFav = await favRes.json();
+        if (Array.isArray(rawFav)) setFavorites(rawFav);
+      }
+      if (sugRes.ok) {
+        const rawSug = await sugRes.json();
+        if (Array.isArray(rawSug)) setFavoriteSuggestions(rawSug);
+      }
+    } catch {}
+  };
+
+  const addFavorite = async (input: CreateFavoriteInput) => {
+    const token = getAuthToken();
+    if (!token) return { success: false, error: "Please log in to save favorites." };
+    try {
+      const res = await fetch(`${API_BASE}/favorites`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(input),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await refreshFavorites();
+        return { success: true, favorite: data };
+      }
+      return { success: false, error: data.message || "Failed to save favorite." };
+    } catch {
+      return { success: false, error: "Network error saving favorite." };
+    }
+  };
+
+  const removeFavorite = async (id: string) => {
+    const token = getAuthToken();
+    if (!token) return { success: false, error: "Please log in." };
+    try {
+      const res = await fetch(`${API_BASE}/favorites/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setFavorites((prev) => prev.filter((f) => f.id !== id));
+        return { success: true };
+      }
+      return { success: false, error: "Failed to delete favorite." };
+    } catch {
+      return { success: false, error: "Network error." };
+    }
+  };
+
+  const dismissSuggestion = async (serviceId: string, targetUrl: string) => {
+    const token = getAuthToken();
+    if (!token) return { success: false };
+    try {
+      const res = await fetch(`${API_BASE}/favorites/suggestions/dismiss`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ serviceId, targetUrl }),
+      });
+      if (res.ok) {
+        setFavoriteSuggestions((prev) =>
+          prev.filter((s) => !(s.serviceId === serviceId && s.targetUrl === targetUrl))
+        );
+        return { success: true };
+      }
+      return { success: false };
+    } catch {
+      return { success: false };
+    }
+  };
+
   const regenerateApiKey = () => {
     const newKey = `smm_live_${Math.random().toString(36).substring(2, 15)}`;
     setUser((prev) => ({ ...prev, apiKey: newKey }));
@@ -526,9 +641,15 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         services,
         transactions,
         tickets,
+        favorites,
+        favoriteSuggestions,
         isLoading,
         logout,
         refreshData,
+        refreshFavorites,
+        addFavorite,
+        removeFavorite,
+        dismissSuggestion,
         createOrder,
         cancelOrder,
         refillOrder,

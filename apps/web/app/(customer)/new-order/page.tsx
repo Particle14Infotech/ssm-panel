@@ -26,6 +26,7 @@ import {
   Check,
   ChevronUp,
   Calendar,
+  Bookmark,
 } from "lucide-react";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
@@ -103,7 +104,7 @@ function NewOrderContent() {
   const initialServiceParam = searchParams.get("service") || searchParams.get("serviceId");
   const initialPlatformParam = searchParams.get("platform");
 
-  const { user, services, createOrder } = useCustomer();
+  const { user, services, createOrder, favorites } = useCustomer();
 
   // Load last platform or query param
   const initialPlatform = initialPlatformParam
@@ -132,6 +133,7 @@ function NewOrderContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successOrder, setSuccessOrder] = useState<any | null>(null);
   const [dripScheduleMode, setDripScheduleMode] = useState<"DAYS" | "CUSTOM">("DAYS");
+  const [loadedFromFavorite, setLoadedFromFavorite] = useState<string | null>(null);
 
   // Restore preserved form state from sessionStorage if returning from Add Funds
   useEffect(() => {
@@ -162,6 +164,47 @@ function NewOrderContent() {
       }
     }
   }, [initialServiceParam, services]);
+
+  // Prefill from Favorite if ?favoriteId=... query parameter is present
+  useEffect(() => {
+    const favoriteId = searchParams.get("favoriteId");
+    if (favoriteId && favorites.length > 0) {
+      const fav = favorites.find((f) => f.id === favoriteId);
+      if (fav) {
+        const matchService = services.find((s) => s.id === fav.serviceId);
+        dispatch({
+          type: "RESET_FORM",
+          partial: {
+            selectedPlatform: matchService
+              ? matchService.platform.toLowerCase().replace("x_twitter", "x")
+              : "instagram",
+            selectedServiceId: fav.serviceId,
+            targetUrl: fav.targetUrl,
+            quantity: fav.defaultQuantity,
+            isDripFeed: Boolean(fav.isDripFeed),
+            dripRuns: fav.dripRuns || 5,
+            dripInterval: fav.dripInterval || 60,
+            comments: fav.comments || "",
+          },
+        });
+        setLoadedFromFavorite(fav.customName || matchService?.displayName || matchService?.name || "Saved Favorite");
+      }
+    }
+  }, [searchParams, favorites, services]);
+
+  // Support direct URL prefilling for target and quantity
+  useEffect(() => {
+    const targetParam = searchParams.get("target");
+    const quantityParam = searchParams.get("quantity");
+    if (targetParam || quantityParam) {
+      const partial: any = {};
+      if (targetParam) partial.targetUrl = targetParam;
+      if (quantityParam && parseInt(quantityParam, 10)) {
+        partial.quantity = parseInt(quantityParam, 10);
+      }
+      dispatch({ type: "RESET_FORM", partial });
+    }
+  }, [searchParams]);
 
   // Compute active platforms and counts
   const platformCounts = useMemo(() => {
@@ -556,6 +599,25 @@ function NewOrderContent() {
       <div className="grid grid-cols-1 min-[1100px]:grid-cols-[minmax(0,1fr)_360px] gap-8 items-start">
         {/* LEFT COLUMN: ORDER FORM (max 760px) */}
         <form onSubmit={handleInitiateOrder} className="w-full max-w-[760px] space-y-6">
+          {/* Favorite Pre-fill Alert Banner */}
+          {loadedFromFavorite && (
+            <div className="p-3.5 rounded-xl bg-[#D8EC8D]/10 border border-[#D8EC8D]/30 flex items-center justify-between text-xs text-[#D8EC8D]">
+              <div className="flex items-center gap-2.5">
+                <Bookmark className="w-4 h-4 shrink-0" />
+                <span>
+                  Form pre-filled from favorite: <strong>{loadedFromFavorite}</strong>. Review your details and confirm order.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLoadedFromFavorite(null)}
+                className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
+                title="Dismiss"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
           {/* 1. PLATFORM SELECTOR */}
           <section aria-labelledby="platform-heading">
             <h2 id="platform-heading" className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
