@@ -19,6 +19,7 @@ import {
   Server,
   Sliders,
   ShieldAlert,
+  ArrowRight,
 } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 
@@ -494,7 +495,9 @@ export default function AdminServicesPage() {
                             {service.routingMode === "AUTO_FAILOVER" ? (
                               <span className="flex items-center gap-1 text-cyan-300">
                                 <Zap className="w-2.5 h-2.5 text-cyan-400 animate-pulse" />
-                                <span>Auto: {service.providerName || "P1"} ➔ {service.backupProviderName || "Backup"}</span>
+                                <span>Auto: {service.providerName || "P1"}</span>
+                                <ArrowRight className="w-2.5 h-2.5 inline mx-0.5 text-cyan-400" />
+                                <span>{service.backupProviderName || "Backup"}</span>
                               </span>
                             ) : service.providerId ? (
                               <span className="flex items-center gap-1 text-slate-300">
@@ -503,7 +506,7 @@ export default function AdminServicesPage() {
                               </span>
                             ) : (
                               <span className="flex items-center gap-1 text-amber-300/80">
-                                <span>⚪ Route API Provider</span>
+                                <span>Route API Provider</span>
                               </span>
                             )}
                             <Sliders className="w-2.5 h-2.5 opacity-60 ml-0.5" />
@@ -563,7 +566,9 @@ export default function AdminServicesPage() {
                           {service.routingMode === "AUTO_FAILOVER" ? (
                             <span className="flex items-center gap-1 text-cyan-300 bg-cyan-500/10 border-cyan-500/30 px-2 py-0.5 rounded-lg border">
                               <Zap className="w-3 h-3 text-cyan-400 animate-pulse" />
-                              <span>Auto: {service.providerName || "P1"} ➔ {service.backupProviderName || "Backup"}</span>
+                              <span>Auto: {service.providerName || "P1"}</span>
+                              <ArrowRight className="w-2.5 h-2.5 inline mx-0.5 text-cyan-400" />
+                              <span>{service.backupProviderName || "Backup"}</span>
                             </span>
                           ) : service.providerId ? (
                             <span className="flex items-center gap-1 text-slate-300 bg-white/5 border-white/10 px-2 py-0.5 rounded-lg border">
