@@ -482,8 +482,33 @@ export default function AdminServicesPage() {
                       <td className="py-4 px-3 font-mono text-on-surface-variant whitespace-nowrap">
                         <span className="text-white font-semibold">{service.platform}</span> • {service.categoryName}
                       </td>
-                      <td className="py-4 px-3 font-medium text-white max-w-sm truncate">
-                        {service.name}
+                      <td className="py-4 px-3 font-medium text-white max-w-sm">
+                        <div className="truncate">{service.name}</div>
+                        <div className="mt-1 flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => openRoutingModal(service)}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-mono border transition-all hover:brightness-125 cursor-pointer bg-white/[0.03] border-white/10 text-slate-300"
+                            title="Click to configure API provider & automatic failover"
+                          >
+                            {service.routingMode === "AUTO_FAILOVER" ? (
+                              <span className="flex items-center gap-1 text-cyan-300">
+                                <Zap className="w-2.5 h-2.5 text-cyan-400 animate-pulse" />
+                                <span>Auto: {service.providerName || "P1"} ➔ {service.backupProviderName || "Backup"}</span>
+                              </span>
+                            ) : service.providerId ? (
+                              <span className="flex items-center gap-1 text-slate-300">
+                                <Server className="w-2.5 h-2.5 text-slate-400" />
+                                <span>Manual: {service.providerName || "Assigned"}</span>
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-amber-300/80">
+                                <span>⚪ Route API Provider</span>
+                              </span>
+                            )}
+                            <Sliders className="w-2.5 h-2.5 opacity-60 ml-0.5" />
+                          </button>
+                        </div>
                       </td>
                       <td className="py-4 px-3 font-mono text-slate-400 whitespace-nowrap">
                         {costVal !== undefined && costVal !== null ? (
