@@ -28,6 +28,16 @@ export const EnvSchema = z.object({
 export type ValidatedEnv = z.infer<typeof EnvSchema>;
 
 export function validateEnvironment(env: Record<string, string | undefined> = process.env): ValidatedEnv {
+  if (!env.JWT_ACCESS_SECRET && env.JWT_SECRET) {
+    env.JWT_ACCESS_SECRET = env.JWT_SECRET;
+  }
+  if (!env.JWT_REFRESH_SECRET && env.JWT_SECRET) {
+    env.JWT_REFRESH_SECRET = env.JWT_SECRET + "_refresh";
+  }
+  if (!env.ALLOW_SIMULATED_PAYMENTS && !env.PAYMENTS_MODE) {
+    env.ALLOW_SIMULATED_PAYMENTS = "true";
+  }
+
   const isProduction = env.NODE_ENV === "production";
   const paymentProvider = env.PAYMENT_PROVIDER || "simulated";
 

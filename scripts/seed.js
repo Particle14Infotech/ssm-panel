@@ -88,7 +88,7 @@ async function main() {
     },
   });
 
-  console.log('[seed] ✅ Database seeded successfully.');
+  console.log('[seed] [OK] Database seeded successfully.');
 }
 
 main()
