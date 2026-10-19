@@ -3,7 +3,7 @@ import { PrismaService } from "../../common/prisma.service";
 import { encryptProviderKey, decryptProviderKey } from "../../common/crypto.util";
 import { SmmProviderClient } from "./smm-provider.client";
 import { Decimal } from "decimal.js";
-import { coerceBoolean } from "@smm/contracts";
+import { coerceBoolean, calculateCostINR, DEFAULT_PRICING_SETTINGS } from "@smm/contracts";
 
 export interface ProviderDto {
   id: string;
@@ -296,6 +296,17 @@ export class ProvidersService {
     let refillCount = 0;
     let cancelCount = 0;
 
+    // Read configured USD/INR rate from settings if available
+    let usdInrRate = DEFAULT_PRICING_SETTINGS.usdInrRate;
+    try {
+      const dbSettings = await this.prisma.systemSetting.findUnique({
+        where: { key: "PRICING_CONFIG" },
+      });
+      if (dbSettings?.value && (dbSettings.value as any).usdInrRate) {
+        usdInrRate = Number((dbSettings.value as any).usdInrRate);
+      }
+    } catch {}
+
     for (const item of upstreamServices) {
       try {
         if (!item || !item.service || !item.name) continue;
@@ -318,7 +329,12 @@ export class ProvidersService {
         if (isNaN(providerCost) || providerCost < 0) {
           providerCost = 100;
         }
-        let sellingRate = Number((providerCost * (1 + margin / 100)).toFixed(2));
+
+        // Apply FX conversion if provider currency is USD
+        const costINRNum = calculateCostINR(providerCost, usdInrRate, p.currency || "INR").toNumber();
+
+        // Calculate dynamic selling rate with configured margin %
+        let sellingRate = Number((costINRNum * (1 + margin / 100)).toFixed(2));
         if (isNaN(sellingRate) || sellingRate <= 0) {
           sellingRate = 1.0;
         }
@@ -377,6 +393,11 @@ export class ProvidersService {
               categoryId: category.id,
               platform,
               ratePer1000: new Decimal(sellingRate),
+              providerCostPer1k: new Decimal(providerCost),
+              providerCostCurrency: p.currency || "INR",
+              costINR: new Decimal(costINRNum),
+              marginPercentOverride: new Decimal(margin),
+              priceBelowCost: false,
               minQty,
               maxQty,
               refillable,
@@ -396,6 +417,11 @@ export class ProvidersService {
               categoryId: category.id,
               platform,
               ratePer1000: new Decimal(sellingRate),
+              providerCostPer1k: new Decimal(providerCost),
+              providerCostCurrency: p.currency || "INR",
+              costINR: new Decimal(costINRNum),
+              marginPercentOverride: new Decimal(margin),
+              priceBelowCost: false,
               minQty,
               maxQty,
               providerId: p.id,

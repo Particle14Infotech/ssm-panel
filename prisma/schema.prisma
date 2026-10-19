@@ -179,6 +179,9 @@ model Service {
   providerId        String?
   provider          Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
   providerServiceId String?
+  routingMode       String    @default("MANUAL") // MANUAL, AUTO_FAILOVER
+  backupProviderId  String?
+  backupProviderServiceId String?
   refillable        Boolean   @default(false)
   cancellable       Boolean   @default(false)
   dripFeedSupported Boolean   @default(false)

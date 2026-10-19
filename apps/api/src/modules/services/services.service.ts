@@ -108,16 +108,23 @@ export class ServicesService {
         orderBy.createdAt = "desc";
       }
 
-      const services = await this.prisma.service.findMany({
-        where,
-        include: {
-          category: true,
-          provider: {
-            select: { id: true, name: true },
+      const [services, providers] = await Promise.all([
+        this.prisma.service.findMany({
+          where,
+          include: {
+            category: true,
+            provider: {
+              select: { id: true, name: true },
+            },
           },
-        },
-        orderBy,
-      });
+          orderBy,
+        }),
+        this.prisma.provider.findMany({
+          select: { id: true, name: true },
+        }).catch(() => []),
+      ]);
+
+      const providerMap = new Map((providers || []).map((p) => [p.id, p.name]));
 
       return services.map((s) => {
         let linkType = s.linkType;
@@ -130,6 +137,17 @@ export class ServicesService {
           }
         }
 
+        const costVal = s.costINR ? Number(s.costINR) : (s.providerCostPer1k ? Number(s.providerCostPer1k) : null);
+        let marginPct: number | undefined = undefined;
+        if (s.marginPercentOverride !== null && s.marginPercentOverride !== undefined) {
+          marginPct = Number(s.marginPercentOverride);
+        } else if (costVal && costVal > 0) {
+          marginPct = Number((((Number(s.ratePer1000) - costVal) / costVal) * 100).toFixed(1));
+        }
+
+        const providerName = s.providerId ? (providerMap.get(s.providerId) || s.provider?.name) : undefined;
+        const backupProviderName = s.backupProviderId ? providerMap.get(s.backupProviderId) : undefined;
+
         return {
           id: s.id,
           name: s.name,
@@ -138,6 +156,10 @@ export class ServicesService {
           categoryName: s.category?.name || "General",
           platform: s.platform as ServicePlatform,
           ratePer1000: Number(s.ratePer1000),
+          providerCostPer1k: s.providerCostPer1k ? Number(s.providerCostPer1k) : undefined,
+          costINR: costVal ?? undefined,
+          marginPercent: marginPct,
+          priceBelowCost: s.priceBelowCost ?? false,
           minQty: s.minQty,
           maxQty: s.maxQty,
           description: s.description || "",
@@ -145,6 +167,13 @@ export class ServicesService {
           cancellable: s.cancellable,
           dripFeedSupported: s.dripFeedSupported,
           allowManagedDrip: s.allowManagedDrip,
+          providerId: s.providerId || null,
+          providerServiceId: s.providerServiceId || null,
+          providerName,
+          routingMode: (s.routingMode as any) || "MANUAL",
+          backupProviderId: s.backupProviderId || null,
+          backupProviderServiceId: s.backupProviderServiceId || null,
+          backupProviderName,
           rawMeta: (s.rawMeta as any) || undefined,
           dripFeedMinRuns: s.dripFeedMinRuns,
           dripFeedMaxRuns: s.dripFeedMaxRuns,
@@ -188,6 +217,23 @@ export class ServicesService {
       }
     }
 
+    const costVal = s.costINR ? Number(s.costINR) : (s.providerCostPer1k ? Number(s.providerCostPer1k) : null);
+    let marginPct: number | undefined = undefined;
+    if (s.marginPercentOverride !== null && s.marginPercentOverride !== undefined) {
+      marginPct = Number(s.marginPercentOverride);
+    } else if (costVal && costVal > 0) {
+      marginPct = Number((((Number(s.ratePer1000) - costVal) / costVal) * 100).toFixed(1));
+    }
+
+    let backupProviderName: string | undefined = undefined;
+    if (s.backupProviderId) {
+      const bp = await this.prisma.provider.findUnique({
+        where: { id: s.backupProviderId },
+        select: { name: true },
+      }).catch(() => null);
+      backupProviderName = bp?.name;
+    }
+
     return {
       id: s.id,
       name: s.name,
@@ -196,6 +242,10 @@ export class ServicesService {
       categoryName: s.category?.name || "General",
       platform: s.platform as ServicePlatform,
       ratePer1000: Number(s.ratePer1000),
+      providerCostPer1k: s.providerCostPer1k ? Number(s.providerCostPer1k) : undefined,
+      costINR: costVal ?? undefined,
+      marginPercent: marginPct,
+      priceBelowCost: s.priceBelowCost ?? false,
       minQty: s.minQty,
       maxQty: s.maxQty,
       description: s.description || "",
@@ -203,6 +253,13 @@ export class ServicesService {
       cancellable: s.cancellable,
       dripFeedSupported: s.dripFeedSupported,
       allowManagedDrip: s.allowManagedDrip,
+      providerId: s.providerId || null,
+      providerServiceId: s.providerServiceId || null,
+      providerName: s.provider?.name,
+      routingMode: (s.routingMode as any) || "MANUAL",
+      backupProviderId: s.backupProviderId || null,
+      backupProviderServiceId: s.backupProviderServiceId || null,
+      backupProviderName,
       rawMeta: (s.rawMeta as any) || undefined,
       dripFeedMinRuns: s.dripFeedMinRuns,
       dripFeedMaxRuns: s.dripFeedMaxRuns,
@@ -251,8 +308,11 @@ export class ServicesService {
         dripFeedMaxInterval: input.dripFeedMaxInterval ? parseInt(String(input.dripFeedMaxInterval), 10) : null,
         active: input.active !== false,
         status: input.status || "ACTIVE",
+        routingMode: input.routingMode || "MANUAL",
         providerId: input.providerId || null,
         providerServiceId: input.providerServiceId || null,
+        backupProviderId: input.backupProviderId || null,
+        backupProviderServiceId: input.backupProviderServiceId || null,
       },
       include: { category: true },
     });
@@ -283,8 +343,11 @@ export class ServicesService {
     if (input.dripFeedMaxInterval !== undefined) data.dripFeedMaxInterval = input.dripFeedMaxInterval ? parseInt(String(input.dripFeedMaxInterval), 10) : null;
     if (input.active !== undefined) data.active = Boolean(input.active);
     if (input.status !== undefined) data.status = input.status;
+    if (input.routingMode !== undefined) data.routingMode = input.routingMode;
     if (input.providerId !== undefined) data.providerId = input.providerId;
     if (input.providerServiceId !== undefined) data.providerServiceId = input.providerServiceId;
+    if (input.backupProviderId !== undefined) data.backupProviderId = input.backupProviderId;
+    if (input.backupProviderServiceId !== undefined) data.backupProviderServiceId = input.backupProviderServiceId;
 
     const updated = await this.prisma.service.update({
       where: { id },

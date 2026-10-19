@@ -361,8 +361,60 @@ export class SMMWorkerEngine {
         );
       } catch (err: any) {
         logger.error(`[Worker Engine] Upstream provider dispatch failed for #${order.id}: ${err.message}`);
-        // If provider explicitly rejected the request, mark FAILED and refund automatically
-        if (err.message && err.message.includes("Upstream provider error:")) {
+        const isUpstreamError = err.message && err.message.includes("Upstream provider error:");
+        const service = order.service as any;
+
+        // Hybrid Auto-Failover: If primary provider rejects with low balance or error, attempt backup provider
+        if (isUpstreamError && service?.routingMode === "AUTO_FAILOVER" && service?.backupProviderId) {
+          try {
+            const backupProvider = await prisma.provider.findUnique({
+              where: { id: service.backupProviderId },
+            });
+            if (backupProvider && backupProvider.active && service.backupProviderServiceId) {
+              logger.warn(`[Worker Engine] Primary provider failed for #${order.id} (${err.message}). Attempting auto-failover to Backup Provider #${backupProvider.id} (${backupProvider.name})`);
+              const backupApiKey = decryptProviderKey(backupProvider.apiKeyEncrypted);
+              providerOrderId = await this.callUpstreamAddOrder(
+                backupProvider.apiUrl,
+                backupApiKey,
+                service.backupProviderServiceId,
+                order.target,
+                order.quantity,
+                order.isDripFeed ? order.runs : undefined,
+                order.isDripFeed ? order.intervalMinutes : undefined,
+                order.id,
+                backupProvider.id
+              );
+
+              // Update order to reference the backup provider and proceed to PROCESSING
+              await prisma.$transaction([
+                prisma.order.update({
+                  where: { id: order.id },
+                  data: {
+                    providerId: backupProvider.id,
+                    providerOrderId,
+                    status: OrderStatus.PROCESSING,
+                    startCount: 0,
+                  },
+                }),
+                prisma.orderStatusHistory.create({
+                  data: {
+                    orderId: order.id,
+                    status: OrderStatus.PROCESSING,
+                    notes: `Auto-failed over to backup provider "${backupProvider.name}". Primary failed: ${err.message}. Upstream Ref: ${providerOrderId}`,
+                  },
+                }),
+              ]);
+
+              logger.info(`[Worker Engine] Order #${order.id} recovered and dispatched via Backup Provider ${backupProvider.name} (Upstream ID: ${providerOrderId})`);
+              return;
+            }
+          } catch (backupErr: any) {
+            logger.error(`[Worker Engine] Auto-failover to backup provider also failed for #${order.id}: ${backupErr.message}`);
+          }
+        }
+
+        // If provider explicitly rejected the request and no failover succeeded, mark FAILED and refund automatically
+        if (isUpstreamError) {
           await this.handleFinalOrderFailure(order.id, err.message);
           return;
         }

@@ -61,6 +61,13 @@ export const ServiceItemSchema = z.object({
   marginPercent: z.number().optional(),
   priceBelowCost: z.boolean().optional(),
   allowManagedDrip: z.boolean().optional(),
+  providerId: z.string().nullable().optional(),
+  providerServiceId: z.string().nullable().optional(),
+  providerName: z.string().optional(),
+  routingMode: z.enum(["MANUAL", "AUTO_FAILOVER"]).optional(),
+  backupProviderId: z.string().nullable().optional(),
+  backupProviderServiceId: z.string().nullable().optional(),
+  backupProviderName: z.string().optional(),
   rawMeta: z.record(z.any()).optional(),
 });
 export type ServiceItem = z.infer<typeof ServiceItemSchema>;
