@@ -32,6 +32,24 @@ enum TransactionType {
   ADMIN_ADJUST
   BONUS
   COUPON
+  PACKAGE_PURCHASE
+  PACKAGE_REFUND
+}
+
+enum PackageStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  PARTIAL
+}
+
+enum PackageRunStatus {
+  SCHEDULED
+  DISPATCHING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
 }
 
 enum PaymentStatus {
@@ -102,6 +120,7 @@ model User {
   auditLogs AuditLog[]
   emailLogs EmailLog[]
   favorites Favorite[]
+  packages  Package[]
 
   @@index([email, isDeleted])
   @@index([role])
@@ -212,6 +231,7 @@ model Service {
   priceHistory      ServicePriceHistory[]
   pendingPriceChanges PendingPriceChange[]
   favorites         Favorite[]
+  packageItems      PackageItem[]
 
   @@index([platform, categoryId, status])
   @@index([isDeleted])
@@ -257,6 +277,9 @@ model Order {
   startCount      Int                  @default(0)
   remains         Int                  @default(0)
   idempotencyKey  String?
+  packageRunId    String?              @unique
+  isPrepaid       Boolean              @default(false)
+  packageRun      PackageRun?          @relation(fields: [packageRunId], references: [id], onDelete: SetNull)
   
   // Financial Snapshot Fields
   sellRatePer1k        Decimal         @default(0.00) @db.Decimal(10, 2)
@@ -521,3 +544,68 @@ model SuggestionDismissal {
   @@unique([userId, serviceId, targetUrl])
   @@index([userId])
 }
+
+model Package {
+  id             String        @id @default(uuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  status         PackageStatus @default(ACTIVE)
+  totalRuns      Int
+  completedRuns  Int           @default(0)
+  failedRuns     Int           @default(0)
+  cancelledRuns  Int           @default(0)
+  totalCharge    Decimal       @db.Decimal(10, 2)
+  refundedAmount Decimal       @default(0.00) @db.Decimal(10, 2)
+  idempotencyKey String?
+  startDate      DateTime      @default(now())
+  endDate        DateTime
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  items          PackageItem[]
+  runs           PackageRun[]
+
+  @@unique([userId, idempotencyKey], name: "unique_package_idempotency_per_user")
+  @@index([userId, status, createdAt])
+}
+
+model PackageItem {
+  id                    String      @id @default(uuid())
+  packageId             String
+  package               Package     @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  serviceId             String
+  service               Service     @relation(fields: [serviceId], references: [id])
+  target                String
+  targetType            String      // PROFILE, POST_OR_REEL
+  totalQuantity         Int
+  charge                Decimal     @db.Decimal(10, 2)
+  sellRatePer1kSnapshot Decimal     @db.Decimal(10, 2)
+  runs                  PackageRun[]
+
+  @@index([packageId])
+  @@index([serviceId])
+}
+
+model PackageRun {
+  id            String           @id @default(uuid())
+  packageId     String
+  package       Package          @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  packageItemId String
+  packageItem   PackageItem      @relation(fields: [packageItemId], references: [id], onDelete: Cascade)
+  runIndex      Int
+  scheduledAt   DateTime
+  quantity      Int
+  chargeShare   Decimal          @db.Decimal(10, 2)
+  status        PackageRunStatus @default(SCHEDULED)
+  childOrder    Order?
+  attempts      Int              @default(0)
+  lastError     String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([packageId, packageItemId, runIndex])
+  @@index([status, scheduledAt])
+  @@index([packageId])
+}
+

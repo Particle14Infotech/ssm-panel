@@ -14,6 +14,9 @@ import {
   FavoriteItem,
   CreateFavoriteInput,
   FavoriteSuggestion,
+  PackageQuoteInput,
+  PackageQuoteResponse,
+  PackagePurchaseInput,
 } from "@smm/contracts";
 
 export const EMPTY_USER: UserProfile = {
@@ -49,10 +52,15 @@ interface CustomerContextType {
   tickets: Ticket[];
   favorites: FavoriteItem[];
   favoriteSuggestions: FavoriteSuggestion[];
+  packages: any[];
   isLoading: boolean;
   logout: () => void;
   refreshData: () => Promise<void>;
   refreshFavorites: () => Promise<void>;
+  refreshPackages: () => Promise<void>;
+  fetchPackageQuote: (input: PackageQuoteInput) => Promise<PackageQuoteResponse | null>;
+  purchasePackage: (input: PackagePurchaseInput) => Promise<{ success: boolean; package?: any; error?: string }>;
+  cancelPackage: (packageId: string) => Promise<{ success: boolean; refundedAmount?: number; error?: string }>;
   addFavorite: (input: CreateFavoriteInput) => Promise<{ success: boolean; favorite?: FavoriteItem; error?: string }>;
   removeFavorite: (id: string) => Promise<{ success: boolean; error?: string }>;
   dismissSuggestion: (serviceId: string, targetUrl: string) => Promise<{ success: boolean }>;
@@ -107,6 +115,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [favoriteSuggestions, setFavoriteSuggestions] = useState<FavoriteSuggestion[]>([]);
+  const [packages, setPackages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const getAuthToken = useCallback(() => {
@@ -181,14 +190,15 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         }));
       }
 
-      // 2. Fetch Orders, Ledger, Tickets, Services, Favorites concurrently
-      const [ordersRes, ledgerRes, ticketsRes, servicesRes, favoritesRes, suggestionsRes] = await Promise.all([
+      // 2. Fetch Orders, Ledger, Tickets, Services, Favorites, Packages concurrently
+      const [ordersRes, ledgerRes, ticketsRes, servicesRes, favoritesRes, suggestionsRes, packagesRes] = await Promise.all([
         fetch(`${API_BASE}/orders`, { headers: authHeaders, cache: "no-store" }),
         fetch(`${API_BASE}/wallet/ledger`, { headers: authHeaders, cache: "no-store" }),
         fetch(`${API_BASE}/tickets`, { headers: authHeaders, cache: "no-store" }),
         fetch(`${API_BASE}/services`, { cache: "no-store" }),
         fetch(`${API_BASE}/favorites`, { headers: authHeaders, cache: "no-store" }),
         fetch(`${API_BASE}/favorites/suggestions`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/packages`, { headers: authHeaders, cache: "no-store" }),
       ]);
 
       if (ordersRes.ok) {
@@ -312,6 +322,13 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         const rawSuggestions = await suggestionsRes.json();
         if (Array.isArray(rawSuggestions)) {
           setFavoriteSuggestions(rawSuggestions);
+        }
+      }
+
+      if (packagesRes && packagesRes.ok) {
+        const rawPackages = await packagesRes.json();
+        if (Array.isArray(rawPackages)) {
+          setPackages(rawPackages);
         }
       }
     } catch {
@@ -627,6 +644,78 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshPackages = async () => {
+    const token = getAuthToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/packages`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const rawPkg = await res.json();
+        if (Array.isArray(rawPkg)) setPackages(rawPkg);
+      }
+    } catch {}
+  };
+
+  const fetchPackageQuote = async (input: PackageQuoteInput): Promise<PackageQuoteResponse | null> => {
+    try {
+      const res = await fetch(`${API_BASE}/packages/quote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const purchasePackage = async (input: PackagePurchaseInput) => {
+    const token = getAuthToken();
+    if (!token) return { success: false, error: "Please log in to purchase packages." };
+    try {
+      const res = await fetch(`${API_BASE}/packages/purchase`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(input),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await refreshData();
+        return { success: true, package: data.package };
+      }
+      return { success: false, error: data.message || "Failed to purchase package." };
+    } catch {
+      return { success: false, error: "Network error during purchase." };
+    }
+  };
+
+  const cancelPackage = async (packageId: string) => {
+    const token = getAuthToken();
+    if (!token) return { success: false, error: "Please log in." };
+    try {
+      const res = await fetch(`${API_BASE}/packages/${packageId}/cancel`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await refreshData();
+        return { success: true, refundedAmount: data.refundedAmount };
+      }
+      return { success: false, error: data.message || "Failed to cancel package." };
+    } catch {
+      return { success: false, error: "Network error." };
+    }
+  };
+
   const regenerateApiKey = () => {
     const newKey = `smm_live_${Math.random().toString(36).substring(2, 15)}`;
     setUser((prev) => ({ ...prev, apiKey: newKey }));
@@ -643,10 +732,15 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         tickets,
         favorites,
         favoriteSuggestions,
+        packages,
         isLoading,
         logout,
         refreshData,
         refreshFavorites,
+        refreshPackages,
+        fetchPackageQuote,
+        purchasePackage,
+        cancelPackage,
         addFavorite,
         removeFavorite,
         dismissSuggestion,

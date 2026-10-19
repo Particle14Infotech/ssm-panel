@@ -27,12 +27,15 @@ import {
   ChevronUp,
   Calendar,
   Bookmark,
+  Zap,
+  Boxes,
 } from "lucide-react";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CountUpNumber } from "@/components/motion/CountUpNumber";
 import { motion, AnimatePresence } from "framer-motion";
+import { PackageOrderBuilder } from "@/components/customer/PackageOrderBuilder";
 
 // Helper: Format numbers with Indian numbering system (e.g. 1,00,000)
 function formatIndianNumber(num: number): string {
@@ -134,6 +137,18 @@ function NewOrderContent() {
   const [successOrder, setSuccessOrder] = useState<any | null>(null);
   const [dripScheduleMode, setDripScheduleMode] = useState<"DAYS" | "CUSTOM">("DAYS");
   const [loadedFromFavorite, setLoadedFromFavorite] = useState<string | null>(null);
+  const [orderMode, setOrderMode] = useState<"SINGLE" | "PACKAGE">(
+    searchParams.get("tab") === "package" ? "PACKAGE" : "SINGLE"
+  );
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "package") {
+      setOrderMode("PACKAGE");
+    } else if (tab === "single") {
+      setOrderMode("SINGLE");
+    }
+  }, [searchParams]);
 
   // Restore preserved form state from sessionStorage if returning from Add Funds
   useEffect(() => {
@@ -537,7 +552,48 @@ function NewOrderContent() {
         <p className="text-sm text-slate-400 mt-1">Choose a service, add your link and quantity.</p>
       </div>
 
-      {/* Success State Overlay / Modal */}
+      {/* Mode Switcher Tabs: Single Order vs Package (Drip-feed) */}
+      <div className="flex items-center gap-2 p-1 bg-white/[0.04] border border-white/10 rounded-2xl w-fit mb-8">
+        <button
+          type="button"
+          onClick={() => setOrderMode("SINGLE")}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+            orderMode === "SINGLE"
+              ? "bg-[#D8EC8D] text-[#171e00] shadow-sm font-bold"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <Zap className="w-4 h-4" />
+          Single Order
+        </button>
+        <button
+          type="button"
+          onClick={() => setOrderMode("PACKAGE")}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+            orderMode === "PACKAGE"
+              ? "bg-[#D8EC8D] text-[#171e00] shadow-sm font-bold"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <Boxes className="w-4 h-4" />
+          Package (Drip-feed)
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded-md ${
+              orderMode === "PACKAGE"
+                ? "bg-[#171e00]/20 text-[#171e00] font-bold"
+                : "bg-[#D8EC8D]/15 text-[#D8EC8D]"
+            }`}
+          >
+            Multi-Day
+          </span>
+        </button>
+      </div>
+
+      {orderMode === "PACKAGE" ? (
+        <PackageOrderBuilder />
+      ) : (
+        <>
+          {/* Success State Overlay / Modal */}
       <AnimatePresence>
         {successOrder && (
           <motion.div
@@ -1468,7 +1524,9 @@ function NewOrderContent() {
           </div>
         )}
       </AnimatePresence>
-    </div>
+    </>
+  )}
+</div>
   );
 }
 
