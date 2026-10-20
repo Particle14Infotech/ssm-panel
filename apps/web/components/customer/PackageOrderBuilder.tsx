@@ -70,6 +70,7 @@ export function PackageOrderBuilder() {
   const [purchasing, setPurchasing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [consentRulesUnderstood, setConsentRulesUnderstood] = useState<boolean>(false);
 
   // Automatically select first connected account if available
   useEffect(() => {
@@ -679,6 +680,20 @@ export function PackageOrderBuilder() {
             )}
           </div>
 
+          {/* Consent Checkbox (Non-negotiable Rule 4) */}
+          <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-white/[0.02] border border-white/5">
+            <input
+              type="checkbox"
+              id="chk-consent-rules"
+              checked={consentRulesUnderstood}
+              onChange={(e) => setConsentRulesUnderstood(e.target.checked)}
+              className="mt-0.5 w-4 h-4 accent-[#D8EC8D] rounded"
+            />
+            <label htmlFor="chk-consent-rules" className="text-[11px] text-slate-300 cursor-pointer leading-relaxed">
+              I understand social platform terms of service and delivery risks. Workflows start within about 5-15 minutes. Upfront fee is the maximum reserve; all unused reserve is refunded to your wallet upon completion or cancellation.
+            </label>
+          </div>
+
           {/* Primary Action Button */}
           {!hasSufficientFunds ? (
             <button
@@ -692,7 +707,7 @@ export function PackageOrderBuilder() {
           ) : (
             <button
               type="button"
-              disabled={!isFormValid || calculating}
+              disabled={!isFormValid || !consentRulesUnderstood || calculating}
               onClick={() => setConfirmModalOpen(true)}
               className="w-full py-3 px-4 rounded-xl bg-[#D8EC8D] text-[#131313] font-bold text-xs hover:brightness-105 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
@@ -702,7 +717,7 @@ export function PackageOrderBuilder() {
           )}
 
           <div className="text-[11px] text-slate-500 text-center leading-relaxed">
-            Automatic post detection runs via official API webhook/polling. Unexecuted quotas can be paused or cancelled anytime with instant wallet refund.
+            Deliveries start within about 5-15 minutes. Maximum reserve total; unused balance is refunded automatically.
           </div>
         </GlassCard>
       </div>

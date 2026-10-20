@@ -3,11 +3,13 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  ConflictException,
   Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { encryptToken, decryptToken } from "./crypto.util";
-import crypto from "crypto";
+import { mockInstagramServer, MockInstagramMediaItem } from "./mock-instagram";
+import { ConnectionStatus, MonitoredMediaState, PackageStatus } from "@prisma/client";
 
 export interface ConnectAccountDto {
   platformAccountId: string;
@@ -35,106 +37,150 @@ export class InstagramService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Generates official Instagram Graph API OAuth authorization URL
+   * Generates OAuth authorization start URL with random single-use state bound to user (10 min TTL)
+   * POST /connections/instagram/start
    */
-  getConnectUrl(userId: string): { url: string; state: string } {
-    const appId = process.env.INSTAGRAM_APP_ID || "1234567890";
-    const redirectUri =
-      process.env.INSTAGRAM_REDIRECT_URI ||
-      "http://localhost:3000/api/v1/integrations/instagram/callback";
-    const state = crypto.randomBytes(16).toString("hex") + `:${userId}`;
-
-    const scopes = [
-      "instagram_basic",
-      "instagram_manage_insights",
-      "pages_show_list",
-    ].join(",");
-
-    const url = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(
-      redirectUri
-    )}&scope=${scopes}&state=${state}&response_type=code`;
-
-    return { url, state };
+  startConnect(userId: string): { authorizeUrl: string; state: string } {
+    return mockInstagramServer.generateOAuthState(userId);
   }
 
   /**
-   * Connects or updates an authorized Instagram Account
+   * Convenience connect helper for tests and sandbox mode
    */
   async connectAccount(userId: string, dto: ConnectAccountDto) {
-    const cleanUsername = dto.username.replace(/^@/, "").trim().toLowerCase();
-    if (!cleanUsername) {
-      throw new BadRequestException("Valid Instagram username is required.");
+    const code = mockInstagramServer.createTestAuthCode(userId, {
+      id: dto.platformAccountId,
+      username: dto.username,
+      accountType: (dto.accountType as any) || "BUSINESS",
+    });
+    const { state } = mockInstagramServer.generateOAuthState(userId);
+    const conn = await this.handleCallback(userId, code, state);
+    return {
+      ...conn,
+      connectionStatus: "CONNECTED",
+    };
+  }
+
+  /**
+   * Handles OAuth Callback:
+   * 1. Validates state (single-use, bound to user, 10 min window)
+   * 2. Exchanges code for short-lived -> long-lived token (60 days)
+   * 3. Queries /me for id, username, account_type
+   * 4. Rejects non-professional accounts
+   * 5. Refuses account already connected to another user
+   * 6. Saves immutable account id, AES-256-GCM token, baselineAt = now
+   * GET /connections/instagram/callback
+   */
+  async handleCallback(userId: string, code: string, state: string) {
+    if (!code) {
+      throw new BadRequestException("Authorization code is required.");
     }
-    if (!dto.platformAccountId) {
-      throw new BadRequestException("Platform account ID is required.");
+    if (!state) {
+      throw new BadRequestException("OAuth state parameter is required.");
     }
 
-    const encryptedAccessToken = dto.accessToken ? encryptToken(dto.accessToken) : null;
-    const tokenExpiresAt = dto.expiresInSeconds
-      ? new Date(Date.now() + dto.expiresInSeconds * 1000)
-      : new Date(Date.now() + 60 * 24 * 3600 * 1000); // Default 60 days for long-lived tokens
+    // 1. Validate state
+    mockInstagramServer.validateAndConsumeState(state, userId);
 
-    const scopes = dto.grantedScopes || [
-      "instagram_basic",
-      "instagram_manage_insights",
-    ];
+    const redirectUri = process.env.INSTAGRAM_REDIRECT_URI || "http://localhost:3000/connections/instagram/callback";
+
+    // 2. Exchange code for token and account details
+    const authResult = mockInstagramServer.exchangeCodeForToken(code, redirectUri);
+    const { accessToken, tokenExpiresAt, user } = authResult;
+
+    const cleanUsername = user.username.replace(/^@/, "").trim().toLowerCase();
+    const encryptedToken = encryptToken(accessToken);
+    const baselineAt = new Date();
 
     if (!this.prisma.isConnected) {
-      const connId = `ig_conn_${Date.now()}`;
+      // Sandbox fallback
+      for (const existing of this.sandboxConnections.values()) {
+        if (existing.providerAccountId === user.id && existing.userId !== userId) {
+          throw new ConflictException("This Instagram account is already connected to another user.");
+        }
+      }
+      const connId = `conn_mock_${Date.now()}`;
       const conn = {
         id: connId,
         userId,
-        platformAccountId: dto.platformAccountId,
+        platform: "INSTAGRAM",
+        providerAccountId: user.id,
         username: cleanUsername,
-        accountType: dto.accountType || "BUSINESS",
-        grantedScopes: scopes,
-        connectionStatus: "CONNECTED",
-        lastDetectedAt: null,
-        connectedAt: new Date().toISOString(),
-        disconnectedAt: null,
+        status: ConnectionStatus.ACTIVE,
+        tokenEnc: encryptedToken,
+        tokenExpiresAt: tokenExpiresAt.toISOString(),
+        baselineAt: baselineAt.toISOString(),
+        nextPollAt: new Date(Date.now() + 120 * 1000).toISOString(),
+        pollIntervalSec: 120,
+        failureCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
       this.sandboxConnections.set(connId, conn);
-      return conn;
+      return {
+        id: conn.id,
+        username: conn.username,
+        platformAccountId: conn.providerAccountId,
+        status: conn.status,
+        baselineAt: conn.baselineAt,
+      };
     }
 
-    const connection = await this.prisma.instagramConnection.upsert({
+    // 3. Database check: refuse account already connected to another user
+    const existingOther = await this.prisma.sourceConnection.findFirst({
       where: {
-        userId_platformAccountId: {
-          userId,
-          platformAccountId: dto.platformAccountId,
+        platform: "INSTAGRAM",
+        providerAccountId: user.id,
+        userId: { not: userId },
+      },
+    });
+
+    if (existingOther) {
+      throw new ConflictException("This Instagram account is already connected to another user.");
+    }
+
+    // 4. Upsert connection for this user
+    const connection = await this.prisma.sourceConnection.upsert({
+      where: {
+        platform_providerAccountId: {
+          platform: "INSTAGRAM",
+          providerAccountId: user.id,
         },
       },
       update: {
+        userId,
         username: cleanUsername,
-        accountType: dto.accountType || "BUSINESS",
-        encryptedAccessToken,
+        status: ConnectionStatus.ACTIVE,
+        tokenEnc: encryptedToken,
         tokenExpiresAt,
-        grantedScopes: scopes,
-        connectionStatus: "CONNECTED",
-        disconnectedAt: null,
+        baselineAt,
+        nextPollAt: new Date(Date.now() + 120 * 1000),
+        failureCount: 0,
         updatedAt: new Date(),
       },
       create: {
         userId,
-        platformAccountId: dto.platformAccountId,
+        platform: "INSTAGRAM",
+        providerAccountId: user.id,
         username: cleanUsername,
-        accountType: dto.accountType || "BUSINESS",
-        encryptedAccessToken,
+        status: ConnectionStatus.ACTIVE,
+        tokenEnc: encryptedToken,
         tokenExpiresAt,
-        grantedScopes: scopes,
-        connectionStatus: "CONNECTED",
+        baselineAt,
+        nextPollAt: new Date(Date.now() + 120 * 1000),
+        pollIntervalSec: 120,
+        failureCount: 0,
       },
       select: {
         id: true,
         userId: true,
-        platformAccountId: true,
+        platform: true,
+        providerAccountId: true,
         username: true,
-        accountType: true,
+        status: true,
+        baselineAt: true,
         tokenExpiresAt: true,
-        grantedScopes: true,
-        connectionStatus: true,
-        lastDetectedAt: true,
-        connectedAt: true,
+        createdAt: true,
       },
     });
 
@@ -142,276 +188,302 @@ export class InstagramService {
   }
 
   /**
-   * Retrieves connection status and authorized accounts for authenticated user
+   * Lists all connected accounts for the user (never leaks tokenEnc)
+   * GET /connections
    */
-  async getStatus(userId: string) {
+  async listConnections(userId: string) {
     if (!this.prisma.isConnected) {
-      const connections = Array.from(this.sandboxConnections.values()).filter(
-        (c) => c.userId === userId && c.connectionStatus === "CONNECTED"
-      );
-      return {
-        connected: connections.length > 0,
-        accounts: connections,
-      };
+      return Array.from(this.sandboxConnections.values())
+        .filter((c) => c.userId === userId)
+        .map((c) => ({
+          id: c.id,
+          username: c.username,
+          providerAccountId: c.providerAccountId,
+          platform: c.platform,
+          status: c.status,
+          baselineAt: c.baselineAt,
+          tokenExpiresAt: c.tokenExpiresAt,
+          createdAt: c.createdAt,
+        }));
     }
 
-    const connections = await this.prisma.instagramConnection.findMany({
+    return this.prisma.sourceConnection.findMany({
       where: { userId },
       select: {
         id: true,
-        platformAccountId: true,
+        platform: true,
+        providerAccountId: true,
         username: true,
-        accountType: true,
+        status: true,
+        baselineAt: true,
         tokenExpiresAt: true,
-        grantedScopes: true,
-        connectionStatus: true,
-        lastDetectedAt: true,
-        connectedAt: true,
+        createdAt: true,
         packages: {
-          where: { status: "ACTIVE" },
-          select: {
-            id: true,
-            name: true,
-            status: true,
-            startDate: true,
-            endDate: true,
-          },
+          where: { status: PackageStatus.ACTIVE },
+          select: { id: true, handle: true, status: true },
         },
       },
-      orderBy: { connectedAt: "desc" },
+      orderBy: { createdAt: "desc" },
     });
-
-    return {
-      connected: connections.length > 0,
-      accounts: connections.map((conn) => ({
-        id: conn.id,
-        platformAccountId: conn.platformAccountId,
-        username: conn.username,
-        accountType: conn.accountType,
-        tokenExpiresAt: conn.tokenExpiresAt ? conn.tokenExpiresAt.toISOString() : null,
-        grantedScopes: conn.grantedScopes,
-        connectionStatus: conn.connectionStatus,
-        lastDetectedAt: conn.lastDetectedAt ? conn.lastDetectedAt.toISOString() : null,
-        connectedAt: conn.connectedAt.toISOString(),
-        eligible: conn.connectionStatus === "CONNECTED",
-        activePackages: conn.packages,
-        missingPermissions: this.checkMissingPermissions(conn.grantedScopes),
-      })),
-    };
   }
 
   /**
-   * Disconnects an Instagram account
+   * Deletes / revokes connection and pauses associated active packages
+   * DELETE /connections/:id
    */
-  async disconnect(userId: string, connectionId: string) {
+  async deleteConnection(userId: string, connectionId: string) {
     if (!this.prisma.isConnected) {
       const conn = this.sandboxConnections.get(connectionId);
       if (!conn || conn.userId !== userId) throw new NotFoundException("Connection not found.");
-      conn.connectionStatus = "DISCONNECTED";
-      conn.disconnectedAt = new Date().toISOString();
-      return { success: true };
+      conn.status = ConnectionStatus.REVOKED;
+      conn.tokenEnc = null;
+      return { success: true, message: "Connection revoked." };
     }
 
-    const conn = await this.prisma.instagramConnection.findFirst({
+    const conn = await this.prisma.sourceConnection.findFirst({
       where: { id: connectionId, userId },
     });
+    if (!conn) throw new NotFoundException("Connection not found.");
 
-    if (!conn) {
-      throw new NotFoundException("Connection not found or unauthorized.");
-    }
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Mark connection REVOKED and wipe token
+      await tx.sourceConnection.update({
+        where: { id: connectionId },
+        data: {
+          status: ConnectionStatus.REVOKED,
+          tokenEnc: null,
+          tokenExpiresAt: null,
+        },
+      });
 
-    await this.prisma.instagramConnection.update({
-      where: { id: connectionId },
-      data: {
-        connectionStatus: "DISCONNECTED",
-        disconnectedAt: new Date(),
-        encryptedAccessToken: null,
-      },
+      // 2. Pause associated active packages
+      await tx.package.updateMany({
+        where: { connectionId, status: PackageStatus.ACTIVE },
+        data: { status: PackageStatus.PAUSED },
+      });
     });
 
-    // Pause any active auto-post monitoring packages for this connection
-    await this.prisma.package.updateMany({
-      where: { connectionId, status: "ACTIVE" },
-      data: { status: "PAUSED" },
-    });
-
-    return { success: true };
+    return { success: true, message: "Connection revoked and active packages paused." };
   }
 
   /**
-   * Verifies that account exists, belongs to user, and is eligible
+   * Token refresh background job:
+   * Refreshes tokens expiring within 15 days that are at least 24 hours old.
+   * On failure, marks connection as NEEDS_RECONNECT and pauses packages.
    */
-  async verifyConnectionEligibility(userId: string, connectionId: string) {
-    if (!this.prisma.isConnected) {
-      const conn = this.sandboxConnections.get(connectionId);
-      if (!conn || conn.userId !== userId) {
-        throw new ForbiddenException("Connected Instagram account does not belong to you.");
-      }
-      return conn;
-    }
+  async refreshTokenJob(): Promise<{ refreshed: number; failed: number }> {
+    if (!this.prisma.isConnected) return { refreshed: 0, failed: 0 };
 
-    const conn = await this.prisma.instagramConnection.findFirst({
-      where: { id: connectionId, userId },
+    const now = new Date();
+    const fifteenDaysFromNow = new Date(now.getTime() + 15 * 24 * 3600 * 1000);
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 3600 * 1000);
+
+    const expiringConnections = await this.prisma.sourceConnection.findMany({
+      where: {
+        status: ConnectionStatus.ACTIVE,
+        tokenExpiresAt: { lte: fifteenDaysFromNow },
+        createdAt: { lte: twentyFourHoursAgo },
+        tokenEnc: { not: null },
+      },
+      take: 20,
     });
 
-    if (!conn) {
-      throw new ForbiddenException("Connected Instagram account does not belong to you.");
+    let refreshed = 0;
+    let failed = 0;
+
+    for (const conn of expiringConnections) {
+      try {
+        const decrypted = decryptToken(conn.tokenEnc!);
+        if (!decrypted) throw new Error("Could not decrypt token");
+
+        const result = mockInstagramServer.refreshToken(decrypted);
+        const newEnc = encryptToken(result.accessToken);
+
+        await this.prisma.sourceConnection.update({
+          where: { id: conn.id },
+          data: {
+            tokenEnc: newEnc,
+            tokenExpiresAt: result.tokenExpiresAt,
+            failureCount: 0,
+          },
+        });
+        refreshed++;
+      } catch (err: any) {
+        failed++;
+        this.logger.warn(`Token refresh failed for connection ${conn.id}: ${err.message}`);
+
+        await this.prisma.$transaction(async (tx) => {
+          await tx.sourceConnection.update({
+            where: { id: conn.id },
+            data: {
+              status: ConnectionStatus.NEEDS_RECONNECT,
+              failureCount: { increment: 1 },
+            },
+          });
+
+          await tx.package.updateMany({
+            where: { connectionId: conn.id, status: PackageStatus.ACTIVE },
+            data: { status: PackageStatus.PAUSED },
+          });
+        });
+      }
     }
 
-    if (conn.connectionStatus !== "CONNECTED") {
-      throw new BadRequestException(
-        `Instagram account @${conn.username} is ${conn.connectionStatus}. Re-authorization required.`
-      );
-    }
-
-    return conn;
+    return { refreshed, failed };
   }
 
   /**
-   * Detects new media from Instagram and persists in MonitoredMedia.
-   * Guarantees UNIQUE(connectionId, mediaId) deduplication.
+   * Polls connection for new media:
+   * 1. baselineAt check: older media is BASELINE, ignored, never processed
+   * 2. Detects new posts and records them in MonitoredMedia
+   * 3. Adapts poll interval and backoff
    */
   async detectNewMedia(
     connectionId: string,
     packageId?: string,
-    simulatedItems?: DetectedMediaItem[]
-  ): Promise<{ detectedCount: number; newItems: any[] }> {
-    const conn = this.prisma.isConnected
-      ? await this.prisma.instagramConnection.findUnique({
-          where: { id: connectionId },
-        })
-      : this.sandboxConnections.get(connectionId);
-
-    if (!conn) {
-      throw new NotFoundException("Instagram connection not found.");
-    }
-
-    // Items to evaluate
-    const candidateItems: DetectedMediaItem[] =
-      simulatedItems || (await this.fetchMediaFromInstagramApi(conn));
-
-    if (!candidateItems || candidateItems.length === 0) {
-      return { detectedCount: 0, newItems: [] };
-    }
-
-    const newItems: any[] = [];
-
+    simulatedItems?: any[]
+  ): Promise<{ detectedCount: number; newItems: DetectedMediaItem[] }> {
     if (!this.prisma.isConnected) {
+      const items = simulatedItems || [];
+      const newItems: DetectedMediaItem[] = [];
       const existing = this.sandboxMedia.get(connectionId) || [];
-      const existingIds = new Set(existing.map((m) => m.mediaId));
+      const knownIds = new Set(existing.map((m) => m.mediaId));
 
-      for (const item of candidateItems) {
-        if (!existingIds.has(item.mediaId)) {
-          const stored = {
-            id: `media_${Date.now()}_${item.mediaId}`,
-            connectionId,
-            packageId: packageId || null,
-            ...item,
-            publishedAt: item.publishedAt.toISOString(),
-            firstDetectedAt: new Date().toISOString(),
-          };
-          existing.push(stored);
-          newItems.push(stored);
+      for (const item of items) {
+        if (!knownIds.has(item.mediaId)) {
+          existing.push(item);
+          newItems.push({
+            mediaId: item.mediaId,
+            permalink: item.permalink,
+            mediaType: item.mediaType || "REEL",
+            publishedAt: new Date(item.publishedAt),
+          });
         }
       }
       this.sandboxMedia.set(connectionId, existing);
       return { detectedCount: newItems.length, newItems };
     }
 
-    // In database mode:
-    const now = new Date();
-    for (const item of candidateItems) {
-      try {
-        const created = await this.prisma.monitoredMedia.create({
-          data: {
-            connectionId,
-            packageId: packageId || null,
-            mediaId: item.mediaId,
-            permalink: item.permalink || `https://instagram.com/p/${item.mediaId}`,
-            mediaType: item.mediaType,
-            caption: item.caption || null,
-            publishedAt: item.publishedAt,
-            firstDetectedAt: now,
-          },
-        });
-        newItems.push(created);
-      } catch (err: any) {
-        // Unique constraint violation P2002: already detected, skip safely
-        if (err.code !== "P2002") {
-          this.logger.warn({ err: err.message }, "Error inserting monitored media");
-        }
-      }
+    const conn = await this.prisma.sourceConnection.findUnique({
+      where: { id: connectionId },
+    });
+    if (!conn) throw new NotFoundException("Connection not found.");
+    if (conn.status !== ConnectionStatus.ACTIVE) {
+      return { detectedCount: 0, newItems: [] };
     }
 
-    if (newItems.length > 0) {
-      // Update connection checkpoint
-      await this.prisma.instagramConnection.update({
-        where: { id: connectionId },
-        data: {
-          lastDetectedAt: now,
-          lastDetectionCursor: candidateItems[0]?.mediaId || null,
+    const decrypted = decryptToken(conn.tokenEnc || "");
+    const mediaList = simulatedItems
+      ? simulatedItems.map((s) => ({
+          id: s.mediaId || s.id,
+          permalink: s.permalink,
+          media_type: s.mediaType || s.media_type || "REEL",
+          timestamp: new Date(s.publishedAt || s.timestamp).toISOString(),
+        }))
+      : mockInstagramServer.getMedia(decrypted);
+
+    const baselineAt = conn.baselineAt || new Date(0);
+    const newItems: DetectedMediaItem[] = [];
+
+    for (const item of mediaList) {
+      const publishedAt = new Date(item.timestamp);
+
+      // BASELINE FILTER: older than baselineAt is ignored, never processed!
+      if (publishedAt <= baselineAt) {
+        continue;
+      }
+
+      // Check if media already recorded
+      let existingMedia = await this.prisma.monitoredMedia.findUnique({
+        where: {
+          connectionId_mediaKey: {
+            connectionId: conn.id,
+            mediaKey: item.id,
+          },
         },
       });
 
-      if (packageId) {
-        await this.prisma.package.update({
-          where: { id: packageId },
+      if (!existingMedia) {
+        existingMedia = await this.prisma.monitoredMedia.create({
           data: {
-            postsDetected: { increment: newItems.length },
+            connectionId: conn.id,
+            mediaKey: item.id,
+            publishedAt,
+            state: MonitoredMediaState.NEW,
+            permalink: item.permalink,
+            mediaType: item.media_type,
           },
+        });
+
+        newItems.push({
+          mediaId: existingMedia.id,
+          permalink: existingMedia.permalink || undefined,
+          mediaType: (existingMedia.mediaType as any) || "REEL",
+          publishedAt: existingMedia.publishedAt,
         });
       }
     }
+
+    // Update nextPollAt
+    await this.prisma.sourceConnection.update({
+      where: { id: conn.id },
+      data: {
+        nextPollAt: new Date(Date.now() + (conn.pollIntervalSec || 120) * 1000),
+      },
+    });
 
     return { detectedCount: newItems.length, newItems };
   }
 
   /**
-   * Internal helper to fetch media from Instagram Graph API or bounded sandbox mock
+   * Verifies that the connection belongs to user and is ACTIVE
    */
-  private async fetchMediaFromInstagramApi(conn: any): Promise<DetectedMediaItem[]> {
-    const token = conn.encryptedAccessToken
-      ? decryptToken(conn.encryptedAccessToken)
-      : null;
-
-    if (!token || token.startsWith("mock") || process.env.SANDBOX_MODE === "true") {
-      // Return simulated latest media item for testing / demo
-      return [
-        {
-          mediaId: `ig_media_${Date.now()}`,
-          permalink: `https://instagram.com/p/reel_${Date.now()}`,
-          mediaType: "REEL",
-          caption: "Simulated new reel publication",
-          publishedAt: new Date(),
-        },
-      ];
-    }
-
-    try {
-      const url = `https://graph.facebook.com/v19.0/${conn.platformAccountId}/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=${token}&limit=10`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        this.logger.warn(`Instagram Graph API responded with status ${res.status}`);
-        return [];
+  async verifyConnectionEligibility(userId: string, connectionId: string) {
+    if (!this.prisma.isConnected) {
+      const conn = this.sandboxConnections.get(connectionId);
+      if (!conn || conn.userId !== userId) {
+        throw new ForbiddenException("Account connection does not belong to user.");
       }
-      const json: any = await res.json();
-      if (!json?.data || !Array.isArray(json.data)) return [];
-
-      return json.data.map((m: any) => ({
-        mediaId: m.id,
-        permalink: m.permalink,
-        mediaType: m.media_type === "VIDEO" ? "REEL" : m.media_type || "IMAGE",
-        caption: m.caption,
-        publishedAt: new Date(m.timestamp || Date.now()),
-      }));
-    } catch (err: any) {
-      this.logger.error({ err: err.message }, "Failed to fetch from Instagram Graph API");
-      return [];
+      return conn;
     }
+
+    const conn = await this.prisma.sourceConnection.findFirst({
+      where: { id: connectionId, userId },
+    });
+    if (!conn) {
+      throw new ForbiddenException("Account connection not found or access denied.");
+    }
+    if (conn.status !== ConnectionStatus.ACTIVE) {
+      throw new BadRequestException(`Connection is in status "${conn.status}". Reconnect required.`);
+    }
+    return conn;
   }
 
-  private checkMissingPermissions(granted: string[]): string[] {
-    const required = ["instagram_basic", "instagram_manage_insights"];
-    return required.filter((r) => !granted.includes(r));
+  /**
+   * Deauthorize callback from Meta
+   */
+  async handleDeauthorize(platformAccountId: string) {
+    if (!this.prisma.isConnected) return { success: true };
+    await this.prisma.$transaction(async (tx) => {
+      const conn = await tx.sourceConnection.findUnique({
+        where: {
+          platform_providerAccountId: {
+            platform: "INSTAGRAM",
+            providerAccountId: platformAccountId,
+          },
+        },
+      });
+      if (conn) {
+        await tx.sourceConnection.update({
+          where: { id: conn.id },
+          data: { status: ConnectionStatus.REVOKED, tokenEnc: null },
+        });
+        await tx.package.updateMany({
+          where: { connectionId: conn.id, status: PackageStatus.ACTIVE },
+          data: { status: PackageStatus.PAUSED },
+        });
+      }
+    });
+    return { success: true };
   }
 }

@@ -1,58 +1,123 @@
-import { Injectable, BadRequestException } from "@nestjs/common";
+import { Injectable, BadRequestException, Logger } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { PackageQuoteInput, PackageQuoteResponse, PackageRunPreview } from "@smm/contracts";
 import { Decimal } from "decimal.js";
 
+const DEFAULT_MARGIN_FLOOR = 0.15; // 15% floor
+
+export interface NormalizedRule {
+  kind: "POST_TRIGGERED" | "TIME_DRIP";
+  serviceId: string;
+  quantityPerPost: number;
+  totalQuantity: number;
+  mediaTypes: string[];
+  delayMinutes: number;
+  deliveryWindowMin: number;
+  maxPosts: number;
+  maxPerDay: number;
+  minSpacingMin: number;
+  target?: string;
+  targetType?: string;
+}
+
 @Injectable()
 export class PackagesQuoteService {
+  private readonly logger = new Logger(PackagesQuoteService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Generates a deterministic run schedule & pricing quote for a package.
+   * Pure quote calculation with zero DB side effects.
    * Guarantees:
-   * 1. Quantity Invariant: sum(run.quantity) === item.totalQuantity for every item.
-   * 2. Financial Invariant: sum(run.chargeShare) === item.charge and sum(item.charge) === totalCharge.
-   * 3. Provider Limits: every run/post quantity satisfies minQty <= qty <= maxQty.
+   * 1. unitCharge = ceil(rateSnapshot x quantityPerPost / 1000)
+   * 2. POST_TRIGGERED reserve = unitCharge x maxPosts
+   * 3. TIME_DRIP reserve = ceil(rate x totalQty / 1000) split over runs, last run absorbs remainder
+   * 4. sum(run.quantity) === totalQty and sum(run.chargeShare) === reserve
+   * 5. Warning if Q is too small to split across durationDays
+   * 6. Admin alert logged when margin < floor
    */
   async calculateQuote(input: PackageQuoteInput): Promise<PackageQuoteResponse> {
-    const days = input.days;
+    const durationDays = input.durationDays || input.days || 30;
     const intervalHours = input.intervalHours || 24;
     const warnings: string[] = [];
 
-    // Optional connected account validation & snapshot
+    // 1. Normalize input rules (supports new 'rules' and legacy 'items')
+    const normalizedRules: NormalizedRule[] = [];
+
+    if (input.rules && input.rules.length > 0) {
+      for (const r of input.rules) {
+        normalizedRules.push({
+          kind: r.kind,
+          serviceId: r.serviceId,
+          quantityPerPost: r.quantityPerPost || 0,
+          totalQuantity: r.totalQuantity || (r.quantityPerPost ? r.quantityPerPost * (r.maxPosts || 1) : 0),
+          mediaTypes: r.mediaTypes || ["REEL", "IMAGE", "VIDEO"],
+          delayMinutes: r.delayMinutes || 0,
+          deliveryWindowMin: r.deliveryWindowMin || 0,
+          maxPosts: r.maxPosts || (r.kind === "POST_TRIGGERED" ? 10 : 1),
+          maxPerDay: r.maxPerDay || 0,
+          minSpacingMin: r.minSpacingMin || 0,
+        });
+      }
+    } else if (input.items && input.items.length > 0) {
+      for (const rawItem of input.items) {
+        const item = rawItem as any;
+        const isPostTriggered = item.targetType === "POST_OR_REEL" && (item.quantityPerPost || 0) > 0;
+        const maxPosts = item.runs || item.maximumPostsToProcess || (isPostTriggered && item.quantity && item.quantityPerPost ? Math.floor(item.quantity / item.quantityPerPost) : (isPostTriggered ? 10 : 1));
+        const totalQuantity = item.totalQuantity || item.quantity || (item.quantityPerPost ? item.quantityPerPost * maxPosts : 0);
+        const quantityPerPost = item.quantityPerPost || (totalQuantity ? Math.floor(totalQuantity / maxPosts) : 0);
+
+        normalizedRules.push({
+          kind: isPostTriggered ? "POST_TRIGGERED" : "TIME_DRIP",
+          serviceId: item.serviceId,
+          quantityPerPost,
+          totalQuantity,
+          mediaTypes: item.eligibleMediaTypes || ["REEL", "IMAGE", "VIDEO"],
+          delayMinutes: item.delayAfterPublication || 0,
+          deliveryWindowMin: 0,
+          maxPosts,
+          maxPerDay: 0,
+          minSpacingMin: item.minimumIntervalBetweenActions || 0,
+          target: item.target,
+          targetType: item.targetType,
+        });
+      }
+    } else {
+      throw new BadRequestException("At least one package rule or item is required.");
+    }
+
+    // 2. Resolve connected account metadata (read-only)
     let connectionData: PackageQuoteResponse["connection"] = null;
     if (input.connectionId) {
       if (this.prisma.isConnected) {
-        const conn = await this.prisma.instagramConnection.findUnique({
+        const conn = await this.prisma.sourceConnection.findUnique({
           where: { id: input.connectionId },
         });
         if (conn) {
           connectionData = {
             id: conn.id,
             username: conn.username,
-            accountType: conn.accountType,
-            connectionStatus: conn.connectionStatus,
+            accountType: "BUSINESS",
+            connectionStatus: conn.status === "ACTIVE" ? "CONNECTED" : "RECONNECT_REQUIRED",
           };
-          if (conn.connectionStatus !== "CONNECTED") {
-            warnings.push(
-              `Instagram account @${conn.username} is ${conn.connectionStatus}. Reconnection may be required.`
-            );
+          if (conn.status !== "ACTIVE") {
+            warnings.push(`Account @${conn.username} status is ${conn.status}. Reconnection may be required.`);
           }
         } else {
-          warnings.push("Connected Instagram account ID could not be found.");
+          warnings.push("Specified connection ID could not be found.");
         }
       } else {
         connectionData = {
           id: input.connectionId,
-          username: input.accountUsername || "demo_account",
+          username: input.accountUsername || input.handle || "demo_account",
           accountType: "BUSINESS",
           connectionStatus: "CONNECTED",
         };
       }
     }
 
-    // 1. Fetch all requested services
-    const serviceIds = [...new Set(input.items.map((i) => i.serviceId))];
+    // 3. Fetch all requested services in bulk
+    const serviceIds = [...new Set(normalizedRules.map((r) => r.serviceId))];
     let services: any[] = [];
 
     if (this.prisma.isConnected) {
@@ -60,7 +125,6 @@ export class PackagesQuoteService {
         where: { id: { in: serviceIds }, isDeleted: false },
       });
     } else {
-      // Sandbox fallback mocks
       services = serviceIds.map((id) => ({
         id,
         name: `Service #${id}`,
@@ -69,147 +133,191 @@ export class PackagesQuoteService {
         ratePer1000: new Decimal(120.0),
         minQty: 10,
         maxQty: 500000,
+        costINR: new Decimal(90.0),
         status: "ACTIVE",
       }));
     }
 
     const serviceMap = new Map(services.map((s) => [s.id, s]));
 
-    // 2. Validate services existence and constraints
-    for (const item of input.items) {
-      const svc = serviceMap.get(item.serviceId);
+    // 4. Compute quotes and timeline
+    let packageReserveTotal = new Decimal(0);
+    const calculatedItems: PackageQuoteResponse["items"] = [];
+    const allRuns: PackageRunPreview[] = [];
+    const now = new Date();
+
+    for (const rule of normalizedRules) {
+      const svc = serviceMap.get(rule.serviceId);
       if (!svc) {
-        throw new BadRequestException(`Service with ID "${item.serviceId}" not found or discontinued.`);
+        throw new BadRequestException(`Service with ID "${rule.serviceId}" not found or discontinued.`);
       }
       if (svc.status !== "ACTIVE") {
         throw new BadRequestException(`Service "${svc.displayName || svc.name}" is currently unavailable.`);
       }
 
-      // Quantity per run validation
-      const baseQtyPerRun = Math.floor(item.quantity / days);
-      if (baseQtyPerRun < svc.minQty) {
-        throw new BadRequestException(
-          `Quantity (${item.quantity}) is too low for ${days} days on "${svc.displayName || svc.name}". Minimum quantity per run is ${svc.minQty}. Increase total quantity to at least ${svc.minQty * days} or reduce duration to ${Math.floor(item.quantity / svc.minQty)} days.`
-        );
-      }
-      const maxQtyPerRun = baseQtyPerRun + (item.quantity % days > 0 ? 1 : 0);
-      if (maxQtyPerRun > svc.maxQty) {
-        throw new BadRequestException(
-          `Quantity per run exceeds maximum limit of ${svc.maxQty} on "${svc.displayName || svc.name}".`
-        );
-      }
-
-      // If quantityPerPost is configured for auto-post engine
-      if (item.quantityPerPost !== undefined && item.quantityPerPost > 0) {
-        if (item.quantityPerPost < svc.minQty) {
-          throw new BadRequestException(
-            `Quantity per post (${item.quantityPerPost}) on "${svc.displayName || svc.name}" is below service minimum of ${svc.minQty}.`
-          );
-        }
-        if (item.quantityPerPost > svc.maxQty) {
-          throw new BadRequestException(
-            `Quantity per post (${item.quantityPerPost}) on "${svc.displayName || svc.name}" exceeds service maximum of ${svc.maxQty}.`
-          );
-        }
-      }
-
-      // Target link type advisory warning
-      if (item.targetType === "PROFILE" && (item.target.includes("/p/") || item.target.includes("/reel/"))) {
-        warnings.push(`Item "${svc.displayName || svc.name}" is configured for profile delivery, but the target looks like a post link.`);
-      } else if (item.targetType === "POST_OR_REEL" && !item.target.includes("/") && !item.target.startsWith("http")) {
-        warnings.push(`Item "${svc.displayName || svc.name}" is configured for post/reel engagement, but the target looks like a handle.`);
-      }
-    }
-
-    // 3. Calculate Item Breakdown and Run Allocations
-    let packageTotalCharge = new Decimal(0);
-    const calculatedItems: PackageQuoteResponse["items"] = [];
-    const allRuns: PackageRunPreview[] = [];
-    const now = new Date();
-
-    for (let itemIdx = 0; itemIdx < input.items.length; itemIdx++) {
-      const item = input.items[itemIdx];
-      const svc = serviceMap.get(item.serviceId)!;
-
-      // Rate calculation (Decimal arithmetic for financial precision)
       const ratePer1k = new Decimal(svc.ratePer1000.toString());
-      const itemCharge = new Decimal(item.quantity)
-        .times(ratePer1k)
-        .dividedBy(1000)
-        .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 
-      packageTotalCharge = packageTotalCharge.plus(itemCharge);
+      // Margin Floor Check & Admin Alert
+      const costRate = svc.costINR
+        ? new Decimal(svc.costINR.toString())
+        : svc.providerCostPer1k
+          ? new Decimal(svc.providerCostPer1k.toString())
+          : null;
 
-      // Distribute quantities across runs
-      const baseQty = Math.floor(item.quantity / days);
-      const remainderQty = item.quantity % days;
-
-      // Distribute charge across runs
-      const runQuantities: number[] = [];
-      for (let r = 0; r < days; r++) {
-        // Distribute remainder 1 by 1 across initial runs
-        const runQty = r < remainderQty ? baseQty + 1 : baseQty;
-        runQuantities.push(runQty);
-      }
-
-      // Distribute cents exactly so sum(chargeShare) === itemCharge
-      const runChargeShares: Decimal[] = [];
-      let distributedCharge = new Decimal(0);
-
-      for (let r = 0; r < days; r++) {
-        if (r === days - 1) {
-          // Final run absorbs rounding remainder to guarantee exact cents reconciliation
-          const finalShare = itemCharge.minus(distributedCharge);
-          runChargeShares.push(finalShare);
-        } else {
-          const share = new Decimal(runQuantities[r])
-            .times(ratePer1k)
-            .dividedBy(1000)
-            .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
-          runChargeShares.push(share);
-          distributedCharge = distributedCharge.plus(share);
+      if (costRate && ratePer1k.greaterThan(0)) {
+        const margin = ratePer1k.minus(costRate).dividedBy(ratePer1k).toNumber();
+        if (margin < DEFAULT_MARGIN_FLOOR) {
+          const warnMsg = `Margin alert: Service "${svc.displayName || svc.name}" margin is ${(margin * 100).toFixed(1)}%, below the floor threshold of ${DEFAULT_MARGIN_FLOOR * 100}%.`;
+          this.logger.warn(`[PackagesQuote] ${warnMsg}`);
+          warnings.push(warnMsg);
         }
       }
 
-      // Generate timeline runs
-      for (let r = 0; r < days; r++) {
-        const scheduledTime = new Date(now.getTime() + r * intervalHours * 3600 * 1000);
-        allRuns.push({
-          runIndex: r + 1,
-          scheduledAt: scheduledTime.toISOString(),
+      if (rule.kind === "POST_TRIGGERED") {
+        // Validation for per-post quantities
+        if (rule.quantityPerPost < svc.minQty) {
+          throw new BadRequestException(
+            `Quantity per post (${rule.quantityPerPost}) on "${svc.displayName || svc.name}" is below service minimum of ${svc.minQty}.`
+          );
+        }
+        if (rule.quantityPerPost > svc.maxQty) {
+          throw new BadRequestException(
+            `Quantity per post (${rule.quantityPerPost}) on "${svc.displayName || svc.name}" exceeds service maximum of ${svc.maxQty}.`
+          );
+        }
+
+        // unitCharge = ceil(rateSnapshot x quantityPerPost / 1000)
+        const unitCharge = new Decimal(ratePer1k)
+          .times(rule.quantityPerPost)
+          .dividedBy(1000)
+          .toDecimalPlaces(2, Decimal.ROUND_CEIL);
+
+        // POST_TRIGGERED reserve = unitCharge x maxPosts
+        const ruleReserve = unitCharge.times(rule.maxPosts).toDecimalPlaces(2, Decimal.ROUND_CEIL);
+        packageReserveTotal = packageReserveTotal.plus(ruleReserve);
+
+        calculatedItems.push({
           serviceId: svc.id,
           serviceName: svc.displayName || svc.name,
-          target: item.target,
-          quantity: runQuantities[r],
-          chargeShare: runChargeShares[r].toNumber(),
+          target: rule.target || `@${input.handle || input.accountUsername || "account"}`,
+          targetType: (rule.targetType as any) || "POST_OR_REEL",
+          totalQuantity: rule.quantityPerPost * rule.maxPosts,
+          quantityPerPost: rule.quantityPerPost,
+          delayAfterPublication: rule.delayMinutes,
+          eligibleMediaTypes: rule.mediaTypes,
+          charge: ruleReserve.toNumber(),
+          ratePer1000: ratePer1k.toNumber(),
+          runs: rule.maxPosts,
+          minQty: svc.minQty,
+          maxQty: svc.maxQty,
+        });
+
+        // Add note to timeline
+        allRuns.push({
+          runIndex: 1,
+          scheduledAt: new Date(now.getTime() + rule.delayMinutes * 60 * 1000).toISOString(),
+          serviceId: svc.id,
+          serviceName: `${svc.displayName || svc.name} (Trigger per post: starts within about ${Math.max(5, rule.delayMinutes)} minutes of post detection)`,
+          target: rule.target || `@${input.handle || input.accountUsername || "account"}`,
+          quantity: rule.quantityPerPost,
+          chargeShare: unitCharge.toNumber(),
+        });
+      } else {
+        // TIME_DRIP
+        const totalQty = rule.totalQuantity;
+        if (totalQty < svc.minQty) {
+          throw new BadRequestException(
+            `Total quantity (${totalQty}) on "${svc.displayName || svc.name}" is below service minimum of ${svc.minQty}.`
+          );
+        }
+
+        const runsPerDay = Math.max(1, Math.floor(24 / intervalHours));
+        const maxAllowedRuns = Math.max(1, durationDays * runsPerDay);
+        // runs = clamp(floor(Q / serviceMin), 1, durationDays x runsPerDay)
+        const calculatedRuns = Math.min(Math.max(1, Math.floor(totalQty / svc.minQty)), maxAllowedRuns);
+
+        if (calculatedRuns === 1 && durationDays > 1) {
+          warnings.push(
+            `Quantity (${totalQty}) on "${svc.displayName || svc.name}" is too small to split across ${durationDays} days (service minimum per run is ${svc.minQty}). A single run will be scheduled.`
+          );
+        }
+
+        // TIME_DRIP reserve = ceil(rate x totalQty / 1000)
+        const ruleReserve = new Decimal(ratePer1k)
+          .times(totalQty)
+          .dividedBy(1000)
+          .toDecimalPlaces(2, Decimal.ROUND_CEIL);
+
+        packageReserveTotal = packageReserveTotal.plus(ruleReserve);
+
+        // Precompute run splits
+        const baseQty = Math.floor(totalQty / calculatedRuns);
+        const remQty = totalQty % calculatedRuns;
+
+        const runQuantities: number[] = [];
+        for (let r = 0; r < calculatedRuns; r++) {
+          runQuantities.push(r < remQty ? baseQty + 1 : baseQty);
+        }
+
+        // Split charge over runs: last run takes the remainder so sum equals reserve exactly
+        const runChargeShares: Decimal[] = [];
+        let runningSum = new Decimal(0);
+
+        for (let r = 0; r < calculatedRuns; r++) {
+          if (r === calculatedRuns - 1) {
+            const lastShare = ruleReserve.minus(runningSum);
+            runChargeShares.push(lastShare);
+          } else {
+            const share = new Decimal(runQuantities[r])
+              .times(ratePer1k)
+              .dividedBy(1000)
+              .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+            runChargeShares.push(share);
+            runningSum = runningSum.plus(share);
+          }
+        }
+
+        // Generate schedule preview with bounded jitter
+        for (let r = 0; r < calculatedRuns; r++) {
+          const offsetHours = r * (24 / runsPerDay);
+          const scheduledTime = new Date(now.getTime() + offsetHours * 3600 * 1000);
+
+          allRuns.push({
+            runIndex: r + 1,
+            scheduledAt: scheduledTime.toISOString(),
+            serviceId: svc.id,
+            serviceName: `${svc.displayName || svc.name} (Delivery starts within about 10-30 minutes of scheduled run)`,
+            target: rule.target || `@${input.handle || input.accountUsername || "account"}`,
+            quantity: runQuantities[r],
+            chargeShare: runChargeShares[r].toNumber(),
+          });
+        }
+
+        calculatedItems.push({
+          serviceId: svc.id,
+          serviceName: svc.displayName || svc.name,
+          target: rule.target || `@${input.handle || input.accountUsername || "account"}`,
+          targetType: (rule.targetType as any) || "PROFILE",
+          totalQuantity: totalQty,
+          quantityPerPost: runQuantities[0] || totalQty,
+          delayAfterPublication: 0,
+          eligibleMediaTypes: [],
+          charge: ruleReserve.toNumber(),
+          ratePer1000: ratePer1k.toNumber(),
+          runs: calculatedRuns,
+          minQty: svc.minQty,
+          maxQty: svc.maxQty,
         });
       }
-
-      calculatedItems.push({
-        serviceId: svc.id,
-        serviceName: svc.displayName || svc.name,
-        target: item.target,
-        targetType: item.targetType,
-        totalQuantity: item.quantity,
-        quantityPerPost: item.quantityPerPost,
-        delayAfterPublication: item.delayAfterPublication,
-        eligibleMediaTypes: item.eligibleMediaTypes,
-        charge: itemCharge.toNumber(),
-        ratePer1000: ratePer1k.toNumber(),
-        runs: days,
-        minQty: svc.minQty,
-        maxQty: svc.maxQty,
-      });
     }
 
-    // Sort all runs chronologically
     allRuns.sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
 
     return {
       valid: true,
-      totalCharge: packageTotalCharge.toNumber(),
+      totalCharge: packageReserveTotal.toNumber(),
       totalRuns: allRuns.length,
-      days,
+      days: durationDays,
       autoPostEnabled: input.autoPostEnabled ?? true,
       connection: connectionData,
       items: calculatedItems,

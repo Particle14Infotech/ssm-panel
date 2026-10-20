@@ -16,7 +16,7 @@ describe("Custom Instagram Auto-Post Package Engine & Invariants", () => {
     quoteService = new PackagesQuoteService(mockPrisma);
     instagramService = new InstagramService(mockPrisma);
     packagesService = new PackagesService(mockPrisma, quoteService, instagramService);
-    schedulerService = new PackagesSchedulerService(mockPrisma, instagramService);
+    schedulerService = new PackagesSchedulerService(mockPrisma);
   });
 
   describe("Mathematical Invariants: Quantity & Financial Reconciliation", () => {
@@ -83,7 +83,7 @@ describe("Custom Instagram Auto-Post Package Engine & Invariants", () => {
       expect(quote.totalRuns).toBe(20);
     });
 
-    it("rejects impossible run quantities that violate service minQty per run", async () => {
+    it("returns quote warning when quantity cannot be split evenly across days, and rejects when below minQty", async () => {
       const mockWithHighMin = {
         isConnected: true,
         service: {
@@ -103,6 +103,7 @@ describe("Custom Instagram Auto-Post Package Engine & Invariants", () => {
 
       const strictQuoteService = new PackagesQuoteService(mockWithHighMin);
 
+      // 1. When totalQuantity < minQty, rejects with BadRequestException
       await expect(
         strictQuoteService.calculateQuote({
           days: 30,
@@ -111,11 +112,26 @@ describe("Custom Instagram Auto-Post Package Engine & Invariants", () => {
               serviceId: "srv-high-min",
               target: "https://instagram.com/profile",
               targetType: "PROFILE",
-              quantity: 150, // 150 / 30 = 5 < 100 minQty
+              quantity: 50, // 50 < 100 minQty
             },
           ],
         })
       ).rejects.toThrow(BadRequestException);
+
+      // 2. When Q is too small to split across duration days, returns a quote warning (never one silent big order)
+      const quote = await strictQuoteService.calculateQuote({
+        days: 30,
+        items: [
+          {
+            serviceId: "srv-high-min",
+            target: "https://instagram.com/profile",
+            targetType: "PROFILE",
+            quantity: 150, // 150 / 30 = 5 < 100 minQty, so clamped to 1 run
+          },
+        ],
+      });
+      expect(quote.warnings.length).toBeGreaterThan(0);
+      expect(quote.warnings[0]).toContain("too small to split");
     });
   });
 
@@ -204,6 +220,7 @@ describe("Custom Instagram Auto-Post Package Engine & Invariants", () => {
     it("supports pausing and resuming an active package", async () => {
       const res = await packagesService.purchasePackage("user-state", {
         days: 7,
+        idempotencyKey: "idem_state_test",
         items: [
           {
             serviceId: "srv-engagement",
@@ -234,6 +251,7 @@ describe("Custom Instagram Auto-Post Package Engine & Invariants", () => {
     it("cancels a package and prevents unauthorized access", async () => {
       const res = await packagesService.purchasePackage("user-cancel", {
         days: 14,
+        idempotencyKey: "idem_cancel_test",
         items: [
           {
             serviceId: "srv-likes",

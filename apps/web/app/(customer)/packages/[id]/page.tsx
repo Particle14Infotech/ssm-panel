@@ -51,7 +51,42 @@ export default function PackageDetailPage() {
   const [cancelling, setCancelling] = useState(false);
   const [actionInProgress, setActionInProgress] = useState(false);
   const [polling, setPolling] = useState(false);
+  const [triggerUrl, setTriggerUrl] = useState("");
+  const [triggering, setTriggering] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  const handleManualTrigger = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!triggerUrl.trim()) return;
+    const token = localStorage.getItem("authToken");
+    if (!token) return;
+    setTriggering(true);
+    try {
+      const res = await fetch(`${getApiBase()}/packages/${packageId}/trigger`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ url: triggerUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setNotification({ type: "error", message: data.message || "Failed to trigger post." });
+      } else {
+        setNotification({
+          type: "success",
+          message: `Post trigger scheduled! Delivery starts within about 5-15 minutes (Slot #${data.usedCount || 1}/${data.maxPosts || 1}).`,
+        });
+        setTriggerUrl("");
+        await fetchPackage();
+      }
+    } catch (err: any) {
+      setNotification({ type: "error", message: err.message || "Network error" });
+    } finally {
+      setTriggering(false);
+    }
+  };
 
   const fetchPackage = useCallback(async () => {
     if (typeof window === "undefined") return;
@@ -316,6 +351,39 @@ export default function PackageDetailPage() {
             </div>
           </div>
         </div>
+      </GlassCard>
+
+      {/* Manual Trigger / Paste New Post Link (Honest copy: likes/views need post link while Instagram connect is off) */}
+      <GlassCard className="p-5 md:p-6 rounded-2xl border-white/10 space-y-3 bg-white/[0.02]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+          <div className="flex items-center gap-2 text-white font-semibold text-sm">
+            <Film className="w-4 h-4 text-[#D8EC8D]" />
+            <span>Paste New Post / Reel Link</span>
+          </div>
+          <span className="text-[11px] font-mono text-slate-400">
+            Delivery starts within about 5-15 minutes
+          </span>
+        </div>
+        <p className="text-xs text-slate-400">
+          Likes and views require a post link while Instagram connect is off. Paste an official Instagram post or reel link below to manually trigger this package rule.
+        </p>
+        <form onSubmit={handleManualTrigger} className="flex flex-col sm:flex-row gap-2.5 pt-1">
+          <input
+            type="url"
+            required
+            placeholder="https://www.instagram.com/p/... or https://www.instagram.com/reel/..."
+            value={triggerUrl}
+            onChange={(e) => setTriggerUrl(e.target.value)}
+            className="flex-1 bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2 text-xs text-white font-mono placeholder:text-slate-600 focus:outline-none focus:border-[#D8EC8D]/50"
+          />
+          <button
+            type="submit"
+            disabled={triggering || !triggerUrl.trim() || pkg.status !== "ACTIVE"}
+            className="px-5 py-2 rounded-xl bg-[#D8EC8D] text-[#131313] font-bold text-xs hover:brightness-105 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0 flex items-center justify-center gap-1.5 shadow-sm"
+          >
+            {triggering ? "Scheduling..." : "Trigger Workflow"}
+          </button>
+        </form>
       </GlassCard>
 
       {/* Navigation Tabs */}

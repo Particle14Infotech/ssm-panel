@@ -1,10 +1,10 @@
 import { Module } from "@nestjs/common";
-import { InstagramController } from "./instagram.controller";
+import { ConnectionsController, InstagramLegacyController } from "./instagram.controller";
 import { InstagramService } from "./instagram.service";
 import { PrismaService } from "../../common/prisma.service";
 
 @Module({
-  controllers: [InstagramController],
+  controllers: [ConnectionsController, InstagramLegacyController],
   providers: [InstagramService, PrismaService],
   exports: [InstagramService],
 })

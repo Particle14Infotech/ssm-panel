@@ -32,6 +32,7 @@ export class SMMWorkerEngine {
   private pollInterval: NodeJS.Timeout | null = null;
   private syncInterval: NodeJS.Timeout | null = null;
   private dripRunInterval: NodeJS.Timeout | null = null;
+  private packageExecutionInterval: NodeJS.Timeout | null = null;
   private redis: Redis | null = null;
   private bullWorker: BullWorker | null = null;
   private orderQueue: Queue | null = null;
@@ -175,6 +176,16 @@ export class SMMWorkerEngine {
         logger.error({ err }, "Drip-feed run dispatcher cycle error");
       }
     }, 15000);
+
+    // 7. Package Engine Execution Dispatcher Daemon (FOR UPDATE SKIP LOCKED)
+    this.packageExecutionInterval = setInterval(async () => {
+      if (!this.isRunning) return;
+      try {
+        await this.pollAndDispatchPackageExecutions();
+      } catch (err: any) {
+        logger.error({ err }, "Package execution dispatcher cycle error");
+      }
+    }, 10000);
 
     // Initial triggers (safely handled without terminating boot)
     try {
@@ -1349,6 +1360,7 @@ export class SMMWorkerEngine {
     if (this.pollInterval) clearInterval(this.pollInterval);
     if (this.syncInterval) clearInterval(this.syncInterval);
     if (this.dripRunInterval) clearInterval(this.dripRunInterval);
+    if (this.packageExecutionInterval) clearInterval(this.packageExecutionInterval);
     if (this.bullWorker) await this.bullWorker.close();
     if (this.emailWorker) await this.emailWorker.close();
     if (this.emailQueue) await this.emailQueue.close();
@@ -1501,6 +1513,209 @@ export class SMMWorkerEngine {
       }
     } catch (err: any) {
       logger.error({ err: err.message }, "[Worker] Error enqueuing email");
+    }
+  }
+
+  /**
+   * Package Engine: Polls due SCHEDULED executions and dispatches them via prepaid child orders.
+   * Concurrency safe via FOR UPDATE SKIP LOCKED.
+   */
+  async pollAndDispatchPackageExecutions() {
+    let dueExecutions: any[] = [];
+    const now = new Date();
+    try {
+      dueExecutions = await prisma.$queryRawUnsafe<any[]>(`
+        SELECT 
+          e.id,
+          e."packageId",
+          e."ruleId",
+          e."mediaId",
+          e.source,
+          e.seq,
+          e.quantity,
+          e."allocatedCharge",
+          e."executeAt",
+          p."userId",
+          p.handle,
+          p.status as "packageStatus",
+          p."endAt" as "packageEndAt",
+          r."serviceId",
+          m."mediaKey",
+          m.permalink,
+          m.state as "mediaState",
+          s."providerId",
+          s."providerServiceId"
+        FROM "PackageExecution" e
+        JOIN "Package" p ON e."packageId" = p.id
+        JOIN "PackageRule" r ON e."ruleId" = r.id
+        JOIN "Service" s ON r."serviceId" = s.id
+        LEFT JOIN "MonitoredMedia" m ON e."mediaId" = m.id
+        WHERE e.status = 'SCHEDULED'
+          AND e."executeAt" <= $1
+        ORDER BY e."executeAt" ASC
+        LIMIT 25
+        FOR UPDATE OF e SKIP LOCKED
+      `, now);
+    } catch {
+      dueExecutions = await prisma.packageExecution.findMany({
+        where: {
+          status: "SCHEDULED" as any,
+          executeAt: { lte: now },
+        },
+        include: {
+          package: true,
+          rule: { include: { service: true } },
+          media: true,
+        },
+        take: 25,
+        orderBy: { executeAt: "asc" },
+      });
+    }
+
+    if (!dueExecutions || dueExecutions.length === 0) return;
+
+    logger.info(`[Package Engine] Processing ${dueExecutions.length} due package execution(s)`);
+
+    for (const exec of dueExecutions) {
+      try {
+        const packageStatus = exec.packageStatus || exec.package?.status;
+        const packageEndAt = exec.packageEndAt || exec.package?.endAt;
+        const userId = exec.userId || exec.package?.userId;
+        const handle = exec.handle || exec.package?.handle;
+        const serviceId = exec.serviceId || exec.rule?.serviceId;
+        const providerId = exec.providerId || exec.rule?.service?.providerId;
+        const mediaState = exec.mediaState || exec.media?.state;
+        const mediaId = exec.mediaId || exec.media?.id;
+        const permalink = exec.permalink || exec.media?.permalink;
+
+        // 1. Status checks
+        if (packageStatus === "CANCELLED") {
+          await prisma.packageExecution.update({
+            where: { id: exec.id },
+            data: { status: "CANCELLED" as any, skipReason: "Package cancelled" },
+          });
+          continue;
+        }
+
+        if (packageStatus === "PAUSED") {
+          await prisma.packageExecution.update({
+            where: { id: exec.id },
+            data: { status: "SKIPPED_PAUSED" as any, skipReason: "Package paused" },
+          });
+          continue;
+        }
+
+        if (now > new Date(packageEndAt)) {
+          await prisma.packageExecution.update({
+            where: { id: exec.id },
+            data: { status: "CANCELLED" as any, skipReason: "Package duration expired" },
+          });
+          continue;
+        }
+
+        // 2. Re-verify media still exists if source MEDIA
+        if (mediaId && mediaState === "DELETED") {
+          await prisma.$transaction(async (tx) => {
+            const allocated = new Decimal(exec.allocatedCharge.toString());
+            await tx.packageExecution.update({
+              where: { id: exec.id },
+              data: {
+                status: "SKIPPED_DELETED" as any,
+                skipReason: "Media was deleted prior to execution dispatch",
+              },
+            });
+
+            if (allocated.greaterThan(0)) {
+              const [wallet] = await tx.$queryRawUnsafe<any[]>(
+                `SELECT id, balance FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
+                userId
+              );
+              if (wallet) {
+                const newBal = new Decimal(wallet.balance.toString()).plus(allocated);
+                await tx.wallet.update({
+                  where: { id: wallet.id },
+                  data: { balance: newBal },
+                });
+
+                await tx.refund.create({
+                  data: {
+                    packageId: exec.packageId,
+                    userId,
+                    amount: allocated,
+                    reason: `MEDIA_DELETED_SLOT_${exec.id}`,
+                  },
+                });
+
+                await tx.ledgerEntry.create({
+                  data: {
+                    walletId: wallet.id,
+                    amount: allocated,
+                    type: "PACKAGE_REFUND" as any,
+                    referenceId: `REF_SLOT_${exec.id}`,
+                    description: `Slot Refund for Deleted Post in Package #${exec.packageId}`,
+                  },
+                });
+              }
+            }
+          });
+          continue;
+        }
+
+        // 3. Target
+        let target = permalink;
+        if (!target || target.trim() === "") {
+          target = `https://www.instagram.com/${handle?.replace(/^@/, "") || "account"}`;
+        }
+
+        const allocatedCharge = new Decimal(exec.allocatedCharge.toString());
+
+        // 4. Create child order (prepaid, real charge) and outbox event in one transaction
+        await prisma.$transaction(async (tx) => {
+          const childOrder = await tx.order.create({
+            data: {
+              userId,
+              serviceId,
+              target,
+              quantity: exec.quantity,
+              charge: allocatedCharge, // Real charge! Never 0 to preserve partial refund calculation
+              isPrepaid: true,          // Prepaid upfront by package reserve
+              status: OrderStatus.PENDING,
+              startCount: 0,
+              remains: exec.quantity,
+              providerId: providerId || null,
+              packageExecutionId: exec.id,
+            },
+          });
+
+          await tx.packageExecution.update({
+            where: { id: exec.id },
+            data: {
+              status: "DISPATCHED" as any,
+              orderId: childOrder.id,
+            },
+          });
+
+          await tx.outboxEvent.create({
+            data: {
+              aggregate: "ORDER",
+              eventType: "ORDER_CREATED",
+              payload: {
+                orderId: childOrder.id,
+                packageId: exec.packageId,
+                ruleId: exec.ruleId,
+                packageExecutionId: exec.id,
+                serviceId,
+                target,
+                quantity: exec.quantity,
+                isPrepaid: true,
+              },
+              status: OutboxStatus.PENDING,
+            },
+          });
+        });
+      } catch (execErr: any) {
+        logger.error({ err: execErr.message }, `[Package Engine] Error dispatching execution #${exec.id}`);
+      }
     }
   }
 }

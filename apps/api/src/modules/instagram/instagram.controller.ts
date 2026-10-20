@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Param,
   Query,
@@ -9,89 +10,97 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
-import { InstagramService, ConnectAccountDto } from "./instagram.service";
+import { InstagramService } from "./instagram.service";
 import { JwtAuthGuard } from "../../common/jwt-auth.guard";
 import { CurrentUser, CurrentUserData } from "../../common/current-user.decorator";
-import { InstagramConnectInputSchema } from "@smm/contracts";
 
-@ApiTags("Instagram Integrations")
-@Controller("integrations/instagram")
-export class InstagramController {
+@ApiTags("Connections Engine (Instagram Graph API)")
+@Controller("connections")
+export class ConnectionsController {
   constructor(private readonly instagramService: InstagramService) {}
 
-  @Get("connect")
+  @Post("instagram/start")
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: "Get Official Instagram OAuth Authorization URL" })
-  getConnectUrl(@CurrentUser() user: CurrentUserData) {
-    return this.instagramService.getConnectUrl(user.id);
+  @ApiOperation({ summary: "Generate OAuth state and authorization URL (10m TTL)" })
+  startInstagramConnect(@CurrentUser() user: CurrentUserData) {
+    return this.instagramService.startConnect(user.id);
   }
 
-  @Get("callback")
-  @ApiOperation({ summary: "OAuth Callback from Instagram / Facebook Graph API" })
-  async handleCallback(
+  @Get("instagram/callback")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Validate OAuth callback, exchange token, save SourceConnection" })
+  async handleInstagramCallback(
+    @CurrentUser() user: CurrentUserData,
     @Query("code") code: string,
     @Query("state") state: string
   ) {
     if (!code) {
       throw new BadRequestException("Authorization code is required.");
     }
-    // Extract userId from state
-    const userId = state?.split(":")[1] || "anonymous";
-    return {
-      success: true,
-      message: "Instagram account authorized successfully.",
-      code,
-      userId,
-    };
+    if (!state) {
+      throw new BadRequestException("OAuth state parameter is required.");
+    }
+    return this.instagramService.handleCallback(user.id, code, state);
   }
 
-  @Post("connect")
+  @Get()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: "Directly Connect or Authorize an Instagram Account" })
-  async connectAccount(
+  @ApiOperation({ summary: "List active platform connections for user" })
+  async listConnections(@CurrentUser() user: CurrentUserData) {
+    return this.instagramService.listConnections(user.id);
+  }
+
+  @Delete(":id")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Revoke platform connection and pause active packages" })
+  async deleteConnection(
     @CurrentUser() user: CurrentUserData,
-    @Body() body: any
+    @Param("id") id: string
   ) {
-    const parseRes = InstagramConnectInputSchema.safeParse(body);
-    if (!parseRes.success) {
-      const err = parseRes.error.errors[0]?.message || "Invalid connection details";
-      throw new BadRequestException(err);
-    }
-    return this.instagramService.connectAccount(user.id, parseRes.data);
+    return this.instagramService.deleteConnection(user.id, id);
+  }
+
+  @Post("instagram/deauthorize")
+  @ApiOperation({ summary: "Meta deauthorization callback" })
+  async handleDeauthorize(@Body("user_id") userId: string) {
+    return this.instagramService.handleDeauthorize(userId || "unknown");
+  }
+
+  @Post("instagram/data-deletion")
+  @ApiOperation({ summary: "Meta user data deletion callback" })
+  async handleDataDeletion(@Body("user_id") userId: string) {
+    await this.instagramService.handleDeauthorize(userId || "unknown");
+    return {
+      url: "https://smmpanel.internal/data-deletion-status",
+      confirmation_code: `del_${Date.now()}`,
+    };
+  }
+}
+
+@ApiTags("Instagram Integrations (Legacy Alias)")
+@Controller("integrations/instagram")
+export class InstagramLegacyController {
+  constructor(private readonly instagramService: InstagramService) {}
+
+  @Get("connect")
+  @UseGuards(JwtAuthGuard)
+  getConnectUrl(@CurrentUser() user: CurrentUserData) {
+    return this.instagramService.startConnect(user.id);
+  }
+
+  @Get("callback")
+  @UseGuards(JwtAuthGuard)
+  handleCallback(
+    @CurrentUser() user: CurrentUserData,
+    @Query("code") code: string,
+    @Query("state") state: string
+  ) {
+    return this.instagramService.handleCallback(user.id, code, state);
   }
 
   @Get("status")
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: "Get Connected Instagram Accounts & Scopes" })
-  async getStatus(@CurrentUser() user: CurrentUserData) {
-    return this.instagramService.getStatus(user.id);
-  }
-
-  @Post("disconnect")
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: "Disconnect Instagram Account and Revoke Tokens" })
-  async disconnect(
-    @CurrentUser() user: CurrentUserData,
-    @Body("connectionId") connectionId: string
-  ) {
-    if (!connectionId) {
-      throw new BadRequestException("connectionId is required.");
-    }
-    return this.instagramService.disconnect(user.id, connectionId);
-  }
-
-  @Post("poll-now")
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: "Trigger On-Demand Post Detection for Connection" })
-  async pollNow(
-    @CurrentUser() user: CurrentUserData,
-    @Body("connectionId") connectionId: string,
-    @Body("packageId") packageId?: string
-  ) {
-    if (!connectionId) {
-      throw new BadRequestException("connectionId is required.");
-    }
-    await this.instagramService.verifyConnectionEligibility(user.id, connectionId);
-    return this.instagramService.detectNewMedia(connectionId, packageId);
+  getStatus(@CurrentUser() user: CurrentUserData) {
+    return this.instagramService.listConnections(user.id);
   }
 }

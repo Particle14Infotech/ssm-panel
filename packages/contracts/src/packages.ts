@@ -29,14 +29,35 @@ export const PackageItemInputSchema = z.object({
 });
 export type PackageItemInput = z.infer<typeof PackageItemInputSchema>;
 
+export const PackageRuleKindSchema = z.enum(["POST_TRIGGERED", "TIME_DRIP"]);
+export type PackageRuleKind = z.infer<typeof PackageRuleKindSchema>;
+
+export const PackageRuleInputSchema = z.object({
+  kind: PackageRuleKindSchema,
+  serviceId: z.string().min(1, "Service ID is required"),
+  quantityPerPost: z.number().int().nonnegative().default(0),
+  totalQuantity: z.number().int().nonnegative().optional(),
+  mediaTypes: z.array(MediaTypeSchema).default([]),
+  delayMinutes: z.number().int().nonnegative().default(0),
+  deliveryWindowMin: z.number().int().nonnegative().default(0),
+  maxPosts: z.number().int().positive().default(1),
+  maxPerDay: z.number().int().nonnegative().default(0),
+  minSpacingMin: z.number().int().nonnegative().default(0),
+});
+export type PackageRuleInput = z.infer<typeof PackageRuleInputSchema>;
+
 export const PackageQuoteInputSchema = z.object({
   name: z.string().optional(),
+  handle: z.string().optional(),
   connectionId: z.string().optional(),
   accountUsername: z.string().optional(),
   autoPostEnabled: z.boolean().default(true).optional(),
-  items: z.array(PackageItemInputSchema).min(1, "At least one item is required").max(10, "Maximum 10 items per package"),
-  days: z.number().int().min(2, "Duration must be at least 2 days").max(365, "Maximum duration is 365 days"),
+  durationDays: z.number().int().min(1).max(365).optional(),
+  days: z.number().int().min(1).max(365).optional(),
+  rules: z.array(PackageRuleInputSchema).optional(),
+  items: z.array(PackageItemInputSchema).optional(),
   intervalHours: z.number().int().min(1).max(72).optional(),
+  consentRulesUnderstood: z.boolean().optional(),
 });
 export type PackageQuoteInput = z.infer<typeof PackageQuoteInputSchema>;
 
@@ -116,6 +137,22 @@ export const PackageRunStatusSchema = z.enum([
   "CANCELLED",
 ]);
 export type PackageRunStatus = z.infer<typeof PackageRunStatusSchema>;
+
+export const PackageExecutionStatusSchema = z.enum([
+  "DETECTED",
+  "SCHEDULED",
+  "DISPATCHED",
+  "COMPLETED",
+  "PARTIAL",
+  "FAILED",
+  "CANCELLED",
+  "SKIPPED_PAUSED",
+  "SKIPPED_QUOTA",
+  "SKIPPED_TYPE",
+  "SKIPPED_DELETED",
+  "SKIPPED_LIMIT",
+]);
+export type PackageExecutionStatus = z.infer<typeof PackageExecutionStatusSchema>;
 
 // Instagram Connection Contracts
 export const InstagramConnectInputSchema = z.object({

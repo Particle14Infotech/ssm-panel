@@ -111,6 +111,20 @@ export class PackagesController {
     return this.packagesService.getPackageExecutions(user.id, id);
   }
 
+  @Post(":id/trigger")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Manually trigger post execution via Instagram post/reel link" })
+  async triggerManualPost(
+    @CurrentUser() user: CurrentUserData,
+    @Param("id") id: string,
+    @Body() body: { url: string; mediaType?: string }
+  ) {
+    if (!body || !body.url) {
+      throw new BadRequestException("url is required to trigger package post execution.");
+    }
+    return this.packagesService.triggerManualPost(user.id, id, body.url, body.mediaType);
+  }
+
   @Post(":id/cancel")
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Cancel Remaining Runs with Instant Wallet Refund" })
