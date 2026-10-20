@@ -127,7 +127,7 @@ export class PackagesController {
 
   @Post(":id/cancel")
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: "Cancel Remaining Runs with Instant Wallet Refund" })
+  @ApiOperation({ summary: "Cancel Remaining Runs with Automated Wallet Refund" })
   async cancelPackage(
     @CurrentUser() user: CurrentUserData,
     @Param("id") id: string

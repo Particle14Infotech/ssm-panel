@@ -1,0 +1,44 @@
+﻿GIT_HEAD: 16481e1a22b72d38619294db3f93d8fb31a68064
+GIT_BRANCH: feature/package-engine
+TEST_DB: smm_db
+COMMAND: pnpm --filter @smm/api exec jest --rootDir . test/package-engine-p5-invariants.spec.ts --forceExit
+FAIL test/package-engine-p5-invariants.spec.ts
+  PHASE P5: Complete 11-Scenario Invariant & Security Verification Suite
+    √ Scenario 1: purchased = consumed + refunded + remaining holds after randomized execution sequences (57 ms)
+    × Scenario 2: 50 parallel triggers on one link create exactly one execution and one order (141 ms)
+    √ Scenario 3: quota never exceeds maxPosts under parallel triggers (17 ms)
+    √ Scenario 4: cancel vs trigger vs dispatch race: nothing dispatches after cancel, refund exactly once (121 ms)
+    √ Scenario 5: first poll never processes old posts (baseline filtering) (1 ms)
+    √ Scenario 6: sum(quantity) === Q and sum(allocatedCharge) === charge for TIME_DRIP, each run within min/max (4 ms)
+    √ Scenario 7: prepaid child partial refund uses charge x remains / quantity and is NEVER 0 (1 ms)
+    √ Scenario 8: settlement at package expiry refunds unused reserve exactly once (20 ms)
+    √ Scenario 9: token expiry -> NEEDS_RECONNECT, deleted media -> SKIPPED_DELETED + slot refund (20 ms)
+    √ Scenario 10: IDOR protection: user A cannot trigger, read or cancel user B's package (9 ms)
+    √ Scenario 11: no path credits a wallet except verified payment, admin adjustment with reason, refund, bonus (2 ms)
+
+  ● PHASE P5: Complete 11-Scenario Invariant & Security Verification Suite › Scenario 2: 50 parallel triggers on one link create exactly one execution and one order
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 50
+
+    [0m [90m 308 |[39m     }
+     [90m 309 |[39m
+    [31m[1m>[22m[39m[90m 310 |[39m     expect(successfulInserts)[33m.[39mtoBe([35m1[39m)[33m;[39m
+     [90m     |[39m                               [31m[1m^[22m[39m
+     [90m 311 |[39m     expect(duplicateErrors)[33m.[39mtoBe([35m49[39m)[33m;[39m
+     [90m 312 |[39m
+     [90m 313 |[39m     [90m// Exactly 1 execution exists[39m[0m
+
+      at Object.<anonymous> (test/package-engine-p5-invariants.spec.ts:310:31)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 10 passed, 11 total
+Snapshots:   0 total
+Time:        1.278 s, estimated 2 s
+Ran all test suites matching /test\\package-engine-p5-invariants.spec.ts/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?
+undefined
+D:\projects\internship projects\SMM\apps\api:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: jest --rootDir . test/package-engine-p5-invariants.spec.ts --forceExit

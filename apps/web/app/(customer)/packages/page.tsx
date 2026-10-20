@@ -55,7 +55,7 @@ export default function PackagesListPage() {
           <div className="max-w-md mx-auto space-y-1.5">
             <h3 className="text-lg font-semibold text-white">No active packages yet</h3>
             <p className="text-sm text-slate-400">
-              Bundle followers, likes, and views over 7 to 30 days to build steady, organic-looking social momentum.
+              Bundle followers, likes, and views over 7 to 30 days to build steady, scheduled social momentum.
             </p>
           </div>
           <div className="pt-2">

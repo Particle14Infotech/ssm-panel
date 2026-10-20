@@ -637,7 +637,7 @@ export function PackageOrderBuilder() {
               {selectedAccount ? `@${selectedAccount.username}` : "Select account on left"}
             </div>
             <div className="text-[11px] text-slate-400">
-              Auto-detects eligible new posts & reels
+              Eligible new posts & reels triggered via link in dashboard
             </div>
           </div>
 

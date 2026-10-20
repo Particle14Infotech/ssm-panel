@@ -1,0 +1,24 @@
+﻿GIT_HEAD: 16481e1a22b72d38619294db3f93d8fb31a68064
+GIT_BRANCH: feature/package-engine
+TEST_DB: smm_db
+COMMAND: pnpm --filter @smm/api exec jest --rootDir . test/package-engine-p5-invariants.spec.ts --forceExit
+PASS test/package-engine-p5-invariants.spec.ts
+  PHASE P5: Complete 11-Scenario Invariant & Security Verification Suite
+    √ Scenario 1: purchased = consumed + refunded + remaining holds after randomized execution sequences (51 ms)
+    √ Scenario 2: 50 parallel triggers on one link create exactly one execution and one order (130 ms)
+    √ Scenario 3: quota never exceeds maxPosts under parallel triggers (16 ms)
+    √ Scenario 4: cancel vs trigger vs dispatch race: nothing dispatches after cancel, refund exactly once (121 ms)
+    √ Scenario 5: first poll never processes old posts (baseline filtering) (1 ms)
+    √ Scenario 6: sum(quantity) === Q and sum(allocatedCharge) === charge for TIME_DRIP, each run within min/max (3 ms)
+    √ Scenario 7: prepaid child partial refund uses charge x remains / quantity and is NEVER 0 (1 ms)
+    √ Scenario 8: settlement at package expiry refunds unused reserve exactly once (19 ms)
+    √ Scenario 9: token expiry -> NEEDS_RECONNECT, deleted media -> SKIPPED_DELETED + slot refund (17 ms)
+    √ Scenario 10: IDOR protection: user A cannot trigger, read or cancel user B's package (7 ms)
+    √ Scenario 11: no path credits a wallet except verified payment, admin adjustment with reason, refund, bonus (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       11 passed, 11 total
+Snapshots:   0 total
+Time:        1.205 s, estimated 2 s
+Ran all test suites matching /test\\package-engine-p5-invariants.spec.ts/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

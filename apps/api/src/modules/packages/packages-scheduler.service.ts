@@ -30,6 +30,7 @@ export class PackagesSchedulerService implements OnModuleInit, OnModuleDestroy {
       this.schedulerInterval = setInterval(async () => {
         try {
           await this.processDueExecutions();
+          await this.settleExpiredPackages();
         } catch (err: any) {
           this.logger.error(`Error in periodic package execution loop: ${err.message}`);
         }
@@ -276,5 +277,106 @@ export class PackagesSchedulerService implements OnModuleInit, OnModuleDestroy {
     }
 
     return { dispatchedCount, errorsCount };
+  }
+
+  /**
+   * Sweeps and settles packages whose endAt <= NOW()
+   * Idempotent: refunds unused reserve exactly once via PACKAGE_REFUND and unique constraint.
+   */
+  async settleExpiredPackages(): Promise<{ settledCount: number }> {
+    if (!this.prisma.isConnected) return { settledCount: 0 };
+
+    const now = new Date();
+    const expiredPackages = await this.prisma.package.findMany({
+      where: {
+        status: PackageStatus.ACTIVE,
+        endAt: { lte: now },
+      },
+      select: { id: true, userId: true, reserveTotal: true },
+    });
+
+    let settledCount = 0;
+    for (const pkg of expiredPackages) {
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          const [lockedPkg] = await tx.$queryRawUnsafe<any[]>(
+            `SELECT * FROM "Package" WHERE id = $1 FOR UPDATE`,
+            pkg.id
+          );
+          if (!lockedPkg || lockedPkg.status !== PackageStatus.ACTIVE) return;
+
+          // Compute consumed reserve
+          const dispatched = await tx.packageExecution.findMany({
+            where: {
+              packageId: pkg.id,
+              status: { in: [PackageExecutionStatus.DISPATCHED, PackageExecutionStatus.COMPLETED] },
+            },
+            select: { allocatedCharge: true },
+          });
+
+          let consumed = new Decimal(0);
+          for (const e of dispatched) {
+            consumed = consumed.plus(new Decimal(e.allocatedCharge.toString()));
+          }
+
+          const reserveTotal = new Decimal(lockedPkg.reserveTotal.toString());
+          const unusedReserve = Decimal.max(0, reserveTotal.minus(consumed));
+
+          if (unusedReserve.greaterThan(0)) {
+            const [walletRow] = await tx.$queryRawUnsafe<any[]>(
+              `SELECT id, balance FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
+              pkg.userId
+            );
+
+            if (walletRow) {
+              const newBalance = new Decimal(walletRow.balance.toString()).plus(unusedReserve);
+              await tx.wallet.update({
+                where: { id: walletRow.id },
+                data: { balance: newBalance },
+              });
+
+              await tx.refund.create({
+                data: {
+                  packageId: pkg.id,
+                  userId: pkg.userId,
+                  amount: unusedReserve,
+                  reason: "PACKAGE_SETTLEMENT_UNUSED_RESERVE",
+                },
+              });
+
+              await tx.ledgerEntry.create({
+                data: {
+                  walletId: walletRow.id,
+                  amount: unusedReserve,
+                  type: TransactionType.PACKAGE_REFUND,
+                  referenceId: `REF_PKG_${pkg.id}_SETTLE`,
+                  description: `Package Expiry Settlement Refund for #${pkg.id}`,
+                },
+              });
+            }
+          }
+
+          // Cancel remaining scheduled executions
+          await tx.packageExecution.updateMany({
+            where: { packageId: pkg.id, status: PackageExecutionStatus.SCHEDULED },
+            data: {
+              status: PackageExecutionStatus.CANCELLED,
+              skipReason: "Package duration expired",
+            },
+          });
+
+          await tx.package.update({
+            where: { id: pkg.id },
+            data: { status: PackageStatus.COMPLETED },
+          });
+
+          settledCount++;
+        });
+      } catch (err: any) {
+        this.logger.error(`Error settling expired package ${pkg.id}: ${err.message}`);
+      }
+    }
+
+    return { settledCount };
   }
 }

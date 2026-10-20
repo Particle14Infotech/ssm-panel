@@ -5,7 +5,7 @@
 The **Package Engine** provides automated multi-service growth bundles combining:
 - **`POST_TRIGGERED` Rules**: Monitoring of new Instagram posts and reels for automated likes, views, and engagement. Supports manual triggers via official Instagram post/reel links without requiring live Meta API credentials.
 - **`TIME_DRIP` Rules**: Spread total quantities (e.g. followers or profile-level services) evenly over configured duration days with bounded random jitter ($\pm 15\%$).
-- **Escrow-Style Financial Model**: Integer paise precision with upfront wallet reservation, immutable ledger logging, and guaranteed reconciliation invariant:
+- **Escrow-Style Financial Model**: Integer paise precision with upfront wallet reservation, immutable ledger logging, and mathematically verified reconciliation invariant:
   $$\text{purchased} \equiv \text{consumed} + \text{refunded} + \text{remaining}$$
 
 ---
@@ -75,6 +75,7 @@ All calculations operate in integer paise (₹0.01) using Decimal arithmetic:
   ```
 - Evaluates minimum spacing (`minSpacingMin`) and daily cap (`maxPerDay`).
 - Inserts `PackageExecution` with `executeAt = max(now, publishedAt + delayMinutes)`.
+- **Handling of Deleted Posts in Manual Mode**: Manual trigger never fetches the target URL. If a user triggers an already deleted or non-existent post URL, the child order is dispatched to the provider pipeline; the upstream provider returns an order failure/cancellation, which triggers the standard provider retry policy and ultimately issues an order refund to the user's wallet.
 
 ### 4.2 TIME_DRIP Precomputation
 - Computed at purchase:
@@ -90,5 +91,5 @@ All calculations operate in integer paise (₹0.01) using Decimal arithmetic:
   LIMIT 25
   FOR UPDATE OF e SKIP LOCKED
   ```
-- Re-verifies media existence. If media is marked `DELETED`, sets execution `SKIPPED_DELETED` and automatically credits the slot reserve back to the user's wallet via `PACKAGE_REFUND`.
+- **Connected Mode Only**: For connected accounts (`SOURCE_INSTAGRAM_ENABLED=true`), media existence is validated via Graph API / Mock Instagram. If media is marked `DELETED` prior to dispatch, the execution is set to `SKIPPED_DELETED` and the slot reserve is automatically credited back via `PACKAGE_REFUND`. `SKIPPED_DELETED` exists strictly for connected mode.
 - Creates prepaid child order and Outbox event (`ORDER_CREATED`) in one atomic transaction.

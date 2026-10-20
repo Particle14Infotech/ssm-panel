@@ -625,16 +625,31 @@ export class PackagesService {
       throw new BadRequestException(`Cannot pause package with status "${pkg.status}".`);
     }
 
+    // Check max pause days setting
+    let maxPauseDays = 14;
+    try {
+      const setting = await this.prisma.systemSetting.findUnique({
+        where: { key: "PACKAGE_SETTINGS" },
+      });
+      if (setting?.value && (setting.value as any).packageMaxPauseDays) {
+        maxPauseDays = Number((setting.value as any).packageMaxPauseDays);
+      }
+    } catch {}
+
+    if (pkg.pausedDays >= maxPauseDays) {
+      throw new BadRequestException(`Maximum pause days limit reached for this package (${maxPauseDays} days).`);
+    }
+
     await this.prisma.package.update({
       where: { id: packageId },
       data: { status: PackageStatus.PAUSED },
     });
 
-    return { success: true, status: PackageStatus.PAUSED };
+    return { success: true, status: PackageStatus.PAUSED, maxPauseDays, pausedDays: pkg.pausedDays };
   }
 
   /**
-   * Resumes a paused package
+   * Resumes a paused package and extends endAt by the pause duration
    */
   async resumePackage(userId: string, packageId: string) {
     if (!this.prisma.isConnected) {
@@ -652,12 +667,27 @@ export class PackagesService {
       throw new BadRequestException(`Cannot resume package with status "${pkg.status}".`);
     }
 
+    // Calculate pause duration and extend endAt
+    const pauseDurationMs = Math.max(0, Date.now() - new Date(pkg.updatedAt).getTime());
+    const pauseDays = Math.max(1, Math.ceil(pauseDurationMs / (24 * 3600 * 1000)));
+    const newPausedDays = pkg.pausedDays + pauseDays;
+    const newEndAt = new Date(new Date(pkg.endAt).getTime() + pauseDurationMs);
+
     await this.prisma.package.update({
       where: { id: packageId },
-      data: { status: PackageStatus.ACTIVE },
+      data: {
+        status: PackageStatus.ACTIVE,
+        pausedDays: newPausedDays,
+        endAt: newEndAt,
+      },
     });
 
-    return { success: true, status: PackageStatus.ACTIVE };
+    return {
+      success: true,
+      status: PackageStatus.ACTIVE,
+      pausedDays: newPausedDays,
+      endAt: newEndAt.toISOString(),
+    };
   }
 
   /**

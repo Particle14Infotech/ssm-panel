@@ -709,7 +709,7 @@ export default function PackageDetailPage() {
                 <span className="font-mono text-white font-bold">{scheduledRuns.length}</span>
               </div>
               <div className="flex items-center justify-between text-slate-400">
-                <span>Instant Wallet Refund:</span>
+                <span>Automated Wallet Refund:</span>
                 <span className="font-mono text-[#D8EC8D] font-bold text-sm">
                   ₹{refundableSum.toFixed(2)}
                 </span>
