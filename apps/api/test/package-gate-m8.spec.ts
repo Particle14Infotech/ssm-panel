@@ -878,12 +878,12 @@ describe("Milestone M8: Final Comprehensive Gate (14 Invariant & Verification Sc
     });
 
     // Settle package at expiry
-    const settle1 = await packagesService.settlePackage(pkg.package.id);
+    const settle1: any = await packagesService.settlePackage(pkg.package.id);
     expect(settle1.success).toBe(true);
     expect(settle1.settlementRefund).toBeGreaterThan(0);
 
     // Subsequent settlement on already completed package returns 0 refund
-    const settle2 = await packagesService.settlePackage(pkg.package.id);
+    const settle2: any = await packagesService.settlePackage(pkg.package.id);
     expect(settle2.message).toBe("Package already settled.");
   });
 

@@ -3,7 +3,7 @@ import { Decimal } from "decimal.js";
 export interface FollowersDripInput {
   totalQuantity: number;
   serviceMin: number;
-  serviceMax: number;
+  serviceMax?: number;
   days: number;
   intervalHours: number;
   ratePer1000: number;

@@ -14,6 +14,8 @@ export const PackageItemInputSchema = z.object({
   enabled: z.boolean().default(true).optional(),
   quantityPerPost: z.number().int().nonnegative().optional(),
   maximumPostsToProcess: z.number().int().positive().optional(),
+  maxPosts: z.number().int().positive().optional(),
+  deliveryWindowMin: z.number().int().nonnegative().optional(),
   delayAfterPublication: z.number().int().nonnegative().optional(), // in minutes
   eligibleMediaTypes: z.array(MediaTypeSchema).optional(),
   minimumIntervalBetweenActions: z.number().int().nonnegative().optional(),
@@ -202,12 +204,14 @@ export type TriggerPreviewInput = z.infer<typeof TriggerPreviewInputSchema>;
 export const TriggerExecutionInputSchema = z.object({
   url: z.string().url("A valid URL is required"),
   mediaType: z.string().optional(),
-  rules: z.array(
-    z.object({
-      ruleId: z.string(),
-      quantity: z.number().int().positive(),
-      deliveryWindowMin: z.number().int().positive().optional(),
-    })
-  ),
+  rules: z
+    .array(
+      z.object({
+        ruleId: z.string(),
+        quantity: z.number().int().positive(),
+        deliveryWindowMin: z.number().int().positive().optional(),
+      })
+    )
+    .optional(),
 });
 export type TriggerExecutionInput = z.infer<typeof TriggerExecutionInputSchema>;
