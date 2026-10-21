@@ -45,7 +45,7 @@ export default function CustomerDashboardPage() {
     {
       id: "ann_1",
       title: "Fast-Track UPI Gateways Active",
-      content: "All UPI QR codes and instant PhonePe/GPay deposits are credited within 10-30 seconds with automated ledger verification.",
+      content: "All UPI QR codes and automated PhonePe/GPay deposits are credited within 10-30 seconds with automated ledger verification.",
       type: "SUCCESS",
     },
     {
@@ -308,7 +308,7 @@ export default function CustomerDashboardPage() {
                   />
                 </div>
                 <p className="text-xs text-slate-400 font-sans">
-                  Instant spendable ledger liquidity
+                  Available spendable ledger liquidity
                 </p>
               </div>
 
@@ -416,7 +416,7 @@ export default function CustomerDashboardPage() {
                     Pipeline Operational
                   </div>
                   <p className="text-xs text-slate-400 font-sans leading-relaxed">
-                    Automated provider failover routes orders instantaneously with zero stalls.
+                    Automated provider failover routes orders automatically with zero stalls.
                   </p>
                 </div>
               </div>
@@ -480,7 +480,7 @@ export default function CustomerDashboardPage() {
                   <span>Quick Launchpad</span>
                 </span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#d8ec8d]/10 text-[#d8ec8d] font-bold">
-                  Instant
+                  Direct
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-sans mb-3">
@@ -756,7 +756,7 @@ export default function CustomerDashboardPage() {
                   </span>
                 </div>
                 <p className="text-xs text-slate-400 font-sans">
-                  Cryptographically verified order dispatches scoped to your account.
+                  Cryptographically signed order dispatches scoped to your account.
                 </p>
               </div>
 

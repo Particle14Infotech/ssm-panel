@@ -1,7 +1,17 @@
 import { Injectable, BadRequestException, Logger } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
-import { PackageQuoteInput, PackageQuoteResponse, PackageRunPreview } from "@smm/contracts";
+import { PlatformsService } from "../platforms/platforms.service";
+import {
+  PackageQuoteInput,
+  PackageQuoteResponse,
+  PackageRunPreview,
+  PackageQuoteItem,
+} from "@smm/contracts";
 import { Decimal } from "decimal.js";
+import {
+  normalizeHandle,
+  validateHandle,
+} from "../platforms/platform-rules.util";
 
 const DEFAULT_MARGIN_FLOOR = 0.15; // 15% floor
 
@@ -24,99 +34,149 @@ export interface NormalizedRule {
 export class PackagesQuoteService {
   private readonly logger = new Logger(PackagesQuoteService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly platformsService?: PlatformsService
+  ) {}
 
   /**
    * Pure quote calculation with zero DB side effects.
    * Guarantees:
-   * 1. unitCharge = ceil(rateSnapshot x quantityPerPost / 1000)
-   * 2. POST_TRIGGERED reserve = unitCharge x maxPosts
-   * 3. TIME_DRIP reserve = ceil(rate x totalQty / 1000) split over runs, last run absorbs remainder
-   * 4. sum(run.quantity) === totalQty and sum(run.chargeShare) === reserve
-   * 5. Warning if Q is too small to split across durationDays
-   * 6. Admin alert logged when margin < floor
+   * 1. Validates platform and normalized handle against platform config.
+   * 2. Checks handle against admin blocklist.
+   * 3. unitCharge = ceil(rateSnapshot x maxQtyPerPost / 1000)
+   * 4. POST_TRIGGERED reserve = unitCharge x maxPosts
+   * 5. TIME_DRIP reserve = ceil(rate x totalQty / 1000) split over runs, last run absorbs remainder
+   * 6. sum(run.quantity) === totalQty and sum(run.chargeShare) === reserve
+   * 7. Warning if Q is too small to split across durationDays
+   * 8. Disclaimer label: "Maximum total; unused is refunded at the end"
+   * 9. Equals exact purchase price with zero state mutations.
    */
   async calculateQuote(input: PackageQuoteInput): Promise<PackageQuoteResponse> {
-    const durationDays = input.durationDays || input.days || 30;
-    const intervalHours = input.intervalHours || 24;
+    const platform = (input.platform || "instagram").toLowerCase().trim();
+    const handleRaw = input.handle || (input as any).accountUsername || "";
     const warnings: string[] = [];
 
-    // 1. Normalize input rules (supports new 'rules' and legacy 'items')
-    const normalizedRules: NormalizedRule[] = [];
+    // 1. Validate platform config and handle if handle is provided
+    let normalizedHandle = "";
+    if (handleRaw) {
+      if (this.platformsService) {
+        const config = await this.platformsService.getPlatformConfig(platform);
+        normalizedHandle = validateHandle(handleRaw, config);
 
-    if (input.rules && input.rules.length > 0) {
-      for (const r of input.rules) {
-        normalizedRules.push({
-          kind: r.kind,
-          serviceId: r.serviceId,
-          quantityPerPost: r.quantityPerPost || 0,
-          totalQuantity: r.totalQuantity || (r.quantityPerPost ? r.quantityPerPost * (r.maxPosts || 1) : 0),
-          mediaTypes: r.mediaTypes || ["REEL", "IMAGE", "VIDEO"],
-          delayMinutes: r.delayMinutes || 0,
-          deliveryWindowMin: r.deliveryWindowMin || 0,
-          maxPosts: r.maxPosts || (r.kind === "POST_TRIGGERED" ? 10 : 1),
-          maxPerDay: r.maxPerDay || 0,
-          minSpacingMin: r.minSpacingMin || 0,
-        });
-      }
-    } else if (input.items && input.items.length > 0) {
-      for (const rawItem of input.items) {
-        const item = rawItem as any;
-        const isPostTriggered = item.targetType === "POST_OR_REEL" && (item.quantityPerPost || 0) > 0;
-        const maxPosts = item.runs || item.maximumPostsToProcess || (isPostTriggered && item.quantity && item.quantityPerPost ? Math.floor(item.quantity / item.quantityPerPost) : (isPostTriggered ? 10 : 1));
-        const totalQuantity = item.totalQuantity || item.quantity || (item.quantityPerPost ? item.quantityPerPost * maxPosts : 0);
-        const quantityPerPost = item.quantityPerPost || (totalQuantity ? Math.floor(totalQuantity / maxPosts) : 0);
-
-        normalizedRules.push({
-          kind: isPostTriggered ? "POST_TRIGGERED" : "TIME_DRIP",
-          serviceId: item.serviceId,
-          quantityPerPost,
-          totalQuantity,
-          mediaTypes: item.eligibleMediaTypes || ["REEL", "IMAGE", "VIDEO"],
-          delayMinutes: item.delayAfterPublication || 0,
-          deliveryWindowMin: 0,
-          maxPosts,
-          maxPerDay: 0,
-          minSpacingMin: item.minimumIntervalBetweenActions || 0,
-          target: item.target,
-          targetType: item.targetType,
-        });
-      }
-    } else {
-      throw new BadRequestException("At least one package rule or item is required.");
-    }
-
-    // 2. Resolve connected account metadata (read-only)
-    let connectionData: PackageQuoteResponse["connection"] = null;
-    if (input.connectionId) {
-      if (this.prisma.isConnected) {
-        const conn = await this.prisma.sourceConnection.findUnique({
-          where: { id: input.connectionId },
-        });
-        if (conn) {
-          connectionData = {
-            id: conn.id,
-            username: conn.username,
-            accountType: "BUSINESS",
-            connectionStatus: conn.status === "ACTIVE" ? "CONNECTED" : "RECONNECT_REQUIRED",
-          };
-          if (conn.status !== "ACTIVE") {
-            warnings.push(`Account @${conn.username} status is ${conn.status}. Reconnection may be required.`);
-          }
-        } else {
-          warnings.push("Specified connection ID could not be found.");
+        const isBlocked = await this.platformsService.isHandleBlocked(platform, normalizedHandle);
+        if (isBlocked) {
+          throw new BadRequestException(
+            `The handle "@${normalizedHandle}" is blocked from creating packages. Please contact support.`
+          );
         }
       } else {
-        connectionData = {
-          id: input.connectionId,
-          username: input.accountUsername || input.handle || "demo_account",
-          accountType: "BUSINESS",
-          connectionStatus: "CONNECTED",
-        };
+        normalizedHandle = normalizeHandle(handleRaw);
       }
     }
 
-    // 3. Fetch all requested services in bulk
+    // 2. Check if there is already an ACTIVE package for this (platform, handle)
+    if (normalizedHandle && this.prisma.isConnected) {
+      const existing = await this.prisma.package.findFirst({
+        where: {
+          platform,
+          handle: normalizedHandle,
+          status: "ACTIVE",
+        },
+      });
+      if (existing) {
+        throw new BadRequestException(
+          `An ACTIVE package already exists for ${platform} handle "@${normalizedHandle}". Complete or cancel it first.`
+        );
+      }
+    }
+
+    // 3. Normalize input into normalized rules:
+    // Support followersDrip + postRules (M3 standard), or rules, or items (legacy)
+    const normalizedRules: NormalizedRule[] = [];
+    let durationDays = input.durationDays || input.days || 30;
+    let intervalHours = 24;
+
+    if (input.followersDrip) {
+      const f = input.followersDrip;
+      durationDays = f.days || durationDays;
+      intervalHours = f.intervalHours || 24;
+      normalizedRules.push({
+        kind: "TIME_DRIP",
+        serviceId: f.serviceId,
+        quantityPerPost: 0,
+        totalQuantity: f.quantity,
+        mediaTypes: [],
+        delayMinutes: 0,
+        deliveryWindowMin: 0,
+        maxPosts: 1,
+        maxPerDay: 0,
+        minSpacingMin: 0,
+      });
+    }
+
+    if (input.postRules && input.postRules.length > 0) {
+      for (const pr of input.postRules) {
+        normalizedRules.push({
+          kind: "POST_TRIGGERED",
+          serviceId: pr.serviceId,
+          quantityPerPost: pr.maxQtyPerPost,
+          totalQuantity: pr.maxQtyPerPost * pr.maxPosts,
+          mediaTypes: ["IMAGE", "VIDEO", "REEL"],
+          delayMinutes: 0,
+          deliveryWindowMin: pr.defaultWindowMin || 180,
+          maxPosts: pr.maxPosts,
+          maxPerDay: 0,
+          minSpacingMin: 15,
+        });
+      }
+    }
+
+    if (normalizedRules.length === 0) {
+      if (input.rules && input.rules.length > 0) {
+        for (const r of input.rules) {
+          normalizedRules.push({
+            kind: r.kind,
+            serviceId: r.serviceId,
+            quantityPerPost: r.quantityPerPost || 0,
+            totalQuantity: r.totalQuantity || (r.quantityPerPost ? r.quantityPerPost * (r.maxPosts || 1) : 0),
+            mediaTypes: r.mediaTypes || ["REEL", "IMAGE", "VIDEO"],
+            delayMinutes: r.delayMinutes || 0,
+            deliveryWindowMin: r.deliveryWindowMin || 0,
+            maxPosts: r.maxPosts || (r.kind === "POST_TRIGGERED" ? 10 : 1),
+            maxPerDay: r.maxPerDay || 0,
+            minSpacingMin: r.minSpacingMin || 0,
+          });
+        }
+      } else if (input.items && input.items.length > 0) {
+        for (const rawItem of input.items) {
+          const item = rawItem as any;
+          const isPostTriggered = item.targetType === "POST_OR_REEL" && (item.quantityPerPost || 0) > 0;
+          const maxPosts = item.runs || item.maximumPostsToProcess || (isPostTriggered && item.quantity && item.quantityPerPost ? Math.floor(item.quantity / item.quantityPerPost) : (isPostTriggered ? 10 : 1));
+          const totalQuantity = item.totalQuantity || item.quantity || (item.quantityPerPost ? item.quantityPerPost * maxPosts : 0);
+          const quantityPerPost = item.quantityPerPost || (totalQuantity ? Math.floor(totalQuantity / maxPosts) : 0);
+
+          normalizedRules.push({
+            kind: isPostTriggered ? "POST_TRIGGERED" : "TIME_DRIP",
+            serviceId: item.serviceId,
+            quantityPerPost,
+            totalQuantity,
+            mediaTypes: item.eligibleMediaTypes || ["REEL", "IMAGE", "VIDEO"],
+            delayMinutes: item.delayAfterPublication || 0,
+            deliveryWindowMin: 0,
+            maxPosts,
+            maxPerDay: 0,
+            minSpacingMin: item.minimumIntervalBetweenActions || 0,
+            target: item.target,
+            targetType: item.targetType,
+          });
+        }
+      } else {
+        throw new BadRequestException("At least one followers drip or post rule is required.");
+      }
+    }
+
+    // 4. Bulk fetch services
     const serviceIds = [...new Set(normalizedRules.map((r) => r.serviceId))];
     let services: any[] = [];
 
@@ -129,7 +189,7 @@ export class PackagesQuoteService {
         id,
         name: `Service #${id}`,
         displayName: `Service #${id}`,
-        platform: "INSTAGRAM",
+        platform: platform.toUpperCase(),
         ratePer1000: new Decimal(120.0),
         minQty: 10,
         maxQty: 500000,
@@ -140,7 +200,7 @@ export class PackagesQuoteService {
 
     const serviceMap = new Map(services.map((s) => [s.id, s]));
 
-    // 4. Compute quotes and timeline
+    // 5. Quote Calculation
     let packageReserveTotal = new Decimal(0);
     const calculatedItems: PackageQuoteResponse["items"] = [];
     const allRuns: PackageRunPreview[] = [];
@@ -186,7 +246,7 @@ export class PackagesQuoteService {
           );
         }
 
-        // unitCharge = ceil(rateSnapshot x quantityPerPost / 1000)
+        // unitCharge = ceil(rateSnapshot x maxQtyPerPost / 1000)
         const unitCharge = new Decimal(ratePer1k)
           .times(rule.quantityPerPost)
           .dividedBy(1000)
@@ -199,17 +259,18 @@ export class PackagesQuoteService {
         calculatedItems.push({
           serviceId: svc.id,
           serviceName: svc.displayName || svc.name,
-          target: rule.target || `@${input.handle || input.accountUsername || "account"}`,
-          targetType: (rule.targetType as any) || "POST_OR_REEL",
+          target: rule.target || (normalizedHandle ? `@${normalizedHandle}` : undefined),
+          targetType: "POST_OR_REEL",
+          kind: "POST_TRIGGERED",
           totalQuantity: rule.quantityPerPost * rule.maxPosts,
           quantityPerPost: rule.quantityPerPost,
-          delayAfterPublication: rule.delayMinutes,
-          eligibleMediaTypes: rule.mediaTypes,
           charge: ruleReserve.toNumber(),
           ratePer1000: ratePer1k.toNumber(),
           runs: rule.maxPosts,
+          maxPosts: rule.maxPosts,
           minQty: svc.minQty,
           maxQty: svc.maxQty,
+          deliveryWindowMin: rule.deliveryWindowMin || 180,
         });
 
         // Add note to timeline
@@ -217,8 +278,8 @@ export class PackagesQuoteService {
           runIndex: 1,
           scheduledAt: new Date(now.getTime() + rule.delayMinutes * 60 * 1000).toISOString(),
           serviceId: svc.id,
-          serviceName: `${svc.displayName || svc.name} (Trigger per post: starts within about ${Math.max(5, rule.delayMinutes)} minutes of post detection)`,
-          target: rule.target || `@${input.handle || input.accountUsername || "account"}`,
+          serviceName: `${svc.displayName || svc.name} (Per-post trigger: up to ${rule.maxPosts} posts, window: ${rule.deliveryWindowMin || 180}m)`,
+          target: rule.target || (normalizedHandle ? `@${normalizedHandle}` : undefined),
           quantity: rule.quantityPerPost,
           chargeShare: unitCharge.toNumber(),
         });
@@ -233,7 +294,7 @@ export class PackagesQuoteService {
 
         const runsPerDay = Math.max(1, Math.floor(24 / intervalHours));
         const maxAllowedRuns = Math.max(1, durationDays * runsPerDay);
-        // runs = clamp(floor(Q / serviceMin), 1, durationDays x runsPerDay)
+        // runs = min(floor(Q / serviceMin), floor(days / interval))
         const calculatedRuns = Math.min(Math.max(1, Math.floor(totalQty / svc.minQty)), maxAllowedRuns);
 
         if (calculatedRuns === 1 && durationDays > 1) {
@@ -250,7 +311,7 @@ export class PackagesQuoteService {
 
         packageReserveTotal = packageReserveTotal.plus(ruleReserve);
 
-        // Precompute run splits
+        // Precompute run splits: remainder goes to first runs
         const baseQty = Math.floor(totalQty / calculatedRuns);
         const remQty = totalQty % calculatedRuns;
 
@@ -259,7 +320,7 @@ export class PackagesQuoteService {
           runQuantities.push(r < remQty ? baseQty + 1 : baseQty);
         }
 
-        // Split charge over runs: last run takes the remainder so sum equals reserve exactly
+        // Split charge over runs: last run takes remainder so sum === ruleReserve
         const runChargeShares: Decimal[] = [];
         let runningSum = new Decimal(0);
 
@@ -277,7 +338,7 @@ export class PackagesQuoteService {
           }
         }
 
-        // Generate schedule preview with bounded jitter
+        // Generate schedule preview
         for (let r = 0; r < calculatedRuns; r++) {
           const offsetHours = r * (24 / runsPerDay);
           const scheduledTime = new Date(now.getTime() + offsetHours * 3600 * 1000);
@@ -286,8 +347,8 @@ export class PackagesQuoteService {
             runIndex: r + 1,
             scheduledAt: scheduledTime.toISOString(),
             serviceId: svc.id,
-            serviceName: `${svc.displayName || svc.name} (Delivery starts within about 10-30 minutes of scheduled run)`,
-            target: rule.target || `@${input.handle || input.accountUsername || "account"}`,
+            serviceName: `${svc.displayName || svc.name} (Time-interval run ${r + 1} of ${calculatedRuns})`,
+            target: rule.target || (normalizedHandle ? `@${normalizedHandle}` : undefined),
             quantity: runQuantities[r],
             chargeShare: runChargeShares[r].toNumber(),
           });
@@ -296,17 +357,18 @@ export class PackagesQuoteService {
         calculatedItems.push({
           serviceId: svc.id,
           serviceName: svc.displayName || svc.name,
-          target: rule.target || `@${input.handle || input.accountUsername || "account"}`,
-          targetType: (rule.targetType as any) || "PROFILE",
+          target: rule.target || (normalizedHandle ? `@${normalizedHandle}` : undefined),
+          targetType: "PROFILE",
+          kind: "TIME_DRIP",
           totalQuantity: totalQty,
           quantityPerPost: runQuantities[0] || totalQty,
-          delayAfterPublication: 0,
-          eligibleMediaTypes: [],
           charge: ruleReserve.toNumber(),
           ratePer1000: ratePer1k.toNumber(),
           runs: calculatedRuns,
+          maxPosts: 1,
           minQty: svc.minQty,
           maxQty: svc.maxQty,
+          deliveryWindowMin: 0,
         });
       }
     }
@@ -318,11 +380,10 @@ export class PackagesQuoteService {
       totalCharge: packageReserveTotal.toNumber(),
       totalRuns: allRuns.length,
       days: durationDays,
-      autoPostEnabled: input.autoPostEnabled ?? true,
-      connection: connectionData,
       items: calculatedItems,
       timeline: allRuns,
       warnings,
+      disclaimer: "Maximum total; unused is refunded at the end",
     };
   }
 }

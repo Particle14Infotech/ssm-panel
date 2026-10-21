@@ -8,8 +8,14 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { PackagesQuoteService } from "./packages-quote.service";
-import { InstagramService } from "../instagram/instagram.service";
-import { PackageQuoteInput, PackagePurchaseInput } from "@smm/contracts";
+import { PlatformsService } from "../platforms/platforms.service";
+import { validateHandle, validatePlatformLink } from "../platforms/platform-rules.util";
+import {
+  PackageQuoteInput,
+  PackagePurchaseInput,
+  TriggerPreviewInput,
+  TriggerExecutionInput,
+} from "@smm/contracts";
 import { Decimal } from "decimal.js";
 import {
   TransactionType,
@@ -18,6 +24,10 @@ import {
   PackageExecutionStatus,
   ExecutionSource,
 } from "@prisma/client";
+import {
+  calculateFollowersDrip,
+  calculatePerPostDrip,
+} from "./drip-engine.util";
 
 // Allowlist regex for Instagram post / reel links (never arbitrary URLs)
 const INSTAGRAM_URL_REGEX = /^https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|tv)\/([a-zA-Z0-9_-]+)/;
@@ -30,7 +40,7 @@ export class PackagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly quoteService: PackagesQuoteService,
-    private readonly instagramService: InstagramService
+    private readonly platformsService: PlatformsService
   ) {}
 
   /**
@@ -46,16 +56,29 @@ export class PackagesService {
    * 2. Pure quote calculation (equals purchase price).
    * 3. One transaction:
    *    - Row lock on Wallet (SELECT ... FOR UPDATE).
+   *    - Check active package per (platform, handle).
+   *    - Check max N handles per user.
+   *    - Check admin handle blocklist.
    *    - PACKAGE_PURCHASE for full reserve.
    *    - Package ACTIVE.
    *    - Rate snapshot recorded.
-   *    - TIME_DRIP executions precomputed with bounded jitter (+/-15%).
+   *    - TIME_DRIP executions precomputed with source SCHEDULE.
    */
   async purchasePackage(userId: string, input: PackagePurchaseInput) {
     const idempotencyKey = input.idempotencyKey;
     if (!idempotencyKey || idempotencyKey.trim() === "") {
       throw new BadRequestException("Idempotency-Key is required for package purchase.");
     }
+
+    if (!input.consentRulesUnderstood) {
+      throw new BadRequestException(
+        "You must acknowledge and agree that platform rules and delivery terms are understood."
+      );
+    }
+
+    const platform = (input.platform || "instagram").toLowerCase().trim();
+    const config = await this.platformsService.getPlatformConfig(platform);
+    const handle = validateHandle(input.handle || (input as any).accountUsername || "", config);
 
     // 1. Check existing idempotent purchase
     if (this.prisma.isConnected) {
@@ -77,16 +100,16 @@ export class PackagesService {
       }
     }
 
-    // 2. Validate connection if connectionId supplied
-    if (input.connectionId && this.prisma.isConnected) {
-      await this.instagramService.verifyConnectionEligibility(userId, input.connectionId);
+    // 2. Check admin handle blocklist
+    const isBlocked = await this.platformsService.isHandleBlocked(platform, handle);
+    if (isBlocked) {
+      throw new BadRequestException(`Handle "@${handle}" is blocked from purchasing packages.`);
     }
 
-    // 3. Authoritative Quote Calculation
+    // 3. Authoritative Quote Calculation (equals purchase price)
     const quote = await this.quoteService.calculateQuote(input);
     const reserveTotal = new Decimal(quote.totalCharge);
 
-    const handle = (input.handle || input.accountUsername || "account").replace(/^@/, "").trim();
     const durationDays = input.durationDays || input.days || 30;
     const startAt = new Date();
     const endAt = new Date(startAt.getTime() + durationDays * 24 * 3600 * 1000);
@@ -97,8 +120,8 @@ export class PackagesService {
       const pkg = {
         id: packageId,
         userId,
+        platform,
         handle,
-        connectionId: input.connectionId || null,
         status: PackageStatus.ACTIVE,
         startAt: startAt.toISOString(),
         endAt: endAt.toISOString(),
@@ -115,7 +138,39 @@ export class PackagesService {
 
     // 4. Atomic Single-Transaction Purchase
     return await this.prisma.$transaction(async (tx) => {
-      // 4a. Lock user's wallet with FOR UPDATE
+      // 4a. Check one ACTIVE package per (platform, handle)
+      const existingActive = await tx.package.findFirst({
+        where: {
+          platform,
+          handle,
+          status: PackageStatus.ACTIVE,
+        },
+      });
+      if (existingActive) {
+        throw new BadRequestException(
+          `An ACTIVE package already exists for ${platform} handle "@${handle}". Complete or cancel it first.`
+        );
+      }
+
+      // 4b. Check maximum N handles per user
+      const maxHandlesPerUser = 5;
+      const userActivePackages = await tx.package.findMany({
+        where: { userId, status: PackageStatus.ACTIVE },
+        select: { platform: true, handle: true },
+      });
+
+      const uniqueActiveHandles = new Set(
+        userActivePackages.map((p) => `${p.platform.toLowerCase()}:${p.handle.toLowerCase()}`)
+      );
+
+      const targetHandleKey = `${platform}:${handle.toLowerCase()}`;
+      if (!uniqueActiveHandles.has(targetHandleKey) && uniqueActiveHandles.size >= maxHandlesPerUser) {
+        throw new BadRequestException(
+          `Account handle limit reached: you may manage at most ${maxHandlesPerUser} active handles concurrently.`
+        );
+      }
+
+      // 4c. Lock user's wallet with FOR UPDATE
       const [walletRow] = await tx.$queryRawUnsafe<any[]>(
         `SELECT id, balance, currency FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
         userId
@@ -134,33 +189,33 @@ export class PackagesService {
 
       const newBalance = currentBalance.minus(reserveTotal);
 
-      // 4b. Debit wallet
+      // 4d. Debit wallet
       await tx.wallet.update({
         where: { id: walletRow.id },
         data: { balance: newBalance },
       });
 
-      // 4c. Write PACKAGE_PURCHASE ledger entry
+      // 4e. Write PACKAGE_PURCHASE ledger entry
       await tx.ledgerEntry.create({
         data: {
           walletId: walletRow.id,
           amount: reserveTotal.negated(),
           type: TransactionType.PACKAGE_PURCHASE,
           idempotencyKey,
-          description: `Package Purchase Reserve: @${handle} (${durationDays} days)`,
+          description: `Package Purchase Reserve: @${handle} (${platform}, ${durationDays} days)`,
         },
       });
 
-      // Determine primary rule kind for partial unique index
-      const ruleKind = quote.items[0]?.targetType === "POST_OR_REEL"
+      // Determine primary rule kind
+      const ruleKind = quote.items[0]?.kind === "POST_TRIGGERED" || quote.items[0]?.targetType === "POST_OR_REEL"
         ? PackageRuleKind.POST_TRIGGERED
         : PackageRuleKind.TIME_DRIP;
 
-      // 4d. Create Package
+      // 4f. Create Package
       const pkg = await tx.package.create({
         data: {
           userId,
-          connectionId: input.connectionId || null,
+          platform,
           handle,
           kind: ruleKind,
           status: PackageStatus.ACTIVE,
@@ -189,8 +244,8 @@ export class PackagesService {
             kind,
             serviceId: item.serviceId,
             quantityPerPost,
-            mediaTypes: item.eligibleMediaTypes || ["REEL", "IMAGE", "VIDEO"],
-            delayMinutes: item.delayAfterPublication || 0,
+            mediaTypes: (item as any).eligibleMediaTypes || ["REEL", "IMAGE", "VIDEO"],
+            delayMinutes: (item as any).delayAfterPublication || 0,
             deliveryWindowMin: 0,
             maxPosts,
             maxPerDay: 0,
@@ -203,27 +258,30 @@ export class PackagesService {
         });
         createdRules.push(rule);
 
-        // For TIME_DRIP rules, precompute SCHEDULED executions with bounded jitter (+/-15%)
+        // For TIME_DRIP rules, precompute SCHEDULED executions with deterministic even spacing
         if (kind === PackageRuleKind.TIME_DRIP) {
           const itemRuns = quote.timeline.filter((t) => t.serviceId === item.serviceId);
-          const intervalMs = (durationDays * 24 * 3600 * 1000) / Math.max(1, itemRuns.length);
+          const intervalHours = input.followersDrip?.intervalHours || 24;
+          const dripResult = calculateFollowersDrip({
+            totalQuantity: item.totalQuantity,
+            serviceMin: item.minQty || 10,
+            serviceMax: item.maxQty || 1000000,
+            days: durationDays,
+            intervalHours,
+            ratePer1000: item.ratePer1000,
+            startAt,
+          });
 
-          for (let idx = 0; idx < itemRuns.length; idx++) {
-            const r = itemRuns[idx];
-            // Bounded jitter between -15% and +15%
-            const jitterFactor = idx === 0 ? 0 : (Math.random() * 0.3 - 0.15);
-            const jitterMs = Math.round(intervalMs * jitterFactor);
-            const nominalTime = new Date(startAt.getTime() + idx * intervalMs + jitterMs);
-
+          for (const r of dripResult.runs) {
             const execution = await tx.packageExecution.create({
               data: {
                 packageId: pkg.id,
                 ruleId: rule.id,
                 source: ExecutionSource.SCHEDULE,
-                seq: idx + 1,
+                seq: r.seq,
                 quantity: r.quantity,
-                allocatedCharge: new Decimal(r.chargeShare),
-                executeAt: nominalTime,
+                allocatedCharge: new Decimal(r.allocatedCharge),
+                executeAt: r.executeAt,
                 status: PackageExecutionStatus.SCHEDULED,
               },
             });
@@ -248,158 +306,307 @@ export class PackagesService {
   }
 
   /**
-   * Manual trigger (MVP baseline, no Meta API needed):
-   * POST /packages/:id/trigger { url }
-   * 1. Allowlisted host + regex, extract mediaKey (never fetch arbitrary URLs)
-   * 2. Atomic quota: UPDATE "PackageRule" SET usedCount = usedCount + 1 WHERE usedCount < maxPosts
-   * 3. Daily cap and min spacing verification
-   * 4. Insert execution with executeAt = max(now, publishedAt or now + delay)
+   * Preview a post trigger:
+   * POST /packages/:id/triggers/preview
+   * 1. Validates host, path pattern, handle match (if URL contains handle), rejects short links (offline).
+   * 2. Extracts mediaKey.
+   * 3. Checks if this post was already triggered.
+   * 4. For each POST_TRIGGERED rule, computes remaining quota and default time-interval drip schedule.
+   * 5. Zero DB side effects.
    */
-  async triggerManualPost(userId: string, packageId: string, url: string, mediaType: string = "REEL") {
-    // 1. Strict regex validation for Instagram URL allowlist
-    const match = url.trim().match(INSTAGRAM_URL_REGEX);
-    if (!match || !match[1]) {
-      throw new BadRequestException("Invalid Instagram URL. Only official instagram.com post/reel links are permitted.");
+  async triggerPreview(userId: string, packageId: string, input: TriggerPreviewInput) {
+    if (!this.prisma.isConnected) {
+      const pkg = this.sandboxPackages.get(packageId);
+      if (!pkg || pkg.userId !== userId) throw new NotFoundException("Package not found.");
+      return {
+        platform: pkg.platform || "instagram",
+        handle: pkg.handle,
+        mediaKey: "preview_key",
+        normalizedUrl: input.url,
+        alreadyTriggered: false,
+        rules: [],
+      };
     }
-    const mediaKey = match[1];
+
+    const pkg = await this.prisma.package.findFirst({
+      where: { id: packageId, userId },
+      include: {
+        rules: {
+          where: { kind: PackageRuleKind.POST_TRIGGERED },
+          include: { service: true },
+        },
+      },
+    });
+
+    if (!pkg) {
+      throw new NotFoundException("Package not found or access denied.");
+    }
+
+    if (pkg.status !== PackageStatus.ACTIVE) {
+      throw new BadRequestException(`Cannot preview triggers for package in status "${pkg.status}".`);
+    }
+
+    // 1. Offline link validation and normalization per platform rules
+    const config = await this.platformsService.getPlatformConfig(pkg.platform);
+    const linkRes = validatePlatformLink(input.url, config, pkg.handle);
+    if (!linkRes.isValid || !linkRes.mediaKey) {
+      throw new BadRequestException(linkRes.error || "Invalid platform link.");
+    }
+
+    // 2. Check if this post was already triggered for this package
+    const existingTrigger = await this.prisma.packageTrigger.findUnique({
+      where: {
+        packageId_mediaKey: {
+          packageId: pkg.id,
+          mediaKey: linkRes.mediaKey,
+        },
+      },
+    });
+
+    // 3. Generate schedule preview for each active rule
+    const rulePreviews = pkg.rules.map((rule) => {
+      const remainingPosts = Math.max(0, rule.maxPosts - rule.usedCount);
+      const windowMinutes = rule.deliveryWindowMin || config.defaultWindowMinutes;
+      const drip = calculatePerPostDrip({
+        quantity: rule.quantityPerPost,
+        serviceMin: rule.service.minQty,
+        serviceMax: rule.service.maxQty,
+        maxRunsPerPost: config.maxRunsPerPost,
+        windowMinutes,
+        minGapMinutes: config.minGapMinutes,
+        ratePer1000: Number(rule.rateSnapshot),
+        startAt: new Date(),
+      });
+
+      return {
+        ruleId: rule.id,
+        serviceId: rule.serviceId,
+        serviceName: rule.service.displayName || rule.service.name,
+        maxPosts: rule.maxPosts,
+        usedCount: rule.usedCount,
+        remainingPosts,
+        quotaAvailable: remainingPosts > 0,
+        defaultQuantity: rule.quantityPerPost,
+        maxQtyPerPost: rule.quantityPerPost,
+        minQty: rule.service.minQty,
+        maxQty: rule.service.maxQty,
+        defaultWindowMin: windowMinutes,
+        runsCount: drip.runsCount,
+        gapMinutes: drip.gapMinutes,
+        totalCharge: drip.totalCharge,
+        timeline: drip.runs,
+        warning: drip.warning,
+      };
+    });
+
+    return {
+      platform: pkg.platform,
+      handle: pkg.handle,
+      mediaKey: linkRes.mediaKey,
+      normalizedUrl: linkRes.normalizedUrl,
+      alreadyTriggered: Boolean(existingTrigger),
+      rules: rulePreviews,
+    };
+  }
+
+  /**
+   * Start post delivery:
+   * POST /packages/:id/triggers
+   * In ONE atomic transaction:
+   * 1. Requires Idempotency-Key.
+   * 2. Lock Package row: must be ACTIVE.
+   * 3. Validate link, extract mediaKey, check handle match if URL contains handle.
+   * 4. Enforce unique(packageId, mediaKey) via PackageTrigger creation.
+   * 5. For each chosen rule:
+   *    - verify usedCount < maxPosts
+   *    - atomic quota increment: UPDATE "PackageRule" SET usedCount = usedCount + 1 WHERE id = $1 AND usedCount < maxPosts
+   *    - verify chosen quantity <= maxQtyPerPost
+   *    - generate deterministic time-interval drip runs with calculatePerPostDrip
+   *    - first run executeAt = now
+   *    - create PackageExecution rows with allocatedCharge
+   */
+  async triggerStart(
+    userId: string,
+    packageId: string,
+    input: TriggerExecutionInput,
+    idempotencyKey?: string
+  ) {
+    if (!idempotencyKey || idempotencyKey.trim() === "") {
+      throw new BadRequestException("Idempotency-Key is required to start delivery.");
+    }
 
     if (!this.prisma.isConnected) {
       const pkg = this.sandboxPackages.get(packageId);
-      if (!pkg || pkg.userId !== userId) {
-        throw new NotFoundException("Package not found or access denied.");
-      }
+      if (!pkg || pkg.userId !== userId) throw new NotFoundException("Package not found.");
       return {
         success: true,
-        mediaKey,
-        executionId: `exec_sbx_${Date.now()}`,
-        status: "SCHEDULED",
-        executeAt: new Date().toISOString(),
+        triggerId: `trig_sbx_${Date.now()}`,
+        mediaKey: "sbx_key",
+        executionsCreated: 1,
       };
     }
 
     return await this.prisma.$transaction(async (tx) => {
-      // 2. Fetch and lock Package
-      const pkg = await tx.package.findFirst({
-        where: { id: packageId, userId },
-      });
-      if (!pkg) {
+      // 1. Lock and verify Package
+      const [lockedPkg] = await tx.$queryRawUnsafe<any[]>(
+        `SELECT * FROM "Package" WHERE id = $1 AND "userId" = $2 FOR UPDATE`,
+        packageId,
+        userId
+      );
+
+      if (!lockedPkg) {
         throw new NotFoundException("Package not found or access denied.");
       }
-      if (pkg.status !== PackageStatus.ACTIVE) {
-        throw new BadRequestException(`Cannot trigger execution for package in status "${pkg.status}".`);
+
+      if (lockedPkg.status !== PackageStatus.ACTIVE) {
+        throw new BadRequestException(`Cannot trigger execution for package in status "${lockedPkg.status}".`);
       }
 
-      // 3. Find active POST_TRIGGERED rules for this package
-      const rules = await tx.packageRule.findMany({
+      // 2. Validate platform link (offline)
+      const config = await this.platformsService.getPlatformConfig(lockedPkg.platform);
+      const linkRes = validatePlatformLink(input.url, config, lockedPkg.handle);
+      if (!linkRes.isValid || !linkRes.mediaKey) {
+        throw new BadRequestException(linkRes.error || "Invalid platform link.");
+      }
+
+      const mediaKey = linkRes.mediaKey;
+      const normalizedUrl = linkRes.normalizedUrl!;
+
+      // 3. Enforce unique(packageId, mediaKey)
+      const existingTrigger = await tx.packageTrigger.findUnique({
         where: {
-          packageId: pkg.id,
-          kind: PackageRuleKind.POST_TRIGGERED,
+          packageId_mediaKey: {
+            packageId: lockedPkg.id,
+            mediaKey,
+          },
         },
       });
 
-      if (rules.length === 0) {
+      if (existingTrigger) {
+        throw new ConflictException(`This link has already been started for package #${lockedPkg.id}.`);
+      }
+
+      const trigger = await tx.packageTrigger.create({
+        data: {
+          packageId: lockedPkg.id,
+          mediaKey,
+          targetUrl: normalizedUrl,
+        },
+      });
+
+      // 4. Determine chosen rules
+      const postRules = await tx.packageRule.findMany({
+        where: {
+          packageId: lockedPkg.id,
+          kind: PackageRuleKind.POST_TRIGGERED,
+        },
+        include: { service: true },
+      });
+
+      if (postRules.length === 0) {
         throw new BadRequestException("This package does not contain any active POST_TRIGGERED rules.");
       }
 
-      const rule = rules[0];
+      const chosenRules = input.rules && input.rules.length > 0
+        ? input.rules
+        : postRules
+            .filter((r) => r.usedCount < r.maxPosts)
+            .map((r) => ({
+              ruleId: r.id,
+              quantity: r.quantityPerPost,
+              deliveryWindowMin: r.deliveryWindowMin || config.defaultWindowMinutes,
+            }));
 
-      // 4. Check media type eligibility
-      if (rule.mediaTypes && rule.mediaTypes.length > 0 && !rule.mediaTypes.includes(mediaType.toUpperCase())) {
-        throw new BadRequestException(`Media type "${mediaType}" is not eligible for this package rule.`);
+      if (chosenRules.length === 0) {
+        throw new BadRequestException("No available services or quota remaining to start delivery.");
       }
 
-      // 5. Min spacing check
-      if (rule.minSpacingMin > 0) {
-        const lastExec = await tx.packageExecution.findFirst({
-          where: { ruleId: rule.id },
-          orderBy: { createdAt: "desc" },
+      const ruleMap = new Map(postRules.map((r) => [r.id, r]));
+      const createdExecutions: any[] = [];
+      const now = new Date();
+
+      for (const cr of chosenRules) {
+        const rule = ruleMap.get(cr.ruleId);
+        if (!rule) {
+          throw new BadRequestException(`Rule ID "${cr.ruleId}" is not part of this package.`);
+        }
+
+        // Validate quantity <= maxQtyPerPost
+        if (cr.quantity > rule.quantityPerPost) {
+          throw new BadRequestException(
+            `Chosen quantity (${cr.quantity}) exceeds maximum allowed quantity per post (${rule.quantityPerPost}) for service "${rule.service.displayName || rule.service.name}".`
+          );
+        }
+
+        if (cr.quantity < rule.service.minQty) {
+          throw new BadRequestException(
+            `Chosen quantity (${cr.quantity}) is below service minimum of ${rule.service.minQty}.`
+          );
+        }
+
+        // Atomic quota increment
+        const updatedRules = await tx.$queryRawUnsafe<any[]>(
+          `UPDATE "PackageRule"
+           SET "usedCount" = "usedCount" + 1
+           WHERE id = $1 AND "usedCount" < "maxPosts"
+           RETURNING id, "usedCount", "maxPosts", "unitCharge"`,
+          rule.id
+        );
+
+        if (!updatedRules || updatedRules.length === 0) {
+          throw new BadRequestException(
+            `Quota exhausted for service "${rule.service.displayName || rule.service.name}": already used ${rule.maxPosts}/${rule.maxPosts} posts.`
+          );
+        }
+
+        const windowMinutes = cr.deliveryWindowMin || rule.deliveryWindowMin || config.defaultWindowMinutes;
+
+        // Deterministic per-post drip calculation
+        const drip = calculatePerPostDrip({
+          quantity: cr.quantity,
+          serviceMin: rule.service.minQty,
+          serviceMax: rule.service.maxQty,
+          maxRunsPerPost: config.maxRunsPerPost,
+          windowMinutes,
+          minGapMinutes: config.minGapMinutes,
+          ratePer1000: Number(rule.rateSnapshot),
+          startAt: now,
         });
-        if (lastExec) {
-          const diffMin = (Date.now() - lastExec.createdAt.getTime()) / (60 * 1000);
-          if (diffMin < rule.minSpacingMin) {
-            throw new BadRequestException(
-              `Rate limit: minimum spacing of ${rule.minSpacingMin} minutes required between post triggers. Try again in ${Math.ceil(rule.minSpacingMin - diffMin)}m.`
-            );
-          }
+
+        // Insert executions (first run at now)
+        for (const run of drip.runs) {
+          const execution = await tx.packageExecution.create({
+            data: {
+              packageId: lockedPkg.id,
+              ruleId: rule.id,
+              triggerId: trigger.id,
+              mediaKey,
+              targetUrl: normalizedUrl,
+              source: ExecutionSource.MEDIA,
+              seq: run.seq,
+              quantity: run.quantity,
+              allocatedCharge: new Decimal(run.allocatedCharge),
+              executeAt: run.executeAt,
+              status: PackageExecutionStatus.SCHEDULED,
+            },
+          });
+          createdExecutions.push(execution);
         }
       }
-
-      // 6. Daily cap check
-      if (rule.maxPerDay > 0) {
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-        const countToday = await tx.packageExecution.count({
-          where: {
-            ruleId: rule.id,
-            createdAt: { gte: todayStart },
-          },
-        });
-        if (countToday >= rule.maxPerDay) {
-          throw new BadRequestException(`Daily quota reached: maximum ${rule.maxPerDay} triggers allowed per day.`);
-        }
-      }
-
-      // 7. Atomic quota increment: UPDATE ... SET usedCount = usedCount + 1 WHERE usedCount < maxPosts
-      const updatedRules = await tx.$queryRawUnsafe<any[]>(
-        `UPDATE "PackageRule"
-         SET "usedCount" = "usedCount" + 1
-         WHERE id = $1 AND "usedCount" < "maxPosts"
-         RETURNING id, "usedCount", "maxPosts", "unitCharge"`,
-        rule.id
-      );
-
-      if (!updatedRules || updatedRules.length === 0) {
-        throw new BadRequestException(`Package post quota exhausted: already used maximum ${rule.maxPosts} posts.`);
-      }
-
-      const updatedRule = updatedRules[0];
-
-      // 8. Find or create MonitoredMedia record
-      let media = await tx.monitoredMedia.findFirst({
-        where: {
-          mediaKey,
-          connectionId: pkg.connectionId || "conn_manual",
-        },
-      });
-
-      if (!media && pkg.connectionId) {
-        media = await tx.monitoredMedia.create({
-          data: {
-            connectionId: pkg.connectionId,
-            mediaKey,
-            publishedAt: new Date(),
-            state: "NEW",
-            permalink: url,
-            mediaType,
-          },
-        });
-      }
-
-      // 9. Insert PackageExecution with executeAt = max(now, publishedAt or now + delay)
-      const executeAt = new Date(Date.now() + (rule.delayMinutes || 0) * 60 * 1000);
-
-      const execution = await tx.packageExecution.create({
-        data: {
-          packageId: pkg.id,
-          ruleId: rule.id,
-          mediaId: media ? media.id : null,
-          source: ExecutionSource.MEDIA,
-          seq: updatedRule.usedCount,
-          quantity: rule.quantityPerPost,
-          allocatedCharge: new Decimal(updatedRule.unitCharge.toString()),
-          executeAt,
-          status: PackageExecutionStatus.SCHEDULED,
-        },
-      });
 
       return {
         success: true,
-        executionId: execution.id,
+        triggerId: trigger.id,
         mediaKey,
-        usedCount: updatedRule.usedCount,
-        maxPosts: updatedRule.maxPosts,
-        status: execution.status,
-        executeAt: execution.executeAt.toISOString(),
+        executionsCreated: createdExecutions.length,
+        runs: createdExecutions.map((e) => ({
+          id: e.id,
+          seq: e.seq,
+          quantity: e.quantity,
+          allocatedCharge: Number(e.allocatedCharge),
+          executeAt: e.executeAt.toISOString(),
+          status: e.status,
+        })),
       };
     });
   }
@@ -723,7 +930,7 @@ export class PackagesService {
       include: {
         rules: { include: { service: true } },
         executions: { orderBy: { seq: "asc" } },
-        connection: true,
+        triggers: true,
       },
     });
 
@@ -732,9 +939,9 @@ export class PackagesService {
   }
 
   /**
-   * Returns posts monitored/processed for this package
+   * Returns triggers processed for this package
    */
-  async getPackagePosts(userId: string, packageId: string) {
+  async getPackageTriggers(userId: string, packageId: string) {
     if (!this.prisma.isConnected) return [];
 
     const pkg = await this.prisma.package.findFirst({
@@ -742,16 +949,10 @@ export class PackagesService {
     });
     if (!pkg) throw new NotFoundException("Package not found.");
 
-    if (!pkg.connectionId) {
-      return this.prisma.monitoredMedia.findMany({
-        where: { executions: { some: { packageId } } },
-        orderBy: { publishedAt: "desc" },
-      });
-    }
-
-    return this.prisma.monitoredMedia.findMany({
-      where: { connectionId: pkg.connectionId },
-      orderBy: { publishedAt: "desc" },
+    return this.prisma.packageTrigger.findMany({
+      where: { packageId },
+      include: { executions: true },
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -770,7 +971,7 @@ export class PackagesService {
       where: { packageId },
       include: {
         rule: { include: { service: true } },
-        media: true,
+        trigger: true,
         order: true,
       },
       orderBy: { executeAt: "asc" },

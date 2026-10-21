@@ -39,8 +39,8 @@ export default function WalletPage() {
     {
       id: "UPI" as PaymentMethod,
       name: "UPI",
-      sub: "Instant (0–5s) • 0% Fee",
-      badge: "Instant",
+      sub: "Direct (0–5s) • 0% Fee",
+      badge: "Fast",
     },
     {
       id: "CARD" as PaymentMethod,
@@ -109,7 +109,7 @@ export default function WalletPage() {
           <div className="space-y-1">
             <h1 className="text-3xl md:text-4xl font-semibold text-white tracking-tight">Add Funds & Billing</h1>
             <p className="text-xs text-slate-400">
-              Add spendable liquidity, unlock tier bonus credits, and view verified payment receipts.
+              Add spendable liquidity, unlock tier bonus credits, and view payment receipts.
             </p>
           </div>
         </div>
@@ -124,7 +124,7 @@ export default function WalletPage() {
               <div>
                 <h3 className="text-lg font-bold text-white">Deposit Credited Successfully!</h3>
                 <p className="text-xs text-slate-300 mt-0.5">
-                  Payment <span className="font-mono text-emerald-300">{successTxn.paymentId}</span> for ₹{successTxn.amount.toFixed(2)} has been verified and added to your balance.
+                  Payment <span className="font-mono text-emerald-300">{successTxn.paymentId}</span> for ₹{successTxn.amount.toFixed(2)} has been credited and added to your balance.
                 </p>
               </div>
             </div>
@@ -147,7 +147,7 @@ export default function WalletPage() {
                   <h2 className="text-xl font-medium text-white">Choose Deposit Amount & Method</h2>
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Instant balance crediting with zero gateway processing surcharge.
+                  Automated balance crediting with zero gateway processing surcharge.
                 </p>
               </div>
               <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-mono font-semibold">
@@ -324,7 +324,7 @@ export default function WalletPage() {
               <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-2 text-xs text-slate-400">
                 <div className="flex items-center justify-between">
                   <span>Settlement SLA</span>
-                  <span className="text-emerald-400 font-mono font-semibold">Instant Clearance</span>
+                  <span className="text-emerald-400 font-mono font-semibold">Direct Clearance</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>GST Invoice</span>

@@ -1,95 +1,202 @@
-# Package Engine Documentation (SMM Panel)
+# SMM Panel Package Engine Documentation
 
-## 1. Overview & Architecture
+## 1. System Overview & Architecture
 
-The **Package Engine** provides automated multi-service growth bundles combining:
-- **`POST_TRIGGERED` Rules**: Monitoring of new Instagram posts and reels for automated likes, views, and engagement. Supports manual triggers via official Instagram post/reel links without requiring live Meta API credentials.
-- **`TIME_DRIP` Rules**: Spread total quantities (e.g. followers or profile-level services) evenly over configured duration days with bounded random jitter ($\pm 15\%$).
-- **Escrow-Style Financial Model**: Integer paise precision with upfront wallet reservation, immutable ledger logging, and mathematically verified reconciliation invariant:
+The **Package Engine** provides multi-service automated delivery schedules across 6 supported platforms without requiring OAuth connections or private platform tokens.
+
+### Core Architecture Principles
+- **No Third-Party Platform Credentials**: The system operates purely on public handles and customer-provided post URLs.
+- **Offline Link & Handle Validation**: Handles and URLs are validated and normalized locally using deterministic regex and host allowlists before any processing.
+- **Deterministic Time-Interval Drip Engine**: Quantity and charge distributions are mathematically computed upfront with zero drift. Every run satisfies:
+  $$\sum q = Q, \quad \sum \text{allocatedCharge} = \text{charge}, \quad \text{gap} \ge \text{minGap}$$
+- **Prepaid Escrow & Single Source of Truth**: All package funds are reserved in customer wallets at checkout. Child orders dispatched to upstream providers carry the true `allocatedCharge` and bypass duplicate wallet debit.
+- **Transparent Reconciliation**: Complete adherence to the financial invariant:
   $$\text{purchased} \equiv \text{consumed} + \text{refunded} + \text{remaining}$$
+- **Disclaimer**: We do not verify account ownership. Customers provide their target handle and confirm that platform delivery terms and risks are understood.
 
 ---
 
-## 2. Database Schema & Relational Model
+## 2. Platform Configurations & Supported Rules
 
-The Package Engine utilizes five core database entities in PostgreSQL:
+The platform engine manages 6 platform configurations via `PlatformConfig` records:
 
-1. **`SourceConnection`**:
-   - `id`, `userId`, `platform` (`INSTAGRAM`), `providerAccountId` (immutable), `username`, `status` (`ACTIVE`, `NEEDS_RECONNECT`, `REVOKED`), `tokenEnc` (AES-256-GCM), `tokenExpiresAt`, `baselineAt`, `nextPollAt`, `pollIntervalSec`, `failureCount`.
-   - **Constraint 1**: `UNIQUE(platform, providerAccountId)` prevents account collision across multiple users.
+| Platform | Display Name | Handle Regex | Handle Length | Allowed Hosts | Short-Link Handling |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `instagram` | Instagram | `^[a-zA-Z0-9._]{1,30}$` | 30 | `instagram.com`, `www.instagram.com` | Rejected |
+| `tiktok` | TikTok | `^[a-zA-Z0-9._]{2,24}$` | 24 | `tiktok.com`, `www.tiktok.com` | `vt.tiktok.com` rejected |
+| `youtube` | YouTube | `^[a-zA-Z0-9._-]{3,30}$` | 30 | `youtube.com`, `www.youtube.com` | `youtu.be` rejected |
+| `facebook` | Facebook | `^[a-zA-Z0-9.]{5,50}$` | 50 | `facebook.com`, `www.facebook.com`, `fb.watch` | Short links rejected |
+| `x` | X (Twitter) | `^[a-zA-Z0-9_]{1,15}$` | 15 | `x.com`, `www.x.com`, `twitter.com` | `t.co` rejected |
+| `telegram` | Telegram | `^[a-zA-Z0-9_]{5,32}$` | 32 | `t.me`, `telegram.me` | Short links rejected |
 
-2. **`Package`**:
-   - `id`, `userId`, `connectionId` (nullable), `handle`, `kind` (`POST_TRIGGERED`, `TIME_DRIP`), `status` (`ACTIVE`, `PAUSED`, `COMPLETED`, `EXPIRED`, `CANCELLED`), `startAt`, `endAt`, `pausedDays`, `reserveTotal`, `idempotencyKey`.
-   - **Constraint 6**: Partial unique index enforcing at most one `ACTIVE` package per `(handle, kind)`.
-
-3. **`PackageRule`**:
-   - `id`, `packageId`, `kind`, `serviceId`, `quantityPerPost`, `mediaTypes`, `delayMinutes`, `deliveryWindowMin`, `maxPosts`, `maxPerDay`, `minSpacingMin`, `usedCount`, `unitCharge`, `rateSnapshot`, `reserve`.
-   - **Constraint 5**: Database CHECK constraint `CHECK ("usedCount" <= "maxPosts")`.
-
-4. **`MonitoredMedia`**:
-   - `id`, `connectionId`, `mediaKey`, `publishedAt`, `state` (`BASELINE`, `NEW`, `DELETED`), `permalink`, `mediaType`.
-   - **Constraint 2**: `UNIQUE(connectionId, mediaKey)` prevents duplicate post processing.
-
-5. **`PackageExecution`**:
-   - `id`, `packageId`, `ruleId`, `mediaId` (nullable), `source` (`MEDIA`, `SCHEDULE`), `seq`, `quantity`, `allocatedCharge`, `executeAt`, `status` (`DETECTED`, `SCHEDULED`, `DISPATCHED`, `COMPLETED`, `PARTIAL`, `FAILED`, `CANCELLED`, `SKIPPED_PAUSED`, `SKIPPED_QUOTA`, `SKIPPED_TYPE`, `SKIPPED_DELETED`, `SKIPPED_LIMIT`), `orderId` (unique), `skipReason`.
-   - **Constraint 3**: `UNIQUE(ruleId, mediaId)` prevents duplicate executions per media.
-   - **Constraint 4**: `UNIQUE(orderId)` guarantees one child order per execution.
-
-6. **`Refund`**:
-   - **Constraint 7**: Partial unique index `UNIQUE(packageId, reason)` guarantees idempotent refunds per cancellation or settlement.
+### Link Normalization & MediaKey Extraction
+1. **Offline Validation**: URLs are checked against host allowlists and path patterns. No network requests are made to scrape or fetch target media.
+2. **MediaKey Uniqueness**:
+   - Instagram: `/p/{key}/`, `/reel/{key}/` -> canonical `POST_{key}` or `REEL_{key}`.
+   - TikTok: `/@user/video/{id}` -> canonical `VIDEO_{id}`.
+   - YouTube: `/watch?v={id}`, `/shorts/{id}` -> canonical `VIDEO_{id}` or `SHORTS_{id}`.
+   - Facebook: `/watch/?v={id}`, `/{user}/posts/{id}` -> canonical `POST_{id}`.
+   - X: `/{user}/status/{id}` -> canonical `STATUS_{id}`.
+   - Telegram: `/{channel}/{msgId}` -> canonical `POST_{channel}_{msgId}`.
+3. **Anti-Collusion Blocklist**: Handles in `PlatformHandleBlocklist` are rejected during quote calculation and checkout.
 
 ---
 
-## 3. Financial Model & Pricing Math
+## 3. Quote & Purchase Flow
 
-All calculations operate in integer paise (₹0.01) using Decimal arithmetic:
+### 3.1 Pure Quote Calculation
+Endpoint: `POST /packages/quote`
+- Validates handle format against target `PlatformConfig`.
+- Enforces service applicability: profile services (followers/subscribers) require `PROFILE` target type; post services (likes/views) require `POST_OR_REEL`.
+- Computes item charges in integer paise:
+  $$\text{itemCharge} = \left\lceil \frac{\text{rateSnapshot} \times \text{totalQuantity}}{1000} \right\rceil$$
+- Calculates total reserve as the sum of all item charges.
+- Returns pure quote without mutating database state.
 
-1. **Unit Charge**:
-   $$\text{unitCharge} = \left\lceil \frac{\text{rateSnapshot} \times \text{quantityPerPost}}{1000} \right\rceil$$
-2. **`POST_TRIGGERED` Reserve**:
-   $$\text{reserve} = \text{unitCharge} \times \text{maxPosts}$$
-3. **`TIME_DRIP` Reserve**:
-   $$\text{reserve} = \left\lceil \frac{\text{rateSnapshot} \times \text{totalQuantity}}{1000} \right\rceil$$
-   The reserve is split across runs, and the remainder is assigned to the final run so the sum of individual run charges exactly equals the item charge.
-4. **Prepaid Child Orders**:
-   - Child orders carry the **real `allocatedCharge`** with `isPrepaid = true`.
-   - Child orders bypass wallet debit at dispatch time (avoiding double-charging).
-   - Because `charge > 0`, standard partial fulfillment refunds continue to work accurately:
-     $$\text{partialRefund} = \left\lfloor \frac{\text{charge} \times \text{remains}}{\text{quantity}} + 0.5 \right\rfloor$$
-5. **Settlement & Cancellation**:
-   - On cancellation or expiry at `endAt`, unused reserve is credited back to the customer's wallet via `PACKAGE_REFUND`.
+### 3.2 Purchase Flow
+Endpoint: `POST /packages`
+- Requires explicit consent: `consentRulesUnderstood: true`.
+- Requires `idempotencyKey` per user.
+- Enforces active package constraints:
+  - Max 5 distinct handles per user.
+  - At most 1 `ACTIVE` package per `(platform, handle)` tuple.
+- Atomically locks wallet, checks `balance >= reserveTotal`, debits wallet, creates `Package` row, `PackageRule` rows, and records `PACKAGE_RESERVE` in the ledger.
 
 ---
 
-## 4. Execution Flows
+## 4. Drip Algorithms
 
-### 4.1 Manual Post Trigger
-- Endpoint: `POST /packages/:id/trigger` with `{ url: string, mediaType?: string }`.
-- Validates URL against strict Instagram regex (`INSTAGRAM_URL_REGEX`); never fetches arbitrary external URLs.
-- Executes an atomic quota update:
+### 4.1 Followers / Profile Drip Engine (`calculateFollowersDrip`)
+- Input: `totalQuantity`, `durationDays`, `serviceMin`, `serviceMax`, `runsPerDay`, `minGapMinutes`.
+- Runs calculation:
+  $$\text{runs} = \min(\text{durationDays} \times \text{runsPerDay}, \lfloor \text{totalQuantity} / \text{serviceMin} \rfloor)$$
+- Quantity per run: base quantity $\lfloor \text{totalQuantity} / \text{runs} \rfloor$, remainder added to the final run.
+- Charge per run: base charge $\lfloor \text{totalCharge} / \text{runs} \rfloor$, remainder added to the final run.
+- Schedule: timestamps spaced by intervals $\ge \text{minGapMinutes}$.
+
+### 4.2 Per-Post Drip Engine (`calculatePerPostDrip`)
+- Triggered upon customer post URL submission.
+- Distributes chosen post quantity over `windowMinutes` across up to `maxRunsPerPost` runs.
+- First run executes at `now`. Subsequent runs execute at `now + i * intervalMinutes`.
+- Strict mathematical invariant: $\sum q_i = Q$, $\sum \text{allocatedCharge}_i = \text{charge}$.
+
+---
+
+## 5. Per-Post Start Flow
+
+### 5.1 Preview Endpoint
+`POST /packages/:id/triggers/preview`
+- Validates package ownership and `ACTIVE` status.
+- Validates post URL host and extracts `mediaKey`.
+- Checks for duplicate trigger (`UNIQUE(packageId, mediaKey)`).
+- Checks quota availability (`usedCount < maxPosts`) across applicable rules.
+- Returns calculated delivery parameters, minimum gap, and run count for customer confirmation.
+
+### 5.2 Start Execution Endpoint
+`POST /packages/:id/triggers`
+- Idempotent via `idempotencyKey` and `UNIQUE(packageId, mediaKey)`.
+- Re-checks atomic quota inside a database transaction:
   ```sql
   UPDATE "PackageRule"
   SET "usedCount" = "usedCount" + 1
   WHERE id = $1 AND "usedCount" < "maxPosts"
   RETURNING id, "usedCount"
   ```
-- Evaluates minimum spacing (`minSpacingMin`) and daily cap (`maxPerDay`).
-- Inserts `PackageExecution` with `executeAt = max(now, publishedAt + delayMinutes)`.
-- **Handling of Deleted Posts in Manual Mode**: Manual trigger never fetches the target URL. If a user triggers an already deleted or non-existent post URL, the child order is dispatched to the provider pipeline; the upstream provider returns an order failure/cancellation, which triggers the standard provider retry policy and ultimately issues an order refund to the user's wallet.
+- Creates `PackageTrigger` record.
+- Generates `PackageExecution` records with status `SCHEDULED`.
 
-### 4.2 TIME_DRIP Precomputation
-- Computed at purchase:
-  $$\text{runs} = \text{clamp}\left(\left\lfloor \frac{Q}{\text{serviceMin}} \right\rfloor, 1, \text{durationDays} \times \text{runsPerDay}\right)$$
-- Precomputes all `PackageExecution` rows upfront with bounded jitter ($\pm 15\%$).
+---
 
-### 4.3 Worker Scheduler Dispatch
-- Reuses single-owner polling loop with concurrency safety:
-  ```sql
-  SELECT * FROM "PackageExecution"
-  WHERE status = 'SCHEDULED' AND "executeAt" <= NOW()
-  ORDER BY "executeAt" ASC
-  LIMIT 25
-  FOR UPDATE OF e SKIP LOCKED
-  ```
-- **Connected Mode Only**: For connected accounts (`SOURCE_INSTAGRAM_ENABLED=true`), media existence is validated via Graph API / Mock Instagram. If media is marked `DELETED` prior to dispatch, the execution is set to `SKIPPED_DELETED` and the slot reserve is automatically credited back via `PACKAGE_REFUND`. `SKIPPED_DELETED` exists strictly for connected mode.
-- Creates prepaid child order and Outbox event (`ORDER_CREATED`) in one atomic transaction.
+## 6. Worker Scheduler & Order Dispatch
+
+A background worker scans due scheduled executions:
+```sql
+SELECT e.*, p.platform, p.handle, p.status as "packageStatus", p."endAt" as "packageEndAt"
+FROM "PackageExecution" e
+JOIN "Package" p ON e."packageId" = p.id
+WHERE e.status = 'SCHEDULED' AND e."executeAt" <= NOW()
+ORDER BY e."executeAt" ASC
+LIMIT 25
+FOR UPDATE OF e SKIP LOCKED;
+```
+- Dispatches child order with `isPrepaid = true` and `allocatedCharge = execution.allocatedCharge`.
+- Marks execution `DISPATCHED`.
+
+---
+
+## 7. Financial Invariant & Settlement
+
+Across all lifecycle phases (Active, Completed, Cancelled, Expired):
+$$\text{purchased} \equiv \text{consumed} + \text{refunded} + \text{remaining}$$
+
+### Cancellation
+- `POST /packages/:id/cancel`
+- Locks package row `FOR UPDATE`.
+- Marks undispatched executions `CANCELLED`.
+- Computes consumed amount from `DISPATCHED` and `COMPLETED` executions.
+- Unused reserve $\max(0, \text{reserveTotal} - \text{consumed})$ is refunded to the customer wallet once.
+- Idempotent refund record inserted into `Refund` table (`reason = "PACKAGE_CANCEL_UNUSED_RESERVE"`).
+
+### Duration Expiry & Settlement
+- When `NOW() >= package.endAt`:
+- Remaining undispatched executions are marked `CANCELLED`.
+- Unused reserve is refunded to the customer wallet once (`reason = "PACKAGE_SETTLEMENT_UNUSED_RESERVE"`).
+
+### Prepaid Child Partial Refunds
+If an upstream provider delivers partial fulfillment:
+$$\text{partialRefund} = \left\lfloor \frac{\text{charge} \times \text{remains}}{\text{quantity}} + 0.5 \right\rfloor$$
+Because `allocatedCharge > 0`, the partial refund is non-zero and accurately credited to the customer wallet.
+
+---
+
+## 8. Root Cause Documentation: Internal Server Error
+
+All internal errors within the package lifecycle adhere to structured logging and error responses.
+
+### Request Format
+```http
+POST /packages/pkg_abc123/triggers HTTP/1.1
+Host: api.smm-panel.internal
+Authorization: Bearer <token>
+Content-Type: application/json
+X-Request-Id: req_7f9b8c2d1e0a
+
+{
+  "url": "https://www.instagram.com/p/DF123456789/",
+  "idempotencyKey": "idem_trigger_987",
+  "chosenQuantity": 500
+}
+```
+
+### Response Format (500 Error)
+```json
+{
+  "statusCode": 500,
+  "timestamp": "2026-10-21T05:30:00.000Z",
+  "path": "/packages/pkg_abc123/triggers",
+  "requestId": "req_7f9b8c2d1e0a",
+  "message": "Internal server error"
+}
+```
+
+### Log Line Structure (Server Console)
+```json
+{
+  "timestamp": "2026-10-21T05:30:00.000Z",
+  "level": "error",
+  "requestId": "req_7f9b8c2d1e0a",
+  "context": "PackagesService.triggerStart",
+  "userId": "usr_998877",
+  "packageId": "pkg_abc123",
+  "mediaKey": "POST_DF123456789",
+  "errorMessage": "Database transaction deadlock during parallel start allocation",
+  "stack": "Error: ... at PackagesService.triggerStart (packages.service.ts:512)"
+}
+```
+
+### User vs System Error Mapping
+- **Validation Failures (400)**: Malformed URL, handle regex failure, or quantity out of bounds.
+- **Unauthorized / Forbidden (401 / 403)**: Access token missing, invalid, or IDOR package access attempt.
+- **Resource Not Found (404)**: Unknown package ID or target service ID.
+- **Conflict / Concurrency (409)**: Media key already started or duplicate idempotency key.
+- **Server Faults (500)**: Database connection failure or unexpected transaction abort with `requestId` preserved for log trace correlation.

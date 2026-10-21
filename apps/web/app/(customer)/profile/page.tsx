@@ -106,7 +106,7 @@ export default function ProfileSecurityPage() {
           </div>
           <h1 className="text-3xl font-semibold text-white tracking-tight">Profile & API Security</h1>
           <p className="text-xs text-slate-400">
-            Manage your credentials, authorized IP whitelist, and programmatic API access.
+            Manage your credentials, allowed IP allowlist, and programmatic API access.
           </p>
         </div>
       </div>
@@ -170,7 +170,7 @@ export default function ProfileSecurityPage() {
                 />
               </FormField>
 
-              <FormField label="Authorized IP Whitelist" helperText="Comma-separated IP addresses allowed to call the API.">
+              <FormField label="Allowed IP Whitelist" helperText="Comma-separated IP addresses allowed to call the API.">
                 <input
                   type="text"
                   value={ipWhitelist}

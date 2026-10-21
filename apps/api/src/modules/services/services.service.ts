@@ -72,7 +72,13 @@ export class ServicesService {
     return { success: true, category };
   }
 
-  async findAll(platform?: string, query?: string, categoryId?: string, sortBy?: string): Promise<ServiceItem[]> {
+  async findAll(
+    platform?: string,
+    query?: string,
+    categoryId?: string,
+    sortBy?: string,
+    packageEligible?: boolean | string
+  ): Promise<ServiceItem[]> {
     if (!this.prisma.isConnected) {
       return [];
     }
@@ -84,7 +90,16 @@ export class ServicesService {
       };
 
       if (platform && platform !== "ALL") {
-        where.platform = platform.toUpperCase();
+        const p = platform.toUpperCase();
+        if (p === "X" || p === "TWITTER" || p === "X_TWITTER") {
+          where.platform = { in: ["X", "TWITTER", "X_TWITTER"] };
+        } else {
+          where.platform = { equals: p, mode: "insensitive" };
+        }
+      }
+
+      if (packageEligible !== undefined) {
+        where.packageEligible = packageEligible === true || packageEligible === "true";
       }
 
       if (categoryId) {
@@ -167,6 +182,7 @@ export class ServicesService {
           cancellable: s.cancellable,
           dripFeedSupported: s.dripFeedSupported,
           allowManagedDrip: s.allowManagedDrip !== null && s.allowManagedDrip !== undefined ? s.allowManagedDrip : (s.serviceType !== "CUSTOM_COMMENTS" && !s.name?.toLowerCase().includes("comment")),
+          packageEligible: s.packageEligible ?? false,
           providerId: s.providerId || null,
           providerServiceId: s.providerServiceId || null,
           providerName,
@@ -181,7 +197,7 @@ export class ServicesService {
           dripFeedMaxInterval: s.dripFeedMaxInterval,
           serviceType: s.serviceType || "DEFAULT",
           linkType: linkType as any,
-          avgStartTime: s.avgTime || "Instant",
+          avgStartTime: s.avgTime || "15-30 min",
           avgProcessingSpeed: "High Speed",
           status: (s.status === "ACTIVE" ? "ACTIVE" : "DISABLED") as any,
         };

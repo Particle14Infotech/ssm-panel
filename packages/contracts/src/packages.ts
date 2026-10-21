@@ -46,17 +46,75 @@ export const PackageRuleInputSchema = z.object({
 });
 export type PackageRuleInput = z.infer<typeof PackageRuleInputSchema>;
 
+export const SupportedPlatformSchema = z.enum([
+  "instagram",
+  "tiktok",
+  "youtube",
+  "facebook",
+  "x",
+  "telegram",
+]);
+export type SupportedPlatform = z.infer<typeof SupportedPlatformSchema>;
+
+export const PlatformConfigSchema = z.object({
+  id: z.string(),
+  platform: SupportedPlatformSchema,
+  displayName: z.string(),
+  handleRegex: z.string(),
+  handleMaxLength: z.number().int(),
+  hostAllowlist: z.array(z.string()),
+  pathPattern: z.string(),
+  mediaKeyExtractor: z.string(),
+  urlContainsHandle: z.boolean(),
+  eligibleRuleKinds: z.array(z.string()),
+  followersIntervals: z.array(z.number().int()),
+  minGapMinutes: z.number().int(),
+  maxRunsPerPost: z.number().int(),
+  defaultWindowMinutes: z.number().int(),
+  limits: z.record(z.any()).default({}),
+  active: z.boolean().default(true),
+});
+export type PlatformConfig = z.infer<typeof PlatformConfigSchema>;
+
+export const PackageQuoteItemSchema = z.object({
+  serviceId: z.string(),
+  serviceName: z.string(),
+  kind: PackageRuleKindSchema,
+  ratePer1000: z.number(),
+  quantity: z.number(),
+  maxPosts: z.number(),
+  charge: z.number(),
+  minQty: z.number().optional(),
+  maxQty: z.number().optional(),
+  deliveryWindowMin: z.number().optional(),
+});
+export type PackageQuoteItem = z.infer<typeof PackageQuoteItemSchema>;
+
 export const PackageQuoteInputSchema = z.object({
-  name: z.string().optional(),
-  handle: z.string().optional(),
-  connectionId: z.string().optional(),
-  accountUsername: z.string().optional(),
-  autoPostEnabled: z.boolean().default(true).optional(),
-  durationDays: z.number().int().min(1).max(365).optional(),
-  days: z.number().int().min(1).max(365).optional(),
+  platform: SupportedPlatformSchema.default("instagram"),
+  handle: z.string().min(1, "Handle is required"),
+  followersDrip: z
+    .object({
+      serviceId: z.string(),
+      quantity: z.number().int().positive(),
+      days: z.number().int().positive().max(365),
+      intervalHours: z.number().int().positive(),
+    })
+    .optional(),
+  postRules: z
+    .array(
+      z.object({
+        serviceId: z.string(),
+        maxPosts: z.number().int().positive(),
+        maxQtyPerPost: z.number().int().positive(),
+        defaultWindowMin: z.number().int().positive().default(180),
+      })
+    )
+    .optional(),
   rules: z.array(PackageRuleInputSchema).optional(),
   items: z.array(PackageItemInputSchema).optional(),
-  intervalHours: z.number().int().min(1).max(72).optional(),
+  durationDays: z.number().int().min(1).max(365).optional(),
+  days: z.number().int().min(1).max(365).optional(),
   consentRulesUnderstood: z.boolean().optional(),
 });
 export type PackageQuoteInput = z.infer<typeof PackageQuoteInputSchema>;
@@ -66,7 +124,7 @@ export const PackageRunPreviewSchema = z.object({
   scheduledAt: z.string(),
   serviceId: z.string(),
   serviceName: z.string(),
-  target: z.string(),
+  target: z.string().optional(),
   quantity: z.number().int(),
   chargeShare: z.number(),
 });
@@ -77,35 +135,27 @@ export const PackageQuoteResponseSchema = z.object({
   totalCharge: z.number(),
   totalRuns: z.number(),
   days: z.number(),
-  autoPostEnabled: z.boolean().optional(),
-  connection: z
-    .object({
-      id: z.string(),
-      username: z.string(),
-      accountType: z.string(),
-      connectionStatus: z.string(),
-    })
-    .optional()
-    .nullable(),
   items: z.array(
     z.object({
       serviceId: z.string(),
       serviceName: z.string(),
-      target: z.string(),
-      targetType: PackageTargetTypeSchema,
+      target: z.string().optional(),
+      targetType: PackageTargetTypeSchema.optional(),
+      kind: PackageRuleKindSchema.optional(),
       totalQuantity: z.number(),
       quantityPerPost: z.number().optional(),
-      delayAfterPublication: z.number().optional(),
-      eligibleMediaTypes: z.array(z.string()).optional(),
       charge: z.number(),
       ratePer1000: z.number(),
-      runs: z.number(),
-      minQty: z.number(),
-      maxQty: z.number(),
+      runs: z.number().optional(),
+      maxPosts: z.number().optional(),
+      minQty: z.number().optional(),
+      maxQty: z.number().optional(),
+      deliveryWindowMin: z.number().optional(),
     })
   ),
   timeline: z.array(PackageRunPreviewSchema),
   warnings: z.array(z.string()),
+  disclaimer: z.string().default("Maximum total; unused is refunded at the end"),
 });
 export type PackageQuoteResponse = z.infer<typeof PackageQuoteResponseSchema>;
 
@@ -124,19 +174,8 @@ export const PackageStatusSchema = z.enum([
   "FAILED",
   "EXPIRED",
   "PARTIAL",
-  "RECONNECT_REQUIRED",
 ]);
 export type PackageStatus = z.infer<typeof PackageStatusSchema>;
-
-export const PackageRunStatusSchema = z.enum([
-  "SCHEDULED",
-  "DISPATCHING",
-  "PROCESSING",
-  "COMPLETED",
-  "FAILED",
-  "CANCELLED",
-]);
-export type PackageRunStatus = z.infer<typeof PackageRunStatusSchema>;
 
 export const PackageExecutionStatusSchema = z.enum([
   "DETECTED",
@@ -154,58 +193,21 @@ export const PackageExecutionStatusSchema = z.enum([
 ]);
 export type PackageExecutionStatus = z.infer<typeof PackageExecutionStatusSchema>;
 
-// Instagram Connection Contracts
-export const InstagramConnectInputSchema = z.object({
-  platformAccountId: z.string().min(1, "Platform account ID is required"),
-  username: z.string().min(1, "Username is required"),
-  accountType: z.enum(["PERSONAL", "BUSINESS", "CREATOR"]).default("BUSINESS").optional(),
-  accessToken: z.string().optional(),
-  expiresInSeconds: z.number().int().positive().optional(),
-  grantedScopes: z.array(z.string()).optional(),
+export const TriggerPreviewInputSchema = z.object({
+  url: z.string().url("A valid URL is required"),
+  mediaType: z.string().optional(),
 });
-export type InstagramConnectInput = z.infer<typeof InstagramConnectInputSchema>;
+export type TriggerPreviewInput = z.infer<typeof TriggerPreviewInputSchema>;
 
-export const InstagramConnectionSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
-  platformAccountId: z.string(),
-  username: z.string(),
-  accountType: z.string(),
-  tokenExpiresAt: z.string().nullable().optional(),
-  grantedScopes: z.array(z.string()),
-  connectionStatus: z.enum(["CONNECTED", "EXPIRED", "DISCONNECTED", "RECONNECT_REQUIRED"]),
-  lastDetectedAt: z.string().nullable().optional(),
-  connectedAt: z.string(),
-  disconnectedAt: z.string().nullable().optional(),
+export const TriggerExecutionInputSchema = z.object({
+  url: z.string().url("A valid URL is required"),
+  mediaType: z.string().optional(),
+  rules: z.array(
+    z.object({
+      ruleId: z.string(),
+      quantity: z.number().int().positive(),
+      deliveryWindowMin: z.number().int().positive().optional(),
+    })
+  ),
 });
-export type InstagramConnection = z.infer<typeof InstagramConnectionSchema>;
-
-export const MonitoredMediaSchema = z.object({
-  id: z.string(),
-  connectionId: z.string(),
-  packageId: z.string().nullable().optional(),
-  mediaId: z.string(),
-  permalink: z.string().nullable().optional(),
-  mediaType: z.string(),
-  caption: z.string().nullable().optional(),
-  publishedAt: z.string(),
-  firstDetectedAt: z.string(),
-});
-export type MonitoredMedia = z.infer<typeof MonitoredMediaSchema>;
-
-export const AutomationExecutionSchema = z.object({
-  id: z.string(),
-  packageId: z.string(),
-  packageItemId: z.string(),
-  mediaId: z.string(),
-  actionType: z.string(),
-  status: z.enum(["PENDING", "SCHEDULED", "PROCESSING", "COMPLETED", "FAILED", "SKIPPED", "CANCELLED"]),
-  quantity: z.number(),
-  scheduledAt: z.string(),
-  startedAt: z.string().nullable().optional(),
-  completedAt: z.string().nullable().optional(),
-  childOrderId: z.string().nullable().optional(),
-  errorCode: z.string().nullable().optional(),
-  errorMessage: z.string().nullable().optional(),
-});
-export type AutomationExecution = z.infer<typeof AutomationExecutionSchema>;
+export type TriggerExecutionInput = z.infer<typeof TriggerExecutionInputSchema>;

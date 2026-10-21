@@ -30,7 +30,7 @@ export default function OrderDetailPage() {
   const order = orders.find((o) => o.id === orderId) || {
     id: orderId,
     serviceId: "srv-01",
-    serviceName: "Meta Reels High-Retention Vector [Real Accounts - Instant Start]",
+    serviceName: "Meta Reels High-Retention Vector [Real Accounts - Direct Start]",
     platform: "instagram",
     target: "https://instagram.com/p/C123456789",
     quantity: 5000,
@@ -297,7 +297,7 @@ export default function OrderDetailPage() {
             <div className="space-y-4 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-white/10 pl-6">
               <div className="relative">
                 <span className="absolute -left-[19px] top-1 w-2.5 h-2.5 rounded-full bg-[#D8EC8D]" />
-                <div className="text-xs font-semibold text-white">Order Placed & Wallet Verified</div>
+                <div className="text-xs font-semibold text-white">Order Placed & Wallet Debited</div>
                 <div className="text-[11px] font-mono text-[#c7c8b6]">{new Date(order.createdAt).toLocaleTimeString()}</div>
                 <p className="text-xs text-[#c7c8b6] mt-0.5">
                   {(order as any).isPrepaid

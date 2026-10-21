@@ -1,0 +1,22 @@
+﻿GIT_HEAD: 295db2633906d6dd3f67034ac9a2f7b866601d3c
+GIT_BRANCH: feature/package-engine
+TEST_DB: smm_db
+COMMAND: pnpm --filter @smm/api exec jest --rootDir . test/package-start-flow-m5.spec.ts --forceExit
+PASS test/package-start-flow-m5.spec.ts
+  Milestone M5: Start Flow, Link Normalization, Atomic Quota & Parallel Idempotency
+    1. Link Normalization and MediaKey Extraction
+      √ rejects short links with clear user-friendly error message (36 ms)
+      √ rejects wrong host or non-platform links (2 ms)
+      √ normalizes direct link and extracts mediaKey with zero side effects (9 ms)
+      √ enforces handle match when urlContainsHandle is true (e.g. TikTok) (11 ms)
+    2. Start Flow: 50 Parallel Calls & Atomic Quota
+      √ 50 parallel Start calls on one link create exactly ONE trigger and one set of executions (137 ms)
+      √ rejects chosen quantity exceeding maxQtyPerPost (9 ms)
+      √ enforces quota limit: fails when usedCount reaches maxPosts (106 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        1.856 s, estimated 2 s
+Ran all test suites matching /test\\package-start-flow-m5.spec.ts/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

@@ -1,0 +1,21 @@
+﻿GIT_HEAD: 295db2633906d6dd3f67034ac9a2f7b866601d3c
+GIT_BRANCH: feature/package-engine
+TEST_DB: smm_db
+COMMAND: pnpm --filter @smm/api exec jest --rootDir . test/package-money-m6.spec.ts --forceExit
+PASS test/package-money-m6.spec.ts
+  Milestone M6: Money, Reserves, Settlement, Cancellation & Invariant Conservation
+    1. Reserve & Cancellation Settlement
+      √ settles unused reserve back to customer wallet exactly once upon cancellation (71 ms)
+    2. Expiry Settlement at endAt
+      √ settles expired package at endAt and refunds unused reserve exactly once (37 ms)
+    3. Pause & Resume Semantics
+      √ pause updates status and resume extends endAt (11 ms)
+    4. Financial Invariant across Randomized Sequences
+      √ purchased === consumed + refunded + remaining holds across simulated lifecycle (6 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       4 passed, 4 total
+Snapshots:   0 total
+Time:        1.552 s, estimated 2 s
+Ran all test suites matching /test\\package-money-m6.spec.ts/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

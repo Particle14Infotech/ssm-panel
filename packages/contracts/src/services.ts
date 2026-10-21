@@ -60,6 +60,7 @@ export const ServiceItemSchema = z.object({
   costINR: z.number().optional(),
   marginPercent: z.number().optional(),
   priceBelowCost: z.boolean().optional(),
+  packageEligible: z.boolean().default(false).optional(),
   allowManagedDrip: z.boolean().optional(),
   providerId: z.string().nullable().optional(),
   providerServiceId: z.string().nullable().optional(),

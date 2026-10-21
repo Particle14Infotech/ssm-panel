@@ -71,11 +71,29 @@ export default function PackagesListPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {packages.map((pkg) => {
+            const completedExecs =
+              pkg.executions?.filter((e: any) => e.status === "COMPLETED").length ?? pkg.completedRuns ?? 0;
+            const totalExecs = pkg.executions?.length ?? pkg.totalRuns ?? 0;
             const progressPercent =
-              pkg.totalRuns > 0 ? Math.round((pkg.completedRuns / pkg.totalRuns) * 100) : 0;
+              totalExecs > 0 ? Math.round((completedExecs / totalExecs) * 100) : 0;
             const isCompleted = pkg.status === "COMPLETED";
             const isCancelled = pkg.status === "CANCELLED";
             const isActive = pkg.status === "ACTIVE";
+
+            const displayRules =
+              pkg.rules?.map((r: any) => ({
+                id: r.id,
+                platform: pkg.platform || "instagram",
+                serviceName: r.service?.displayName || r.service?.name || "Service",
+                totalQuantity:
+                  r.kind === "FOLLOWERS_INTERVAL"
+                    ? r.totalFollowers || 0
+                    : (r.quantityPerPost || 0) * (r.maxPosts || 1),
+                charge: r.unitCharge,
+              })) || pkg.items || [];
+
+            const startDate = pkg.createdAt || pkg.startDate || new Date().toISOString();
+            const endDate = pkg.endAt || pkg.endDate || startDate;
 
             return (
               <GlassCard
@@ -86,7 +104,12 @@ export default function PackagesListPage() {
                   {/* Top Bar: Title & Status */}
                   <div className="flex items-center justify-between gap-2">
                     <div>
-                      <h3 className="text-base font-semibold text-white line-clamp-1">{pkg.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <PlatformIcon platform={pkg.platform || "instagram"} size={16} />
+                        <h3 className="text-base font-semibold text-white line-clamp-1">
+                          {pkg.handle ? `@${pkg.handle}` : pkg.name}
+                        </h3>
+                      </div>
                       <div className="text-xs text-slate-400 font-mono mt-0.5">ID: #{pkg.id.slice(0, 8)}</div>
                     </div>
                     <div>
@@ -121,7 +144,7 @@ export default function PackagesListPage() {
                     <div className="flex items-center justify-between text-xs font-mono">
                       <span className="text-slate-400">Fulfillment Progress</span>
                       <span className="text-white font-semibold">
-                        {pkg.completedRuns} / {pkg.totalRuns} runs ({progressPercent}%)
+                        {completedExecs} / {totalExecs} runs ({progressPercent}%)
                       </span>
                     </div>
                     <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
@@ -138,7 +161,7 @@ export default function PackagesListPage() {
                       Bundled Services
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      {pkg.items?.map((item: any) => (
+                      {displayRules.map((item: any) => (
                         <div
                           key={item.id}
                           className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 space-y-1"
@@ -163,8 +186,8 @@ export default function PackagesListPage() {
                       <div className="text-white font-medium mt-0.5 flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-slate-400" />
                         <span>
-                          {new Date(pkg.startDate).toLocaleDateString([], { month: "short", day: "numeric" })} -{" "}
-                          {new Date(pkg.endDate).toLocaleDateString([], { month: "short", day: "numeric" })}
+                          {new Date(startDate).toLocaleDateString([], { month: "short", day: "numeric" })} -{" "}
+                          {new Date(endDate).toLocaleDateString([], { month: "short", day: "numeric" })}
                         </span>
                       </div>
                     </div>

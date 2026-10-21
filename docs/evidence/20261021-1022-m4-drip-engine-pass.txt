@@ -1,0 +1,24 @@
+﻿GIT_HEAD: 295db2633906d6dd3f67034ac9a2f7b866601d3c
+GIT_BRANCH: feature/package-engine
+TEST_DB: smm_db
+COMMAND: pnpm --filter @smm/api exec jest --rootDir . test/drip-engine-m4.spec.ts --forceExit
+PASS test/drip-engine-m4.spec.ts
+  Milestone M4: Time-Interval Drip Engine & Worker Scheduler
+    1. Followers Drip Engine Pure Math
+      √ computes exact runsCount = min(floor(Q/serviceMin), floor(days/interval)) with even spacing (29 ms)
+      √ distributes remainder quantity and charge correctly to first runs and last run absorbs charge remainder (1 ms)
+      √ returns warning when quantity cannot be split across days without creating a silent big order (1 ms)
+    2. Per-Post Drip Engine Pure Math
+      √ computes runs = clamp(min(floor(q/min), maxRunsPerPost, floor(window/minGap)), 1) with first run at now (3 ms)
+      √ returns warning when quantity cannot be split into multiple runs with service minimum
+      √ ensures gap between runs is at least minGapMinutes (1 ms)
+    3. Worker Scheduler Dispatch & Prepaid Child Orders
+      √ dispatches due execution with real allocatedCharge > 0 and flags isPrepaid = true (64 ms)
+      √ ensures partial refund on prepaid child order: round_half_up(allocatedCharge * remains / quantity) > 0
+
+Test Suites: 1 passed, 1 total
+Tests:       8 passed, 8 total
+Snapshots:   0 total
+Time:        1.574 s, estimated 3 s
+Ran all test suites matching /test\\drip-engine-m4.spec.ts/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

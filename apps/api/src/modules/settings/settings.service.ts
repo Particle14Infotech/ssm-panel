@@ -26,7 +26,6 @@ export class SettingsService {
     packageMinSpacingMin: 15,
     packageMaxPauseDays: 14,
     packageMarginFloor: 0.15,
-    sourceInstagramEnabled: process.env.SOURCE_INSTAGRAM_ENABLED === "true",
   };
 
   getSettings() {

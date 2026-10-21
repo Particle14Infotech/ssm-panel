@@ -1,26 +1,26 @@
 import { PackagesQuoteService } from "./packages-quote.service";
 import { PackagesService } from "./packages.service";
 import { PackagesSchedulerService } from "./packages-scheduler.service";
-import { InstagramService } from "../instagram/instagram.service";
-import { BadRequestException, ForbiddenException } from "@nestjs/common";
+import { PlatformsService } from "../platforms/platforms.service";
+import { BadRequestException } from "@nestjs/common";
 import { Decimal } from "decimal.js";
 
-describe("Custom Instagram Auto-Post Package Engine & Invariants", () => {
+describe("Custom Platform Package Engine & Invariants", () => {
   let quoteService: PackagesQuoteService;
   let packagesService: PackagesService;
-  let instagramService: InstagramService;
+  let platformsService: PlatformsService;
   let schedulerService: PackagesSchedulerService;
   const mockPrisma = { isConnected: false } as any;
 
   beforeEach(() => {
     quoteService = new PackagesQuoteService(mockPrisma);
-    instagramService = new InstagramService(mockPrisma);
-    packagesService = new PackagesService(mockPrisma, quoteService, instagramService);
+    platformsService = new PlatformsService(mockPrisma);
+    packagesService = new PackagesService(mockPrisma, quoteService, platformsService);
     schedulerService = new PackagesSchedulerService(mockPrisma);
   });
 
   describe("Mathematical Invariants: Quantity & Financial Reconciliation", () => {
-    it("guarantees Quantity Invariant: sum(run.quantity) === item.quantity for odd & prime day distributions", async () => {
+    it("Quantity Invariant: sum(run.quantity) === item.quantity for odd & prime day distributions", async () => {
       const testCases = [
         { qty: 1000, days: 3 },
         { qty: 1000, days: 7 },
@@ -54,7 +54,7 @@ describe("Custom Instagram Auto-Post Package Engine & Invariants", () => {
       }
     });
 
-    it("guarantees Financial Invariant for multi-service bundles", async () => {
+    it("Financial Invariant for multi-service bundles", async () => {
       const quote = await quoteService.calculateQuote({
         days: 10,
         items: [
@@ -135,34 +135,13 @@ describe("Custom Instagram Auto-Post Package Engine & Invariants", () => {
     });
   });
 
-  describe("Auto-Post Configuration & Instagram Account Authorization", () => {
-    it("connects an authorized Instagram account and verifies connection eligibility", async () => {
-      const conn = await instagramService.connectAccount("user-1", {
-        platformAccountId: "ig-account-123",
-        username: "creative_agency",
-        accountType: "BUSINESS",
-        grantedScopes: ["instagram_basic", "instagram_manage_insights"],
-      });
-
-      expect(conn.username).toBe("creative_agency");
-      expect(conn.connectionStatus).toBe("CONNECTED");
-
-      // Verify ownership passes for owner
-      const verified = await instagramService.verifyConnectionEligibility("user-1", conn.id);
-      expect(verified.id).toBe(conn.id);
-
-      // Verify cross-user ownership fails
-      await expect(
-        instagramService.verifyConnectionEligibility("user-attacker", conn.id)
-      ).rejects.toThrow(ForbiddenException);
-    });
-
-    it("quote service attaches connected account metadata when connectionId is provided", async () => {
+  describe("Platform Package Configuration & Validation", () => {
+    it("quote service formats platform + handle quote with no side effects", async () => {
       const quote = await quoteService.calculateQuote({
         days: 15,
-        connectionId: "conn-123",
-        accountUsername: "art_gallery",
-        autoPostEnabled: true,
+        platform: "instagram",
+        handle: "art_gallery",
+        consentRulesUnderstood: true,
         items: [
           {
             serviceId: "srv-reel-views",
@@ -170,49 +149,15 @@ describe("Custom Instagram Auto-Post Package Engine & Invariants", () => {
             targetType: "POST_OR_REEL",
             quantity: 3000,
             quantityPerPost: 500,
-            delayAfterPublication: 10,
-            eligibleMediaTypes: ["REEL"],
+            maxPosts: 6,
           },
         ],
       });
 
       expect(quote.valid).toBe(true);
-      expect(quote.autoPostEnabled).toBe(true);
-      expect(quote.connection?.username).toBe("art_gallery");
       expect(quote.items[0].quantityPerPost).toBe(500);
-      expect(quote.items[0].delayAfterPublication).toBe(10);
-    });
-
-    it("detects new media with deduplication guarantees", async () => {
-      const conn = await instagramService.connectAccount("user-2", {
-        platformAccountId: "ig-acc-456",
-        username: "tech_startup",
-      });
-
-      const simulatedBatch = [
-        {
-          mediaId: "media_001",
-          permalink: "https://instagram.com/p/media_001",
-          mediaType: "REEL" as const,
-          publishedAt: new Date(),
-        },
-        {
-          mediaId: "media_002",
-          permalink: "https://instagram.com/p/media_002",
-          mediaType: "IMAGE" as const,
-          publishedAt: new Date(),
-        },
-      ];
-
-      // First detection poll: detects 2 posts
-      const poll1 = await instagramService.detectNewMedia(conn.id, undefined, simulatedBatch);
-      expect(poll1.detectedCount).toBe(2);
-      expect(poll1.newItems.length).toBe(2);
-
-      // Second detection poll with same media: detects 0 duplicates
-      const poll2 = await instagramService.detectNewMedia(conn.id, undefined, simulatedBatch);
-      expect(poll2.detectedCount).toBe(0);
-      expect(poll2.newItems.length).toBe(0);
+      expect(quote.items[0].maxPosts).toBe(6);
+      expect(quote.disclaimer).toBe("Maximum total; unused is refunded at the end");
     });
   });
 
@@ -220,6 +165,9 @@ describe("Custom Instagram Auto-Post Package Engine & Invariants", () => {
     it("supports pausing and resuming an active package", async () => {
       const res = await packagesService.purchasePackage("user-state", {
         days: 7,
+        platform: "instagram",
+        handle: "state_test",
+        consentRulesUnderstood: true,
         idempotencyKey: "idem_state_test",
         items: [
           {
@@ -251,6 +199,9 @@ describe("Custom Instagram Auto-Post Package Engine & Invariants", () => {
     it("cancels a package and prevents unauthorized access", async () => {
       const res = await packagesService.purchasePackage("user-cancel", {
         days: 14,
+        platform: "instagram",
+        handle: "cancel_test",
+        consentRulesUnderstood: true,
         idempotencyKey: "idem_cancel_test",
         items: [
           {

@@ -18,7 +18,7 @@ import { EmailModule } from "./modules/email/email.module";
 import { PricingModule } from "./modules/pricing/pricing.module";
 import { FavoritesModule } from "./modules/favorites/favorites.module";
 import { PackagesModule } from "./modules/packages/packages.module";
-import { InstagramModule } from "./modules/instagram/instagram.module";
+import { PlatformsModule } from "./modules/platforms/platforms.module";
 import { RequestIdMiddleware } from "./common/request-id.middleware";
 import { RateLimiterMiddleware } from "./common/rate-limiter.middleware";
 
@@ -43,7 +43,7 @@ import { RateLimiterMiddleware } from "./common/rate-limiter.middleware";
     PricingModule,
     FavoritesModule,
     PackagesModule,
-    InstagramModule,
+    PlatformsModule,
   ],
   controllers: [],
   providers: [],

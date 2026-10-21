@@ -7,7 +7,6 @@ import {
   PackageStatus,
   PackageExecutionStatus,
   TransactionType,
-  MonitoredMediaState,
 } from "@prisma/client";
 
 export interface TriggerPostPayload {
@@ -81,6 +80,8 @@ export class PackagesSchedulerService implements OnModuleInit, OnModuleDestroy {
           mediaKey: string | null;
           permalink: string | null;
           mediaState: string | null;
+          targetUrl: string | null;
+          platform: string;
           providerId: string | null;
           providerServiceId: string | null;
         }>
@@ -89,27 +90,26 @@ export class PackagesSchedulerService implements OnModuleInit, OnModuleDestroy {
           e.id,
           e."packageId",
           e."ruleId",
-          e."mediaId",
+          e."triggerId",
           e.source,
           e.seq,
           e.quantity,
           e."allocatedCharge",
           e."executeAt",
+          e."targetUrl",
+          e."mediaKey",
           p."userId",
           p.handle,
+          p.platform,
           p.status as "packageStatus",
           p."endAt" as "packageEndAt",
           r."serviceId",
-          m."mediaKey",
-          m.permalink,
-          m.state as "mediaState",
           s."providerId",
           s."providerServiceId"
         FROM "PackageExecution" e
         JOIN "Package" p ON e."packageId" = p.id
         JOIN "PackageRule" r ON e."ruleId" = r.id
         JOIN "Service" s ON r."serviceId" = s.id
-        LEFT JOIN "MonitoredMedia" m ON e."mediaId" = m.id
         WHERE e.status = 'SCHEDULED'
           AND e."executeAt" <= $1
         ORDER BY e."executeAt" ASC
@@ -158,60 +158,26 @@ export class PackagesSchedulerService implements OnModuleInit, OnModuleDestroy {
             continue;
           }
 
-          // 2. Re-verify media still exists if source is MEDIA
-          if (exec.mediaId && exec.mediaState === MonitoredMediaState.DELETED) {
-            // Media deleted! Set SKIPPED_DELETED and refund that slot
-            await this.prisma.$transaction(async (tx) => {
-              const allocated = new Decimal(exec.allocatedCharge.toString());
-
-              await tx.packageExecution.update({
-                where: { id: exec.id },
-                data: {
-                  status: PackageExecutionStatus.SKIPPED_DELETED,
-                  skipReason: "Media was deleted prior to execution dispatch",
-                },
-              });
-
-              if (allocated.greaterThan(0)) {
-                const [wallet] = await tx.$queryRawUnsafe<any[]>(
-                  `SELECT id, balance FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
-                  exec.userId
-                );
-                if (wallet) {
-                  const newBal = new Decimal(wallet.balance.toString()).plus(allocated);
-                  await tx.wallet.update({
-                    where: { id: wallet.id },
-                    data: { balance: newBal },
-                  });
-
-                  await tx.refund.create({
-                    data: {
-                      packageId: exec.packageId,
-                      userId: exec.userId,
-                      amount: allocated,
-                      reason: `MEDIA_DELETED_SLOT_${exec.id}`,
-                    },
-                  });
-
-                  await tx.ledgerEntry.create({
-                    data: {
-                      walletId: wallet.id,
-                      amount: allocated,
-                      type: TransactionType.PACKAGE_REFUND,
-                      referenceId: `REF_SLOT_${exec.id}`,
-                      description: `Slot Refund for Deleted Post in Package #${exec.packageId}`,
-                    },
-                  });
-                }
-              }
-            });
-            continue;
-          }
-
-          // 3. Determine target URL
-          let target = exec.permalink;
+          // 2. Determine target URL
+          let target = exec.targetUrl;
           if (!target || target.trim() === "") {
-            target = `https://www.instagram.com/${exec.handle.replace(/^@/, "")}`;
+            const rawHandle = (exec.handle || "").replace(/^@/, "");
+            const plat = (exec.platform || "instagram").toLowerCase();
+            if (rawHandle.startsWith("http")) {
+              target = rawHandle;
+            } else if (plat === "x") {
+              target = `https://x.com/${rawHandle}`;
+            } else if (plat === "tiktok") {
+              target = `https://tiktok.com/@${rawHandle}`;
+            } else if (plat === "youtube") {
+              target = `https://youtube.com/@${rawHandle}`;
+            } else if (plat === "facebook") {
+              target = `https://facebook.com/${rawHandle}`;
+            } else if (plat === "telegram") {
+              target = `https://t.me/${rawHandle}`;
+            } else {
+              target = `https://instagram.com/${rawHandle}`;
+            }
           }
 
           const allocatedCharge = new Decimal(exec.allocatedCharge.toString());

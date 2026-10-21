@@ -865,7 +865,7 @@ function NewOrderContent() {
                   <div>
                     <div className="text-slate-500 text-[11px]">Start / Avg Time</div>
                     <div className="font-semibold text-white mt-0.5">
-                      {activeService.avgStartTime || "Instant"}
+                      {activeService.avgStartTime || "15 - 30 mins"}
                     </div>
                   </div>
                   <div>

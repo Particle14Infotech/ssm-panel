@@ -1,0 +1,30 @@
+﻿GIT_HEAD: 295db2633906d6dd3f67034ac9a2f7b866601d3c
+GIT_BRANCH: feature/package-engine
+TEST_DB: smm_db
+COMMAND: pnpm --filter @smm/api exec jest --rootDir . test/platform-config.spec.ts --forceExit
+PASS test/platform-config.spec.ts
+  Milestone M2: Platform Config, Link Validation & Short Link Rejection
+    1. Handle Normalization & Validation Across All 6 Platforms
+      √ normalizes handles by trimming and stripping leading @ (2 ms)
+      √ validates valid handles for all 6 platforms (1 ms)
+      √ enforces platform-specific handle maximum length (18 ms)
+      √ rejects illegal characters in handles (2 ms)
+    2. Link Validation, Host Allowlist & MediaKey Extraction
+      √ extracts mediaKey from Instagram post, reel, and tv links (1 ms)
+      √ extracts mediaKey from TikTok video link and validates handle in URL (1 ms)
+      √ rejects TikTok link if handle in URL does not match package handle
+      √ extracts mediaKey from YouTube watch, shorts, and youtu.be links (1 ms)
+      √ extracts mediaKey from Facebook reel and watch links (1 ms)
+      √ extracts mediaKey from X status links and checks handle
+      √ extracts mediaKey from Telegram post links (1 ms)
+    3. Strict Short-Link Rejection & Host Verification (No Arbitrary URLs Fetched)
+      √ rejects shortened URLs with clear explanatory error message (4 ms)
+      √ rejects untrusted, third-party, or wrong-platform hosts (1 ms)
+      √ rejects non-URL strings without throwing uncaught runtime errors (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        0.872 s, estimated 1 s
+Ran all test suites matching /test\\platform-config.spec.ts/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

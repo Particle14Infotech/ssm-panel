@@ -1529,27 +1529,25 @@ export class SMMWorkerEngine {
           e.id,
           e."packageId",
           e."ruleId",
-          e."mediaId",
           e.source,
           e.seq,
           e.quantity,
           e."allocatedCharge",
           e."executeAt",
+          e."targetUrl",
+          e."mediaKey",
           p."userId",
           p.handle,
+          p.platform,
           p.status as "packageStatus",
           p."endAt" as "packageEndAt",
           r."serviceId",
-          m."mediaKey",
-          m.permalink,
-          m.state as "mediaState",
           s."providerId",
           s."providerServiceId"
         FROM "PackageExecution" e
         JOIN "Package" p ON e."packageId" = p.id
         JOIN "PackageRule" r ON e."ruleId" = r.id
         JOIN "Service" s ON r."serviceId" = s.id
-        LEFT JOIN "MonitoredMedia" m ON e."mediaId" = m.id
         WHERE e.status = 'SCHEDULED'
           AND e."executeAt" <= $1
         ORDER BY e."executeAt" ASC
@@ -1565,7 +1563,6 @@ export class SMMWorkerEngine {
         include: {
           package: true,
           rule: { include: { service: true } },
-          media: true,
         },
         take: 25,
         orderBy: { executeAt: "asc" },
@@ -1582,11 +1579,10 @@ export class SMMWorkerEngine {
         const packageEndAt = exec.packageEndAt || exec.package?.endAt;
         const userId = exec.userId || exec.package?.userId;
         const handle = exec.handle || exec.package?.handle;
+        const platform = (exec.platform || exec.package?.platform || "instagram").toLowerCase();
         const serviceId = exec.serviceId || exec.rule?.serviceId;
         const providerId = exec.providerId || exec.rule?.service?.providerId;
-        const mediaState = exec.mediaState || exec.media?.state;
-        const mediaId = exec.mediaId || exec.media?.id;
-        const permalink = exec.permalink || exec.media?.permalink;
+        const targetUrl = exec.targetUrl || exec.targetUrl;
 
         // 1. Status checks
         if (packageStatus === "CANCELLED") {
@@ -1613,58 +1609,25 @@ export class SMMWorkerEngine {
           continue;
         }
 
-        // 2. Re-verify media still exists if source MEDIA
-        if (mediaId && mediaState === "DELETED") {
-          await prisma.$transaction(async (tx) => {
-            const allocated = new Decimal(exec.allocatedCharge.toString());
-            await tx.packageExecution.update({
-              where: { id: exec.id },
-              data: {
-                status: "SKIPPED_DELETED" as any,
-                skipReason: "Media was deleted prior to execution dispatch",
-              },
-            });
-
-            if (allocated.greaterThan(0)) {
-              const [wallet] = await tx.$queryRawUnsafe<any[]>(
-                `SELECT id, balance FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
-                userId
-              );
-              if (wallet) {
-                const newBal = new Decimal(wallet.balance.toString()).plus(allocated);
-                await tx.wallet.update({
-                  where: { id: wallet.id },
-                  data: { balance: newBal },
-                });
-
-                await tx.refund.create({
-                  data: {
-                    packageId: exec.packageId,
-                    userId,
-                    amount: allocated,
-                    reason: `MEDIA_DELETED_SLOT_${exec.id}`,
-                  },
-                });
-
-                await tx.ledgerEntry.create({
-                  data: {
-                    walletId: wallet.id,
-                    amount: allocated,
-                    type: "PACKAGE_REFUND" as any,
-                    referenceId: `REF_SLOT_${exec.id}`,
-                    description: `Slot Refund for Deleted Post in Package #${exec.packageId}`,
-                  },
-                });
-              }
-            }
-          });
-          continue;
-        }
-
-        // 3. Target
-        let target = permalink;
+        // 2. Target URL
+        let target = targetUrl;
         if (!target || target.trim() === "") {
-          target = `https://www.instagram.com/${handle?.replace(/^@/, "") || "account"}`;
+          const rawHandle = (handle || "").replace(/^@/, "");
+          if (rawHandle.startsWith("http")) {
+            target = rawHandle;
+          } else if (platform === "x") {
+            target = `https://x.com/${rawHandle}`;
+          } else if (platform === "tiktok") {
+            target = `https://tiktok.com/@${rawHandle}`;
+          } else if (platform === "youtube") {
+            target = `https://youtube.com/@${rawHandle}`;
+          } else if (platform === "facebook") {
+            target = `https://facebook.com/${rawHandle}`;
+          } else if (platform === "telegram") {
+            target = `https://t.me/${rawHandle}`;
+          } else {
+            target = `https://instagram.com/${rawHandle}`;
+          }
         }
 
         const allocatedCharge = new Decimal(exec.allocatedCharge.toString());

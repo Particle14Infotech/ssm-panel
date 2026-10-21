@@ -44,21 +44,9 @@ enum PackageStatus {
   CANCELLED
 }
 
-enum ConnectionStatus {
-  ACTIVE
-  NEEDS_RECONNECT
-  REVOKED
-}
-
 enum PackageRuleKind {
   POST_TRIGGERED
   TIME_DRIP
-}
-
-enum MonitoredMediaState {
-  BASELINE
-  NEW
-  DELETED
 }
 
 enum ExecutionSource {
@@ -150,7 +138,6 @@ model User {
   emailLogs EmailLog[]
   favorites Favorite[]
   packages  Package[]
-  sourceConnections SourceConnection[]
 
   @@index([email, isDeleted])
   @@index([role])
@@ -250,6 +237,7 @@ model Service {
   fixedSellingRateOverride Decimal? @db.Decimal(10, 2)
   priceBelowCost    Boolean   @default(false)
   priceChangeStatus String    @default("NORMAL") // NORMAL, PENDING_APPROVAL, BELOW_COST
+  packageEligible   Boolean   @default(false)
   active            Boolean   @default(true)
   status            String    @default("ACTIVE") // ACTIVE, INACTIVE
   isDeleted         Boolean   @default(false)
@@ -579,37 +567,43 @@ model SuggestionDismissal {
   @@index([userId])
 }
 
-model SourceConnection {
-  id                String           @id @default(uuid())
-  userId            String
-  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  platform          String           @default("INSTAGRAM")
-  providerAccountId String           // Platform account ID (immutable)
-  username          String
-  status            ConnectionStatus @default(ACTIVE)
-  tokenEnc          String?
-  tokenExpiresAt    DateTime?
-  baselineAt        DateTime?
-  nextPollAt        DateTime?
-  pollIntervalSec   Int              @default(120)
-  failureCount      Int              @default(0)
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+model PlatformConfig {
+  id                   String   @id @default(uuid())
+  platform             String   @unique
+  displayName          String
+  handleRegex          String
+  handleMaxLength      Int      @default(64)
+  hostAllowlist        String[] @default([])
+  pathPattern          String
+  mediaKeyExtractor    String
+  urlContainsHandle    Boolean  @default(false)
+  eligibleRuleKinds    String[] @default(["POST_TRIGGERED", "TIME_DRIP"])
+  followersIntervals   Int[]    @default([1, 2, 4, 8, 12, 24])
+  minGapMinutes        Int      @default(15)
+  maxRunsPerPost       Int      @default(10)
+  defaultWindowMinutes Int      @default(180)
+  limits               Json     @default("{}")
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
 
-  packages          Package[]
-  media             MonitoredMedia[]
+model PlatformHandleBlocklist {
+  id        String   @id @default(uuid())
+  platform  String
+  handle    String
+  reason    String?
+  createdAt DateTime @default(now())
 
-  @@unique([platform, providerAccountId])
-  @@index([userId, status])
-  @@index([nextPollAt, status])
+  @@unique([platform, handle])
+  @@index([platform, handle])
 }
 
 model Package {
   id             String            @id @default(uuid())
   userId         String
   user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  connectionId   String?
-  connection     SourceConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  platform       String            @default("INSTAGRAM")
   handle         String
   kind           PackageRuleKind?
   status         PackageStatus     @default(ACTIVE)
@@ -622,12 +616,13 @@ model Package {
   updatedAt      DateTime          @updatedAt
 
   rules          PackageRule[]
+  triggers       PackageTrigger[]
   executions     PackageExecution[]
   refunds        Refund[]
 
   @@unique([userId, idempotencyKey], name: "unique_package_idempotency_per_user")
   @@index([userId, status, createdAt])
-  @@index([connectionId, status])
+  @@index([platform, handle, status])
   @@index([status, endAt])
 }
 
@@ -658,24 +653,18 @@ model PackageRule {
   @@index([serviceId])
 }
 
-model MonitoredMedia {
-  id           String              @id @default(uuid())
-  connectionId String
-  connection   SourceConnection    @relation(fields: [connectionId], references: [id], onDelete: Cascade)
-  mediaKey     String
-  publishedAt  DateTime
-  state        MonitoredMediaState @default(NEW)
-  permalink    String?
-  mediaType    String?
-  caption      String?
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+model PackageTrigger {
+  id        String   @id @default(uuid())
+  packageId String
+  package   Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  mediaKey  String
+  targetUrl String
+  createdAt DateTime @default(now())
 
-  executions   PackageExecution[]
+  executions PackageExecution[]
 
-  @@unique([connectionId, mediaKey])
-  @@index([connectionId, publishedAt])
-  @@index([state])
+  @@unique([packageId, mediaKey])
+  @@index([packageId])
 }
 
 model PackageExecution {
@@ -684,8 +673,10 @@ model PackageExecution {
   package         Package                @relation(fields: [packageId], references: [id], onDelete: Cascade)
   ruleId          String
   rule            PackageRule            @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-  mediaId         String?
-  media           MonitoredMedia?        @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  triggerId       String?
+  trigger         PackageTrigger?        @relation(fields: [triggerId], references: [id], onDelete: Cascade)
+  mediaKey        String?
+  targetUrl       String?
   source          ExecutionSource        @default(SCHEDULE)
   seq             Int                    @default(1)
   quantity        Int
@@ -698,7 +689,7 @@ model PackageExecution {
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
 
-  @@unique([ruleId, mediaId])
+  @@unique([packageId, mediaKey, seq], name: "unique_package_media_seq")
   @@index([status, executeAt])
   @@index([packageId])
   @@index([ruleId])

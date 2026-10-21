@@ -41,13 +41,15 @@ export class ServicesController {
   @ApiQuery({ name: "q", required: false })
   @ApiQuery({ name: "categoryId", required: false })
   @ApiQuery({ name: "sortBy", required: false })
+  @ApiQuery({ name: "packageEligible", required: false })
   findAll(
     @Query("platform") platform?: string,
     @Query("q") query?: string,
     @Query("categoryId") categoryId?: string,
-    @Query("sortBy") sortBy?: string
+    @Query("sortBy") sortBy?: string,
+    @Query("packageEligible") packageEligible?: string
   ) {
-    return this.servicesService.findAll(platform, query, categoryId, sortBy);
+    return this.servicesService.findAll(platform, query, categoryId, sortBy, packageEligible);
   }
 
   @Get(":id")
