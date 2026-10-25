@@ -167,7 +167,7 @@ export class PackagesService {
       const durationDays = quote.days || input.durationDays || input.days || 30;
       const startAt = new Date();
       const endAt = new Date(startAt.getTime() + durationDays * 24 * 3600 * 1000);
-      const packageId = `pkg_sbx_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const packageId = `pkg_sbx_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
       const pkg = {
         id: packageId,
         userId,
