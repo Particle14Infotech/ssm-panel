@@ -5,16 +5,20 @@ import {
   ConflictException,
   ForbiddenException,
   ServiceUnavailableException,
+  HttpException,
+  HttpStatus,
   Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { WalletService } from "../wallet/wallet.service";
 import { SettingsService } from "../settings/settings.service";
 import { PricingService } from "../pricing/pricing.service";
+import { SANDBOX_SERVICES } from "../services/services.service";
 import {
   OrderStatus,
   OutboxStatus,
   PackageExecutionStatus,
+  TransactionType,
 } from "@prisma/client";
 import {
   calculateOrderFinancialSnapshot,
@@ -78,6 +82,7 @@ export interface OrderFilterDto {
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
+  private readonly sandboxOrders = new Map<string, any>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -132,7 +137,13 @@ export class OrdersService {
 
   async findAll(userId?: string, requesterRole?: string, filters?: OrderFilterDto) {
     if (!this.prisma.isConnected) {
-      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
+      const orders = Array.from(this.sandboxOrders.values()).filter((o) => {
+        if (requesterRole === "ADMIN") {
+          return userId ? o.userId === userId : true;
+        }
+        return o.userId === userId;
+      });
+      return orders.map((order) => this.sanitizeOrderForRole(order, requesterRole));
     }
 
     try {
@@ -235,7 +246,14 @@ export class OrdersService {
 
   async findOne(id: string, requesterUserId?: string, requesterRole?: string) {
     if (!this.prisma.isConnected) {
-      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
+      const order = this.sandboxOrders.get(id);
+      if (!order) {
+        throw new NotFoundException(`Order #${id} not found.`);
+      }
+      if (requesterRole !== "ADMIN" && requesterUserId && order.userId !== requesterUserId) {
+        throw new ForbiddenException("Order does not belong to you.");
+      }
+      return this.sanitizeOrderForRole(order, requesterRole);
     }
 
     const include: any = {
@@ -306,10 +324,6 @@ export class OrdersService {
    * Dispatches a new order with atomic balance deduction and idempotency check.
    */
   async create(input: CreateOrderDto) {
-    if (!this.prisma.isConnected) {
-      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
-    }
-
     // 1. Strict Input Validation
     if (!input.serviceId || typeof input.serviceId !== "string" || !input.target || !input.quantity) {
       throw new BadRequestException("serviceId, target URL, and quantity are required.");
@@ -333,6 +347,8 @@ export class OrdersService {
       } catch {
         // DB offline fallback
       }
+    } else {
+      service = SANDBOX_SERVICES.find((s) => s.id === input.serviceId);
     }
 
     if (!service) {
@@ -540,7 +556,86 @@ export class OrdersService {
 
     // 6. Atomic Execution: Debit wallet + Insert Order + Record History + Write Ledger + Enqueue Outbox
     if (!this.prisma.isConnected) {
-      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
+      if (input.idempotencyKey) {
+        const existingOrder = Array.from(this.sandboxOrders.values()).find(
+          (o) => o.userId === userId && o.idempotencyKey === input.idempotencyKey
+        );
+        if (existingOrder) {
+          const sameParams =
+            existingOrder.serviceId === service.id &&
+            existingOrder.target === input.target &&
+            existingOrder.quantity === input.quantity;
+          if (!sameParams) {
+            throw new ConflictException("Idempotency key already used with different order parameters.");
+          }
+          return this.sanitizeOrderForRole(existingOrder, input.requesterRole);
+        }
+      }
+
+      const balRes = await this.walletService.getBalance(userId);
+      const currentBal = new Decimal(balRes.balance);
+      if (currentBal.lessThan(charge)) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.PAYMENT_REQUIRED,
+            message: "Insufficient wallet balance. Please add funds to your wallet to place this order.",
+            addFundsUrl: "/app/wallet",
+          },
+          HttpStatus.PAYMENT_REQUIRED
+        );
+      }
+
+      const orderId = `ord_sbx_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      await this.walletService.debitForOrder(
+        userId,
+        orderId,
+        charge,
+        input.idempotencyKey,
+        `Order Charge #${orderId} for ${service.displayName || service.name}`
+      );
+
+      const order: any = {
+        id: orderId,
+        userId,
+        serviceId: service.id,
+        service: {
+          id: service.id,
+          name: service.name,
+          platform: service.platform,
+          refillable: service.refillable ?? service.refill ?? false,
+          cancellable: service.cancellable ?? service.cancel ?? false,
+        },
+        target: input.target,
+        quantity: input.quantity,
+        charge: charge.toNumber(),
+        status: OrderStatus.PENDING,
+        startCount: 0,
+        remains: input.quantity,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        idempotencyKey: input.idempotencyKey || null,
+        history: [
+          { status: OrderStatus.PENDING, notes: "Order placed and queued", createdAt: new Date() },
+        ],
+      };
+
+      if (service.id === "srv_mock_fail" || service.providerServiceId === "103") {
+        order.status = OrderStatus.FAILED;
+        order.history.push({
+          status: OrderStatus.FAILED,
+          notes: "Provider dispatch timed out (simulated drill). Automatic refund processed.",
+          createdAt: new Date(),
+        });
+        await this.walletService.refundOrder(
+          userId,
+          orderId,
+          charge,
+          `Automatic refund for failed order #${orderId}`
+        );
+      }
+
+      this.sandboxOrders.set(order.id, order);
+      return this.sanitizeOrderForRole(order, input.requesterRole);
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -814,7 +909,14 @@ export class OrdersService {
 
     if (!this.prisma.isConnected) {
       order.status = OrderStatus.CANCELLED;
-      return { success: true, message: `Order #${id} cancelled and refunded.`, order };
+      const refundCharge = new Decimal(order.charge.toString());
+      const creditRes = await this.walletService.refundOrder(
+        order.userId,
+        order.id,
+        refundCharge,
+        `Full Refund for Cancelled Order #${order.id}`
+      );
+      return { success: true, message: `Order #${id} cancelled and refunded.`, newBalance: creditRes.newBalance, order };
     }
 
     const refundCharge = new Decimal(order.charge.toString());

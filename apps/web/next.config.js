@@ -5,6 +5,7 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
   compress: true,
   swcMinify: true,
+  output: "standalone",
   transpilePackages: ["@smm/contracts", "@smm/config", "three"],
   images: {
     formats: ["image/avif", "image/webp"],

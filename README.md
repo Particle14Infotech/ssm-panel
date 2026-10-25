@@ -3,9 +3,12 @@
 > **Enterprise-Grade Social Media Marketing Dispatch Platform & Reseller Infrastructure**  
 > *Built with NestJS Modular Monolith, Next.js 14 App Router, PostgreSQL Invariant Engine, Redis Outbox Queue & Zero-Docker Architecture.*
 
+> 🚀 **VPS Production Deployment**: Follow the complete guide at [VPS_DEPLOYMENT.md](VPS_DEPLOYMENT.md) for 1-command Docker Compose or PM2 + Nginx setups.
+
 ---
 
 ## 📑 Table of Contents
+0. [VPS Deployment Guide (Docker & PM2)](VPS_DEPLOYMENT.md)
 1. [Overview & What It Is](#-overview--what-it-is)
 2. [Core Feature Matrix](#-core-feature-matrix)
 3. [System Architecture](#-system-architecture)

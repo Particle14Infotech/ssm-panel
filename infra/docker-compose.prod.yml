@@ -1,0 +1,104 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smm_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-smm_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-smm_password_secure}
+      POSTGRES_DB: ${POSTGRES_DB:-smm_db}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-smm_user} -d ${POSTGRES_DB:-smm_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: smm_redis
+    restart: always
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    container_name: smm_api
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-smm_user}:${POSTGRES_PASSWORD:-smm_password_secure}@postgres:5432/${POSTGRES_DB:-smm_db}?schema=public
+      REDIS_URL: redis://redis:6379
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      PASSWORD_PEPPER: ${PASSWORD_PEPPER}
+      PROVIDER_KEY_SECRET: ${PROVIDER_KEY_SECRET}
+      PROVIDER_KEY_ENCRYPTION_KEY: ${PROVIDER_KEY_ENCRYPTION_KEY:-${PROVIDER_KEY_SECRET}}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@smmpanel.internal}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-simulated}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+    ports:
+      - "127.0.0.1:4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.worker
+    container_name: smm_worker
+    restart: always
+    environment:
+      NODE_ENV: production
+      WORKER_ENABLED: "true"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-smm_user}:${POSTGRES_PASSWORD:-smm_password_secure}@postgres:5432/${POSTGRES_DB:-smm_db}?schema=public
+      REDIS_URL: redis://redis:6379
+      PROVIDER_KEY_SECRET: ${PROVIDER_KEY_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.web
+    container_name: smm_web
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api/v1}
+      NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME:-SMM Panel}
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:

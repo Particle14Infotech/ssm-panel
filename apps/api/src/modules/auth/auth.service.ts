@@ -421,7 +421,7 @@ export class AuthService {
     await this.prisma.session.create({
       data: {
         userId: user.id,
-        refreshTokenHash: refreshHash,
+        refreshToken: refreshHash,
         expiresAt: sessionExpiresAt,
       },
     }).catch(() => null);

@@ -3,13 +3,13 @@ import { PrismaService } from "../../common/prisma.service";
 import { ServiceItem, ServicePlatform } from "@smm/contracts";
 import { Decimal } from "decimal.js";
 
-const SANDBOX_CATEGORIES = [
+export const SANDBOX_CATEGORIES = [
   { id: "cat_ig", name: "Instagram Followers & Engagement", slug: "instagram-followers", sortOrder: 1, serviceCount: 2 },
   { id: "cat_yt", name: "YouTube Growth & Watchtime", slug: "youtube-views", sortOrder: 2, serviceCount: 3 },
   { id: "cat_x", name: "X (Twitter) Engagement", slug: "x-twitter", sortOrder: 3, serviceCount: 1 },
 ];
 
-const SANDBOX_SERVICES: any[] = [
+export const SANDBOX_SERVICES: any[] = [
   {
     id: "1042",
     categoryId: "cat_ig",

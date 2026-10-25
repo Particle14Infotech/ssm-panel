@@ -52,6 +52,18 @@ module.exports = {
         PRISMA_CONNECTION_LIMIT: 10,
       },
     },
+    {
+      name: "smm-web",
+      script: "node_modules/next/dist/bin/next",
+      args: "start apps/web -p 3000",
+      instances: 1,
+      exec_mode: "fork",
+      max_memory_restart: "512M",
+      env: {
+        NODE_ENV: "production",
+        PORT: 3000,
+      },
+    },
   ],
 };
 

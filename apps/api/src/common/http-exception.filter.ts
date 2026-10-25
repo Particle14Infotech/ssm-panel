@@ -76,6 +76,8 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
         return "FORBIDDEN";
       case HttpStatus.NOT_FOUND:
         return "NOT_FOUND";
+      case HttpStatus.PAYMENT_REQUIRED:
+        return "PAYMENT_REQUIRED";
       case HttpStatus.CONFLICT:
         return "CONFLICT";
       case HttpStatus.UNPROCESSABLE_ENTITY:

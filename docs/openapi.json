@@ -418,6 +418,30 @@
         ]
       }
     },
+    "/api/v1/services/grouped": {
+      "get": {
+        "operationId": "ServicesController_getGrouped",
+        "summary": "Get Grouped Catalog by Category",
+        "parameters": [
+          {
+            "name": "platform",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Services Catalog"
+        ]
+      }
+    },
     "/api/v1/services": {
       "get": {
         "operationId": "ServicesController_findAll",
@@ -449,6 +473,14 @@
           },
           {
             "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "packageEligible",
             "required": false,
             "in": "query",
             "schema": {
@@ -547,6 +579,30 @@
         ]
       }
     },
+    "/api/v1/catalog/grouped": {
+      "get": {
+        "operationId": "CatalogController_getGrouped",
+        "summary": "Get Grouped Catalog by Category (Single Query)",
+        "parameters": [
+          {
+            "name": "platform",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Catalog"
+        ]
+      }
+    },
     "/api/v1/orders": {
       "get": {
         "operationId": "OrdersController_findAll",
@@ -640,6 +696,30 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Orders Dispatch Terminal"
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/report-problem": {
+      "post": {
+        "operationId": "OrdersController_reportProblem",
+        "summary": "Customer Report Problem with Order (One Open Report Limit)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
             "description": ""
           }
         },
@@ -763,6 +843,30 @@
       "post": {
         "operationId": "OrdersController_retry",
         "summary": "Admin Retry Order Provider Dispatch",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Orders Dispatch Terminal"
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/package-provider-reconciliation": {
+      "post": {
+        "operationId": "OrdersController_reconcilePackageProviderOutcome",
+        "summary": "Admin reconcile an uncertain package provider outcome",
         "parameters": [
           {
             "name": "id",
@@ -921,6 +1025,11 @@
         },
         "tags": [
           "Platform Settings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       },
       "put": {
@@ -934,6 +1043,11 @@
         },
         "tags": [
           "Platform Settings"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -1110,6 +1224,11 @@
         },
         "tags": [
           "Provider Node Sync"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       },
       "post": {
@@ -1123,6 +1242,11 @@
         },
         "tags": [
           "Provider Node Sync"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -1138,6 +1262,11 @@
         },
         "tags": [
           "Provider Node Sync"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -1162,6 +1291,11 @@
         },
         "tags": [
           "Provider Node Sync"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       },
       "put": {
@@ -1184,6 +1318,11 @@
         },
         "tags": [
           "Provider Node Sync"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       },
       "delete": {
@@ -1206,6 +1345,11 @@
         },
         "tags": [
           "Provider Node Sync"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -1230,6 +1374,11 @@
         },
         "tags": [
           "Provider Node Sync"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -1254,6 +1403,11 @@
         },
         "tags": [
           "Provider Node Sync"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -1278,6 +1432,11 @@
         },
         "tags": [
           "Provider Node Sync"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -1302,6 +1461,11 @@
         },
         "tags": [
           "Provider Node Sync"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -1326,6 +1490,11 @@
         },
         "tags": [
           "Provider Node Sync"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -1836,6 +2005,11 @@
         },
         "tags": [
           "Coupons & Bonus Rules"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -1879,6 +2053,11 @@
         },
         "tags": [
           "Coupons & Bonus Rules"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -1946,6 +2125,11 @@
         },
         "tags": [
           "Platform Announcements"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -1961,6 +2145,11 @@
         },
         "tags": [
           "Reports & Analytics"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -1976,6 +2165,11 @@
         },
         "tags": [
           "Reports & Analytics"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -2166,6 +2360,905 @@
         "security": [
           {
             "reseller-api-key": []
+          }
+        ]
+      }
+    },
+    "/api/v1/favorites": {
+      "get": {
+        "operationId": "FavoritesController_listFavorites",
+        "summary": "List User Favorites",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Customer Favorites"
+        ]
+      },
+      "post": {
+        "operationId": "FavoritesController_createFavorite",
+        "summary": "Add or Update a Favorite",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Customer Favorites"
+        ]
+      }
+    },
+    "/api/v1/favorites/{id}": {
+      "delete": {
+        "operationId": "FavoritesController_deleteFavorite",
+        "summary": "Delete a Favorite",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Customer Favorites"
+        ]
+      }
+    },
+    "/api/v1/favorites/suggestions": {
+      "get": {
+        "operationId": "FavoritesController_getSuggestions",
+        "summary": "Get Smart Suggestions from Recent Orders",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Customer Favorites"
+        ]
+      }
+    },
+    "/api/v1/favorites/suggestions/dismiss": {
+      "post": {
+        "operationId": "FavoritesController_dismissSuggestion",
+        "summary": "Dismiss a Smart Suggestion",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Customer Favorites"
+        ]
+      }
+    },
+    "/api/v1/packages/quote": {
+      "post": {
+        "operationId": "PackagesController_getQuote",
+        "summary": "Get Price Quote and Run Allocation Preview",
+        "parameters": [
+          {
+            "name": "x-forwarded-for",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/purchase": {
+      "post": {
+        "operationId": "PackagesController_purchasePackage",
+        "summary": "Purchase Package with Upfront Wallet Debit",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages": {
+      "post": {
+        "operationId": "PackagesController_createPackage",
+        "summary": "Create & Purchase Package",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      },
+      "get": {
+        "operationId": "PackagesController_listPackages",
+        "summary": "List User Growth Packages",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/admin/{id}/summary": {
+      "get": {
+        "operationId": "PackagesController_getAdminPackageSummary",
+        "summary": "Admin Package Overview (Revenue, Cost, and Profit Breakdown)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/admin/executions/{executionId}/resolve": {
+      "post": {
+        "operationId": "PackagesController_adminResolveExecution",
+        "summary": "Admin Queue Action: Resolve UNCERTAIN or STALLED Package Execution (retry / mark sent / refund)",
+        "parameters": [
+          {
+            "name": "executionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/admin/executions/queue": {
+      "get": {
+        "operationId": "PackagesController_getAdminExecutionsQueue",
+        "summary": "Admin Queue: List, filter and monitor package executions (safe pagination)",
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/{id}": {
+      "get": {
+        "operationId": "PackagesController_getPackage",
+        "summary": "Get Package Details and Run Timeline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/{id}/report-problem": {
+      "post": {
+        "operationId": "PackagesController_reportProblem",
+        "summary": "Report Problem with Package (Creates High-Priority Support Ticket)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/{id}/pause": {
+      "post": {
+        "operationId": "PackagesController_pausePackage",
+        "summary": "Pause Auto-Post Package Monitoring",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/{id}/resume": {
+      "post": {
+        "operationId": "PackagesController_resumePackage",
+        "summary": "Resume Paused Auto-Post Package Monitoring",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/{id}/triggers": {
+      "get": {
+        "operationId": "PackagesController_getPackageTriggers",
+        "summary": "List Triggers and Posts for Package",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      },
+      "post": {
+        "operationId": "PackagesController_triggerStart",
+        "summary": "Start post execution with atomic quota and time-interval drip schedule",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/{id}/executions": {
+      "get": {
+        "operationId": "PackagesController_getPackageExecutions",
+        "summary": "List Workflow Execution History for Package",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/{id}/triggers/preview": {
+      "post": {
+        "operationId": "PackagesController_triggerPreview",
+        "summary": "Preview post trigger schedule and per-rule quantity (zero side effects)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/{id}/executions/{executionId}/reschedule": {
+      "post": {
+        "operationId": "PackagesController_rescheduleExecution",
+        "summary": "Reschedule an eligible pending package execution",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "executionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/{id}/trigger": {
+      "post": {
+        "operationId": "PackagesController_triggerManualPost",
+        "summary": "Trigger post execution via direct platform link (backward compatibility)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/{id}/triggers/{tid}/swap-link": {
+      "post": {
+        "operationId": "PackagesController_swapTriggerLink",
+        "summary": "Swap Link for Scheduled Trigger Executions (Max 2)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tid",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/{id}/speed-up": {
+      "post": {
+        "operationId": "PackagesController_speedUpPackage",
+        "summary": "Compress Delivery Interval within Platform Bounds",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/{id}/comments": {
+      "post": {
+        "operationId": "PackagesController_submitCustomComments",
+        "summary": "Submit Custom Comments with Content Moderation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/bundle/templates": {
+      "get": {
+        "operationId": "PackagesController_getBundleTemplates",
+        "summary": "Get Active Admin Preset Bundle Templates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/bundle/purchase": {
+      "post": {
+        "operationId": "PackagesController_purchaseBundle",
+        "summary": "Purchase Preset Bundle Template",
+        "parameters": [
+          {
+            "name": "idempotency-key",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/{id}/renew": {
+      "post": {
+        "operationId": "PackagesController_renewPackage",
+        "summary": "Renew Monthly Retainer Package with Explicit Consent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/{id}/auto-renew": {
+      "post": {
+        "operationId": "PackagesController_setAutoRenew",
+        "summary": "Configure Auto-Renew Consent for Package Retainer",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/packages/{id}/cancel": {
+      "post": {
+        "operationId": "PackagesController_cancelPackage",
+        "summary": "Cancel Remaining Runs with Automated Wallet Refund",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Scheduled Packages Engine"
+        ]
+      }
+    },
+    "/api/v1/platforms": {
+      "get": {
+        "operationId": "PlatformsController_getPlatforms",
+        "summary": "Get Active Platform Configurations and Validation Rules",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform Configurations"
+        ]
+      }
+    },
+    "/api/v1/platforms/{platform}": {
+      "get": {
+        "operationId": "PlatformsController_getPlatformConfig",
+        "summary": "Get Validation Rules for a Specific Platform",
+        "parameters": [
+          {
+            "name": "platform",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform Configurations"
+        ]
+      }
+    },
+    "/api/v1/admin/platforms": {
+      "get": {
+        "operationId": "PlatformsAdminController_listPlatforms",
+        "summary": "Admin List All Platform Configurations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Platform Rules & Blocklist"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "PlatformsAdminController_createPlatform",
+        "summary": "Admin Create New Platform Configuration",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Platform Rules & Blocklist"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/platforms/blocklist": {
+      "get": {
+        "operationId": "PlatformsAdminController_listBlocklist",
+        "summary": "Admin List Blocked Handles",
+        "parameters": [
+          {
+            "name": "platform",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Platform Rules & Blocklist"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "PlatformsAdminController_addBlocklist",
+        "summary": "Admin Add Handle to Blocklist",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Platform Rules & Blocklist"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/platforms/blocklist/{id}": {
+      "delete": {
+        "operationId": "PlatformsAdminController_removeBlocklist",
+        "summary": "Admin Remove Handle from Blocklist",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Platform Rules & Blocklist"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/platforms/{id}": {
+      "get": {
+        "operationId": "PlatformsAdminController_getPlatform",
+        "summary": "Admin Get Specific Platform Configuration",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Platform Rules & Blocklist"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "PlatformsAdminController_updatePlatform",
+        "summary": "Admin Update Platform Configuration",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Admin Platform Rules & Blocklist"
+        ],
+        "security": [
+          {
+            "bearer": []
           }
         ]
       }
