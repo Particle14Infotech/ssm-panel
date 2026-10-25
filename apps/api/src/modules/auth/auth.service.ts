@@ -28,7 +28,10 @@ const REFRESH_EXPIRES_DAYS = 7;
 @Injectable()
 export class AuthService {
   private sandboxUsers = new Map<string, any>();
+  private sandboxSessions = new Map<string, any>();
+  private sandboxResetTokens = new Map<string, any>();
   private rateLimitMap = new Map<string, number[]>();
+  private loginAttempts = new Map<string, { count: number; lockUntil: number }>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -54,20 +57,73 @@ export class AuthService {
       throw new UnauthorizedException("Email and password are required.");
     }
 
+    const cleanEmail = email.toLowerCase().trim();
+    const lockInfo = this.loginAttempts.get(cleanEmail);
+    if (lockInfo && Date.now() < lockInfo.lockUntil) {
+      const waitSeconds = Math.max(1, Math.ceil((lockInfo.lockUntil - Date.now()) / 1000));
+      throw new UnauthorizedException(`Account temporarily locked. Please retry in ${waitSeconds} seconds.`);
+    }
+
+    const recordFailedAttempt = () => {
+      const cur = this.loginAttempts.get(cleanEmail) || { count: 0, lockUntil: 0 };
+      cur.count += 1;
+      if (cur.count >= 5) {
+        cur.lockUntil = Date.now() + 60000;
+      }
+      this.loginAttempts.set(cleanEmail, cur);
+      throw new UnauthorizedException("Invalid email or password.");
+    };
+
     if (!this.prisma.isConnected) {
-      const cleanEmail = email.toLowerCase().trim();
-      const isBholu = cleanEmail === "bholu@gmail.com";
-      const user = this.sandboxUsers.get(cleanEmail) || {
-        id: isBholu ? "usr_bholu_customer" : "usr_default_demo",
-        email: cleanEmail,
-        name: isBholu ? "Bholu" : "Demo Customer",
-        role: cleanEmail.includes("admin") ? "ADMIN" : "CUSTOMER",
-        tier: "PRO_SCALE",
-        balance: isBholu ? 1068.61 : 2450.0,
-      };
-      if (isBholu && !this.sandboxUsers.has(cleanEmail)) {
+      const adminEmail = (process.env.ADMIN_EMAIL || "admin@smmpanel.internal").toLowerCase().trim();
+      const adminPassword = process.env.ADMIN_PASSWORD || "ChangeThisAdminPasswordNow!";
+
+      let user = this.sandboxUsers.get(cleanEmail);
+      if (!user && cleanEmail === adminEmail && password === adminPassword) {
+        user = {
+          id: "usr_admin_001",
+          email: adminEmail,
+          name: "System Administrator",
+          passwordHash: adminPassword,
+          role: "ADMIN",
+          tier: "ENTERPRISE",
+          balance: 100000.0,
+        };
+        this.sandboxUsers.set(cleanEmail, user);
+      } else if (!user && cleanEmail === "bholu@gmail.com") {
+        user = {
+          id: "usr_bholu_customer",
+          email: cleanEmail,
+          name: "Bholu",
+          passwordHash: "password123",
+          role: "CUSTOMER",
+          tier: "PRO_SCALE",
+          balance: 1068.61,
+        };
         this.sandboxUsers.set(cleanEmail, user);
       }
+
+      if (!user) {
+        return recordFailedAttempt();
+      }
+
+      let isPasswordValid = false;
+      if (user.passwordHash === password || user.password === password) {
+        isPasswordValid = true;
+      } else if (user.passwordHash) {
+        try {
+          isPasswordValid = await argon2.verify(user.passwordHash, password);
+        } catch {
+          isPasswordValid = false;
+        }
+      }
+
+      if (!isPasswordValid) {
+        return recordFailedAttempt();
+      }
+
+      this.loginAttempts.delete(cleanEmail);
+
       const token = jwt.sign(
         {
           sub: user.id,
@@ -79,6 +135,20 @@ export class AuthService {
         { expiresIn: JWT_EXPIRES_IN }
       );
       const refreshToken = crypto.randomBytes(40).toString("hex");
+      const familyId = `fam_${Date.now()}_${Math.random()}`;
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + REFRESH_EXPIRES_DAYS);
+
+      this.sandboxSessions.set(refreshToken, {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        tier: user.tier,
+        expiresAt,
+        isRevoked: false,
+        familyId,
+      });
+
       return {
         success: true,
         token,
@@ -89,12 +159,11 @@ export class AuthService {
           name: user.name,
           role: user.role,
           tier: user.tier,
-          balance: user.balance ?? (isBholu ? 1068.61 : 2450.0),
+          balance: user.balance ?? (cleanEmail === "bholu@gmail.com" ? 1068.61 : 2450.0),
         },
       };
     }
 
-    const cleanEmail = email.toLowerCase().trim();
     const adminEmail = (process.env.ADMIN_EMAIL || "admin@smmpanel.internal").toLowerCase().trim();
     const adminPassword = process.env.ADMIN_PASSWORD || (process.env.NODE_ENV === "production" ? undefined : "ChangeThisAdminPasswordNow!");
 
@@ -223,6 +292,9 @@ export class AuthService {
     if (!email || !password || !name) {
       throw new BadRequestException("Name, email, and password are required.");
     }
+    if (password.length < 8) {
+      throw new BadRequestException("Password must be at least 8 characters long.");
+    }
 
     const cleanEmail = email.toLowerCase().trim();
 
@@ -232,19 +304,56 @@ export class AuthService {
       }
       const isBholu = cleanEmail === "bholu@gmail.com";
       const userId = isBholu ? "usr_bholu_customer" : `usr_sbx_${Date.now()}`;
+      const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
       const user = {
         id: userId,
         email: cleanEmail,
         name: isBholu ? "Bholu" : name.trim(),
+        passwordHash,
         role: "CUSTOMER",
         tier: isBholu ? "PRO_SCALE" : "BRONZE",
         balance: isBholu ? 1068.61 : 0,
       };
       this.sandboxUsers.set(cleanEmail, user);
+
+      const token = jwt.sign(
+        {
+          sub: user.id,
+          email: user.email,
+          role: user.role,
+          tier: user.tier,
+        },
+        getAuthJwtSecret(),
+        { expiresIn: JWT_EXPIRES_IN }
+      );
+      const refreshToken = crypto.randomBytes(40).toString("hex");
+      const familyId = `fam_${Date.now()}_${Math.random()}`;
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + REFRESH_EXPIRES_DAYS);
+
+      this.sandboxSessions.set(refreshToken, {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        tier: user.tier,
+        expiresAt,
+        isRevoked: false,
+        familyId,
+      });
+
       return {
         success: true,
         message: "Account provisioned successfully.",
-        user,
+        token,
+        refreshToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          tier: user.tier,
+          balance: user.balance,
+        },
       };
     }
 
@@ -294,9 +403,34 @@ export class AuthService {
       console.warn("[Auth] Failed to dispatch verification email on registration:", err.message);
     });
 
+    const token = jwt.sign(
+      {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        tier: user.tier,
+      },
+      getAuthJwtSecret(),
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+    const refreshToken = crypto.randomBytes(40).toString("hex");
+    const refreshHash = crypto.createHash("sha256").update(refreshToken).digest("hex");
+    const sessionExpiresAt = new Date();
+    sessionExpiresAt.setDate(sessionExpiresAt.getDate() + REFRESH_EXPIRES_DAYS);
+
+    await this.prisma.session.create({
+      data: {
+        userId: user.id,
+        refreshTokenHash: refreshHash,
+        expiresAt: sessionExpiresAt,
+      },
+    }).catch(() => null);
+
     return {
       success: true,
       message: "Account provisioned successfully. Please verify your email address.",
+      token,
+      refreshToken,
       user: {
         id: user.id,
         email: user.email,
@@ -315,6 +449,52 @@ export class AuthService {
   async refreshSession(refreshToken: string) {
     if (!refreshToken) {
       throw new UnauthorizedException("Refresh token required.");
+    }
+
+    if (!this.prisma.isConnected) {
+      const session = this.sandboxSessions.get(refreshToken);
+      if (!session || session.isRevoked || session.expiresAt < new Date()) {
+        if (session && session.isRevoked) {
+          for (const s of this.sandboxSessions.values()) {
+            if (s.familyId === session.familyId) {
+              s.isRevoked = true;
+            }
+          }
+        }
+        throw new UnauthorizedException("Session expired or revoked.");
+      }
+
+      session.isRevoked = true;
+      const nextRefreshToken = crypto.randomBytes(40).toString("hex");
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + REFRESH_EXPIRES_DAYS);
+
+      this.sandboxSessions.set(nextRefreshToken, {
+        userId: session.userId,
+        email: session.email,
+        role: session.role,
+        tier: session.tier,
+        expiresAt,
+        isRevoked: false,
+        familyId: session.familyId,
+      });
+
+      const newToken = jwt.sign(
+        {
+          sub: session.userId,
+          email: session.email,
+          role: session.role,
+          tier: session.tier,
+        },
+        getAuthJwtSecret(),
+        { expiresIn: JWT_EXPIRES_IN }
+      );
+
+      return {
+        success: true,
+        token: newToken,
+        refreshToken: nextRefreshToken,
+      };
     }
 
     const session = await this.prisma.session.findUnique({
@@ -357,12 +537,21 @@ export class AuthService {
     );
 
     return {
+      success: true,
       token: newToken,
       refreshToken: nextRefreshToken,
     };
   }
 
   async logout(refreshToken?: string, userId?: string) {
+    if (!this.prisma.isConnected) {
+      if (refreshToken && this.sandboxSessions.has(refreshToken)) {
+        const s = this.sandboxSessions.get(refreshToken);
+        if (s) s.isRevoked = true;
+      }
+      return { success: true, message: "Logged out successfully." };
+    }
+
     if (refreshToken) {
       await this.prisma.session.updateMany({
         where: { refreshToken },
@@ -383,6 +572,24 @@ export class AuthService {
 
     // Rate limit: max 3 requests per 15 minutes per email
     this.checkRateLimit(`forgot_${cleanEmail}`, 3, 900);
+
+    if (!this.prisma.isConnected) {
+      const user = this.sandboxUsers.get(cleanEmail);
+      let rawToken: string | undefined;
+      if (user) {
+        rawToken = crypto.randomBytes(32).toString("hex");
+        this.sandboxResetTokens.set(rawToken, {
+          userId: user.id,
+          expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+        });
+        this.emailService.sendPasswordResetEmail(user, rawToken).catch(() => {});
+      }
+      return {
+        success: true,
+        message: "If the email is registered, password reset instructions have been dispatched.",
+        resetToken: process.env.NODE_ENV !== "production" ? rawToken : undefined,
+      };
+    }
 
     const user = await this.prisma.user.findFirst({
       where: { email: cleanEmail, isDeleted: false },

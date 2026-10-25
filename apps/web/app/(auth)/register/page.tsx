@@ -37,7 +37,7 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterInput) => {
     setServerError(null);
     try {
-      const rawUrl = process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
+      const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
       const apiBase = rawUrl.endsWith("/api/v1") ? rawUrl : rawUrl.replace(/\/+$/, "") + "/api/v1";
       const res = await fetch(`${apiBase}/auth/register`, {
         method: "POST",
@@ -100,7 +100,7 @@ export default function RegisterPage() {
               Institutional Infrastructure
             </span>
             <p className="text-xs text-zinc-400 font-light max-w-xs leading-relaxed">
-              Instant double-entry wallet generation, live order queue tracking, and access to over 500+ verified service endpoints.
+              Direct double-entry wallet generation, live order queue tracking, and access to over 500+ active service endpoints.
             </p>
           </div>
         </div>
@@ -110,7 +110,7 @@ export default function RegisterPage() {
           <div className="text-center lg:text-left mb-6">
             <h1 className="font-heading text-2xl sm:text-3xl font-light text-white">Create New Account</h1>
             <p className="text-xs text-[#c7c8b6] mt-1 font-mono">
-              Direct Access • Instant Wallet Generation
+              Direct Access • Automated Wallet Generation
             </p>
           </div>
 

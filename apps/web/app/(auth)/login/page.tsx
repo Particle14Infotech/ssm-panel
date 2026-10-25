@@ -97,7 +97,7 @@ export default function LoginPage() {
       const apiBase = rawUrl.endsWith("/api/v1") ? rawUrl : rawUrl.replace(/\/+$/, "") + "/api/v1";
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
       const res = await fetch(`${apiBase}/auth/login`, {
         method: "POST",
@@ -111,18 +111,23 @@ export default function LoginPage() {
 
       clearTimeout(timeoutId);
 
-      if (res && res.ok) {
-        const json = await res.json();
-        if (json.token) {
-          establishSession(json.user || { email, role: "CUSTOMER" }, json.token);
+      if (res) {
+        if (res.ok) {
+          const json = await res.json();
+          if (json.token) {
+            establishSession(json.user || { email, role: "CUSTOMER" }, json.token);
+            return;
+          }
+        } else {
+          const errorData = await res.json().catch(() => ({}));
+          setServerError(errorData.message || "Invalid email or password.");
           return;
         }
       }
 
-      // If network failed (e.g. Railway expired/offline), gracefully authorize demo user
-      handleQuickDemoLogin(email);
-    } catch {
-      handleQuickDemoLogin(email);
+      setServerError("Unable to reach authentication server. Please check your network connection.");
+    } catch (err: any) {
+      setServerError(err?.message || "Invalid email or password.");
     }
   };
 
@@ -161,7 +166,7 @@ export default function LoginPage() {
           <div className="text-center lg:text-left mb-6">
             <h1 className="font-heading text-2xl sm:text-3xl font-light text-white">Sign In to Platform</h1>
             <p className="text-xs text-[#c7c8b6] mt-1 font-mono">
-              Direct Access • Instant Session Verification
+              Direct Access • Automated Session Validation
             </p>
           </div>
 
@@ -174,7 +179,7 @@ export default function LoginPage() {
                   <Zap className="w-3.5 h-3.5 text-[#D8EC8D]" />
                   <span>1-Click Demo Accounts</span>
                 </span>
-                <span className="text-[10px] text-white/50">Instant Access</span>
+                <span className="text-[10px] text-white/50">Quick Access</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <button
