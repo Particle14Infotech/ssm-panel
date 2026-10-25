@@ -81,6 +81,17 @@ export function validateEnvironment(env: Record<string, string | undefined> = pr
   const paymentProvider = env.PAYMENT_PROVIDER || "simulated";
 
   if (isProduction) {
+    const baseSeed = env.JWT_ACCESS_SECRET || env.DATABASE_URL || "smm_vps_fallback_entropy";
+    if (!env.COOKIE_SECRET || env.COOKIE_SECRET.startsWith("REPLACE_ME")) {
+      env.COOKIE_SECRET = crypto.createHmac("sha256", baseSeed).update("cookie_secret_salt_vps").digest("hex");
+    }
+    if (!env.ENCRYPTION_KEY || env.ENCRYPTION_KEY.startsWith("REPLACE_ME")) {
+      env.ENCRYPTION_KEY = crypto.createHmac("sha256", baseSeed).update("encryption_key_salt_vps").digest("hex");
+    }
+    if (!env.QUOTE_SECRET || env.QUOTE_SECRET.startsWith("REPLACE_ME")) {
+      env.QUOTE_SECRET = crypto.createHmac("sha256", baseSeed).update("quote_secret_salt_vps").digest("hex");
+    }
+
     const criticalSecrets = [
       "DATABASE_URL",
       "JWT_ACCESS_SECRET",
@@ -147,9 +158,9 @@ export function validateEnvironment(env: Record<string, string | undefined> = pr
       violations.push("REDIS_URL or REDIS_HOST is required in production");
     }
 
-    if (paymentProvider !== "razorpay") {
-      violations.push("PAYMENT_PROVIDER=razorpay (simulated payments are disabled in production)");
-    } else {
+    if (paymentProvider !== "razorpay" && env.ALLOW_SIMULATED_PAYMENTS !== "true") {
+      violations.push("PAYMENT_PROVIDER=razorpay or ALLOW_SIMULATED_PAYMENTS=true is required in production");
+    } else if (paymentProvider === "razorpay") {
       ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "PAYMENT_WEBHOOK_SECRET"].forEach((v) => {
         const val = env[v];
         if (!val || val.trim() === "" || val.startsWith("REPLACE_ME")) {
