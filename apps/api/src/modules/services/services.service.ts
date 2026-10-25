@@ -507,7 +507,9 @@ export class ServicesService {
       },
     });
 
-    if (!s || s.isDeleted) return null;
+    if (!s || s.isDeleted) {
+      return (SANDBOX_SERVICES.find((s) => s.id === id) as any) || null;
+    }
 
     let linkType = s.linkType;
     if (!linkType) {

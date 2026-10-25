@@ -1622,8 +1622,8 @@ export class PackagesService {
         durationDays: 30,
         discountPercent: 10,
         rules: [
-          { kind: PackageRuleKind.TIME_DRIP, serviceId: "srv_ig_followers", quantityPerPost: 500, intervalDays: 1 },
-          { kind: PackageRuleKind.POST_TRIGGERED, serviceId: "srv_ig_likes", quantityPerPost: 100, maxPosts: 10 },
+          { kind: PackageRuleKind.TIME_DRIP, serviceId: "1042", quantityPerPost: 500, intervalDays: 1 },
+          { kind: PackageRuleKind.POST_TRIGGERED, serviceId: "1043", quantityPerPost: 100, maxPosts: 10 },
         ],
         bundlePrice: new Decimal(2500),
       },
@@ -1635,8 +1635,8 @@ export class PackagesService {
         durationDays: 30,
         discountPercent: 15,
         rules: [
-          { kind: PackageRuleKind.TIME_DRIP, serviceId: "srv_yt_subs", quantityPerPost: 250, intervalDays: 2 },
-          { kind: PackageRuleKind.POST_TRIGGERED, serviceId: "srv_yt_views", quantityPerPost: 1000, maxPosts: 10 },
+          { kind: PackageRuleKind.TIME_DRIP, serviceId: "2016", quantityPerPost: 250, intervalDays: 2 },
+          { kind: PackageRuleKind.POST_TRIGGERED, serviceId: "2015", quantityPerPost: 1000, maxPosts: 10 },
         ],
         bundlePrice: new Decimal(4500),
       },
@@ -1708,9 +1708,8 @@ export class PackagesService {
       await tx.ledgerEntry.create({
         data: {
           walletId: wallet.id,
-          amount: template.bundlePrice,
-          type: "PURCHASE",
-          balanceAfter: new Decimal(wallet.balance).minus(template.bundlePrice),
+          amount: template.bundlePrice.negated(),
+          type: TransactionType.PACKAGE_PURCHASE,
           description: `Preset Bundle: ${template.name}`,
         },
       });

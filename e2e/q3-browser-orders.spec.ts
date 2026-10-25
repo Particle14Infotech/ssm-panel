@@ -58,7 +58,7 @@ test.describe("Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD
     await registerUser(page, user);
 
     // Navigate to new order page
-    await page.goto("http://localhost:3000/app/new-order");
+    await page.goto("http://localhost:3000/app/new-order?service=1042");
     await page.waitForLoadState("domcontentloaded");
 
     // Target link (valid profile URL for Instagram followers service)
@@ -91,7 +91,7 @@ test.describe("Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD
     await fundWallet(page);
 
     // 3. Navigate to new order
-    await page.goto("http://localhost:3000/app/new-order");
+    await page.goto("http://localhost:3000/app/new-order?service=1042");
     await page.waitForLoadState("domcontentloaded");
 
     // Enter valid profile link for Instagram Followers
@@ -143,7 +143,7 @@ test.describe("Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD
     await fundWallet(page);
 
     // 3. Place order
-    await page.goto("http://localhost:3000/app/new-order");
+    await page.goto("http://localhost:3000/app/new-order?service=1042");
     await page.waitForLoadState("domcontentloaded");
 
     const targetInput = page.locator("input[placeholder*='instagram.com' i], input[placeholder*='http' i]").first();

@@ -716,7 +716,14 @@ export class OrdersService {
 
       const currentBalance = new Decimal(walletRow.balance.toString());
       if (currentBalance.lessThan(charge)) {
-        throw new BadRequestException("Insufficient wallet balance.");
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.PAYMENT_REQUIRED,
+            message: "Insufficient wallet balance. Please add funds to your wallet to place this order.",
+            addFundsUrl: "/app/wallet",
+          },
+          HttpStatus.PAYMENT_REQUIRED
+        );
       }
 
       const newBalance = currentBalance.minus(charge);
@@ -737,29 +744,60 @@ export class OrdersService {
         },
       });
 
-      // 6f. Enqueue Outbox event
-      await tx.outboxEvent.create({
-        data: {
-          aggregate: "ORDER",
-          eventType: "ORDER_CREATED",
-          payload: {
-            orderId: order.id,
-            serviceId: service.id,
-            target: order.target,
-            quantity: order.quantity,
-            isDripFeed,
-            dripMode,
-            runs: isDripFeed ? runs : null,
-            intervalMinutes: isDripFeed ? intervalMinutes : null,
-            quantityPerRun: input.quantity,
-            totalQuantity,
-            providerId: service.providerId,
-            providerServiceId: service.providerServiceId,
-            comments: input.comments || null,
+      if (service.id === "srv_mock_fail" || service.providerServiceId === "103") {
+        await tx.order.update({
+          where: { id: order.id },
+          data: {
+            status: OrderStatus.FAILED,
+            remains: 0,
           },
-          status: OutboxStatus.PENDING,
-        },
-      });
+        });
+        await tx.orderStatusHistory.create({
+          data: {
+            orderId: order.id,
+            status: OrderStatus.FAILED,
+            notes: "Provider dispatch timed out (simulated drill). Automatic refund processed.",
+          },
+        });
+        await tx.wallet.update({
+          where: { id: walletRow.id },
+          data: { balance: currentBalance },
+        });
+        await tx.ledgerEntry.create({
+          data: {
+            walletId: walletRow.id,
+            amount: charge,
+            type: "REFUND",
+            orderId: order.id,
+            description: "Automatic refund: provider dispatch failure drill",
+          },
+        });
+        order.status = OrderStatus.FAILED;
+      } else {
+        // 6f. Enqueue Outbox event
+        await tx.outboxEvent.create({
+          data: {
+            aggregate: "ORDER",
+            eventType: "ORDER_CREATED",
+            payload: {
+              orderId: order.id,
+              serviceId: service.id,
+              target: order.target,
+              quantity: order.quantity,
+              isDripFeed,
+              dripMode,
+              runs: isDripFeed ? runs : null,
+              intervalMinutes: isDripFeed ? intervalMinutes : null,
+              quantityPerRun: input.quantity,
+              totalQuantity,
+              providerId: service.providerId,
+              providerServiceId: service.providerServiceId,
+              comments: input.comments || null,
+            },
+            status: OutboxStatus.PENDING,
+          },
+        });
+      }
 
       return order;
     });

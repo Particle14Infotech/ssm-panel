@@ -1,6 +1,6 @@
 $commit = (git rev-parse HEAD).Trim()
 $branch = (git rev-parse --abbrev-ref HEAD).Trim()
-$dbName = "smm_db_sandbox"
+$dbName = "neondb (Neon PostgreSQL)"
 $ts = Get-Date -Format "yyyyMMdd-HHmmss"
 $evidenceFile = "docs/evidence/$ts-q3-browser-orders.txt"
 
