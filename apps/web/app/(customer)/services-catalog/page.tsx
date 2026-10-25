@@ -190,7 +190,12 @@ export default function ServicesCatalogPage() {
               </thead>
               <tbody className="divide-y divide-white/5 text-xs">
                 {filteredServices.map((service) => (
-                  <tr key={service.id} className="hover:bg-white/[0.03] transition-colors group">
+                  <motion.tr
+                    key={service.id}
+                    whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.04)" }}
+                    transition={{ duration: 0.15 }}
+                    className="transition-colors group"
+                  >
                     {/* ID */}
                     <td className="py-3.5 px-3 font-mono font-medium text-slate-400 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
@@ -254,13 +259,13 @@ export default function ServicesCatalogPage() {
                     <td className="py-3.5 px-3 text-right whitespace-nowrap">
                       <Link
                         href={`/new-order?serviceId=${service.id}`}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#D8EC8D]/15 hover:bg-[#D8EC8D] text-[#D8EC8D] hover:text-[#171e00] border border-[#D8EC8D]/30 text-xs font-bold hover:brightness-105 transition-all shadow-sm"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#D8EC8D]/15 hover:bg-[#D8EC8D] text-[#D8EC8D] hover:text-[#171e00] border border-[#D8EC8D]/30 text-xs font-bold hover:brightness-105 transition-all shadow-sm group-hover:border-[#D8EC8D]/60"
                       >
                         <span>Select</span>
-                        <ArrowRight className="w-3 h-3" />
+                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                       </Link>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </table>

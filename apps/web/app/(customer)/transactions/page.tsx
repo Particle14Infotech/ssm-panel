@@ -90,17 +90,20 @@ export default function TransactionsPage() {
 
         <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto">
           {["ALL", "SUCCESS", "PENDING", "UPI", "CARD", "NETBANKING"].map((type) => (
-            <button
+            <motion.button
               key={type}
+              type="button"
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => setSelectedType(type)}
-              className={`px-3 py-1 rounded-full text-xs font-mono transition-all ${
+              className={`px-3 py-1 rounded-full text-xs font-mono transition-all cursor-pointer ${
                 selectedType === type
-                  ? "bg-[#D8EC8D] text-[#131313] font-bold"
-                  : "bg-white/5 text-slate-400 hover:text-white"
+                  ? "bg-[#D8EC8D] text-[#131313] font-bold shadow-sm"
+                  : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
               }`}
             >
               {type}
-            </button>
+            </motion.button>
           ))}
         </div>
       </div>
@@ -143,7 +146,12 @@ export default function TransactionsPage() {
                   filtered.map((tx) => {
                     const isCredit = tx.amount >= 0;
                     return (
-                      <tr key={tx.id} className="hover:bg-white/[0.02] transition-colors">
+                      <motion.tr
+                        key={tx.id}
+                        whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.03)" }}
+                        transition={{ duration: 0.15 }}
+                        className="transition-colors"
+                      >
                         <td className="py-3 px-4 text-white font-semibold flex items-center gap-1.5">
                           {isCredit ? (
                             <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-400" />
@@ -175,14 +183,14 @@ export default function TransactionsPage() {
                         <td className="py-3 px-4 text-right">
                           <button
                             onClick={() => setReceiptTxn(tx)}
-                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all inline-flex items-center gap-1 text-[11px]"
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all inline-flex items-center gap-1 text-[11px] cursor-pointer"
                             title="Download / View Receipt"
                           >
                             <FileText className="w-3.5 h-3.5" />
                             <span>Receipt</span>
                           </button>
                         </td>
-                      </tr>
+                      </motion.tr>
                     );
                   })
                 )}

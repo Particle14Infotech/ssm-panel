@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCustomer } from "@/context/CustomerContext";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Boxes,
   ArrowLeft,
@@ -586,7 +587,12 @@ export default function PackageDetailPage() {
   const progressPercent = totalExecs > 0 ? Math.round((completedExecs / totalExecs) * 100) : 0;
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-16">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="space-y-8 max-w-7xl mx-auto pb-16"
+    >
       {/* Toast Notification */}
       {notification && (
         <div
@@ -1704,6 +1710,6 @@ export default function PackageDetailPage() {
           </GlassCard>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
