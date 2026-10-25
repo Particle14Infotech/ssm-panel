@@ -25,7 +25,7 @@ process.env.SANDBOX_MODE = "true";
 process.env.BENCHMARK_MODE = "true";
 process.env.DISABLE_RATE_LIMITER = "true";
 
-const { NestFactory } = require(path.resolve(__dirname, "../apps/api/node_modules/@nestjs/core"));
+const { NestFactory } = require("@nestjs/core");
 const appModulePath = fs.existsSync(path.resolve(__dirname, "../apps/api/dist/src/app.module.js"))
   ? path.resolve(__dirname, "../apps/api/dist/src/app.module.js")
   : path.resolve(__dirname, "../apps/api/dist/app.module.js");

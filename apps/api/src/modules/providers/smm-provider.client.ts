@@ -157,14 +157,28 @@ export class SmmProviderClient {
             rate: "150.00",
             min: "50",
             max: "100000",
-            refill: true,
+            refill: false,
+            cancel: true,
+            description: "Direct delivery followers with cancel enabled.",
+          },
+          {
+            service: "103",
+            name: "Failing on Demand Service (Simulated)",
+            category: "Instagram Followers",
+            rate: "99.00",
+            min: "10",
+            max: "1000",
+            refill: false,
             cancel: false,
-            description: "Instant delivery followers with 30-day warranty.",
+            description: "Simulated upstream failure node for QA resilience testing.",
           },
         ];
         return mockServices as unknown as T;
       }
       case "add": {
+        if (String(params.service) === "103") {
+          throw new Error("Upstream provider simulated failure: Service unavailable on demand");
+        }
         const orderNum = Math.floor(100000 + Math.random() * 900000);
         return { order: String(orderNum) } as unknown as T;
       }
