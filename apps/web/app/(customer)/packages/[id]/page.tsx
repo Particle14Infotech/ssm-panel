@@ -30,6 +30,7 @@ import {
   Zap,
 } from "lucide-react";
 import { formatIndianNumber } from "@/lib/numberFormat";
+import { formatPackageId } from "@/lib/utils";
 import {
   formatInstantForDateTimeLocal,
   localDateTimeToInstant,
@@ -639,7 +640,7 @@ export default function PackageDetailPage() {
               </span>
             </div>
             <div className="text-xs text-slate-400 font-mono">
-              ID: #{pkg.id} · Active through{" "}
+              ID: {formatPackageId(pkg.id)} · Active through{" "}
               {new Date(pkg.endAt || pkg.endDate).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
             </div>
             <div className="text-[11px] text-slate-500">

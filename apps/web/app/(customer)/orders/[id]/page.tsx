@@ -20,6 +20,7 @@ import {
   ArrowRight,
   Layers,
 } from "lucide-react";
+import { formatOrderId } from "@/lib/utils";
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -94,7 +95,7 @@ export default function OrderDetailPage() {
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-light text-white">Order {order.id}</h1>
+              <h1 className="text-2xl font-light text-white">Order {formatOrderId(order.id)}</h1>
               <span className="px-3 py-0.5 rounded-full text-xs font-mono font-bold bg-[#D8EC8D]/15 text-[#D8EC8D] border border-[#D8EC8D]/30">
                 {order.status}
               </span>

@@ -28,6 +28,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { formatOrderId } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
@@ -290,13 +291,12 @@ export default function OrdersPage() {
                     {/* Order ID */}
                     <td className="py-3.5 px-3 font-mono font-semibold text-white whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[#D8EC8D]">#</span>
-                        <span className="group-hover:text-[#D8EC8D] transition-colors">{order.id}</span>
+                        <span className="group-hover:text-[#D8EC8D] transition-colors">{formatOrderId(order.id)}</span>
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleCopy(order.id);
+                            handleCopy(formatOrderId(order.id));
                           }}
                           className="text-slate-400 hover:text-white"
                           title="Copy ID"
@@ -500,7 +500,7 @@ export default function OrdersPage() {
                 <span className="text-[10px] uppercase font-mono text-[#D8EC8D] font-semibold">
                   Order Telemetry & Execution Lifecycle
                 </span>
-                <h3 className="text-base font-semibold text-white">Order #{activeModalOrder.id}</h3>
+                <h3 className="text-base font-semibold text-white">Order {formatOrderId(activeModalOrder.id)}</h3>
               </div>
               <button
                 onClick={() => setActiveModalOrder(null)}
@@ -861,7 +861,7 @@ export default function OrdersPage() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-white">Report Order Issue</h3>
-                <p className="text-xs text-slate-400 font-mono">Order #{activeModalOrder.id.slice(0, 8)}</p>
+                <p className="text-xs text-slate-400 font-mono">Order {formatOrderId(activeModalOrder.id)}</p>
               </div>
             </div>
 

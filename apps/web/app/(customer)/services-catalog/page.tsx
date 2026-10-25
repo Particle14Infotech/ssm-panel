@@ -17,6 +17,7 @@ import {
 import { EmptyState } from "@/components/shared/EmptyState";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { motion } from "framer-motion";
+import { formatServiceId } from "@/lib/utils";
 
 export default function ServicesCatalogPage() {
   const { services } = useCustomer();
@@ -193,10 +194,9 @@ export default function ServicesCatalogPage() {
                     {/* ID */}
                     <td className="py-3.5 px-3 font-mono font-medium text-slate-400 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[#D8EC8D]">#</span>
-                        <span>{service.id}</span>
+                        <span className="text-white font-semibold">{formatServiceId(service.id)}</span>
                         <button
-                          onClick={() => handleCopyId(service.id)}
+                          onClick={() => handleCopyId(formatServiceId(service.id))}
                           className="hover:text-white transition-colors"
                           title="Copy ID"
                         >

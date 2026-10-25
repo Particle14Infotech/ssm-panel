@@ -21,6 +21,7 @@ import {
 import { EmptyState } from "@/components/shared/EmptyState";
 import { PaymentIcon } from "@/components/shared/PaymentIcon";
 import { motion } from "framer-motion";
+import { formatTxnId } from "@/lib/utils";
 
 export default function TransactionsPage() {
   const { user, transactions } = useCustomer();
@@ -149,7 +150,7 @@ export default function TransactionsPage() {
                           ) : (
                             <ArrowUpRight className="w-3.5 h-3.5 text-rose-400" />
                           )}
-                          <span>{tx.id}</span>
+                          <span>{formatTxnId(tx.id)}</span>
                         </td>
                         <td className="py-3 px-4 text-white">
                           <div className="flex items-center gap-1.5">

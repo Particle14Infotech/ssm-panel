@@ -20,6 +20,7 @@ import {
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { FormField } from "@/components/shared/FormField";
+import { formatTicketId } from "@/lib/utils";
 
 function SupportContent() {
   const searchParams = useSearchParams();
@@ -177,7 +178,7 @@ function SupportContent() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono font-semibold text-[#D8EC8D]">
-                        #{ticket.id}
+                        {formatTicketId(ticket.id)}
                       </span>
                       <StatusBadge status={ticket.status} />
                     </div>
@@ -291,7 +292,7 @@ function SupportContent() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-mono font-semibold text-[#D8EC8D]">
-                      #{activeTicket.id}
+                      {formatTicketId(activeTicket.id)}
                     </span>
                     <StatusBadge status={activeTicket.status} />
                   </div>

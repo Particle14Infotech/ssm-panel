@@ -23,6 +23,7 @@ import {
 import { PaymentIcon } from "@/components/shared/PaymentIcon";
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import { motion } from "framer-motion";
+import { formatTxnId, formatInvoiceId } from "@/lib/utils";
 
 export default function WalletPage() {
   const { user, transactions, initiateDeposit, refreshData } = useCustomer();
@@ -377,8 +378,7 @@ export default function WalletPage() {
                   {transactions.map((txn) => (
                     <tr key={txn.id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="py-4 px-3 font-mono font-semibold text-white whitespace-nowrap">
-                        <span className="text-[#D8EC8D] mr-1.5 font-bold">#</span>
-                        {txn.id}
+                        {formatTxnId(txn.id)}
                       </td>
                       <td className="py-4 px-3 font-mono text-[11px] text-slate-400 whitespace-nowrap">
                         {new Date(txn.createdAt).toLocaleDateString("en-IN", {
@@ -449,7 +449,7 @@ export default function WalletPage() {
                 <div>
                   <h3 className="text-base font-semibold text-white">{BRAND_NAME} Tax Invoice</h3>
                   <div className="text-[10px] font-mono text-slate-400">
-                    Receipt #{invoiceModalTxn.id}
+                    Receipt {formatInvoiceId(invoiceModalTxn.id)}
                   </div>
                 </div>
               </div>
