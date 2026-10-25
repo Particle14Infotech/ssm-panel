@@ -1,0 +1,78 @@
+﻿GIT_HEAD: 67fe82e98eef2f9a8c7f4d503737e0984914ef33
+GIT_BRANCH: main
+TEST_DB: smm_db
+COMMAND: pnpm --filter @smm/api exec jest --rootDir . test/package-engine-p1-p2.spec.ts --forceExit
+FAIL test/package-engine-p1-p2.spec.ts
+  PHASE P1 & P2: Package Engine Money Model, Manual Trigger & Scheduler Tick Dispatch
+    Phase P1: Money Model - Quote, Reserve, Escrow, and Reconciliation
+      × unitCharge = ceil(rateSnapshot x quantityPerPost / 1000) and POST_TRIGGERED reserve = unitCharge x maxPosts (5 ms)
+      × TIME_DRIP reserve = ceil(rate x totalQty / 1000) split over runs, last run absorbs remainder (sum === reserve) (1 ms)
+      √ Escrow Purchase: locks wallet, debits full reserve, creates PACKAGE_PURCHASE ledger (23 ms)
+      × Cancellation: refunds unused reserve once and enforces purchased = consumed + refunded + remaining (19 ms)
+      √ Settlement at endAt returns unused reserve once via PACKAGE_REFUND (16 ms)
+    Phase P2: Manual Trigger, Quota Atomicity, and Scheduler Tick Dispatch
+      √ Manual trigger: validates Instagram URL regex and rejects arbitrary or invalid hosts (1 ms)
+      √ Atomic Quota: UPDATE ... SET usedCount = usedCount + 1 WHERE usedCount < maxPosts prevents over-triggering (13 ms)
+      √ Dispatcher Tick: child orders carry REAL allocatedCharge, isPrepaid=true, and NEVER charge 0 (15 ms)
+      √ Dispatcher Tick: Deleted Media sets SKIPPED_DELETED and issues slot refund to customer wallet (22 ms)
+
+  ● PHASE P1 & P2: Package Engine Money Model, Manual Trigger & Scheduler Tick Dispatch › Phase P1: Money Model - Quote, Reserve, Escrow, and Reconciliation › unitCharge = ceil(rateSnapshot x quantityPerPost / 1000) and POST_TRIGGERED reserve = unitCharge x maxPosts
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 225
+    Received: NaN
+
+    [0m [90m 233 |[39m       [36mconst[39m item [33m=[39m quote[33m.[39mitems[[35m0[39m][33m;[39m
+     [90m 234 |[39m       [90m// 500 * 45 / 1000 = 22.50 per post[39m
+    [31m[1m>[22m[39m[90m 235 |[39m       expect(item[33m.[39mcharge)[33m.[39mtoBe([35m225.00[39m)[33m;[39m [90m// 22.50 * 10[39m
+     [90m     |[39m                           [31m[1m^[22m[39m
+     [90m 236 |[39m       expect(quote[33m.[39mtotalCharge)[33m.[39mtoBe([35m225.00[39m)[33m;[39m
+     [90m 237 |[39m       expect(item[33m.[39mruns)[33m.[39mtoBe([35m10[39m)[33m;[39m
+     [90m 238 |[39m     })[33m;[39m[0m
+
+      at Object.<anonymous> (test/package-engine-p1-p2.spec.ts:235:27)
+
+  ● PHASE P1 & P2: Package Engine Money Model, Manual Trigger & Scheduler Tick Dispatch › Phase P1: Money Model - Quote, Reserve, Escrow, and Reconciliation › TIME_DRIP reserve = ceil(rate x totalQty / 1000) split over runs, last run absorbs remainder (sum === reserve)
+
+    [DecimalError] Invalid argument: undefined
+
+    [0m [90m 240 |[39m         [90m// TIME_DRIP reserve = ceil(rate x totalQty / 1000)[39m
+     [90m 241 |[39m         [36mconst[39m ruleReserve [33m=[39m [36mnew[39m [33mDecimal[39m(ratePer1k)
+    [31m[1m>[22m[39m[90m 242 |[39m           [33m.[39mtimes(totalQty)
+     [90m     |[39m            [31m[1m^[22m[39m
+     [90m 243 |[39m           [33m.[39mdividedBy([35m1000[39m)
+     [90m 244 |[39m           [33m.[39mtoDecimalPlaces([35m2[39m[33m,[39m [33mDecimal[39m[33m.[39m[33mROUND_CEIL[39m)[33m;[39m
+     [90m 245 |[39m[0m
+
+      at new Decimal (../../node_modules/decimal.js/decimal.js:4403:13)
+      at Decimal.Object.<anonymous>.P.times.P.mul (../../node_modules/decimal.js/decimal.js:1877:17)
+      at PackagesQuoteService.calculateQuote (src/modules/packages/packages-quote.service.ts:242:12)
+      at Object.<anonymous> (test/package-engine-p1-p2.spec.ts:243:21)
+
+  ● PHASE P1 & P2: Package Engine Money Model, Manual Trigger & Scheduler Tick Dispatch › Phase P1: Money Model - Quote, Reserve, Escrow, and Reconciliation › Cancellation: refunds unused reserve once and enforces purchased = consumed + refunded + remaining
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 10224
+    Received: 225
+
+    [0m [90m 345 |[39m       [36mconst[39m refunded [33m=[39m unusedRefund[33m.[39mtoNumber()[33m;[39m
+     [90m 346 |[39m       [36mconst[39m remaining [33m=[39m [35m0[39m[33m;[39m
+    [31m[1m>[22m[39m[90m 347 |[39m       expect(purchased)[33m.[39mtoBe(consumed[33m.[39mtoNumber() [33m+[39m refunded [33m+[39m remaining [33m+[39m [35m9999[39m)[33m;[39m [90m// DELIBERATE BREAK[39m
+     [90m     |[39m                         [31m[1m^[22m[39m
+     [90m 348 |[39m
+     [90m 349 |[39m       [90m// Wallet balance restored: 775 + 180 = 955.00 (original 1000 - 45 consumed = 955)[39m
+     [90m 350 |[39m       [36mconst[39m walletAfter [33m=[39m db[33m.[39m[36mpublic[39m[33m.[39mone([32m`SELECT balance FROM "Wallet" WHERE id = 'w_escrow_1'`[39m)[33m;[39m[0m
+
+      at Object.<anonymous> (test/package-engine-p1-p2.spec.ts:347:25)
+
+Test Suites: 1 failed, 1 total
+Tests:       3 failed, 6 passed, 9 total
+Snapshots:   0 total
+Time:        1.236 s
+Ran all test suites matching /test\\package-engine-p1-p2.spec.ts/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?
+undefined
+D:\projects\internship projects\SMM\apps\api:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: jest --rootDir . test/package-engine-p1-p2.spec.ts --forceExit

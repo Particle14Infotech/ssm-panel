@@ -1,0 +1,44 @@
+Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-25T00:03:15.000Z
+Status: PASS (FINAL GATE S8 VERIFY:SECURITY)
+---
+
+> smm-monorepo@1.0.0 verify:security D:\projects\internship projects\SMM
+> node scripts/security-gate.js
+
+================================================================
+🛡️  SMM SECURITY GATE: AUTOMATED VERIFICATION & INVARIANT GUARDS
+================================================================
+
+[CHECK 1] No hardcoded fallback literals on cryptographic secrets in production source... ✅ PASSED
+[CHECK 2] Zero in-memory sandbox storage maps (sandboxPackages, sandboxOrders, sandboxBalances) in src/... ✅ PASSED
+[CHECK 3] No eval() or new Function() calls in production source... ✅ PASSED
+[CHECK 4] PackageRule table enforces CHECK constraint (usedCount <= maxPosts) in migrations... ✅ PASSED
+[CHECK 5] WHATWG URL validation has max-length, strict https, port, userinfo, and IDN guards... ✅ PASSED
+[CHECK 6] PackagesService enforces mandatory quoteHash and rejects tampering... ✅ PASSED
+[CHECK 7] Refunds enforce Two-Man Rule (> 500 INR), Decimal arithmetic, and Provider cross-check... ✅ PASSED
+[CHECK 8] Mutation patches gap1.patch through gap5.patch exist in security/mutations/... ✅ PASSED
+[CHECK 9] All Security Test Suites pass green under Jest... 
+
+PASS test/package-security-gaps-reproduce.spec.ts (6 passed)
+PASS test/package-quote-integrity-s1.spec.ts (6 passed)
+PASS test/package-quote-dos-s2.spec.ts (5 passed)
+PASS test/package-refund-correctness-s3.spec.ts (5 passed)
+PASS test/package-secrets-hardening-s4.spec.ts (7 passed)
+PASS test/package-fail-closed-s5.spec.ts (5 passed)
+PASS test/package-extra-hardening-s6.spec.ts (10 passed)
+
+Test Suites: 7 passed, 7 total
+Tests:       47 passed, 47 total
+Snapshots:   0 total
+Time:        2.564 s
+
+✅ PASSED
+
+================================================================
+SUMMARY: 9/9 checks passed, 0 failed.
+================================================================
+
+🏆 ALL PERMANENT SECURITY GUARDS AND TEST SUITES VERIFIED GREEN.

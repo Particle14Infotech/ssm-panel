@@ -1,0 +1,34 @@
+﻿Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-24T22:54:25.3723427+05:30
+Status: RUNNING
+---
+
+pnpm.exe : PASS test/package-security-gaps-reproduce.spec.ts
+At C:\Users\vaibh\AppData\Roaming\npm\pnpm.ps1:14 char:3
++   & "$basedir/node_modules/pnpm/pnpm.exe"   $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS test/packa...produce.spec.ts:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  S0 Security Findings Reproduction Suite (Demonstrating Gaps Before Fix)
+    First Answer: Does purchase recompute price server-side and ignore client total?
+      √ proves server-side price recomputation completely ignores client-supplied fraudulent price (48 ms)
+    GAP-1: quoteHash is mandatory and strictly verified
+      √ proves GAP-1 fix: purchase is REJECTED with 400 BadRequestException when quoteHash is missing (33 ms)
+    GAP-2: Public POST /packages/quote with days=365, intervalHours=1 makes ~8,760 iterations (DoS vector)
+      √ reproduces GAP-2: calculateQuote executes 8,760 iterations for days=365 and intervalHours=1 (48 ms)
+    GAP-3: adminResolveExecution REFUND refunds 100% of allocatedCharge ignoring delivered work & prior refunds
+      √ reproduces GAP-3: admin refund causes total refunds to exceed allocatedCharge (double-refund) (17 ms)
+    GAP-4: Hardcoded fallback secret ('smm-package-quote-integrity-salt') when secrets are unset
+      √ reproduces GAP-4: generateQuoteHash and verifyQuoteHash use hardcoded default when env secrets are unset
+    GAP-5: Fail-open sandbox fallback when prisma is not connected
+      √ reproduces GAP-5: purchasePackage returns success from in-memory map without persistent storage when DB 
+disconnected (2 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       6 passed, 6 total
+Snapshots:   0 total
+Time:        1.155 s, estimated 4 s
+Ran all test suites matching /test\\package-security-gaps-reproduce.spec.ts/i.

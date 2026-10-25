@@ -188,7 +188,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
           name: profileData.name || "Customer",
           role: profileData.role,
           tier: profileData.tier || "STANDARD",
-          balance: typeof balanceData?.balance === "number" ? balanceData.balance : (prev.balance || 0),
+          balance: balanceData?.balance !== undefined ? Number(balanceData.balance) : (prev.balance ?? 0),
         }));
       } else if (typeof window !== "undefined") {
         const cached = localStorage.getItem("authUser");
@@ -198,7 +198,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
             setUser((prev) => ({
               ...prev,
               ...parsed,
-              balance: typeof parsed.balance === "number" ? parsed.balance : (prev.balance || 1068.61),
+              balance: parsed.balance !== undefined ? Number(parsed.balance) : 0,
             }));
           } catch {}
         }

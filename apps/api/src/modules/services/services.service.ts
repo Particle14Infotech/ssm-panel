@@ -3,6 +3,165 @@ import { PrismaService } from "../../common/prisma.service";
 import { ServiceItem, ServicePlatform } from "@smm/contracts";
 import { Decimal } from "decimal.js";
 
+const SANDBOX_CATEGORIES = [
+  { id: "cat_ig", name: "Instagram Followers & Engagement", slug: "instagram-followers", sortOrder: 1, serviceCount: 2 },
+  { id: "cat_yt", name: "YouTube Growth & Watchtime", slug: "youtube-views", sortOrder: 2, serviceCount: 3 },
+  { id: "cat_x", name: "X (Twitter) Engagement", slug: "x-twitter", sortOrder: 3, serviceCount: 1 },
+];
+
+const SANDBOX_SERVICES: any[] = [
+  {
+    id: "1042",
+    categoryId: "cat_ig",
+    categoryName: "Instagram Followers & Engagement",
+    name: "Instagram High-Retention Followers [Real Active • 0% Drop • 30D Refill]",
+    displayName: "Instagram High-Retention Followers",
+    description: "High retention followers delivered at controlled pacing.",
+    platform: "INSTAGRAM",
+    rate: 180.0,
+    ratePer1000: 180.0,
+    min: 100,
+    minQty: 100,
+    max: 500000,
+    maxQty: 500000,
+    refill: true,
+    refillable: true,
+    cancel: true,
+    cancellable: true,
+    status: "ACTIVE",
+    active: true,
+    avgTime: "0 - 15 mins",
+    serviceType: "DEFAULT",
+    packageEligible: true,
+  },
+  {
+    id: "1043",
+    categoryId: "cat_ig",
+    categoryName: "Instagram Followers & Engagement",
+    name: "Instagram High-Quality Likes [Fast Delivery • High Quality]",
+    displayName: "Instagram High-Quality Likes",
+    description: "Post likes delivered smoothly.",
+    platform: "INSTAGRAM",
+    rate: 65.0,
+    ratePer1000: 65.0,
+    min: 50,
+    minQty: 50,
+    max: 100000,
+    maxQty: 100000,
+    refill: false,
+    refillable: false,
+    cancel: true,
+    cancellable: true,
+    status: "ACTIVE",
+    active: true,
+    avgTime: "0 - 5 mins",
+    serviceType: "DEFAULT",
+    packageEligible: true,
+  },
+  {
+    id: "2015",
+    categoryId: "cat_yt",
+    categoryName: "YouTube Growth & Watchtime",
+    name: "YouTube High Retention Views [Suggested Videos & Search Traffic]",
+    displayName: "YouTube High Retention Views",
+    description: "Search and suggested videos algorithm routing.",
+    platform: "YOUTUBE",
+    rate: 160.0,
+    ratePer1000: 160.0,
+    min: 1000,
+    minQty: 1000,
+    max: 10000000,
+    maxQty: 10000000,
+    refill: true,
+    refillable: true,
+    cancel: true,
+    cancellable: true,
+    status: "ACTIVE",
+    active: true,
+    avgTime: "1 - 3 hours",
+    serviceType: "DEFAULT",
+    packageEligible: true,
+  },
+  {
+    id: "srv_mock_refill",
+    categoryId: "cat_yt",
+    categoryName: "YouTube Growth & Watchtime",
+    name: "Mock Service 101 - Refill Enabled",
+    displayName: "Mock Service 101 - Refill Enabled",
+    description: "QA mock provider refill service.",
+    platform: "YOUTUBE",
+    rate: 120.0,
+    ratePer1000: 120.0,
+    min: 100,
+    minQty: 100,
+    max: 500000,
+    maxQty: 500000,
+    refill: true,
+    refillable: true,
+    cancel: false,
+    cancellable: false,
+    status: "ACTIVE",
+    active: true,
+    providerId: "prov_mock",
+    providerServiceId: "101",
+    avgTime: "0 - 10 mins",
+    serviceType: "DEFAULT",
+    packageEligible: true,
+  },
+  {
+    id: "srv_mock_cancel",
+    categoryId: "cat_yt",
+    categoryName: "YouTube Growth & Watchtime",
+    name: "Mock Service 102 - Cancel Enabled",
+    displayName: "Mock Service 102 - Cancel Enabled",
+    description: "QA mock provider cancel service.",
+    platform: "YOUTUBE",
+    rate: 150.0,
+    ratePer1000: 150.0,
+    min: 100,
+    minQty: 100,
+    max: 100000,
+    maxQty: 100000,
+    refill: false,
+    refillable: false,
+    cancel: true,
+    cancellable: true,
+    status: "ACTIVE",
+    active: true,
+    providerId: "prov_mock",
+    providerServiceId: "102",
+    avgTime: "0 - 10 mins",
+    serviceType: "DEFAULT",
+    packageEligible: true,
+  },
+  {
+    id: "srv_mock_fail",
+    categoryId: "cat_x",
+    categoryName: "X (Twitter) Engagement",
+    name: "Mock Service 103 - Failure Drill Service",
+    displayName: "Mock Service 103 - Failure Drill Service",
+    description: "QA failure drill service for refund verification.",
+    platform: "X_TWITTER",
+    rate: 200.0,
+    ratePer1000: 200.0,
+    min: 100,
+    minQty: 100,
+    max: 100000,
+    maxQty: 100000,
+    refill: false,
+    refillable: false,
+    cancel: true,
+    cancellable: true,
+    status: "ACTIVE",
+    active: true,
+    providerId: "prov_mock",
+    providerServiceId: "103",
+    avgTime: "0 - 5 mins",
+    serviceType: "DEFAULT",
+    packageEligible: true,
+  },
+];
+
 @Injectable()
 export class ServicesService {
   private readonly logger = new Logger(ServicesService.name);
@@ -31,7 +190,7 @@ export class ServicesService {
 
   async getCategories() {
     if (!this.prisma.isConnected) {
-      return [];
+      return SANDBOX_CATEGORIES;
     }
 
     try {
@@ -59,7 +218,23 @@ export class ServicesService {
 
   async getGroupedCatalog(platform?: string) {
     if (!this.prisma.isConnected) {
-      return { categories: [] };
+      const filtered = platform && platform !== "ALL"
+        ? SANDBOX_SERVICES.filter((s) => s.platform === platform || (platform === "X" && s.platform === "X_TWITTER"))
+        : SANDBOX_SERVICES;
+
+      const categories = SANDBOX_CATEGORIES.map((cat) => {
+        const catServices = filtered.filter((s) => s.categoryId === cat.id);
+        return {
+          id: cat.id,
+          name: cat.name,
+          slug: cat.slug,
+          sortOrder: cat.sortOrder,
+          serviceCount: catServices.length,
+          services: catServices,
+        };
+      }).filter((cat) => cat.serviceCount > 0);
+
+      return { categories };
     }
 
     try {
@@ -179,7 +354,19 @@ export class ServicesService {
     packageEligible?: boolean | string
   ): Promise<ServiceItem[]> {
     if (!this.prisma.isConnected) {
-      return [];
+      let filtered = [...SANDBOX_SERVICES];
+      if (platform && platform !== "ALL") {
+        const p = platform.toUpperCase();
+        filtered = filtered.filter((s) => s.platform === p || ((p === "X" || p === "TWITTER") && s.platform === "X_TWITTER"));
+      }
+      if (categoryId) {
+        filtered = filtered.filter((s) => s.categoryId === categoryId);
+      }
+      if (query) {
+        const q = query.toLowerCase();
+        filtered = filtered.filter((s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q));
+      }
+      return filtered as any[];
     }
 
     try {
@@ -309,7 +496,7 @@ export class ServicesService {
 
   async findOne(id: string): Promise<ServiceItem | null> {
     if (!this.prisma.isConnected) {
-      return null;
+      return (SANDBOX_SERVICES.find((s) => s.id === id) as any) || null;
     }
 
     const s = await this.prisma.service.findUnique({

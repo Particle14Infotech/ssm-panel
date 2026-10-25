@@ -1,0 +1,29 @@
+﻿Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-24T23:13:57.9170383+05:30
+Status: RUNNING
+---
+
+pnpm.exe : PASS test/package-refund-correctness-s3.spec.ts
+At C:\Users\vaibh\AppData\Roaming\npm\pnpm.ps1:14 char:3
++   & "$basedir/node_modules/pnpm/pnpm.exe"   $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS test/packa...ness-s3.spec.ts:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  S3: GAP-3 Refund Correctness Regression Suite
+    1. Admin manual refund validations
+      √ rejects refund reason shorter than 10 characters with BadRequestException (85 ms)
+      √ rejects refund > ₹500 without second approval flag with 403 ForbiddenException (Two-Man Rule) (24 ms)
+      √ allows refund > ₹500 when second approval flag and second approver are provided (31 ms)
+    2. Provider cross-verification before refund
+      √ rejects refund with 409 ConflictException if child order is already COMPLETED by provider (29 ms)
+    3. Concurrency & Double-Refund Mathematical Impossibility
+      √ prevents double-refund: 10 concurrent refund calls on same execution result in exactly 1 debit/refund (44 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        1.402 s, estimated 2 s
+Ran all test suites matching /test\\package-refund-correctness-s3.spec.ts/i.

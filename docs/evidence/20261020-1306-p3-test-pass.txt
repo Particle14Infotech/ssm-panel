@@ -1,0 +1,29 @@
+﻿GIT_HEAD: 67fe82e98eef2f9a8c7f4d503737e0984914ef33
+GIT_BRANCH: main
+TEST_DB: smm_db
+COMMAND: pnpm --filter @smm/api exec jest --rootDir . test/package-engine-p3.spec.ts --forceExit
+PASS test/package-engine-p3.spec.ts
+  PHASE P3: Instagram Connect, Token Jobs, Polling & MockInstagram Fault Injection
+    1. OAuth Start & State/CSRF Protection
+      √ generates random single-use state bound to user with 10 minute expiry (12 ms)
+      √ rejects state if bound to another user (3 ms)
+    2. Fault Injection: Token Exchange & Profile Checks
+      √ rejects user denied consent (error 10) (2 ms)
+      √ rejects personal accounts (only professional accounts permitted, error 24) (1 ms)
+      √ rejects expired authorization code (error 100)
+      √ successfully connects valid business account with AES-256-GCM encrypted token (16 ms)
+      √ refuses an account already connected to another user (DB unique constraint) (101 ms)
+    3. Baseline Filtering & Media Polling
+      √ baselineAt filter: older media is BASELINE, ignored, never scheduled (6 ms)
+      √ deduplicates already monitored media on successive polls (2 ms)
+    4. Token Refresh Job & Expiry Handling
+      √ token expiry / invalid token transitions connection to NEEDS_RECONNECT and pauses active packages (16 ms)
+    5. Deauthorization Callback
+      √ deauthorize callback sets status REVOKED, wipes token, and pauses packages (2 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       11 passed, 11 total
+Snapshots:   0 total
+Time:        0.999 s, estimated 1 s
+Ran all test suites matching /test\\package-engine-p3.spec.ts/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

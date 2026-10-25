@@ -1,0 +1,48 @@
+﻿Git Commit: 6a7d48ea22f9e8603d97d4a6fc60e4547b2a49e3
+Git Branch: release/client-handoff
+Database Name: smm_db_sandbox
+Timestamp: 2026-10-25T16:16:25Z
+============================================================
+================================================================================
+▶ STARTING Q2: CATALOG AND WALLET VERIFICATION SUITE
+API Base: http://127.0.0.1:4000/api/v1
+================================================================================
+
+--- 1. Services Catalog Verification ---
+✅ [PASS] GET /services returns 200 OK (got 200)
+✅ [PASS] GET /services returns an array of services (length: 6)
+✅ [PASS] Service has valid name: "Instagram High-Retention Followers [Real Active • 0% Drop • 30D Refill]"
+✅ [PASS] Service has valid rate (rate: 180)
+✅ [PASS] Service has valid min quantity (min: 100)
+✅ [PASS] Service max >= min (max: 500000)
+✅ [PASS] Service has valid platform: "INSTAGRAM"
+✅ [PASS] GET /services/grouped returns 200 OK (got 200)
+✅ [PASS] Grouped catalog returns structured object/array
+✅ [PASS] GET /services/categories returns 200 OK (got 200)
+✅ [PASS] Categories returns an array (count: 3)
+✅ [PASS] GET /services/platforms returns 200 OK (got 200)
+✅ [PASS] Platforms returns an array
+
+--- 2. Wallet Zero-State & Ledger Verification ---
+✅ [PASS] Registered test user for wallet checks (status 201)
+✅ [PASS] Received JWT token on registration for wallet operations
+✅ [PASS] GET /wallet/balance returns 200 OK (got 200)
+✅ [PASS] Initial wallet balance is exactly 0.00 INR (got: 0)
+✅ [PASS] Initial wallet balance is not NaN
+✅ [PASS] Wallet currency is INR (got: "INR")
+✅ [PASS] GET /wallet/ledger returns 200 OK (got 200)
+✅ [PASS] GET /wallet/ledger returns an array (length: 0)
+
+--- 3. Add Funds & Payment Simulation ---
+✅ [PASS] POST /payments/create-order succeeds (status 201)
+✅ [PASS] Generated gatewayOrderId: "order_M4CMNJYP"
+✅ [PASS] POST /payments/sandbox-complete returns success (status 201)
+✅ [PASS] Wallet balance credited (expected >= 500, got: 525)
+✅ [PASS] Replaying completion handled gracefully (status 201)
+✅ [PASS] Idempotency preserved: Balance not double-credited (balance: 525)
+✅ [PASS] Ledger contains at least one transaction record (count: 1)
+✅ [PASS] Financial Invariant: Live balance (525) matches ledger sum (525)
+
+================================================================================
+Q2 CATALOG & WALLET RESULTS: 29 PASSED, 0 FAILED
+================================================================================

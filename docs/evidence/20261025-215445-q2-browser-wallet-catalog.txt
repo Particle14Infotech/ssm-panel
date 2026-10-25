@@ -1,0 +1,44 @@
+﻿Git Commit: 6a7d48ea22f9e8603d97d4a6fc60e4547b2a49e3
+Git Branch: release/client-handoff
+Database Name: smm_db_sandbox
+Timestamp: 2026-10-25T16:24:45Z
+============================================================
+
+Running 3 tests using 1 worker
+
+  ok 1 [chromium] › e2e\q2-browser-wallet-catalog.spec.ts:12:7 › Q2: Catalog & Wallet Browser Verification (CAT-01, WAL-01, WAL-02, WAL-03) › 1. Services Catalog: Public/customer view, filters, search, INR pricing (44.6s)
+  ok 2 [chromium] › e2e\q2-browser-wallet-catalog.spec.ts:32:7 › Q2: Catalog & Wallet Browser Verification (CAT-01, WAL-01, WAL-02, WAL-03) › 2. Wallet Zero-State: New customer registers, wallet shows ₹0.00 without NaN (2.0m)
+  x  3 [chromium] › e2e\q2-browser-wallet-catalog.spec.ts:58:7 › Q2: Catalog & Wallet Browser Verification (CAT-01, WAL-01, WAL-02, WAL-03) › 3. Add Funds & Ledger: Modal opens, payment completes, balance & ledger update (2.1m)
+
+
+  1) [chromium] › e2e\q2-browser-wallet-catalog.spec.ts:58:7 › Q2: Catalog & Wallet Browser Verification (CAT-01, WAL-01, WAL-02, WAL-03) › 3. Add Funds & Ledger: Modal opens, payment completes, balance & ledger update 
+
+    Test timeout of 120000ms exceeded.
+
+    Error: locator.fill: Test timeout of 120000ms exceeded.
+    Call log:
+      - waiting for locator('input[name=\'email\']')
+
+
+      59 |     // Login with existing testUser
+      60 |     await page.goto("http://localhost:3000/login");
+    > 61 |     await page.locator("input[name='email']").fill(testUser.email);
+         |                                               ^
+      62 |     await page.locator("input[name='password']").fill(testUser.password);
+      63 |     await page.getByRole("button", { name: /Sign In to Account/i }).click();
+      64 |     await page.waitForURL((url) => url.pathname.includes("/app/dashboard"), { timeout: 15000 });
+        at D:\projects\internship projects\SMM\e2e\q2-browser-wallet-catalog.spec.ts:61:47
+
+    Error Context: test-results\q2-browser-wallet-catalog--81467-letes-balance-ledger-update-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q2-browser-wallet-catalog--81467-letes-balance-ledger-update-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q2-browser-wallet-catalog--81467-letes-balance-ledger-update-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › e2e\q2-browser-wallet-catalog.spec.ts:58:7 › Q2: Catalog & Wallet Browser Verification (CAT-01, WAL-01, WAL-02, WAL-03) › 3. Add Funds & Ledger: Modal opens, payment completes, balance & ledger update 
+  2 passed (6.3m)

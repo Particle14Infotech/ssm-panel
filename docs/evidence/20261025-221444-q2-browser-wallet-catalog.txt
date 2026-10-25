@@ -1,0 +1,13 @@
+﻿Git Commit: 6a7d48ea22f9e8603d97d4a6fc60e4547b2a49e3
+Git Branch: release/client-handoff
+Database Name: smm_db_sandbox
+Timestamp: 2026-10-25T16:44:44Z
+============================================================
+
+Running 3 tests using 1 worker
+
+  ok 1 [chromium] › e2e\q2-browser-wallet-catalog.spec.ts:4:7 › Q2: Catalog & Wallet Browser Verification (CAT-01, WAL-01, WAL-02, WAL-03) › 1. Services Catalog: Public/customer view, filters, search, INR pricing (6.0s)
+  ok 2 [chromium] › e2e\q2-browser-wallet-catalog.spec.ts:24:7 › Q2: Catalog & Wallet Browser Verification (CAT-01, WAL-01, WAL-02, WAL-03) › 2. Wallet Zero-State: New customer registers, wallet shows ₹0.00 without NaN (53.2s)
+  ok 3 [chromium] › e2e\q2-browser-wallet-catalog.spec.ts:57:7 › Q2: Catalog & Wallet Browser Verification (CAT-01, WAL-01, WAL-02, WAL-03) › 3. Add Funds & Ledger: Modal opens, payment completes, balance & ledger update (49.1s)
+
+  3 passed (2.7m)

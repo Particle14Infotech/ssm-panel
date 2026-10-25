@@ -1,0 +1,356 @@
+﻿GIT_HEAD: ac8aa19dc6d05eb1ed438dadfdfcbd22ddec5ccc
+GIT_BRANCH: feature/package-engine
+TEST_DB: smm_db
+COMMAND: pnpm --filter @smm/api exec jest --rootDir . test/package-gate-m8.spec.ts --coverage --forceExit
+PASS test/package-gate-m8.spec.ts (9.795 s)
+  Milestone M8: Final Comprehensive Gate (14 Invariant & Verification Scenarios)
+    √ (1) handle validation per platform (85 ms)
+    √ (2) link normalization and mediaKey per platform with real sample links, rejecting wrong host, wrong platform and short links (10 ms)
+    √ (3) 50 parallel Start calls on one link create one trigger and one set of executions (833 ms)
+    √ (4) quota never exceeds maxPosts under parallel Starts (514 ms)
+    √ (5) chosen quantity above maxQtyPerPost is rejected (107 ms)
+    √ (6) interval drip math: sum(quantity)=q, sum(allocatedCharge)=charge, every run within min/max, spacing >= minGap (5 ms)
+    √ (7) followers drip math, including the too-small-quantity warning (6 ms)
+    √ (8) purchased = consumed + refunded + remaining after randomized sequences (3 ms)
+    √ (9) cancel vs Start vs dispatch race: nothing dispatches after cancel, refund exactly once (250 ms)
+    √ (10) settlement refunds the unused reserve once (94 ms)
+    √ (11) prepaid child partial refund is never 0 (1 ms)
+    √ (12) IDOR: user A cannot preview, start or cancel user B's package (85 ms)
+    √ (13) no wallet credit path except verified payment, admin adjustment with reason, refund, bonus (1 ms)
+    √ (14) grep proves no OAuth or Instagram-connect code remains and no forbidden words appear in UI strings (150 ms)
+
+----------------------------------|---------|----------|---------|---------|-------------------------------------------------------------------------------------------------------------------------------------
+File                              | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                                                                                                                   
+----------------------------------|---------|----------|---------|---------|-------------------------------------------------------------------------------------------------------------------------------------
+All files                         |    3.67 |     2.25 |    1.98 |     4.1 |                                                                                                                                     
+ coverage/lcov-report             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  block-navigation.js             |       0 |        0 |       0 |       0 | 2-87                                                                                                                                
+  prettify.js                     |       0 |        0 |       0 |       0 | 2                                                                                                                                   
+  sorter.js                       |       0 |        0 |       0 |       0 | 2-210                                                                                                                               
+ dist                             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  app.module.d.ts                 |       0 |        0 |       0 |       0 |                                                                                                                                     
+  app.module.js                   |       0 |        0 |       0 |       0 | 2-39                                                                                                                                
+  main.d.ts                       |       0 |        0 |       0 |       0 |                                                                                                                                     
+  main.js                         |       0 |        0 |       0 |       0 | 2-68                                                                                                                                
+ dist/common                      |       0 |        0 |       0 |       0 |                                                                                                                                     
+  api-key-auth.guard.d.ts         |       0 |        0 |       0 |       0 |                                                                                                                                     
+  api-key-auth.guard.js           |       0 |        0 |       0 |       0 | 2-69                                                                                                                                
+  cache.service.d.ts              |       0 |        0 |       0 |       0 |                                                                                                                                     
+  cache.service.js                |       0 |        0 |       0 |       0 | 2-108                                                                                                                               
+  crypto.util.d.ts                |       0 |        0 |       0 |       0 |                                                                                                                                     
+  crypto.util.js                  |       0 |        0 |       0 |       0 | 2-48                                                                                                                                
+  current-user.decorator.d.ts     |       0 |        0 |       0 |       0 |                                                                                                                                     
+  current-user.decorator.js       |       0 |        0 |       0 |       0 | 2-18                                                                                                                                
+  http-exception.filter.d.ts      |       0 |        0 |       0 |       0 |                                                                                                                                     
+  http-exception.filter.js        |       0 |        0 |       0 |       0 | 2-79                                                                                                                                
+  jwt-auth.guard.d.ts             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  jwt-auth.guard.js               |       0 |        0 |       0 |       0 | 2-65                                                                                                                                
+  logger.d.ts                     |       0 |        0 |       0 |       0 |                                                                                                                                     
+  logger.js                       |       0 |        0 |       0 |       0 | 2-27                                                                                                                                
+  money.util.d.ts                 |       0 |        0 |       0 |       0 |                                                                                                                                     
+  money.util.js                   |       0 |        0 |       0 |       0 | 2-36                                                                                                                                
+  pagination.util.d.ts            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  pagination.util.js              |       0 |        0 |       0 |       0 | 2-26                                                                                                                                
+  prisma.service.d.ts             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  prisma.service.js               |       0 |        0 |       0 |       0 | 2-56                                                                                                                                
+  rate-limiter.middleware.d.ts    |       0 |        0 |       0 |       0 |                                                                                                                                     
+  rate-limiter.middleware.js      |       0 |        0 |       0 |       0 | 2-129                                                                                                                               
+  request-id.middleware.d.ts      |       0 |        0 |       0 |       0 |                                                                                                                                     
+  request-id.middleware.js        |       0 |        0 |       0 |       0 | 2-40                                                                                                                                
+  roles.guard.d.ts                |       0 |        0 |       0 |       0 |                                                                                                                                     
+  roles.guard.js                  |       0 |        0 |       0 |       0 | 2-39                                                                                                                                
+ dist/config                      |       0 |        0 |       0 |       0 |                                                                                                                                     
+  env.validation.d.ts             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  env.validation.js               |       0 |        0 |       0 |       0 | 2-104                                                                                                                               
+  externals.d.ts                  |       0 |        0 |       0 |       0 |                                                                                                                                     
+  externals.js                    |       0 |        0 |       0 |       0 | 2-116                                                                                                                               
+ dist/modules/announcements       |       0 |        0 |       0 |       0 |                                                                                                                                     
+  announcements.controller.d.ts   |       0 |        0 |       0 |       0 |                                                                                                                                     
+  announcements.controller.js     |       0 |        0 |       0 |       0 | 2-47                                                                                                                                
+  announcements.module.d.ts       |       0 |        0 |       0 |       0 |                                                                                                                                     
+  announcements.module.js         |       0 |        0 |       0 |       0 | 2-16                                                                                                                                
+  announcements.service.d.ts      |       0 |        0 |       0 |       0 |                                                                                                                                     
+  announcements.service.js        |       0 |        0 |       0 |       0 | 2-50                                                                                                                                
+ dist/modules/auth                |       0 |        0 |       0 |       0 |                                                                                                                                     
+  auth.controller.d.ts            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  auth.controller.js              |       0 |        0 |       0 |       0 | 2-171                                                                                                                               
+  auth.module.d.ts                |       0 |        0 |       0 |       0 |                                                                                                                                     
+  auth.module.js                  |       0 |        0 |       0 |       0 | 2-18                                                                                                                                
+  auth.service.d.ts               |       0 |        0 |       0 |       0 |                                                                                                                                     
+  auth.service.js                 |       0 |        0 |       0 |       0 | 2-538                                                                                                                               
+ dist/modules/coupons             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  coupons.controller.d.ts         |       0 |        0 |       0 |       0 |                                                                                                                                     
+  coupons.controller.js           |       0 |        0 |       0 |       0 | 2-79                                                                                                                                
+  coupons.module.d.ts             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  coupons.module.js               |       0 |        0 |       0 |       0 | 2-16                                                                                                                                
+  coupons.service.d.ts            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  coupons.service.js              |       0 |        0 |       0 |       0 | 2-95                                                                                                                                
+ dist/modules/email               |       0 |        0 |       0 |       0 |                                                                                                                                     
+  email.controller.d.ts           |       0 |        0 |       0 |       0 |                                                                                                                                     
+  email.controller.js             |       0 |        0 |       0 |       0 | 2-68                                                                                                                                
+  email.interface.d.ts            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  email.interface.js              |       0 |      100 |     100 |       0 | 2                                                                                                                                   
+  email.module.d.ts               |       0 |        0 |       0 |       0 |                                                                                                                                     
+  email.module.js                 |       0 |        0 |       0 |       0 | 2-18                                                                                                                                
+  email.service.d.ts              |       0 |        0 |       0 |       0 |                                                                                                                                     
+  email.service.js                |       0 |        0 |       0 |       0 | 2-437                                                                                                                               
+ dist/modules/email/providers     |       0 |        0 |       0 |       0 |                                                                                                                                     
+  log-only.provider.d.ts          |       0 |        0 |       0 |       0 |                                                                                                                                     
+  log-only.provider.js            |       0 |      100 |       0 |       0 | 2-22                                                                                                                                
+  resend.provider.d.ts            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  resend.provider.js              |       0 |        0 |       0 |       0 | 2-60                                                                                                                                
+ dist/modules/email/templates     |       0 |        0 |       0 |       0 |                                                                                                                                     
+  index.d.ts                      |       0 |        0 |       0 |       0 |                                                                                                                                     
+  index.js                        |       0 |        0 |       0 |       0 | 2-266                                                                                                                               
+ dist/modules/favorites           |       0 |        0 |       0 |       0 |                                                                                                                                     
+  favorites.controller.d.ts       |       0 |        0 |       0 |       0 |                                                                                                                                     
+  favorites.controller.js         |       0 |        0 |       0 |       0 | 2-95                                                                                                                                
+  favorites.module.d.ts           |       0 |        0 |       0 |       0 |                                                                                                                                     
+  favorites.module.js             |       0 |        0 |       0 |       0 | 2-17                                                                                                                                
+  favorites.service.d.ts          |       0 |        0 |       0 |       0 |                                                                                                                                     
+  favorites.service.js            |       0 |        0 |       0 |       0 | 2-285                                                                                                                               
+ dist/modules/health              |       0 |        0 |       0 |       0 |                                                                                                                                     
+  health.controller.d.ts          |       0 |        0 |       0 |       0 |                                                                                                                                     
+  health.controller.js            |       0 |        0 |       0 |       0 | 2-269                                                                                                                               
+  health.module.d.ts              |       0 |        0 |       0 |       0 |                                                                                                                                     
+  health.module.js                |       0 |        0 |       0 |       0 | 2-18                                                                                                                                
+ dist/modules/notifications       |       0 |        0 |       0 |       0 |                                                                                                                                     
+  notifications.controller.d.ts   |       0 |        0 |       0 |       0 |                                                                                                                                     
+  notifications.controller.js     |       0 |        0 |       0 |       0 | 2-53                                                                                                                                
+  notifications.module.d.ts       |       0 |        0 |       0 |       0 |                                                                                                                                     
+  notifications.module.js         |       0 |        0 |       0 |       0 | 2-16                                                                                                                                
+  notifications.service.d.ts      |       0 |        0 |       0 |       0 |                                                                                                                                     
+  notifications.service.js        |       0 |        0 |       0 |       0 | 2-40                                                                                                                                
+ dist/modules/orders              |       0 |        0 |       0 |       0 |                                                                                                                                     
+  orders.controller.d.ts          |       0 |        0 |       0 |       0 |                                                                                                                                     
+  orders.controller.js            |       0 |        0 |       0 |       0 | 2-216                                                                                                                               
+  orders.module.d.ts              |       0 |        0 |       0 |       0 |                                                                                                                                     
+  orders.module.js                |       0 |        0 |       0 |       0 | 2-21                                                                                                                                
+  orders.service.d.ts             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  orders.service.js               |       0 |        0 |       0 |       0 | 2-960                                                                                                                               
+ dist/modules/packages            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  drip-engine.util.d.ts           |       0 |        0 |       0 |       0 |                                                                                                                                     
+  drip-engine.util.js             |       0 |        0 |       0 |       0 | 2-118                                                                                                                               
+  packages-quote.service.d.ts     |       0 |        0 |       0 |       0 |                                                                                                                                     
+  packages-quote.service.js       |       0 |        0 |       0 |       0 | 2-307                                                                                                                               
+  packages-scheduler.service.d.ts |       0 |        0 |       0 |       0 |                                                                                                                                     
+  packages-scheduler.service.js   |       0 |        0 |       0 |       0 | 2-285                                                                                                                               
+  packages.controller.d.ts        |       0 |        0 |       0 |       0 |                                                                                                                                     
+  packages.controller.js          |       0 |        0 |       0 |       0 | 2-228                                                                                                                               
+  packages.module.d.ts            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  packages.module.js              |       0 |        0 |       0 |       0 | 2-20                                                                                                                                
+  packages.service.d.ts           |       0 |        0 |       0 |       0 |                                                                                                                                     
+  packages.service.js             |       0 |        0 |       0 |       0 | 2-725                                                                                                                               
+ dist/modules/payments            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  payment-provider.interface.d.ts |       0 |        0 |       0 |       0 |                                                                                                                                     
+  payment-provider.interface.js   |       0 |      100 |     100 |       0 | 2                                                                                                                                   
+  payments.controller.d.ts        |       0 |        0 |       0 |       0 |                                                                                                                                     
+  payments.controller.js          |       0 |        0 |       0 |       0 | 2-130                                                                                                                               
+  payments.module.d.ts            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  payments.module.js              |       0 |        0 |       0 |       0 | 2-21                                                                                                                                
+  payments.service.d.ts           |       0 |        0 |       0 |       0 |                                                                                                                                     
+  payments.service.js             |       0 |        0 |       0 |       0 | 2-318                                                                                                                               
+  razorpay-payment.provider.d.ts  |       0 |        0 |       0 |       0 |                                                                                                                                     
+  razorpay-payment.provider.js    |       0 |        0 |       0 |       0 | 2-102                                                                                                                               
+  simulated-payment.provider.d.ts |       0 |        0 |       0 |       0 |                                                                                                                                     
+  simulated-payment.provider.js   |       0 |        0 |       0 |       0 | 2-76                                                                                                                                
+ dist/modules/platforms           |       0 |        0 |       0 |       0 |                                                                                                                                     
+  platform-rules.util.d.ts        |       0 |        0 |       0 |       0 |                                                                                                                                     
+  platform-rules.util.js          |       0 |        0 |       0 |       0 | 2-212                                                                                                                               
+  platforms-admin.controller.d.ts |       0 |        0 |       0 |       0 |                                                                                                                                     
+  platforms-admin.controller.js   |       0 |        0 |       0 |       0 | 2-106                                                                                                                               
+  platforms.controller.d.ts       |       0 |        0 |       0 |       0 |                                                                                                                                     
+  platforms.controller.js         |       0 |        0 |       0 |       0 | 2-47                                                                                                                                
+  platforms.module.d.ts           |       0 |        0 |       0 |       0 |                                                                                                                                     
+  platforms.module.js             |       0 |        0 |       0 |       0 | 2-18                                                                                                                                
+  platforms.service.d.ts          |       0 |        0 |       0 |       0 |                                                                                                                                     
+  platforms.service.js            |       0 |        0 |       0 |       0 | 2-264                                                                                                                               
+ dist/modules/pricing             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  pricing.controller.d.ts         |       0 |        0 |       0 |       0 |                                                                                                                                     
+  pricing.controller.js           |       0 |        0 |       0 |       0 | 2-139                                                                                                                               
+  pricing.module.d.ts             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  pricing.module.js               |       0 |        0 |       0 |       0 | 2-17                                                                                                                                
+  pricing.service.d.ts            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  pricing.service.js              |       0 |        0 |       0 |       0 | 2-355                                                                                                                               
+ dist/modules/providers           |       0 |        0 |       0 |       0 |                                                                                                                                     
+  providers.controller.d.ts       |       0 |        0 |       0 |       0 |                                                                                                                                     
+  providers.controller.js         |       0 |        0 |       0 |       0 | 2-150                                                                                                                               
+  providers.module.d.ts           |       0 |        0 |       0 |       0 |                                                                                                                                     
+  providers.module.js             |       0 |        0 |       0 |       0 | 2-18                                                                                                                                
+  providers.service.d.ts          |       0 |        0 |       0 |       0 |                                                                                                                                     
+  providers.service.js            |       0 |        0 |       0 |       0 | 2-441                                                                                                                               
+  smm-provider.client.d.ts        |       0 |        0 |       0 |       0 |                                                                                                                                     
+  smm-provider.client.js          |       0 |        0 |       0 |       0 | 2-142                                                                                                                               
+ dist/modules/reports             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  reports.controller.d.ts         |       0 |        0 |       0 |       0 |                                                                                                                                     
+  reports.controller.js           |       0 |        0 |       0 |       0 | 2-43                                                                                                                                
+  reports.module.d.ts             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  reports.module.js               |       0 |        0 |       0 |       0 | 2-17                                                                                                                                
+  reports.service.d.ts            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  reports.service.js              |       0 |        0 |       0 |       0 | 2-47                                                                                                                                
+ dist/modules/reseller            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  reseller.controller.d.ts        |       0 |        0 |       0 |       0 |                                                                                                                                     
+  reseller.controller.js          |       0 |        0 |       0 |       0 | 2-155                                                                                                                               
+  reseller.module.d.ts            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  reseller.module.js              |       0 |        0 |       0 |       0 | 2-21                                                                                                                                
+  reseller.service.d.ts           |       0 |        0 |       0 |       0 |                                                                                                                                     
+  reseller.service.js             |       0 |        0 |       0 |       0 | 2-113                                                                                                                               
+ dist/modules/services            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  services.controller.d.ts        |       0 |        0 |       0 |       0 |                                                                                                                                     
+  services.controller.js          |       0 |        0 |       0 |       0 | 2-131                                                                                                                               
+  services.module.d.ts            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  services.module.js              |       0 |        0 |       0 |       0 | 2-17                                                                                                                                
+  services.service.d.ts           |       0 |        0 |       0 |       0 |                                                                                                                                     
+  services.service.js             |       0 |        0 |       0 |       0 | 2-398                                                                                                                               
+ dist/modules/settings            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  settings.controller.d.ts        |       0 |        0 |       0 |       0 |                                                                                                                                     
+  settings.controller.js          |       0 |        0 |       0 |       0 | 2-47                                                                                                                                
+  settings.module.d.ts            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  settings.module.js              |       0 |        0 |       0 |       0 | 2-16                                                                                                                                
+  settings.service.d.ts           |       0 |        0 |       0 |       0 |                                                                                                                                     
+  settings.service.js             |       0 |        0 |       0 |       0 | 2-45                                                                                                                                
+ dist/modules/tickets             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  tickets.controller.d.ts         |       0 |        0 |       0 |       0 |                                                                                                                                     
+  tickets.controller.js           |       0 |        0 |       0 |       0 | 2-156                                                                                                                               
+  tickets.module.d.ts             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  tickets.module.js               |       0 |        0 |       0 |       0 | 2-18                                                                                                                                
+  tickets.service.d.ts            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  tickets.service.js              |       0 |        0 |       0 |       0 | 2-172                                                                                                                               
+ dist/modules/users               |       0 |        0 |       0 |       0 |                                                                                                                                     
+  users.controller.d.ts           |       0 |        0 |       0 |       0 |                                                                                                                                     
+  users.controller.js             |       0 |        0 |       0 |       0 | 2-139                                                                                                                               
+  users.module.d.ts               |       0 |        0 |       0 |       0 |                                                                                                                                     
+  users.module.js                 |       0 |        0 |       0 |       0 | 2-17                                                                                                                                
+  users.service.d.ts              |       0 |        0 |       0 |       0 |                                                                                                                                     
+  users.service.js                |       0 |        0 |       0 |       0 | 2-199                                                                                                                               
+ dist/modules/wallet              |       0 |        0 |       0 |       0 |                                                                                                                                     
+  wallet.controller.d.ts          |       0 |        0 |       0 |       0 |                                                                                                                                     
+  wallet.controller.js            |       0 |        0 |       0 |       0 | 2-132                                                                                                                               
+  wallet.module.d.ts              |       0 |        0 |       0 |       0 |                                                                                                                                     
+  wallet.module.js                |       0 |        0 |       0 |       0 | 2-17                                                                                                                                
+  wallet.service.d.ts             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  wallet.service.js               |       0 |        0 |       0 |       0 | 2-291                                                                                                                               
+ scripts                          |       0 |        0 |       0 |       0 |                                                                                                                                     
+  export-openapi.js               |       0 |        0 |       0 |       0 | 1-40                                                                                                                                
+ src                              |       0 |        0 |       0 |       0 |                                                                                                                                     
+  app.module.ts                   |       0 |      100 |       0 |       0 | 1-53                                                                                                                                
+  main.ts                         |       0 |        0 |       0 |       0 | 1-81                                                                                                                                
+ src/common                       |    1.56 |        0 |       0 |       1 |                                                                                                                                     
+  api-key-auth.guard.ts           |       0 |        0 |       0 |       0 | 1-61                                                                                                                                
+  cache.service.ts                |       0 |        0 |       0 |       0 | 1-107                                                                                                                               
+  crypto.util.ts                  |       0 |        0 |       0 |       0 | 1-64                                                                                                                                
+  current-user.decorator.ts       |       0 |        0 |       0 |       0 | 1-26                                                                                                                                
+  http-exception.filter.ts        |       0 |        0 |       0 |       0 | 1-90                                                                                                                                
+  jwt-auth.guard.ts               |       0 |        0 |       0 |       0 | 1-27                                                                                                                                
+  logger.ts                       |       0 |        0 |       0 |       0 | 1-24                                                                                                                                
+  money.util.ts                   |       0 |        0 |       0 |       0 | 1-47                                                                                                                                
+  pagination.util.ts              |       0 |        0 |       0 |       0 | 12-45                                                                                                                               
+  prisma.service.ts               |   26.31 |        0 |       0 |   17.64 | 7-44                                                                                                                                
+  rate-limiter.middleware.ts      |       0 |        0 |       0 |       0 | 1-128                                                                                                                               
+  request-id.middleware.ts        |       0 |        0 |       0 |       0 | 1-32                                                                                                                                
+  roles.guard.ts                  |       0 |        0 |       0 |       0 | 1-32                                                                                                                                
+ src/config                       |       0 |        0 |       0 |       0 |                                                                                                                                     
+  env.validation.ts               |       0 |        0 |       0 |       0 | 1-119                                                                                                                               
+  externals.ts                    |       0 |        0 |       0 |       0 | 15-144                                                                                                                              
+ src/modules/announcements        |       0 |        0 |       0 |       0 |                                                                                                                                     
+  announcements.controller.ts     |       0 |        0 |       0 |       0 | 1-19                                                                                                                                
+  announcements.module.ts         |       0 |      100 |     100 |       0 | 1-10                                                                                                                                
+  announcements.service.ts        |       0 |        0 |       0 |       0 | 1-50                                                                                                                                
+ src/modules/auth                 |       0 |        0 |       0 |       0 |                                                                                                                                     
+  auth.controller.ts              |       0 |        0 |       0 |       0 | 1-86                                                                                                                                
+  auth.module.ts                  |       0 |      100 |     100 |       0 | 1-13                                                                                                                                
+  auth.service.ts                 |       0 |        0 |       0 |       0 | 1-588                                                                                                                               
+ src/modules/coupons              |       0 |        0 |       0 |       0 |                                                                                                                                     
+  coupons.controller.ts           |       0 |        0 |       0 |       0 | 1-37                                                                                                                                
+  coupons.module.ts               |       0 |      100 |     100 |       0 | 1-10                                                                                                                                
+  coupons.service.ts              |       0 |        0 |       0 |       0 | 1-111                                                                                                                               
+ src/modules/email                |       0 |        0 |       0 |       0 |                                                                                                                                     
+  email.controller.ts             |       0 |        0 |       0 |       0 | 1-58                                                                                                                                
+  email.module.ts                 |       0 |      100 |     100 |       0 | 1-12                                                                                                                                
+  email.service.ts                |       0 |        0 |       0 |       0 | 1-496                                                                                                                               
+ src/modules/email/providers      |       0 |        0 |       0 |       0 |                                                                                                                                     
+  log-only.provider.ts            |       0 |      100 |       0 |       0 | 3-17                                                                                                                                
+  resend.provider.ts              |       0 |        0 |       0 |       0 | 3-59                                                                                                                                
+ src/modules/email/templates      |       0 |        0 |       0 |       0 |                                                                                                                                     
+  index.ts                        |       0 |        0 |       0 |       0 | 9-308                                                                                                                               
+ src/modules/favorites            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  favorites.controller.ts         |       0 |        0 |       0 |       0 | 1-67                                                                                                                                
+  favorites.module.ts             |       0 |      100 |     100 |       0 | 1-11                                                                                                                                
+  favorites.service.ts            |       0 |        0 |       0 |       0 | 1-329                                                                                                                               
+ src/modules/health               |       0 |        0 |       0 |       0 |                                                                                                                                     
+  health.controller.ts            |       0 |        0 |       0 |       0 | 1-254                                                                                                                               
+  health.module.ts                |       0 |      100 |     100 |       0 | 1-12                                                                                                                                
+ src/modules/notifications        |       0 |        0 |       0 |       0 |                                                                                                                                     
+  notifications.controller.ts     |       0 |        0 |       0 |       0 | 1-23                                                                                                                                
+  notifications.module.ts         |       0 |      100 |     100 |       0 | 1-10                                                                                                                                
+  notifications.service.ts        |       0 |        0 |       0 |       0 | 1-40                                                                                                                                
+ src/modules/orders               |       0 |        0 |       0 |       0 |                                                                                                                                     
+  orders.controller.ts            |       0 |        0 |       0 |       0 | 1-172                                                                                                                               
+  orders.module.ts                |       0 |      100 |     100 |       0 | 1-17                                                                                                                                
+  orders.service.ts               |       0 |        0 |       0 |       0 | 1-1132                                                                                                                              
+ src/modules/packages             |   45.07 |    27.91 |   36.36 |   46.14 |                                                                                                                                     
+  drip-engine.util.ts             |   94.66 |     61.9 |     100 |    94.2 | 149-152                                                                                                                             
+  packages-quote.service.ts       |   52.41 |    33.95 |   66.66 |   53.04 | 64-69,88,101-104,119-120,137-138,175,188,212,215,228-232,239,244,288-357                                                            
+  packages-scheduler.service.ts   |       0 |        0 |       0 |       0 | 1-346                                                                                                                               
+  packages.controller.ts          |       0 |        0 |       0 |       0 | 1-186                                                                                                                               
+  packages.module.ts              |       0 |      100 |     100 |       0 | 1-20                                                                                                                                
+  packages.service.ts             |   55.67 |    38.06 |      56 |   58.89 | 50,70,74,95,106,119-136,150,163,168,180,185,263-288,319-321,345-402,435,439-441,469,486,507,521,531,542,620-623,664,679,759,820-970 
+ src/modules/payments             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  payments.controller.ts          |       0 |        0 |       0 |       0 | 1-108                                                                                                                               
+  payments.module.ts              |       0 |      100 |     100 |       0 | 1-21                                                                                                                                
+  payments.service.ts             |       0 |        0 |       0 |       0 | 1-387                                                                                                                               
+  razorpay-payment.provider.ts    |       0 |        0 |       0 |       0 | 1-127                                                                                                                               
+  simulated-payment.provider.ts   |       0 |        0 |       0 |       0 | 1-77                                                                                                                                
+ src/modules/platforms            |   35.48 |    24.24 |   20.58 |      40 |                                                                                                                                     
+  platform-rules.util.ts          |   73.84 |    55.81 |     100 |   76.19 | 157,194,202,232,245-246,248-249,253-254,261,266-269                                                                                 
+  platforms-admin.controller.ts   |       0 |        0 |       0 |       0 | 1-67                                                                                                                                
+  platforms.controller.ts         |       0 |        0 |       0 |       0 | 1-19                                                                                                                                
+  platforms.module.ts             |       0 |      100 |     100 |       0 | 1-12                                                                                                                                
+  platforms.service.ts            |   23.07 |     9.87 |   15.78 |   26.66 | 18-109,143-215,258-294                                                                                                              
+ src/modules/pricing              |       0 |        0 |       0 |       0 |                                                                                                                                     
+  pricing.controller.ts           |       0 |        0 |       0 |       0 | 1-126                                                                                                                               
+  pricing.module.ts               |       0 |      100 |     100 |       0 | 1-11                                                                                                                                
+  pricing.service.ts              |       0 |        0 |       0 |       0 | 1-475                                                                                                                               
+ src/modules/providers            |       0 |        0 |       0 |       0 |                                                                                                                                     
+  providers.controller.ts         |       0 |        0 |       0 |       0 | 1-73                                                                                                                                
+  providers.module.ts             |       0 |      100 |     100 |       0 | 1-12                                                                                                                                
+  providers.service.ts            |       0 |        0 |       0 |       0 | 1-485                                                                                                                               
+  smm-provider.client.ts          |       0 |        0 |       0 |       0 | 1-193                                                                                                                               
+ src/modules/reports              |       0 |        0 |       0 |       0 |                                                                                                                                     
+  reports.controller.ts           |       0 |        0 |       0 |       0 | 1-19                                                                                                                                
+  reports.module.ts               |       0 |      100 |     100 |       0 | 1-11                                                                                                                                
+  reports.service.ts              |       0 |        0 |       0 |       0 | 1-29                                                                                                                                
+ src/modules/reseller             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  reseller.controller.ts          |       0 |        0 |       0 |       0 | 1-91                                                                                                                                
+  reseller.module.ts              |       0 |      100 |     100 |       0 | 1-16                                                                                                                                
+  reseller.service.ts             |       0 |        0 |       0 |       0 | 1-105                                                                                                                               
+ src/modules/services             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  services.controller.ts          |       0 |        0 |       0 |       0 | 1-82                                                                                                                                
+  services.module.ts              |       0 |      100 |     100 |       0 | 1-11                                                                                                                                
+  services.service.ts             |       0 |        0 |       0 |       0 | 1-391                                                                                                                               
+ src/modules/settings             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  settings.controller.ts          |       0 |        0 |       0 |       0 | 1-19                                                                                                                                
+  settings.module.ts              |       0 |      100 |     100 |       0 | 1-10                                                                                                                                
+  settings.service.ts             |       0 |        0 |       0 |       0 | 1-37                                                                                                                                
+ src/modules/tickets              |       0 |        0 |       0 |       0 |                                                                                                                                     
+  tickets.controller.ts           |       0 |        0 |       0 |       0 | 1-113                                                                                                                               
+  tickets.module.ts               |       0 |      100 |     100 |       0 | 1-13                                                                                                                                
+  tickets.service.ts              |       0 |        0 |       0 |       0 | 1-165                                                                                                                               
+ src/modules/users                |       0 |        0 |       0 |       0 |                                                                                                                                     
+  users.controller.ts             |       0 |        0 |       0 |       0 | 1-92                                                                                                                                
+  users.module.ts                 |       0 |      100 |     100 |       0 | 1-11                                                                                                                                
+  users.service.ts                |       0 |        0 |       0 |       0 | 1-162                                                                                                                               
+ src/modules/wallet               |       0 |        0 |       0 |       0 |                                                                                                                                     
+  wallet.controller.ts            |       0 |        0 |       0 |       0 | 1-101                                                                                                                               
+  wallet.module.ts                |       0 |      100 |     100 |       0 | 1-11                                                                                                                                
+  wallet.service.ts               |       0 |        0 |       0 |       0 | 1-352                                                                                                                               
+ test                             |       0 |        0 |       0 |       0 |                                                                                                                                     
+  invariants.e2e-spec.ts          |       0 |        0 |       0 |       0 | 1-684                                                                                                                               
+  security.e2e-spec.ts            |       0 |        0 |       0 |       0 | 1-178                                                                                                                               
+----------------------------------|---------|----------|---------|---------|-------------------------------------------------------------------------------------------------------------------------------------
+Test Suites: 1 passed, 1 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        39.133 s
+Ran all test suites matching /test\\package-gate-m8.spec.ts/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

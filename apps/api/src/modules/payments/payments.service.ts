@@ -102,6 +102,7 @@ export class PaymentsService {
       return {
         success: true,
         orderId: providerResult.orderId,
+        gatewayOrderId: providerResult.orderId,
         amountPaise,
         amountRupees,
         amount: amountRupees,
@@ -128,6 +129,7 @@ export class PaymentsService {
     return {
       success: true,
       orderId: providerResult.orderId,
+      gatewayOrderId: providerResult.orderId,
       amountPaise,
       amountRupees,
       amount: amountRupees,
@@ -229,7 +231,7 @@ export class PaymentsService {
     if (!this.prisma.isConnected) {
       payment.status = PaymentStatus.SUCCESS;
       payment.method = input.method || "UPI";
-      await this.walletService.creditFunds(
+      const creditRes = await this.walletService.creditFunds(
         input.userId,
         totalCredit,
         TransactionType.DEPOSIT,
@@ -242,7 +244,7 @@ export class PaymentsService {
         paymentId: input.paymentId,
         creditedAmount: totalCredit.toNumber(),
         status: "paid",
-        newBalance: totalCredit.toNumber(),
+        newBalance: Number(creditRes.newBalance),
       };
     }
 

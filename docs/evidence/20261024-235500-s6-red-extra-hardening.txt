@@ -1,0 +1,100 @@
+Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-24T23:55:00.000Z
+Status: FAILED (DELIBERATE RED FOR S6)
+---
+
+FAIL test/package-extra-hardening-s6.spec.ts
+  S6: Extra Hardening (URL, Raw SQL, CHECK Constraint, Admin Guards)
+    1. WHATWG URL Validation Hardening
+      × rejects URLs exceeding 2048 characters (3 ms)
+      × strictly rejects non-https schemes (http, javascript, data, ftp) (1 ms)
+      × strictly rejects URLs containing userinfo (credentials)
+      × strictly rejects URLs containing non-default ports
+      √ strictly rejects IDN / Punycode lookalike domains and non-ASCII hostnames (6 ms)
+      √ strictly rejects lookalike domain suffixes (evil-instagram.com, instagram.com.evil.com) (1 ms)
+      √ survives ReDoS fuzz testing of 10,000 hostile strings under 100ms (99 ms)
+    2. Database CHECK Constraint Verification
+      √ verifies migration files define check_used_count constraint on PackageRule (7 ms)
+    3. Admin Endpoints Hardening (Reason >= 10 chars, Fail-Closed, Audit)
+      × rejects admin resolve execution with missing or short reason (< 10 chars) (37 ms)
+      × fails closed (503 ServiceUnavailableException) when DB is disconnected in adminResolveExecution (1 ms)
+
+  ● S6: Extra Hardening (URL, Raw SQL, CHECK Constraint, Admin Guards) › 1. WHATWG URL Validation Hardening › rejects URLs exceeding 2048 characters
+
+    expect(received).toThrow(expected)
+
+    Expected constructor: BadRequestException
+
+    Received function did not throw
+
+      14 |     it("rejects URLs exceeding 2048 characters", () => {
+      15 |       const longUrl = "https://instagram.com/p/" + "a".repeat(2050);
+    > 16 |       expect(() => validatePlatformLink(longUrl, instagramConfig)).toThrow(BadRequestException);
+         |                                                                    ^
+      17 |     });
+
+  ● S6: Extra Hardening (URL, Raw SQL, CHECK Constraint, Admin Guards) › 1. WHATWG URL Validation Hardening › strictly rejects non-https schemes (http, javascript, data, ftp)
+
+    expect(received).toThrow(expected)
+
+    Expected constructor: BadRequestException
+
+    Received function did not throw
+
+      25 |       ];
+      26 |       for (const url of schemes) {
+    > 27 |         expect(() => validatePlatformLink(url, instagramConfig)).toThrow(BadRequestException);
+         |                                                                  ^
+      28 |       }
+
+  ● S6: Extra Hardening (URL, Raw SQL, CHECK Constraint, Admin Guards) › 1. WHATWG URL Validation Hardening › strictly rejects URLs containing userinfo (credentials)
+
+    expect(received).toThrow(expected)
+
+    Expected constructor: BadRequestException
+
+    Received function did not throw
+
+      35 |       ];
+      36 |       for (const url of userinfoUrls) {
+    > 37 |         expect(() => validatePlatformLink(url, instagramConfig)).toThrow(BadRequestException);
+         |                                                                  ^
+      38 |       }
+
+  ● S6: Extra Hardening (URL, Raw SQL, CHECK Constraint, Admin Guards) › 1. WHATWG URL Validation Hardening › strictly rejects URLs containing non-default ports
+
+    expect(received).toThrow(expected)
+
+    Expected constructor: BadRequestException
+
+    Received function did not throw
+
+      46 |       ];
+      47 |       for (const url of badPortUrls) {
+    > 48 |         expect(() => validatePlatformLink(url, instagramConfig)).toThrow(BadRequestException);
+         |                                                                  ^
+      49 |       }
+
+  ● S6: Extra Hardening (URL, Raw SQL, CHECK Constraint, Admin Guards) › 3. Admin Endpoints Hardening (Reason >= 10 chars, Fail-Closed, Audit) › rejects admin resolve execution with missing or short reason (< 10 chars)
+
+    expect(received).rejects.toThrow(expected)
+
+    Expected constructor: BadRequestException
+    Received constructor: Error
+
+    Received message: "[DecimalError] Invalid argument: undefined"
+
+  ● S6: Extra Hardening (URL, Raw SQL, CHECK Constraint, Admin Guards) › 3. Admin Endpoints Hardening (Reason >= 10 chars, Fail-Closed, Audit) › fails closed (503 ServiceUnavailableException) when DB is disconnected in adminResolveExecution
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: {"action": "RETRY", "executionId": "exec-1", "success": true}
+
+Test Suites: 1 failed, 1 total
+Tests:       6 failed, 4 passed, 10 total
+Snapshots:   0 total
+Time:        1.147 s
+Ran all test suites matching /package-extra-hardening-s6.spec.ts/i.

@@ -1,0 +1,33 @@
+Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-25T00:54:10.000Z
+Status: GREEN (All 11 Phase F2 package extensions verified)
+---
+PASS test/package-extensions-f2.spec.ts
+  Phase F2: Package State Extensions, Governance & Safety
+    1. Pause & Resume (F2.1)
+      √ pauses an active package and respects max pausedDays cap (31 ms)
+      √ resumes a paused package and shifts future scheduled executions forward (1 ms)
+    2. Link Swap (F2.2)
+      √ swaps link for scheduled executions with unique mediaKey and enforces max 2 swaps (1 ms)
+    3. Speed-Up Schedule (F2.3)
+      √ speeds up remaining schedule while strictly respecting minGapMinutes (1 ms)
+    4. Lock-and-Verify Batch Chain (F2.4)
+      √ stalls package and raises alert when previous batch exceeds timeout T without terminal status (1 ms)
+      √ proceeds dispatch when previous batch is COMPLETED or PARTIAL
+    5. Order Problem Report (F2.5)
+      √ creates ticket, pauses queue, and prevents duplicate open reports
+    6. Custom Comments & Sequencing (F2.6)
+      √ validates comments count matches quantity and rejects URLs, phone numbers, and duplicates (1 ms)
+      √ calculates comment sequence offset relative to likes execution (1 ms)
+    7. Duration Pricing Tiers (F2.7)
+      √ calculates tier multiplier with single final ceil and snapshots in package (1 ms)
+    8. Geo-Targeting & Deterministic Delivery Window (F2.8)
+      √ shifts execution time into user delivery window deterministically (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       11 passed, 11 total
+Snapshots:   0 total
+Time:        0.825 s, estimated 1 s
+Ran all test suites matching /package-extensions-f2.spec.ts/i.

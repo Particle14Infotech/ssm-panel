@@ -1,0 +1,31 @@
+Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-25T00:56:45.000Z
+Status: RED_FAILURE (Pre-implementation verification for Phase F3)
+---
+FAIL test/package-extensions-f3.spec.ts
+  Phase F3: Presets, Retainers, Failover & Extended Platforms
+    1. Preset Package Bundles (F3.1)
+      × returns active admin preset bundle templates with rules and duration
+      × purchases a preset bundle template and creates package with bundle rules
+    2. Monthly Retainer Auto-Renew (F3.2)
+      × refuses auto-renew when customer has not provided explicit consent
+      × aborts renewal and raises notice when wallet balance is insufficient
+      × successfully renews package when consent is explicit and balance is sufficient
+      × allows customer to cancel auto-renew consent at any time
+    3. Multi-Provider Failover & Routing (F3.3)
+      × sets execution outcome to UNKNOWN on add-order timeout and does not failover immediately
+      × executes failover to backup provider only when primary confirms order failed or missing
+      × rejects failover if primary provider status check confirms the order was already placed
+    4. Extended Platform Configs: LinkedIn & Spotify (F3.4)
+      × includes linkedin and spotify platform definitions in DEFAULT_PLATFORM_CONFIGS
+      × validates legitimate LinkedIn post URLs and extracts media key
+      × validates legitimate Spotify track URLs and extracts media key
+      × rejects invalid Spotify URLs pointing to unsupported paths
+
+Test Suites: 1 failed, 1 total
+Tests:       13 failed, 13 total
+Snapshots:   0 total
+Time:        1.0 s
+Ran all test suites matching /package-extensions-f3.spec.ts/i.

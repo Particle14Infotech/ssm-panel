@@ -1,0 +1,49 @@
+﻿Git Commit: 6a7d48ea22f9e8603d97d4a6fc60e4547b2a49e3
+Git Branch: release/client-handoff
+Database Name: smm_db_sandbox
+Timestamp: 2026-10-25T16:38:55Z
+============================================================
+
+Running 3 tests using 1 worker
+
+  ok 1 [chromium] › e2e\q2-browser-wallet-catalog.spec.ts:12:7 › Q2: Catalog & Wallet Browser Verification (CAT-01, WAL-01, WAL-02, WAL-03) › 1. Services Catalog: Public/customer view, filters, search, INR pricing (1.7s)
+  ok 2 [chromium] › e2e\q2-browser-wallet-catalog.spec.ts:32:7 › Q2: Catalog & Wallet Browser Verification (CAT-01, WAL-01, WAL-02, WAL-03) › 2. Wallet Zero-State: New customer registers, wallet shows ₹0.00 without NaN (13.1s)
+  x  3 [chromium] › e2e\q2-browser-wallet-catalog.spec.ts:58:7 › Q2: Catalog & Wallet Browser Verification (CAT-01, WAL-01, WAL-02, WAL-03) › 3. Add Funds & Ledger: Modal opens, payment completes, balance & ledger update (20.1s)
+
+
+  1) [chromium] › e2e\q2-browser-wallet-catalog.spec.ts:58:7 › Q2: Catalog & Wallet Browser Verification (CAT-01, WAL-01, WAL-02, WAL-03) › 3. Add Funds & Ledger: Modal opens, payment completes, balance & ledger update 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('text=Payment Successful, text=Bonus Applied, text=Authorizing Payment').first()
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" locator('text=Payment Successful, text=Bonus Applied, text=Authorizing Payment').first() with timeout 15000ms
+      - waiting for locator('text=Payment Successful, text=Bonus Applied, text=Authorizing Payment').first()
+
+
+      85 |
+      86 |     // Wait for success confirmation in modal or on page
+    > 87 |     await expect(page.locator("text=Payment Successful, text=Bonus Applied, text=Authorizing Payment").first()).toBeVisible({ timeout: 15000 });
+         |                                                                                                                 ^
+      88 |     await page.waitForTimeout(3000);
+      89 |
+      90 |     // Verify wallet balance renders valid number without NaN
+        at D:\projects\internship projects\SMM\e2e\q2-browser-wallet-catalog.spec.ts:87:113
+
+    Error Context: test-results\q2-browser-wallet-catalog--81467-letes-balance-ledger-update-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q2-browser-wallet-catalog--81467-letes-balance-ledger-update-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q2-browser-wallet-catalog--81467-letes-balance-ledger-update-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › e2e\q2-browser-wallet-catalog.spec.ts:58:7 › Q2: Catalog & Wallet Browser Verification (CAT-01, WAL-01, WAL-02, WAL-03) › 3. Add Funds & Ledger: Modal opens, payment completes, balance & ledger update 
+  2 passed (1.4m)

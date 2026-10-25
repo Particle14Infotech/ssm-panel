@@ -1,0 +1,81 @@
+﻿GIT_HEAD: 598d1ab2be8f50fd044a5b2186e2f0e0f45dca81
+GIT_BRANCH: fix/3d-meaning
+TEST_DB: smm_db
+COMMAND: pnpm exec playwright test e2e/e2e-mvp-proof.spec.ts
+
+Running 3 tests using 1 worker
+
+  x  1 [chromium] › e2e\e2e-mvp-proof.spec.ts:6:7 › Real End-to-End MVP Proof (P3 Desk 1440) › 1. Customer Flow: Login -> Read Balance -> Sandbox Add Funds (Exact +Bonus) -> Place Order (Exact -Charge) -> Poll COMPLETED (6.8s)
+  x  2 [chromium] › e2e\e2e-mvp-proof.spec.ts:83:7 › Real End-to-End MVP Proof (P3 Desk 1440) › 2. Admin Flow: Login -> Admin Orders -> User Balance Adjustment with Mandatory Reason (8.1s)
+  ok 3 [chromium] › e2e\e2e-mvp-proof.spec.ts:124:7 › Real End-to-End MVP Proof (P3 Desk 1440) › 3. Negative Tests: Insufficient Balance Guard (Blocks Order without Debit) & Idempotency (1.9s)
+
+
+  1) [chromium] › e2e\e2e-mvp-proof.spec.ts:6:7 › Real End-to-End MVP Proof (P3 Desk 1440) › 1. Customer Flow: Login -> Read Balance -> Sandbox Add Funds (Exact +Bonus) -> Place Order (Exact -Charge) -> Poll COMPLETED 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: span.font-mono.tracking-tight, text=/₹[0-9,]+(\.[0-9]{2})?/ >> nth=0
+    Expected: visible
+    Error: Unsupported token "{" while parsing css selector "span.font-mono.tracking-tight, text=/₹[0-9,]+(\.[0-9]{2})?/". Did you mean to CSS.escape it?
+
+    Call log:
+      - Expect "toBeVisible" span.font-mono.tracking-tight, text=/₹[0-9,]+(\.[0-9]{2})?/ >> nth=0 with timeout 5000ms
+      - waiting for span.font-mono.tracking-tight, text=/₹[0-9,]+(\.[0-9]{2})?/ >> nth=0
+
+
+      26 |     // Balance text locator: ₹2,450.00
+      27 |     const balanceElem = page.locator("span.font-mono.tracking-tight, text=/₹[0-9,]+(\\.[0-9]{2})?/").first();
+    > 28 |     await expect(balanceElem).toBeVisible();
+         |                               ^
+      29 |     const initialText = await balanceElem.innerText();
+      30 |     const initialBalance = parseFloat(initialText.replace(/[^0-9.]/g, ""));
+      31 |     expect(initialBalance).toBeGreaterThan(0);
+        at D:\projects\internship projects\SMM\e2e\e2e-mvp-proof.spec.ts:28:31
+
+    Error Context: test-results\e2e-mvp-proof-Real-End-to--a686e-ct--Charge---Poll-COMPLETED-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\e2e-mvp-proof-Real-End-to--a686e-ct--Charge---Poll-COMPLETED-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\e2e-mvp-proof-Real-End-to--a686e-ct--Charge---Poll-COMPLETED-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › e2e\e2e-mvp-proof.spec.ts:83:7 › Real End-to-End MVP Proof (P3 Desk 1440) › 2. Admin Flow: Login -> Admin Orders -> User Balance Adjustment with Mandatory Reason 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/Adjust Balance for/i).first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText(/Adjust Balance for/i).first() with timeout 5000ms
+      - waiting for getByText(/Adjust Balance for/i).first()
+
+
+      108 |
+      109 |     // Assert modal opened
+    > 110 |     await expect(page.getByText(/Adjust Balance for/i).first()).toBeVisible();
+          |                                                                 ^
+      111 |
+      112 |     // Fill mandatory reason and submit
+      113 |     const reasonInput = page.locator("input[placeholder*='VIP onboarding'], input[placeholder*='reason']").first();
+        at D:\projects\internship projects\SMM\e2e\e2e-mvp-proof.spec.ts:110:65
+
+    Error Context: test-results\e2e-mvp-proof-Real-End-to--71dc4-tment-with-Mandatory-Reason-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\e2e-mvp-proof-Real-End-to--71dc4-tment-with-Mandatory-Reason-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\e2e-mvp-proof-Real-End-to--71dc4-tment-with-Mandatory-Reason-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    [chromium] › e2e\e2e-mvp-proof.spec.ts:6:7 › Real End-to-End MVP Proof (P3 Desk 1440) › 1. Customer Flow: Login -> Read Balance -> Sandbox Add Funds (Exact +Bonus) -> Place Order (Exact -Charge) -> Poll COMPLETED 
+    [chromium] › e2e\e2e-mvp-proof.spec.ts:83:7 › Real End-to-End MVP Proof (P3 Desk 1440) › 2. Admin Flow: Login -> Admin Orders -> User Balance Adjustment with Mandatory Reason 
+  1 passed (20.1s)

@@ -1,0 +1,32 @@
+﻿Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-24T23:07:07.9663662+05:30
+Status: RUNNING
+---
+
+pnpm.exe : PASS test/package-quote-dos-s2.spec.ts
+At C:\Users\vaibh\AppData\Roaming\npm\pnpm.ps1:14 char:3
++   & "$basedir/node_modules/pnpm/pnpm.exe"   $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS test/package-quote-dos-s2.spec.ts:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  S2: GAP-2 Quote DoS Hardening & Throttling
+    1. Hard caps before computation (422 Unprocessable Entity)
+      √ rejects request exceeding max runs (e.g. 8,760 runs) in < 5ms without iterating with 422 (3 ms)
+      √ rejects durationDays > 365 with 422 (14 ms)
+      √ rejects intervalHours < 1 with 422 (1 ms)
+      √ rejects items length > 10 with 422 (1 ms)
+    2. Event-loop delay under concurrent quote requests
+      √ keeps event-loop delay < 50ms across 100 concurrent quote calculations (11 ms)
+    3. Identical quote caching & Throttling
+      √ serves identical quote within 60s from cache without recalculating (1 ms)
+      √ throttles user at 30 quotes per minute with 429 Too Many Requests (4 ms)
+      √ controller requires JwtAuthGuard on @Post('quote') (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       8 passed, 8 total
+Snapshots:   0 total
+Time:        1.242 s, estimated 2 s
+Ran all test suites matching /test\\package-quote-dos-s2.spec.ts/i.
