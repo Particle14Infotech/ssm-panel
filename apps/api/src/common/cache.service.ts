@@ -45,6 +45,11 @@ export class SMMCacheService {
             enableOfflineQueue: false,
           });
         }
+        if (this.redis) {
+          this.redis.on("error", () => {
+            this.redisAvailable = false;
+          });
+        }
       } catch {
         this.redis = null;
         this.redisAvailable = false;

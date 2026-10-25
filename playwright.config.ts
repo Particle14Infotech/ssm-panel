@@ -9,7 +9,7 @@ export default defineConfig({
   ],
   use: {
     baseURL: "http://localhost:3000",
-    trace: "retain-on-failure",
+    trace: process.env.CI ? "retain-on-failure" : "off",
     viewport: { width: 1440, height: 900 },
     launchOptions: {
       args: [

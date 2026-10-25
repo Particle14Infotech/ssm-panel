@@ -1076,7 +1076,10 @@ export class OrdersService {
   }
 
   async adminRefund(id: string, refundAmount?: number) {
-    const order = await this.findOne(id);
+    const order = await this.findOne(id, undefined, "ADMIN");
+    if (order.status === OrderStatus.REFUNDED) {
+      throw new ConflictException("Order has already been refunded.");
+    }
     const amount = refundAmount ? new Decimal(refundAmount) : new Decimal(order.charge.toString());
 
     if (!this.prisma.isConnected) {
@@ -1084,10 +1087,21 @@ export class OrdersService {
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
-      const [walletRow] = await tx.$queryRawUnsafe<any[]>(
-        `SELECT id, balance FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
-        order.userId
-      );
+      const existingRefund = await tx.ledgerEntry.findFirst({
+        where: { orderId: order.id, type: "REFUND" },
+      });
+      if (existingRefund) {
+        throw new ConflictException("Order has already been refunded.");
+      }
+
+      let walletRow = await tx.wallet.findUnique({ where: { userId: order.userId } });
+      if (!walletRow) {
+        const rows = await tx.$queryRawUnsafe<any[]>(
+          `SELECT id, balance FROM "Wallet" WHERE "userId" = $1`,
+          order.userId
+        ).catch(() => []);
+        walletRow = rows[0];
+      }
       if (!walletRow) throw new BadRequestException("Wallet not found.");
 
       const currentBalance = new Decimal(walletRow.balance.toString());

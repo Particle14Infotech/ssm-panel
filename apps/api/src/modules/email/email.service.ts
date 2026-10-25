@@ -48,10 +48,11 @@ export class EmailService implements OnModuleInit, OnModuleDestroy {
       const redisUrl = process.env.REDIS_URL;
       if (redisUrl) {
         this.redisConnection = new Redis(redisUrl, {
-          maxRetriesPerRequest: null,
-          connectTimeout: 4000,
+          maxRetriesPerRequest: 1,
+          connectTimeout: 2000,
           enableOfflineQueue: false,
           lazyConnect: true,
+          retryStrategy: () => null,
         });
       } else {
         const host = process.env.REDIS_HOST || "localhost";
@@ -59,12 +60,17 @@ export class EmailService implements OnModuleInit, OnModuleDestroy {
         this.redisConnection = new Redis({
           host,
           port,
-          maxRetriesPerRequest: null,
-          connectTimeout: 2000,
+          maxRetriesPerRequest: 1,
+          connectTimeout: 1000,
           enableOfflineQueue: false,
           lazyConnect: true,
+          retryStrategy: () => null,
         });
       }
+
+      this.redisConnection.on("error", () => {
+        // Suppress unhandled ioredis AggregateError
+      });
 
       await this.redisConnection.connect().catch(() => null);
       if (this.redisConnection.status === "ready") {

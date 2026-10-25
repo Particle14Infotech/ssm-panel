@@ -409,6 +409,22 @@ export class WalletService {
         },
       });
 
+      if (typeof tx.auditLog?.create === "function") {
+        await tx.auditLog.create({
+          data: {
+            userId,
+            action: "WALLET_BALANCE_ADJUST",
+            resource: `WALLET:${walletRow.id}`,
+            payload: {
+              amount: amount.toNumber(),
+              reason: reason.trim(),
+              previousBalance: currentBalance.toNumber(),
+              newBalance: newBalance.toNumber(),
+            },
+          },
+        }).catch(() => {});
+      }
+
       return {
         success: true,
         previousBalance: currentBalance,

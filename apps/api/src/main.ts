@@ -8,6 +8,10 @@ import { smmLogger } from "./common/logger";
 import { validateEnvironment } from "./config/env.validation";
 
 async function bootstrap() {
+  process.on("unhandledRejection", (reason) => {
+    smmLogger.warn(`[Process] Unhandled Rejection: ${reason}`);
+  });
+
   validateEnvironment();
 
   const allowedOrigins = [

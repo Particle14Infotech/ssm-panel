@@ -85,8 +85,8 @@ export class ServicesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Admin Update Service" })
-  update(@Param("id") id: string, @Body() body: any) {
-    const res = this.servicesService.update(id, body);
+  async update(@Param("id") id: string, @Body() body: any) {
+    const res = await this.servicesService.update(id, body);
     if (!res) throw new NotFoundException(`Service #${id} not found.`);
     return res;
   }
@@ -95,8 +95,8 @@ export class ServicesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Admin Delete Service" })
-  remove(@Param("id") id: string) {
-    const deleted = this.servicesService.remove(id);
+  async remove(@Param("id") id: string) {
+    const deleted = await this.servicesService.remove(id);
     if (!deleted) throw new NotFoundException(`Service #${id} not found.`);
     return { success: true, message: `Service #${id} removed.` };
   }
