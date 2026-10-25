@@ -52,3 +52,4 @@ test-results/
 design-reference/
 *.webm
 crown-preview.png
+.claude/

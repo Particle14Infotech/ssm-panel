@@ -6,8 +6,13 @@ import { NotFoundException, UnauthorizedException } from "@nestjs/common";
 describe("PaymentsController Security & Webhook Tests", () => {
   let controller: PaymentsController;
   let mockPaymentsService: Partial<PaymentsService>;
+  let originalEnvironment: Record<string, string | undefined>;
+  const environmentKeys = ["NODE_ENV", "ALLOW_SIMULATED_PAYMENTS", "PAYMENTS_MODE"];
 
   beforeEach(async () => {
+    originalEnvironment = Object.fromEntries(
+      environmentKeys.map((key) => [key, process.env[key]])
+    );
     mockPaymentsService = {
       createPaymentOrder: jest.fn().mockResolvedValue({
         success: true,
@@ -75,12 +80,21 @@ describe("PaymentsController Security & Webhook Tests", () => {
   });
 
   afterEach(() => {
-    delete process.env.NODE_ENV;
+    for (const key of environmentKeys) {
+      const value = originalEnvironment[key];
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
   });
 
   describe("Security Invariant: POST /payments/sandbox-complete Restrictions", () => {
     it("CRITICAL: throws NotFoundException (HTTP 404) when NODE_ENV is production", async () => {
       process.env.NODE_ENV = "production";
+      process.env.ALLOW_SIMULATED_PAYMENTS = "true";
+      process.env.PAYMENTS_MODE = "sandbox";
 
       await expect(
         controller.sandboxComplete({ gatewayOrderId: "order_mock_123" })

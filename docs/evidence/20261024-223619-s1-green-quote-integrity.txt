@@ -1,0 +1,28 @@
+﻿Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-24T22:36:19.1549948+05:30
+Status: S1 GREEN (verified after permanent fix)
+---
+
+pnpm.exe : PASS test/package-quote-integrity-s1.spec.ts (18.581 s)
+At C:\Users\vaibh\AppData\Roaming\npm\pnpm.ps1:14 char:3
++   & "$basedir/node_modules/pnpm/pnpm.exe"   $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS test/packa...c.ts (18.581 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  S1 Quote Integrity Regression Suite (@security)
+    S1 Quote Integrity Rules
+      √ rule 1: missing quoteHash must be rejected with 400 Bad Request (51 ms)
+      √ rule 2: tampered field in quote payload must be rejected with 409 QUOTE_CHANGED (36 ms)
+      √ rule 3: quote generated for another user must be rejected with 409 QUOTE_CHANGED (10 ms)
+      √ rule 4: expired quote hash (>10 minutes) must be rejected with 409 QUOTE_CHANGED (6 ms)
+      √ rule 5: rate change between quote and purchase must be rejected with 409 QUOTE_CHANGED (13 ms)
+      √ rule 6: stale or unrecognized kid must be rejected (4 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       6 passed, 6 total
+Snapshots:   0 total
+Time:        18.929 s
+Ran all test suites matching /test\\package-quote-integrity-s1.spec.ts/i.

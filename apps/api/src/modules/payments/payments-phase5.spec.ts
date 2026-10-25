@@ -1,7 +1,10 @@
 import { SimulatedPaymentProvider } from "./simulated-payment.provider";
 import { RazorpayPaymentProvider } from "./razorpay-payment.provider";
 import { PaymentsService } from "./payments.service";
-import { BadRequestException, ForbiddenException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ForbiddenException,
+} from "@nestjs/common";
 import * as crypto from "crypto";
 
 describe("Phase 5 Payments Architecture & Security Tests", () => {
@@ -123,8 +126,21 @@ describe("Phase 5 Payments Architecture & Security Tests", () => {
     let service: PaymentsService;
     let mockPrisma: any;
     let mockWalletService: any;
+    let originalEnvironment: Record<string, string | undefined>;
+    const environmentKeys = [
+      "NODE_ENV",
+      "PAYMENT_PROVIDER",
+      "ALLOW_SIMULATED_PAYMENTS",
+      "PAYMENTS_MODE",
+    ];
 
     beforeEach(() => {
+      originalEnvironment = Object.fromEntries(
+        environmentKeys.map((key) => [key, process.env[key]])
+      );
+      process.env.NODE_ENV = "test";
+      process.env.PAYMENT_PROVIDER = "simulated";
+
       mockPrisma = {
         isConnected: false, // tests sandbox memory flow first
         payment: {
@@ -148,6 +164,17 @@ describe("Phase 5 Payments Architecture & Security Tests", () => {
       };
 
       service = new PaymentsService(mockPrisma as any, mockWalletService as any);
+    });
+
+    afterEach(() => {
+      for (const key of environmentKeys) {
+        const value = originalEnvironment[key];
+        if (value === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = value;
+        }
+      }
     });
 
     it("converts amount to integer paise and computes standard promotional bonus", async () => {
@@ -245,6 +272,36 @@ describe("Phase 5 Payments Architecture & Security Tests", () => {
           testOutcome: "success",
         })
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("never verifies or credits a simulated payment in production, even with legacy sandbox flags", async () => {
+      const order = await service.createPaymentOrder({
+        userId: "usr_alice",
+        amount: 500,
+      });
+
+      process.env.NODE_ENV = "production";
+      process.env.PAYMENT_PROVIDER = "simulated";
+      process.env.ALLOW_SIMULATED_PAYMENTS = "true";
+      process.env.PAYMENTS_MODE = "sandbox";
+
+      await expect(
+        service.verifyPayment({
+          orderId: order.orderId,
+          paymentId: "pay_test_prod_1",
+          userId: "usr_alice",
+          testOutcome: "success",
+        })
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockWalletService.creditFunds).not.toHaveBeenCalled();
+
+      await expect(
+        service.handleWebhook("unverified-signature", {
+          gatewayOrderId: order.orderId,
+          paymentId: "pay_test_prod_1",
+        })
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockWalletService.creditFunds).not.toHaveBeenCalled();
     });
   });
 });

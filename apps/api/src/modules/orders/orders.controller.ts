@@ -8,6 +8,7 @@ import {
   Query,
   NotFoundException,
   UseGuards,
+  BadRequestException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { OrdersService } from "./orders.service";
@@ -15,6 +16,7 @@ import { JwtAuthGuard } from "../../common/jwt-auth.guard";
 import { RolesGuard, Roles } from "../../common/roles.guard";
 import { CurrentUser, CurrentUserData } from "../../common/current-user.decorator";
 import { Role } from "@prisma/client";
+import { PackageProviderReconciliationInputSchema } from "./orders.service";
 
 @ApiTags("Orders Dispatch Terminal")
 @Controller("orders")
@@ -50,6 +52,17 @@ export class OrdersController {
     const order = await this.ordersService.findOne(id, user.id, user.role);
     if (!order) throw new NotFoundException(`Order #${id} not found.`);
     return order;
+  }
+
+  @Post(":id/report-problem")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Customer Report Problem with Order (One Open Report Limit)" })
+  async reportProblem(
+    @CurrentUser() user: CurrentUserData,
+    @Param("id") id: string,
+    @Body() body: { issueType?: string; notes?: string }
+  ) {
+    return this.ordersService.reportProblem(user.id, id, body);
   }
 
   @Post()
@@ -152,8 +165,30 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Admin Retry Order Provider Dispatch" })
-  retry(@Param("id") id: string) {
-    return this.ordersService.retry(id);
+  retry(@Param("id") id: string, @CurrentUser() user: CurrentUserData) {
+    return this.ordersService.retry(id, user.id);
+  }
+
+  @Post(":id/package-provider-reconciliation")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Admin reconcile an uncertain package provider outcome" })
+  reconcilePackageProviderOutcome(
+    @Param("id") id: string,
+    @CurrentUser() user: CurrentUserData,
+    @Body() body: unknown
+  ) {
+    const parsed = PackageProviderReconciliationInputSchema.safeParse(body);
+    if (!parsed.success) {
+      throw new BadRequestException(
+        parsed.error.errors[0]?.message || "Invalid reconciliation details."
+      );
+    }
+    return this.ordersService.reconcilePackageProviderOutcome(
+      id,
+      user.id,
+      parsed.data
+    );
   }
 
   @Put(":id/provider")
@@ -172,4 +207,3 @@ export class OrdersController {
     return this.ordersService.updateNotes(id, notes);
   }
 }
-

@@ -1,0 +1,138 @@
+﻿Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-24T23:11:33.4174580+05:30
+Status: RUNNING
+---
+
+pnpm.exe : FAIL test/package-refund-correctness-s3.spec.ts
+At C:\Users\vaibh\AppData\Roaming\npm\pnpm.ps1:14 char:3
++   & "$basedir/node_modules/pnpm/pnpm.exe"   $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL test/packa...ness-s3.spec.ts:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  S3: GAP-3 Refund Correctness Regression Suite
+    1. Admin manual refund validations
+      × rejects refund reason shorter than 10 characters with BadRequestException (69 ms)
+      × rejects refund > ₹500 without second approval flag with 403 ForbiddenException (Two-Man Rule) (17 ms)
+      × allows refund > ₹500 when second approval flag and second approver are provided (17 ms)
+    2. Provider cross-verification before refund
+      × rejects refund with 409 ConflictException if child order is already COMPLETED by provider (17 ms)
+    3. Concurrency & Double-Refund Mathematical Impossibility
+      × prevents double-refund: 10 concurrent refund calls on same execution result in exactly 1 debit/refund (54 ms)
+
+  ● S3: GAP-3 Refund Correctness Regression Suite › 1. Admin manual refund validations › rejects refund reason shorter 
+than 10 characters with BadRequestException
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: {"action": "REFUND", "executionId": "exec_short_reason", "newStatus": "CANCELLED", 
+"refundAmount": 50, "success": true}
+
+    [0m [90m 222 |[39m [32m      `[39m)[33m;[39m
+     [90m 223 |[39m
+    [31m[1m>[22m[39m[90m 224 |[39m       [36mawait[39m expect(
+     [90m     |[39m             [31m[1m^[22m[39m
+     [90m 225 |[39m         packagesService[33m.[39madminResolveExecution([32m"exec_short_reason"[39m[33m,[39m 
+[32m"REFUND"[39m[33m,[39m {
+     [90m 226 |[39m           actor[33m:[39m { userId[33m:[39m [32m"u_admin"[39m[33m,[39m role[33m:[39m 
+[32m"ADMIN"[39m }[33m,[39m
+     [90m 227 |[39m           reason[33m:[39m [32m"short"[39m[33m,[39m [90m// Only 5 chars < 10[39m[0m
+
+      at expect (../../node_modules/expect/build/index.js:113:15)
+      at Object.<anonymous> (test/package-refund-correctness-s3.spec.ts:224:13)
+
+  ● S3: GAP-3 Refund Correctness Regression Suite › 1. Admin manual refund validations › rejects refund > ₹500 without 
+second approval flag with 403 ForbiddenException (Two-Man Rule)
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: {"action": "REFUND", "executionId": "exec_high_val", "newStatus": "CANCELLED", "refundAmount": 
+600, "success": true}
+
+    [0m [90m 237 |[39m [32m      `[39m)[33m;[39m
+     [90m 238 |[39m
+    [31m[1m>[22m[39m[90m 239 |[39m       [36mawait[39m expect(
+     [90m     |[39m             [31m[1m^[22m[39m
+     [90m 240 |[39m         packagesService[33m.[39madminResolveExecution([32m"exec_high_val"[39m[33m,[39m 
+[32m"REFUND"[39m[33m,[39m {
+     [90m 241 |[39m           actor[33m:[39m { userId[33m:[39m [32m"u_admin"[39m[33m,[39m role[33m:[39m 
+[32m"ADMIN"[39m }[33m,[39m
+     [90m 242 |[39m           reason[33m:[39m [32m"High value refund without second approval"[39m[33m,[39m[0m
+
+      at expect (../../node_modules/expect/build/index.js:113:15)
+      at Object.<anonymous> (test/package-refund-correctness-s3.spec.ts:239:13)
+
+  ● S3: GAP-3 Refund Correctness Regression Suite › 1. Admin manual refund validations › allows refund > ₹500 when 
+second approval flag and second approver are provided
+
+    expect(received).toBeGreaterThan(expected)
+
+    Expected: > 0
+    Received:   0
+
+    [0m [90m 266 |[39m       [90m// Verify AuditLog written[39m
+     [90m 267 |[39m       [36mconst[39m logs [33m=[39m db[33m.[39m[36mpublic[39m[33m.[39mmany([32m`SELECT 
+* FROM "AuditLog" WHERE action = 'PACKAGE_EXECUTION_REFUND'`[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 268 |[39m       
+expect(logs[33m.[39mlength)[33m.[39mtoBeGreaterThan([35m0[39m)[33m;[39m
+     [90m     |[39m                           [31m[1m^[22m[39m
+     [90m 269 |[39m       
+expect(logs[[35m0[39m][33m.[39mresource)[33m.[39mtoBe([32m"exec_high_val_appr"[39m)[33m;[39m
+     [90m 270 |[39m     })[33m;[39m
+     [90m 271 |[39m   })[33m;[39m[0m
+
+      at Object.<anonymous> (test/package-refund-correctness-s3.spec.ts:268:27)
+
+  ● S3: GAP-3 Refund Correctness Regression Suite › 2. Provider cross-verification before refund › rejects refund with 
+409 ConflictException if child order is already COMPLETED by provider
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: {"action": "REFUND", "executionId": "exec_prov_completed", "newStatus": "CANCELLED", 
+"refundAmount": 50, "success": true}
+
+    [0m [90m 281 |[39m [32m      `[39m)[33m;[39m
+     [90m 282 |[39m
+    [31m[1m>[22m[39m[90m 283 |[39m       [36mawait[39m expect(
+     [90m     |[39m             [31m[1m^[22m[39m
+     [90m 284 |[39m         
+packagesService[33m.[39madminResolveExecution([32m"exec_prov_completed"[39m[33m,[39m 
+[32m"REFUND"[39m[33m,[39m {
+     [90m 285 |[39m           actor[33m:[39m { userId[33m:[39m [32m"u_admin"[39m[33m,[39m role[33m:[39m 
+[32m"ADMIN"[39m }[33m,[39m
+     [90m 286 |[39m           reason[33m:[39m [32m"Attempting to refund delivered order"[39m[33m,[39m[0m
+
+      at expect (../../node_modules/expect/build/index.js:113:15)
+      at Object.<anonymous> (test/package-refund-correctness-s3.spec.ts:283:13)
+
+  ● S3: GAP-3 Refund Correctness Regression Suite › 3. Concurrency & Double-Refund Mathematical Impossibility › 
+prevents double-refund: 10 concurrent refund calls on same execution result in exactly 1 debit/refund
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 10
+
+    [0m [90m 315 |[39m       [36mconst[39m conflicts [33m=[39m results[33m.[39mfilter((r[33m:[39m any) 
+[33m=>[39m r [33m&&[39m (r[33m.[39merror[33m?[39m[33m.[39mstatus [33m===[39m [35m409[39m [33m||[39m 
+r[33m.[39merror[33m?[39m[33m.[39mstatus [33m===[39m [35m400[39m))[33m;[39m
+     [90m 316 |[39m
+    [31m[1m>[22m[39m[90m 317 |[39m       
+expect(succeeded[33m.[39mlength)[33m.[39mtoBe([35m1[39m)[33m;[39m
+     [90m     |[39m                                [31m[1m^[22m[39m
+     [90m 318 |[39m       expect(conflicts[33m.[39mlength)[33m.[39mtoBe([35m9[39m)[33m;[39m
+     [90m 319 |[39m
+     [90m 320 |[39m       [90m// Final balance must increase by EXACTLY 100.00, never 200, 300, or 1000[39m[0m
+
+      at Object.<anonymous> (test/package-refund-correctness-s3.spec.ts:317:32)
+
+Test Suites: 1 failed, 1 total
+Tests:       5 failed, 5 total
+Snapshots:   0 total
+Time:        1.343 s
+Ran all test suites matching /test\\package-refund-correctness-s3.spec.ts/i.

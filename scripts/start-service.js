@@ -20,6 +20,19 @@ function run(cmd) {
   execSync(cmd, { stdio: "inherit" });
 }
 
+function verifyDatabaseMigrations() {
+  if (!process.env.DATABASE_URL) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("[start-service] DATABASE_URL is required in production.");
+    }
+    console.warn("[start-service] DATABASE_URL is not set. Skipping migration status check.");
+    return;
+  }
+
+  console.log("[start-service] Verifying committed Prisma migration status (read-only)...");
+  run("pnpm exec prisma migrate status");
+}
+
 if (service === "web") {
   if (!fs.existsSync("apps/web/.next")) {
     console.log("[start-service] .next directory missing. Building web service now...");
@@ -36,14 +49,7 @@ if (service === "web") {
     run("pnpm exec prisma generate");
     run("pnpm --filter @smm/worker build");
   }
-  if (process.env.DATABASE_URL) {
-    try {
-      console.log("[start-service] Ensuring database schema is synced for worker...");
-      run("pnpm exec prisma db push --skip-generate");
-    } catch (err) {
-      console.warn("[start-service] Note: db sync warning on worker boot:", err.message);
-    }
-  }
+  verifyDatabaseMigrations();
   run("pnpm --filter @smm/worker start");
 } else {
   // smm / api:
@@ -54,30 +60,7 @@ if (service === "web") {
   if (!process.env.JWT_REFRESH_SECRET && process.env.JWT_SECRET) {
     process.env.JWT_REFRESH_SECRET = process.env.JWT_SECRET + "_refresh";
   }
-  if (!process.env.ALLOW_SIMULATED_PAYMENTS) {
-    process.env.ALLOW_SIMULATED_PAYMENTS = "true";
-  }
-
-  // Synchronize database schema and seed if DATABASE_URL is available
-  if (process.env.DATABASE_URL) {
-    try {
-      console.log("[start-service] Synchronizing Prisma schema to PostgreSQL...");
-      run("pnpm exec prisma db push --skip-generate");
-      console.log("[start-service] Database schema synchronized successfully.");
-    } catch (err) {
-      console.warn("[start-service] Note: db schema push warning:", err.message);
-    }
-
-    try {
-      console.log("[start-service] Running idempotent seed...");
-      run("node scripts/seed.js");
-      console.log("[start-service] Database seeded successfully.");
-    } catch (err) {
-      console.warn("[start-service] Note: db seed warning:", err.message);
-    }
-  } else {
-    console.warn("[start-service] Warning: DATABASE_URL is not set. Skipping db push and seed.");
-  }
+  verifyDatabaseMigrations();
 
   const apiDistExists = fs.existsSync("apps/api/dist/main.js") || fs.existsSync("apps/api/dist/src/main.js");
   if (!apiDistExists) {
@@ -99,4 +82,3 @@ if (service === "web") {
     run("pnpm --filter @smm/api start:prod");
   }
 }
-

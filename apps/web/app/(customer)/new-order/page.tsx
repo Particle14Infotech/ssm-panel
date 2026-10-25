@@ -8,6 +8,9 @@ import {
   cleanServiceName,
   validateServiceLink,
   calculateCustomerCharge,
+  classifyServiceMetric,
+  checkEngagementRatio,
+  type RatioWarning,
 } from "@smm/contracts";
 import {
   CheckCircle2,
@@ -107,7 +110,7 @@ function NewOrderContent() {
   const initialServiceParam = searchParams.get("service") || searchParams.get("serviceId");
   const initialPlatformParam = searchParams.get("platform");
 
-  const { user, services, createOrder, favorites } = useCustomer();
+  const { user, services, createOrder, favorites, orders } = useCustomer();
 
   // Load last platform or query param
   const initialPlatform = initialPlatformParam
@@ -265,22 +268,63 @@ function NewOrderContent() {
     });
   }, [services, state.selectedPlatform]);
 
+  // Category selection with persistence
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("smm_last_category");
+      if (saved) setSelectedCategory(saved);
+    } catch {}
+  }, []);
+
+  // Category list derived with active service counts (uncategorized grouped under 'Other')
+  const categoryList = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; count: number }>();
+    filteredServices.forEach((s) => {
+      const catName = s.categoryName?.trim() || "Other";
+      const catId = catName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const existing = map.get(catId);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        map.set(catId, { id: catId, name: catName, count: 1 });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => {
+      if (a.name === "Other") return 1;
+      if (b.name === "Other") return -1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [filteredServices]);
+
+  // Services filtered by category
+  const categoryFilteredServices = useMemo(() => {
+    if (selectedCategory === "ALL") return filteredServices;
+    return filteredServices.filter((s) => {
+      const catName = s.categoryName?.trim() || "Other";
+      const catId = catName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      return catId === selectedCategory;
+    });
+  }, [filteredServices, selectedCategory]);
+
   // Current active service
   const activeService = useMemo(() => {
     return (
+      categoryFilteredServices.find((s) => s.id === state.selectedServiceId) ||
+      categoryFilteredServices[0] ||
       filteredServices.find((s) => s.id === state.selectedServiceId) ||
-      services.find((s) => s.id === state.selectedServiceId) ||
       filteredServices[0] ||
       services[0]
     );
-  }, [filteredServices, services, state.selectedServiceId]);
+  }, [categoryFilteredServices, filteredServices, services, state.selectedServiceId]);
 
-  // Auto-select first service of platform if current is not in filtered list
+  // Auto-select first service if current is not in filtered list
   useEffect(() => {
-    if (filteredServices.length > 0 && !filteredServices.some((s) => s.id === state.selectedServiceId)) {
-      dispatch({ type: "SET_SERVICE_ID", serviceId: filteredServices[0].id });
+    if (categoryFilteredServices.length > 0 && !categoryFilteredServices.some((s) => s.id === state.selectedServiceId)) {
+      dispatch({ type: "SET_SERVICE_ID", serviceId: categoryFilteredServices[0].id });
     }
-  }, [filteredServices, state.selectedServiceId]);
+  }, [categoryFilteredServices, state.selectedServiceId]);
 
   // Cleaned active service details
   const cleanedNameInfo = useMemo(() => {
@@ -448,6 +492,44 @@ function NewOrderContent() {
     maxInterval,
   ]);
 
+  // Engagement Ratio Guardrail (Smart Ratio Lock §5.3)
+  // Detects when a user orders disproportionate engagement metrics
+  // Build existingMetrics from order history matching the same target URL
+  const existingMetrics = useMemo(() => {
+    if (!state.targetUrl.trim()) return undefined;
+    const targetNormalized = state.targetUrl.trim().toLowerCase().replace(/\/+$/, "");
+    const matchingOrders = orders.filter((o) => {
+      const oTarget = (o.target || "").toLowerCase().replace(/\/+$/, "");
+      return oTarget === targetNormalized;
+    });
+    if (matchingOrders.length === 0) return undefined;
+
+    const metrics: { views: number; likes: number; comments: number; shares: number; followers: number; subscribers: number } = {
+      views: 0,
+      likes: 0,
+      comments: 0,
+      shares: 0,
+      followers: 0,
+      subscribers: 0,
+    };
+
+    for (const order of matchingOrders) {
+      const metric = classifyServiceMetric(order.serviceName || "");
+      if (metric && order.quantity) {
+        const delivered = order.quantity - (order.remains ?? 0);
+        if (delivered > 0) {
+          metrics[metric] += delivered;
+        }
+      }
+    }
+
+    const hasAnyMetric = Object.values(metrics).some((v) => v > 0);
+    return hasAnyMetric ? metrics : undefined;
+  }, [orders, state.targetUrl]);
+
+  // Engagement ratio lock disabled per scope audit (A7)
+  const ratioWarnings: RatioWarning[] = [];
+
   // Paste from clipboard helper
   const handlePaste = async () => {
     try {
@@ -483,9 +565,9 @@ function NewOrderContent() {
       serviceId: activeService.id,
       target: state.targetUrl.trim(),
       quantity: state.quantity,
-      isDripFeed: state.isDripFeed && isDripSupported,
-      runs: state.isDripFeed && isDripSupported ? state.dripRuns : undefined,
-      interval: state.isDripFeed && isDripSupported ? state.dripInterval : undefined,
+      isDripFeed: false,
+      runs: undefined,
+      interval: undefined,
       expectedRate: activeService.ratePer1000,
       comments: isCustomComments ? state.comments : undefined,
       idempotencyKey,
@@ -528,13 +610,13 @@ function NewOrderContent() {
   // Filtered Combobox Services grouped by Category
   const groupedComboboxServices = useMemo(() => {
     const q = comboboxSearch.toLowerCase().trim();
-    const matched = filteredServices.filter((s) => {
+    const matched = categoryFilteredServices.filter((s) => {
       const name = (s.displayName || s.name || "").toLowerCase();
       const cat = (s.categoryName || "").toLowerCase();
       return name.includes(q) || cat.includes(q);
     });
 
-    const groups: { [cat: string]: typeof filteredServices } = {};
+    const groups: { [cat: string]: typeof categoryFilteredServices } = {};
     matched.forEach((s) => {
       const cat = s.categoryName || "General Services";
       if (!groups[cat]) groups[cat] = [];
@@ -542,7 +624,7 @@ function NewOrderContent() {
     });
 
     return groups;
-  }, [filteredServices, comboboxSearch]);
+  }, [categoryFilteredServices, comboboxSearch]);
 
   return (
     <div className="w-full max-w-[1180px] mx-auto pb-24 md:pb-12 text-slate-200">
@@ -713,10 +795,42 @@ function NewOrderContent() {
             </div>
           </section>
 
-          {/* 2. SEARCHABLE SERVICE COMBOBOX */}
+          {/* 2. CATEGORY SELECTOR */}
+          <section aria-labelledby="category-heading">
+            <h2 id="category-heading" className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
+              2. Category
+            </h2>
+            <div className="relative">
+              <select
+                value={selectedCategory}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedCategory(val);
+                  try {
+                    localStorage.setItem("smm_last_category", val);
+                  } catch {}
+                }}
+                className="w-full min-h-[50px] px-4 py-2.5 pr-10 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-white/20 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#D8EC8D]/40 transition-all font-medium appearance-none cursor-pointer"
+              >
+                <option value="ALL" className="bg-[#191919] text-white">
+                  All Categories ({filteredServices.length} services)
+                </option>
+                {categoryList.map((cat) => (
+                  <option key={cat.id} value={cat.id} className="bg-[#191919] text-white">
+                    {cat.name} ({cat.count})
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                <ChevronDown className="w-4 h-4" />
+              </div>
+            </div>
+          </section>
+
+          {/* 3. SEARCHABLE SERVICE COMBOBOX */}
           <section aria-labelledby="service-heading">
             <h2 id="service-heading" className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
-              2. Service
+              3. Service
             </h2>
 
             {/* Combobox Trigger */}
@@ -887,10 +1001,10 @@ function NewOrderContent() {
             )}
           </section>
 
-          {/* 3. DYNAMIC DETAILS (LINK & QUANTITY) */}
+          {/* 4. DYNAMIC DETAILS (LINK & QUANTITY) */}
           <section aria-labelledby="details-heading" className="space-y-4">
             <h2 id="details-heading" className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              3. Details
+              4. Details
             </h2>
 
             {/* Link input with dynamic label and paste button */}
@@ -904,6 +1018,18 @@ function NewOrderContent() {
                   type="text"
                   value={state.targetUrl}
                   onChange={(e) => dispatch({ type: "SET_TARGET_URL", targetUrl: e.target.value })}
+                  onFocus={async () => {
+                    if (!state.targetUrl.trim()) {
+                      try {
+                        const text = await navigator.clipboard.readText();
+                        if (text && text.trim()) {
+                          dispatch({ type: "SET_TARGET_URL", targetUrl: text.trim() });
+                        }
+                      } catch {
+                        // Clipboard permissions denied — silently ignore
+                      }
+                    }
+                  }}
                   placeholder={linkPlaceholder}
                   className={`w-full min-h-[48px] px-3.5 py-2.5 pr-20 rounded-xl bg-white/[0.03] border text-sm text-white placeholder-slate-500 focus:outline-none transition-all ${
                     state.targetUrl && !linkValidation.isValid
@@ -955,13 +1081,7 @@ function NewOrderContent() {
             ) : (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-medium text-white">
-                    {state.isDripFeed && isDripSupported
-                      ? dripScheduleMode === "DAYS"
-                        ? "Daily Quantity (Followers / Day)"
-                        : "Quantity per run"
-                      : "Quantity"}
-                  </label>
+                  <label className="text-xs font-medium text-white">Quantity</label>
                   <span className="text-[11px] text-slate-500 font-mono">
                     Min: {formatIndianNumber(minQty)} · Max: {formatIndianNumber(maxQty)}
                   </span>
@@ -1012,13 +1132,6 @@ function NewOrderContent() {
                   </div>
                 )}
 
-                {state.isDripFeed && isDripSupported && dripScheduleMode === "DAYS" && (
-                  <div className="mt-2.5 p-2 rounded-xl bg-[#D8EC8D]/10 border border-[#D8EC8D]/20 text-xs font-mono text-[#D8EC8D] flex items-center justify-between">
-                    <span>Daily Delivery: {formatIndianNumber(state.quantity)} / day × {state.dripRuns} days</span>
-                    <span className="font-bold text-white">{formatIndianNumber(totalUnits)} Total</span>
-                  </div>
-                )}
-
                 {/* Bounds error */}
                 {!quantityValid && (
                   <div className="mt-1.5 text-xs text-rose-400 flex items-center gap-1.5">
@@ -1030,278 +1143,62 @@ function NewOrderContent() {
             )}
           </section>
 
-          {/* 4. DRIP-FEED (Inline row toggle) */}
-          <section aria-labelledby="dripfeed-heading">
-            <h2 id="dripfeed-heading" className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-              4. Delivery Options
-            </h2>
-
-            {!isDripSupported || isCustomComments ? (
-              <div className="py-2.5 px-3.5 rounded-xl bg-white/[0.02] border border-white/5 text-xs text-slate-500">
-                Deliver gradually (drip-feed): Not available for this service
-              </div>
-            ) : (
-              <GlassCard className="p-4 rounded-2xl border-white/10 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium text-white">Deliver gradually (drip-feed)</div>
-                    <div className="text-xs text-slate-400 mt-0.5">
-                      Split your order into runs spaced over time.
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={state.isDripFeed}
-                    onClick={() => dispatch({ type: "TOGGLE_DRIP_FEED" })}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#D8EC8D]/40 ${
-                      state.isDripFeed ? "bg-[#D8EC8D]" : "bg-white/20"
+          {/* Engagement Ratio Guardrail (Smart Ratio Lock) §5.3 */}
+          {ratioWarnings.length > 0 && (
+            <div className="space-y-2">
+              {ratioWarnings.map((w, i) => (
+                <div
+                  key={i}
+                  className={`p-3.5 rounded-2xl border flex items-start gap-3 ${
+                    w.level === "danger"
+                      ? "bg-rose-500/10 border-rose-500/25"
+                      : "bg-amber-500/10 border-amber-500/25"
+                  }`}
+                >
+                  <AlertTriangle
+                    className={`w-4 h-4 shrink-0 mt-0.5 ${
+                      w.level === "danger" ? "text-rose-400" : "text-amber-400"
                     }`}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-[#191919] shadow-lg ring-0 transition duration-200 ease-in-out ${
-                        state.isDripFeed ? "translate-x-5" : "translate-x-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className={`text-xs font-medium mb-0.5 ${
+                        w.level === "danger" ? "text-rose-300" : "text-amber-300"
                       }`}
-                    />
-                  </button>
-                </div>
-
-                {state.isDripFeed && (
-                  <div className="border-t border-white/5 pt-4 space-y-4">
-                    {/* Schedule Strategy Mode Selector */}
-                    <div className="grid grid-cols-2 gap-2 p-1 bg-white/[0.04] border border-white/10 rounded-xl text-xs">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDripScheduleMode("DAYS");
-                          dispatch({ type: "SET_DRIP_INTERVAL", interval: 1440 });
-                        }}
-                        className={`py-2 px-3 rounded-lg font-medium transition-all text-center flex items-center justify-center gap-2 ${
-                          dripScheduleMode === "DAYS"
-                            ? "bg-[#D8EC8D] text-[#171e00] font-bold shadow-sm"
-                            : "text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>Spread across days</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDripScheduleMode("CUSTOM");
-                          if (state.dripInterval === 1440) {
-                            dispatch({ type: "SET_DRIP_INTERVAL", interval: 60 });
-                          }
-                        }}
-                        className={`py-2 px-3 rounded-lg font-medium transition-all text-center flex items-center justify-center gap-2 ${
-                          dripScheduleMode === "CUSTOM"
-                            ? "bg-[#D8EC8D] text-[#171e00] font-bold shadow-sm"
-                            : "text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>Custom intervals</span>
-                      </button>
+                    >
+                      {w.level === "danger" ? "High Risk" : "Heads Up"}
                     </div>
-
-                    {dripScheduleMode === "DAYS" ? (
-                      /* DAYS MODE: Select how many days to spread growth */
-                      <div className="space-y-3">
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <label className="text-xs font-medium text-white">How many days to spread growth?</label>
-                            <span className="text-[11px] text-[#D8EC8D] font-mono font-semibold">
-                              {state.dripRuns} days (~{formatIndianNumber(state.quantity)} / day)
-                            </span>
-                          </div>
-
-                          {/* Quick Day Presets */}
-                          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-2">
-                            {[2, 3, 5, 7, 10, 14, 30]
-                              .filter((d) => d <= maxRuns)
-                              .map((d) => (
-                                <button
-                                  key={d}
-                                  type="button"
-                                  onClick={() => {
-                                    dispatch({ type: "SET_DRIP_RUNS", runs: d });
-                                    dispatch({ type: "SET_DRIP_INTERVAL", interval: 1440 });
-                                  }}
-                                  className={`min-h-[36px] py-1 px-2 rounded-lg text-xs font-medium border text-center transition-colors ${
-                                    state.dripRuns === d && state.dripInterval === 1440
-                                      ? "bg-[#D8EC8D]/20 border-[#D8EC8D] text-white font-bold"
-                                      : "bg-white/[0.02] border-white/10 text-slate-400 hover:text-white"
-                                  }`}
-                                >
-                                  {d} Days
-                                </button>
-                              ))}
-                          </div>
-
-                          {/* Stepper for Days */}
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                dispatch({ type: "SET_DRIP_RUNS", runs: Math.max(minRuns, state.dripRuns - 1) });
-                                dispatch({ type: "SET_DRIP_INTERVAL", interval: 1440 });
-                              }}
-                              className="min-h-[40px] min-w-[40px] rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold flex items-center justify-center"
-                            >
-                              -
-                            </button>
-                            <div className="flex-1 min-h-[40px] px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-xs text-white font-mono text-center flex items-center justify-center gap-1.5">
-                              <span className="font-bold text-[#D8EC8D]">{state.dripRuns}</span>
-                              <span className="text-slate-400">days (delivered once every 24 hours)</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                dispatch({ type: "SET_DRIP_RUNS", runs: Math.min(maxRuns, state.dripRuns + 1) });
-                                dispatch({ type: "SET_DRIP_INTERVAL", interval: 1440 });
-                              }}
-                              className="min-h-[40px] min-w-[40px] rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold flex items-center justify-center"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      /* CUSTOM MODE: Number of runs and intervals in minutes/hours */
-                      <div className="space-y-4">
-                        {/* Runs Input */}
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <label className="text-xs font-medium text-white">Number of runs</label>
-                            <span className="text-[11px] text-slate-500 font-mono">
-                              Min: {minRuns} · Max: {maxRuns}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => dispatch({ type: "SET_DRIP_RUNS", runs: Math.max(minRuns, state.dripRuns - 1) })}
-                              className="min-h-[40px] min-w-[40px] rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold flex items-center justify-center"
-                            >
-                              -
-                            </button>
-                            <input
-                              type="number"
-                              value={state.dripRuns}
-                              onChange={(e) => dispatch({ type: "SET_DRIP_RUNS", runs: parseInt(e.target.value, 10) || minRuns })}
-                              min={minRuns}
-                              max={maxRuns}
-                              className="flex-1 min-h-[40px] px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-sm text-white font-mono text-center focus:outline-none"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => dispatch({ type: "SET_DRIP_RUNS", runs: Math.min(maxRuns, state.dripRuns + 1) })}
-                              className="min-h-[40px] min-w-[40px] rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold flex items-center justify-center"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Interval Presets + Custom input */}
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <label className="text-xs font-medium text-white">Interval between runs</label>
-                            <span className="text-[11px] text-slate-500 font-mono">
-                              {formatDuration(state.dripInterval)}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                            {[
-                              { label: "30 min", mins: 30 },
-                              { label: "1 h", mins: 60 },
-                              { label: "2 h", mins: 120 },
-                              { label: "6 h", mins: 360 },
-                              { label: "12 h", mins: 720 },
-                              { label: "24 h", mins: 1440 },
-                            ].map((preset) => (
-                              <button
-                                key={preset.mins}
-                                type="button"
-                                onClick={() => dispatch({ type: "SET_DRIP_INTERVAL", interval: preset.mins })}
-                                className={`min-h-[36px] py-1 px-2 rounded-lg text-xs font-medium border text-center transition-colors ${
-                                  state.dripInterval === preset.mins
-                                    ? "bg-[#D8EC8D]/20 border-[#D8EC8D] text-white"
-                                    : "bg-white/[0.02] border-white/10 text-slate-400 hover:text-white"
-                                }`}
-                              >
-                                {preset.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Live Schedule Preview & Mini Timeline */}
-                    <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-2.5 text-xs">
-                      {isManagedDrip && !isNativeDrip && (
-                        <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] leading-relaxed">
-                          Runs are sent one after another at the planned times; each run may start a few minutes late.
-                        </div>
-                      )}
-                      
-                      <div className="text-slate-300 flex items-center justify-between">
-                        <span>
-                          {dripScheduleMode === "DAYS" ? (
-                            <>Growth Plan: <strong className="text-white">{state.dripRuns} Days</strong></>
-                          ) : (
-                            <>Every <span className="text-[#D8EC8D] font-semibold">{formatDuration(state.dripInterval)}</span> for <span className="text-[#D8EC8D] font-semibold">{state.dripRuns} runs</span></>
-                          )}
-                        </span>
-                        <span className="text-[#D8EC8D] font-mono font-semibold">
-                          {dripScheduleMode === "DAYS" ? `~${formatIndianNumber(state.quantity)} / day` : ""}
-                        </span>
-                      </div>
-
-                      {/* Per-Run / Per-Day Timeline Preview */}
-                      <div className="space-y-1 pt-1 max-h-36 overflow-y-auto no-scrollbar font-mono text-[11px]">
-                        {Array.from({ length: Math.min(state.dripRuns, 8) }).map((_, idx) => {
-                          const scheduledTime = new Date(Date.now() + idx * state.dripInterval * 60 * 1000);
-                          const label = dripScheduleMode === "DAYS"
-                            ? (idx === 0 ? "Day 1 (Today)" : idx === 1 ? "Day 2 (Tomorrow)" : `Day ${idx + 1}`)
-                            : `Run ${idx + 1}`;
-                          return (
-                            <div key={idx} className="flex justify-between items-center text-slate-400 py-0.5 border-b border-white/[0.03]">
-                              <span className="text-slate-300">{label}: {formatIndianNumber(state.quantity)} units</span>
-                              <span className="text-slate-500">
-                                {dripScheduleMode === "DAYS" && idx > 0
-                                  ? `${scheduledTime.toLocaleDateString([], { month: 'short', day: 'numeric' })} at `
-                                  : ""}
-                                {scheduledTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            </div>
-                          );
-                        })}
-                        {state.dripRuns > 8 && (
-                          <div className="text-[10px] text-slate-500 text-center italic py-0.5">
-                            + {state.dripRuns - 8} more {dripScheduleMode === "DAYS" ? "days" : "runs"} scheduled
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="font-mono text-slate-400 flex items-center justify-between text-[11px] pt-1.5 border-t border-white/5">
-                        <span>
-                          {formatIndianNumber(state.quantity)} {dripScheduleMode === "DAYS" ? "/ day" : "per run"} × {state.dripRuns} {dripScheduleMode === "DAYS" ? "days" : "runs"} ={" "}
-                          <strong className="text-white">{formatIndianNumber(totalUnits)} total</strong>
-                        </span>
-                        <span>
-                          Est. finish: {new Date(Date.now() + (state.dripRuns - 1) * state.dripInterval * 60 * 1000).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                        </span>
-                      </div>
+                    <div className="text-[11px] text-slate-300 leading-relaxed">
+                      {w.message}
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-1">
+                      {w.suggestion}
                     </div>
                   </div>
-                )}
-              </GlassCard>
-            )}
-          </section>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Gradual delivery promotion to Package (Drip-feed) tab */}
+          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-[#D8EC8D]/10 flex items-center justify-center shrink-0">
+                <Boxes className="w-4 h-4 text-[#D8EC8D]" />
+              </div>
+              <div>
+                <div className="text-xs font-medium text-white">Looking for gradual (drip-feed) delivery?</div>
+                <div className="text-[11px] text-slate-400">Use our multi-day Packages for automated daily spread and scheduled pacing.</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOrderMode("PACKAGE")}
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-medium text-[#D8EC8D] transition-colors self-start sm:self-auto shrink-0"
+            >
+              Switch to Package
+            </button>
+          </div>
         </form>
 
         {/* RIGHT COLUMN: STICKY SUMMARY (360px on Desktop >= 1100px) */}
@@ -1324,13 +1221,9 @@ function NewOrderContent() {
               </div>
 
               <div className="flex justify-between items-center py-2 border-y border-white/5 font-mono">
-                <span className="text-slate-400">
-                  {state.isDripFeed && isDripSupported ? "Total Quantity" : "Quantity"}
-                </span>
+                <span className="text-slate-400">Quantity</span>
                 <span className="text-white font-semibold">
-                  {state.isDripFeed && isDripSupported
-                    ? `${formatIndianNumber(state.quantity)} × ${state.dripRuns} = ${formatIndianNumber(totalUnits)}`
-                    : formatIndianNumber(totalUnits)}
+                  {formatIndianNumber(totalUnits)}
                 </span>
               </div>
 
@@ -1338,6 +1231,47 @@ function NewOrderContent() {
                 <span className="text-slate-400">Rate per 1,000</span>
                 <span className="text-slate-300">₹{Number(unitRate).toFixed(2)}</span>
               </div>
+
+              {/* Price Breakdown - visible only when there's a quantity */}
+              {Number(state.quantity) > 0 && (
+                <div className="relative group">
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors cursor-pointer"
+                  >
+                    <span className="text-xs text-slate-400 flex items-center gap-1.5">
+                      Price breakdown
+                      <Info className="w-3 h-3 text-slate-500" />
+                    </span>
+                    <span className="text-xs font-mono text-slate-300">
+                      ₹{Number(unitRate * state.quantity / 1000).toFixed(2)}
+                    </span>
+                  </button>
+                  {/* Popover on hover */}
+                  <div className="absolute bottom-full left-0 right-0 mb-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-20">
+                    <div className="p-3 rounded-xl bg-[#1c1c1c] border border-white/10 shadow-xl backdrop-blur-xl space-y-1.5 text-xs font-mono">
+                      <div className="flex justify-between text-slate-400">
+                        <span>Rate / 1,000</span>
+                        <span className="text-white">₹{Number(unitRate).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-slate-400">
+                        <span>Quantity</span>
+                        <span className="text-white">{formatIndianNumber(state.quantity)}</span>
+                      </div>
+                      {state.isDripFeed && isDripSupported && (
+                        <div className="flex justify-between text-slate-400">
+                          <span>Drip runs</span>
+                          <span className="text-white">× {state.dripRuns}</span>
+                        </div>
+                      )}
+                      <div className="border-t border-white/5 pt-1.5 mt-1.5 flex justify-between text-slate-200 font-semibold">
+                        <span>Total</span>
+                        <span className="text-[#D8EC8D]">₹{totalPrice.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Price Total Card with Number Tween */}

@@ -134,6 +134,7 @@ describe("PHASE 6: Drip-Feed Orders Comprehensive Invariants & Verification Suit
       minQty: 50,
       maxQty: 5000,
       dripFeedSupported: false,
+      allowManagedDrip: false,
     };
 
     beforeEach(() => {
@@ -147,6 +148,7 @@ describe("PHASE 6: Drip-Feed Orders Comprehensive Invariants & Verification Suit
           }),
         },
         order: {
+          count: jest.fn().mockResolvedValue(0),
           findUnique: jest.fn().mockResolvedValue(null),
           create: jest.fn(),
         },

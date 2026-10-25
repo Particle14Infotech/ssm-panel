@@ -1,6 +1,9 @@
-import { Controller, Get, Post, Body } from "@nestjs/common";
-import { ApiTags, ApiOperation } from "@nestjs/swagger";
+import { Controller, Get, Post, Body, UseGuards } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { CouponsService } from "./coupons.service";
+import { JwtAuthGuard } from "../../common/jwt-auth.guard";
+import { RolesGuard, Roles } from "../../common/roles.guard";
+import { Role } from "@prisma/client";
 
 @ApiTags("Coupons & Bonus Rules")
 @Controller()
@@ -14,6 +17,9 @@ export class CouponsController {
   }
 
   @Post("coupons")
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Admin Create Coupon" })
   create(@Body() body: any) {
     return this.couponsService.create(body);
@@ -32,6 +38,9 @@ export class CouponsController {
   }
 
   @Post("bonuses")
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Admin Create Bonus Incentive Tier" })
   createBonus(@Body() body: { minAmount: number; bonusPct: number }) {
     return this.couponsService.createBonus(body);

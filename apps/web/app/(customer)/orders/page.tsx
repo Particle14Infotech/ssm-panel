@@ -33,6 +33,14 @@ import { GlassCard } from "@/components/shared/GlassCard";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { motion } from "framer-motion";
 
+function getApiBase(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
+  if (!envUrl.endsWith("/api/v1")) {
+    return envUrl.replace(/\/+$/, "") + "/api/v1";
+  }
+  return envUrl;
+}
+
 export default function OrdersPage() {
   const { orders, refillOrder, cancelOrder, addFavorite, user } = useCustomer();
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
@@ -42,6 +50,43 @@ export default function OrdersPage() {
   const [refillingId, setRefillingId] = useState<string | null>(null);
   const [activeModalOrder, setActiveModalOrder] = useState<OrderItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Order Problem Report State
+  const [orderProblemModalOpen, setOrderProblemModalOpen] = useState(false);
+  const [orderProblemIssue, setOrderProblemIssue] = useState("Execution delayed or missed");
+  const [orderProblemDesc, setOrderProblemDesc] = useState("");
+  const [submittingOrderProblem, setSubmittingOrderProblem] = useState(false);
+
+  const handleReportOrderProblem = async () => {
+    if (!activeModalOrder || !orderProblemDesc.trim()) return;
+    setSubmittingOrderProblem(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch(`${getApiBase()}/orders/${activeModalOrder.id}/report-problem`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          issueType: orderProblemIssue,
+          notes: orderProblemDesc.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setToastMessage("Problem reported. High-priority ticket created.");
+        setOrderProblemModalOpen(false);
+        setOrderProblemDesc("");
+      } else {
+        setToastMessage(data.message || "Failed to submit report.");
+      }
+    } catch {
+      setToastMessage("Network error reporting problem.");
+    } finally {
+      setSubmittingOrderProblem(false);
+    }
+  };
 
   const handleSaveOrderAsFavorite = async (order: OrderItem) => {
     const res = await addFavorite({
@@ -291,29 +336,39 @@ export default function OrdersPage() {
 
                     {/* Quantity & Aim */}
                     <td className="py-3.5 px-3 font-mono">
-                      {(order as any).packageRun ? (
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 text-[10px] font-semibold flex items-center gap-1">
-                              <Boxes className="w-2.5 h-2.5" />
-                              Package Run #{(order as any).packageRun.runIndex}
-                            </span>
-                            <span className="text-white font-medium">
-                              {order.quantity.toLocaleString()} units
-                            </span>
-                          </div>
-                          {(order as any).packageRun.package && (
-                            <div className="text-[10px] text-slate-300">
-                              Aim: {(order as any).packageRun.package.completedRuns} / {(order as any).packageRun.package.totalRuns} runs done
+                      {(order as any).packageExecution || (order as any).packageRun ? (() => {
+                        const pe = (order as any).packageExecution || (order as any).packageRun;
+                        const runNum = pe.seq ?? pe.runIndex ?? 1;
+                        const pkg = pe.package;
+                        const totalRuns =
+                          pkg?.totalRuns ??
+                          (pkg?.rules?.reduce((acc: number, r: any) => acc + (r.maxPosts || 1), 0) ||
+                            runNum);
+                        const completedRuns = pkg?.completedRuns ?? runNum;
+                        return (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 text-[10px] font-semibold flex items-center gap-1">
+                                <Boxes className="w-2.5 h-2.5" />
+                                Package Run #{runNum}
+                              </span>
+                              <span className="text-white font-medium">
+                                {order.quantity.toLocaleString()} units
+                              </span>
                             </div>
-                          )}
-                          {order.remains !== null && order.remains !== undefined && (
-                            <span className="text-[10px] text-slate-400 block font-mono">
-                              Remains: {order.remains.toLocaleString()}
-                            </span>
-                          )}
-                        </div>
-                      ) : order.isDripFeed || order.dripMode === "MANAGED" || order.dripMode === "NATIVE" ? (
+                            {pkg && (
+                              <div className="text-[10px] text-slate-300">
+                                Aim: {completedRuns} / {totalRuns} runs done
+                              </div>
+                            )}
+                            {order.remains !== null && order.remains !== undefined && (
+                              <span className="text-[10px] text-slate-400 block font-mono">
+                                Remains: {order.remains.toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })() : order.isDripFeed || order.dripMode === "MANAGED" || order.dripMode === "NATIVE" ? (
                         <div className="space-y-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="px-1.5 py-0.5 rounded bg-[#D8EC8D]/15 text-[#D8EC8D] text-[10px] font-semibold">
@@ -562,68 +617,75 @@ export default function OrdersPage() {
             </div>
 
             {/* Growth Package Integration Card (If part of a multi-day package) */}
-            {(activeModalOrder as any).packageRun && (
-              <div className="p-4 rounded-2xl bg-purple-950/25 border border-purple-500/20 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center">
-                      <Boxes className="w-4 h-4" />
+            {((activeModalOrder as any).packageExecution || (activeModalOrder as any).packageRun) && (() => {
+              const pe = (activeModalOrder as any).packageExecution || (activeModalOrder as any).packageRun;
+              const pkg = pe.package;
+              const runNum = pe.seq ?? pe.runIndex ?? 1;
+              const pkgId = pkg?.id || pe.packageId;
+              const totalRuns =
+                pkg?.totalRuns ??
+                (pkg?.rules?.reduce((acc: number, r: any) => acc + (r.maxPosts || 1), 0) ||
+                  runNum);
+              const completedRuns = pkg?.completedRuns ?? runNum;
+              const pct = totalRuns > 0 ? Math.min(100, Math.round((completedRuns / totalRuns) * 100)) : 0;
+              const pkgName =
+                pkg?.name ||
+                (pkg?.platform && pkg?.handle ? `${pkg.platform} @${pkg.handle}` : "Growth Package");
+              return (
+                <div className="p-4 rounded-2xl bg-purple-950/25 border border-purple-500/20 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center">
+                        <Boxes className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-mono text-purple-400 font-bold block">
+                          Part of Growth Package
+                        </span>
+                        <span className="text-white font-semibold text-xs">
+                          {pkgName}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-[10px] uppercase font-mono text-purple-400 font-bold block">
-                        Part of Growth Package
-                      </span>
-                      <span className="text-white font-semibold text-xs">
-                        {(activeModalOrder as any).packageRun.package?.name || "Growth Package"}
-                      </span>
-                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                      {pkg?.status || "ACTIVE"}
+                    </span>
                   </div>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
-                    {(activeModalOrder as any).packageRun.package?.status || "ACTIVE"}
-                  </span>
-                </div>
 
-                {(activeModalOrder as any).packageRun.package && (
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[11px] font-mono text-slate-300">
-                      <span>Package Overall Aim</span>
-                      <span className="text-purple-300 font-bold">
-                        {(activeModalOrder as any).packageRun.package.completedRuns} of{" "}
-                        {(activeModalOrder as any).packageRun.package.totalRuns} runs completed
-                      </span>
+                  {pkg && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                        <span>Package Overall Aim</span>
+                        <span className="text-purple-300 font-bold">
+                          {completedRuns} of {totalRuns} runs completed
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-purple-400 transition-all duration-500"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-purple-400 transition-all duration-500"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            Math.round(
-                              ((activeModalOrder as any).packageRun.package.completedRuns /
-                                Math.max(1, (activeModalOrder as any).packageRun.package.totalRuns)) *
-                                100
-                            )
-                          )}%`,
-                        }}
-                      />
-                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-1 border-t border-purple-500/15">
+                    <span className="text-[10px] text-purple-200/80 font-mono">
+                      Run #{runNum} · Prepaid Child Order
+                    </span>
+                    {pkgId && (
+                      <Link
+                        href={`/packages/${pkgId}`}
+                        className="inline-flex items-center gap-1 text-[11px] text-[#D8EC8D] hover:underline font-semibold"
+                      >
+                        <span>View Package Timeline</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    )}
                   </div>
-                )}
-
-                <div className="flex items-center justify-between pt-1 border-t border-purple-500/15">
-                  <span className="text-[10px] text-purple-200/80 font-mono">
-                    Run #{(activeModalOrder as any).packageRun.runIndex} · Prepaid Child Order
-                  </span>
-                  <Link
-                    href={`/packages/${(activeModalOrder as any).packageRun.packageId}`}
-                    className="inline-flex items-center gap-1 text-[11px] text-[#D8EC8D] hover:underline font-semibold"
-                  >
-                    <span>View Package Timeline</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </Link>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Spec Details */}
             <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-2.5 font-mono text-xs">
@@ -764,6 +826,14 @@ export default function OrdersPage() {
             )}
 
             <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setOrderProblemModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-amber-400 font-medium text-xs transition-colors border border-white/5 flex items-center gap-1.5"
+              >
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>Report Issue</span>
+              </button>
               <Link
                 href={`/support?orderId=${activeModalOrder.id}`}
                 className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs transition-colors"
@@ -778,6 +848,68 @@ export default function OrdersPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Order Problem Report Modal */}
+      {orderProblemModalOpen && activeModalOrder && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-white/10 space-y-5 bg-[#171717] shadow-2xl">
+            <div className="flex items-center gap-3 text-amber-400">
+              <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Report Order Issue</h3>
+                <p className="text-xs text-slate-400 font-mono">Order #{activeModalOrder.id.slice(0, 8)}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-mono text-slate-400 block mb-1.5">Issue Category</label>
+                <select
+                  value={orderProblemIssue}
+                  onChange={(e) => setOrderProblemIssue(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-[#D8EC8D]"
+                >
+                  <option value="Execution delayed or missed" className="bg-[#1c1c1c] text-white">Execution delayed or missed</option>
+                  <option value="Quantity drop or discrepancy" className="bg-[#1c1c1c] text-white">Quantity drop or discrepancy</option>
+                  <option value="Target URL not updating" className="bg-[#1c1c1c] text-white">Target URL not updating</option>
+                  <option value="Other delivery issue" className="bg-[#1c1c1c] text-white">Other delivery issue</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-mono text-slate-400 block mb-1.5">Description & Details</label>
+                <textarea
+                  rows={4}
+                  value={orderProblemDesc}
+                  onChange={(e) => setOrderProblemDesc(e.target.value)}
+                  placeholder="Describe what occurred with this order..."
+                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-[#D8EC8D]"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setOrderProblemModalOpen(false)}
+                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={submittingOrderProblem || !orderProblemDesc.trim()}
+                onClick={handleReportOrderProblem}
+                className="flex-1 py-2.5 rounded-xl bg-[#D8EC8D] text-black font-semibold text-xs hover:brightness-105 transition-all shadow-md disabled:opacity-50"
+              >
+                {submittingOrderProblem ? "Submitting..." : "Submit Ticket"}
+              </button>
+            </div>
+          </GlassCard>
         </div>
       )}
     </motion.div>

@@ -202,6 +202,7 @@ describe("PHASE P5: Complete 11-Scenario Invariant & Security Verification Suite
             minQty: 100,
             maxQty: 100000,
             status: "ACTIVE",
+            packageEligible: true,
           },
           {
             id: "srv-drip-followers",
@@ -211,6 +212,7 @@ describe("PHASE P5: Complete 11-Scenario Invariant & Security Verification Suite
             minQty: 50,
             maxQty: 50000,
             status: "ACTIVE",
+            packageEligible: true,
           },
         ],
       },

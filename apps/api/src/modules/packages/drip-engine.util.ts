@@ -54,6 +54,31 @@ export function calculateFollowersDrip(input: FollowersDripInput): FollowersDrip
   const { totalQuantity, serviceMin, serviceMax, days, intervalHours, ratePer1000 } = input;
   const startAt = input.startAt || new Date();
 
+  if (!Number.isSafeInteger(totalQuantity) || totalQuantity <= 0) {
+    throw new RangeError("Total quantity must be a positive safe integer.");
+  }
+  if (!Number.isSafeInteger(serviceMin) || serviceMin <= 0) {
+    throw new RangeError("Service minimum must be a positive integer.");
+  }
+  if (
+    serviceMax !== undefined &&
+    (!Number.isSafeInteger(serviceMax) || serviceMax < serviceMin)
+  ) {
+    throw new RangeError("Service maximum must be an integer greater than or equal to its minimum.");
+  }
+  if (!Number.isSafeInteger(days) || days <= 0) {
+    throw new RangeError("Schedule duration must be a positive integer.");
+  }
+  if (!Number.isSafeInteger(intervalHours) || intervalHours <= 0) {
+    throw new RangeError("Run interval must be a positive integer.");
+  }
+  if (!Number.isFinite(ratePer1000) || ratePer1000 < 0) {
+    throw new RangeError("Service rate must be a non-negative finite number.");
+  }
+  if (totalQuantity < serviceMin) {
+    throw new RangeError(`Total quantity (${totalQuantity}) is below the service minimum of ${serviceMin}.`);
+  }
+
   const totalChargeDec = new Decimal(ratePer1000)
     .times(totalQuantity)
     .dividedBy(1000)
@@ -62,10 +87,22 @@ export function calculateFollowersDrip(input: FollowersDripInput): FollowersDrip
   const totalCharge = totalChargeDec.toNumber();
 
   const maxRunsFromQty = Math.floor(totalQuantity / serviceMin);
-  const intervalDays = intervalHours / 24;
-  const maxRunsFromTime = Math.floor(days / intervalDays);
+  const maxRunsFromTime = Math.floor((days * 24) / intervalHours);
+  const minRunsFromMax = serviceMax === undefined
+    ? 1
+    : Math.ceil(totalQuantity / serviceMax);
+  const maxFeasibleRuns = Math.min(maxRunsFromQty, maxRunsFromTime);
 
-  const runsCount = Math.max(1, Math.min(maxRunsFromQty, maxRunsFromTime));
+  if (maxFeasibleRuns < minRunsFromMax) {
+    throw new RangeError(
+      `Quantity (${totalQuantity}) cannot be split into runs between the service minimum (${serviceMin}) and maximum (${serviceMax ?? "unbounded"}) within ${days} days at ${intervalHours}-hour intervals.`
+    );
+  }
+
+  const runsCount = Math.max(
+    minRunsFromMax,
+    Math.min(maxRunsFromQty, maxRunsFromTime)
+  );
 
   let warning: string | undefined = undefined;
   if (runsCount === 1 && days > 1) {

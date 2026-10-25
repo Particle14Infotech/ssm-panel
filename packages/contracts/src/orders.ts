@@ -197,6 +197,8 @@ export const OrderItemSchema = z.object({
   dripMode: DripModeSchema.optional(),
   runsList: z.array(OrderRunItemSchema).optional(),
   providerOrderId: z.string().nullable().optional(),
+  providerId: z.string().nullable().optional(),
+  packageExecutionId: z.string().nullable().optional(),
   providerName: z.string().nullable().optional(),
   idempotencyKey: z.string().optional(),
   createdAt: z.string(),
@@ -206,6 +208,26 @@ export const OrderItemSchema = z.object({
   providerEvents: z.array(z.any()).optional(),
   isPrepaid: z.boolean().optional(),
   packageRunId: z.string().nullable().optional(),
+  packageExecution: z
+    .object({
+      id: z.string(),
+      seq: z.number().int(),
+      packageId: z.string(),
+      status: z.string(),
+      remainingQuantity: z.number().int().optional(),
+      quantity: z.number().int().optional(),
+      package: z
+        .object({
+          id: z.string(),
+          platform: z.string().optional(),
+          handle: z.string().optional(),
+          status: z.string().optional(),
+          rules: z.array(z.any()).optional(),
+        })
+        .optional(),
+    })
+    .nullable()
+    .optional(),
   packageRun: z
     .object({
       id: z.string(),

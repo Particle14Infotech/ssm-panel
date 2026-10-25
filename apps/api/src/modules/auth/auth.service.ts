@@ -6,7 +6,22 @@ import crypto from "crypto";
 
 import { EmailService } from "../email/email.service";
 
-const JWT_SECRET = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || "smm_panel_jwt_secret_dev_environment_key_32bytes";
+let ephemeralAuthJwtSecret: string | null = null;
+
+function getAuthJwtSecret(): string {
+  const secret = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new UnauthorizedException("JWT_ACCESS_SECRET must be configured in production.");
+    }
+    if (!ephemeralAuthJwtSecret) {
+      ephemeralAuthJwtSecret = crypto.randomBytes(32).toString("hex");
+    }
+    return ephemeralAuthJwtSecret;
+  }
+  return secret;
+}
+
 const JWT_EXPIRES_IN = "15m";
 const REFRESH_EXPIRES_DAYS = 7;
 
@@ -60,7 +75,7 @@ export class AuthService {
           role: user.role,
           tier: user.tier,
         },
-        JWT_SECRET,
+        getAuthJwtSecret(),
         { expiresIn: JWT_EXPIRES_IN }
       );
       const refreshToken = crypto.randomBytes(40).toString("hex");
@@ -168,7 +183,7 @@ export class AuthService {
         role: user.role,
         tier: user.tier,
       },
-      JWT_SECRET,
+      getAuthJwtSecret(),
       { expiresIn: JWT_EXPIRES_IN }
     );
 
@@ -337,7 +352,7 @@ export class AuthService {
         role: session.user.role,
         tier: session.user.tier,
       },
-      JWT_SECRET,
+      getAuthJwtSecret(),
       { expiresIn: JWT_EXPIRES_IN }
     );
 

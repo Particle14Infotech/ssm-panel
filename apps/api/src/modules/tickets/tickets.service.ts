@@ -1,10 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Optional } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException, ServiceUnavailableException, Optional } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { EmailService } from "../email/email.service";
 
 @Injectable()
 export class TicketsService {
-  private sandboxTickets = new Map<string, any>();
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly emailService?: EmailService
@@ -15,26 +14,7 @@ export class TicketsService {
       throw new BadRequestException("Authenticated user ID is required to create a ticket.");
     }
     if (!this.prisma.isConnected) {
-      const ticketId = `TCK-${Date.now()}`;
-      const ticket = {
-        id: ticketId,
-        userId,
-        subject: body.subject,
-        priority: body.priority || "NORMAL",
-        status: "OPEN",
-        messages: [
-          {
-            id: `msg-${Date.now()}`,
-            senderId: userId,
-            message: body.message,
-            createdAt: new Date(),
-          },
-        ],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      this.sandboxTickets.set(ticketId, ticket);
-      return { success: true, ticketId, ticket };
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
     }
     const ticket = await this.prisma.ticket.create({
       data: {
@@ -56,11 +36,7 @@ export class TicketsService {
 
   async findAll(userId?: string, requesterRole?: string) {
     if (!this.prisma.isConnected) {
-      const tickets = Array.from(this.sandboxTickets.values());
-      if (requesterRole === "ADMIN") {
-        return userId ? tickets.filter((t) => t.userId === userId) : tickets;
-      }
-      return userId ? tickets.filter((t) => t.userId === userId) : [];
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
     }
     try {
       const where = requesterRole === "ADMIN" ? (userId ? { userId } : {}) : (userId ? { userId } : { userId: "none" });
@@ -79,12 +55,7 @@ export class TicketsService {
 
   async findOne(id: string, requesterUserId?: string, requesterRole?: string) {
     if (!this.prisma.isConnected) {
-      const ticket = this.sandboxTickets.get(id);
-      if (!ticket) throw new NotFoundException(`Ticket #${id} not found.`);
-      if (requesterRole !== "ADMIN" && requesterUserId && ticket.userId !== requesterUserId) {
-        throw new NotFoundException(`Ticket #${id} not found.`);
-      }
-      return ticket;
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
     }
     const ticket = await this.prisma.ticket.findUnique({
       where: { id },
@@ -92,7 +63,7 @@ export class TicketsService {
     });
     if (!ticket) throw new NotFoundException(`Ticket #${id} not found.`);
 
-    if (requesterRole !== "ADMIN" && requesterUserId && ticket.userId !== requesterUserId) {
+    if (requesterRole !== "ADMIN" && (!requesterUserId || ticket.userId !== requesterUserId)) {
       throw new NotFoundException(`Ticket #${id} not found.`);
     }
 
@@ -104,6 +75,7 @@ export class TicketsService {
     if (!this.prisma.isConnected) {
       const msg = {
         id: `msg-${Date.now()}`,
+        ticketId: id,
         senderId,
         message,
         createdAt: new Date(),

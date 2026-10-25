@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { CreateFavoriteInput } from "@smm/contracts";
+import * as crypto from "crypto";
 
 @Injectable()
 export class FavoritesService {
@@ -106,12 +107,38 @@ export class FavoritesService {
       return newFav;
     }
 
-    // 1. Check max 50 favorites constraint
-    const currentCount = await this.prisma.favorite.count({
-      where: { userId },
-    });
-    if (currentCount >= 50) {
-      const existing = await this.prisma.favorite.findUnique({
+    // 1. Atomic Transaction with User row lock to eliminate cap race conditions
+    return await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRawUnsafe(`SELECT id FROM "User" WHERE id = $1 FOR UPDATE`, userId);
+
+      const currentCount = await tx.favorite.count({
+        where: { userId },
+      });
+      if (currentCount >= 50) {
+        const existing = await tx.favorite.findUnique({
+          where: {
+            userId_serviceId_targetUrl: {
+              userId,
+              serviceId: input.serviceId,
+              targetUrl: input.targetUrl,
+            },
+          },
+        });
+        if (!existing) {
+          throw new BadRequestException("Maximum limit of 50 favorites reached. Please delete an older favorite.");
+        }
+      }
+
+      // 2. Validate that target service exists
+      const service = await tx.service.findUnique({
+        where: { id: input.serviceId },
+      });
+      if (!service || service.isDeleted) {
+        throw new BadRequestException("Selected service does not exist or has been discontinued.");
+      }
+
+      // 3. Upsert favorite
+      const fav = await tx.favorite.upsert({
         where: {
           userId_serviceId_targetUrl: {
             userId,
@@ -119,67 +146,167 @@ export class FavoritesService {
             targetUrl: input.targetUrl,
           },
         },
-      });
-      if (!existing) {
-        throw new BadRequestException("Maximum limit of 50 favorites reached. Please delete an older favorite.");
-      }
-    }
-
-    // 2. Validate that target service exists
-    const service = await this.prisma.service.findUnique({
-      where: { id: input.serviceId },
-    });
-    if (!service || service.isDeleted) {
-      throw new BadRequestException("Selected service does not exist or has been discontinued.");
-    }
-
-    // 3. Upsert favorite
-    const fav = await this.prisma.favorite.upsert({
-      where: {
-        userId_serviceId_targetUrl: {
+        create: {
           userId,
           serviceId: input.serviceId,
+          customName: input.customName || null,
           targetUrl: input.targetUrl,
+          defaultQuantity: input.defaultQuantity,
+          isDripFeed: Boolean(input.isDripFeed),
+          dripRuns: input.dripRuns || null,
+          dripInterval: input.dripInterval || null,
+          comments: input.comments || null,
         },
-      },
-      create: {
-        userId,
-        serviceId: input.serviceId,
-        customName: input.customName || null,
-        targetUrl: input.targetUrl,
-        defaultQuantity: input.defaultQuantity,
-        isDripFeed: Boolean(input.isDripFeed),
-        dripRuns: input.dripRuns || null,
-        dripInterval: input.dripInterval || null,
-        comments: input.comments || null,
-      },
-      update: {
-        customName: input.customName || null,
-        defaultQuantity: input.defaultQuantity,
-        isDripFeed: Boolean(input.isDripFeed),
-        dripRuns: input.dripRuns || null,
-        dripInterval: input.dripInterval || null,
-        comments: input.comments || null,
-      },
-      include: {
-        service: true,
-      },
-    });
+        update: {
+          customName: input.customName || null,
+          defaultQuantity: input.defaultQuantity,
+          isDripFeed: Boolean(input.isDripFeed),
+          dripRuns: input.dripRuns || null,
+          dripInterval: input.dripInterval || null,
+          comments: input.comments || null,
+        },
+        include: {
+          service: true,
+        },
+      });
 
-    return {
-      id: fav.id,
-      userId: fav.userId,
-      serviceId: fav.serviceId,
-      customName: fav.customName,
-      targetUrl: fav.targetUrl,
-      defaultQuantity: fav.defaultQuantity,
-      isDripFeed: fav.isDripFeed,
-      dripRuns: fav.dripRuns,
-      dripInterval: fav.dripInterval,
-      comments: fav.comments,
-      createdAt: fav.createdAt.toISOString(),
-      updatedAt: fav.updatedAt.toISOString(),
-    };
+      return {
+        id: fav.id,
+        userId: fav.userId,
+        serviceId: fav.serviceId,
+        customName: fav.customName,
+        targetUrl: fav.targetUrl,
+        defaultQuantity: fav.defaultQuantity,
+        isDripFeed: fav.isDripFeed,
+        dripRuns: fav.dripRuns,
+        dripInterval: fav.dripInterval,
+        comments: fav.comments,
+        createdAt: fav.createdAt.toISOString(),
+        updatedAt: fav.updatedAt.toISOString(),
+      };
+    });
+  }
+
+  /**
+   * Adds or updates a favorite with generic configuration (ORDER or PACKAGE kind).
+   * Enforces 50 limit, IDOR scoping to userId, and deterministic configHash.
+   */
+  async createFavoriteWithConfig(
+    userId: string,
+    input: {
+      serviceId?: string;
+      customName?: string;
+      targetUrl?: string;
+      defaultQuantity?: number;
+      isDripFeed?: boolean;
+      dripRuns?: number;
+      dripInterval?: number;
+      comments?: string;
+      config: Record<string, any>;
+    }
+  ) {
+    if (!input.config || typeof input.config !== "object") {
+      throw new BadRequestException("Favorite config must be a valid object.");
+    }
+
+    const serialized = JSON.stringify(input.config, Object.keys(input.config).sort());
+    const configHash = crypto.createHash("sha256").update(serialized).digest("hex");
+
+    const serviceId = input.serviceId || input.config.serviceId || "pkg_custom";
+    const targetUrl = input.targetUrl || input.config.targetUrl || input.config.handle || "https://example.com";
+    const defaultQuantity = input.defaultQuantity || input.config.quantity || input.config.followers || 100;
+
+    if (!this.prisma.isConnected) {
+      const userFavs = this.sandboxFavorites.get(userId) || [];
+      if (userFavs.length >= 50) {
+        throw new BadRequestException("Maximum limit of 50 favorites reached. Please delete an older favorite.");
+      }
+      const newFav = {
+        id: `fav_${Date.now()}`,
+        userId,
+        serviceId,
+        customName: input.customName || input.config.name || null,
+        targetUrl,
+        defaultQuantity,
+        isDripFeed: Boolean(input.isDripFeed),
+        dripRuns: input.dripRuns || null,
+        dripInterval: input.dripInterval || null,
+        comments: input.comments || null,
+        config: input.config,
+        configHash,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      userFavs.unshift(newFav);
+      this.sandboxFavorites.set(userId, userFavs);
+      return newFav;
+    }
+
+    return await this.prisma.$transaction(async (tx: any) => {
+      await tx.$queryRawUnsafe(`SELECT id FROM "User" WHERE id = $1 FOR UPDATE`, userId);
+
+      const currentCount = await tx.favorite.count({
+        where: { userId },
+      });
+      if (currentCount >= 50) {
+        const existing = await tx.favorite.findUnique({
+          where: {
+            userId_serviceId_targetUrl: {
+              userId,
+              serviceId,
+              targetUrl,
+            },
+          },
+        });
+        if (!existing) {
+          throw new BadRequestException("Maximum limit of 50 favorites reached. Please delete an older favorite.");
+        }
+      }
+
+      if (serviceId !== "pkg_custom") {
+        const service = await tx.service.findUnique({
+          where: { id: serviceId },
+        });
+        if (!service || service.isDeleted) {
+          throw new BadRequestException("Selected service does not exist or has been discontinued.");
+        }
+      }
+
+      const fav = await tx.favorite.upsert({
+        where: {
+          userId_serviceId_targetUrl: {
+            userId,
+            serviceId,
+            targetUrl,
+          },
+        },
+        create: {
+          userId,
+          serviceId,
+          customName: input.customName || null,
+          targetUrl,
+          defaultQuantity,
+          isDripFeed: Boolean(input.isDripFeed),
+          dripRuns: input.dripRuns || null,
+          dripInterval: input.dripInterval || null,
+          comments: input.comments || null,
+          config: input.config,
+          configHash,
+        },
+        update: {
+          customName: input.customName || null,
+          defaultQuantity,
+          isDripFeed: Boolean(input.isDripFeed),
+          dripRuns: input.dripRuns || null,
+          dripInterval: input.dripInterval || null,
+          comments: input.comments || null,
+          config: input.config,
+          configHash,
+        },
+      });
+
+      return fav;
+    });
   }
 
   /**

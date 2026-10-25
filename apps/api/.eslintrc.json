@@ -8,5 +8,20 @@
     "jest": true
   },
   "ignorePatterns": [".eslintrc.js", "dist"],
-  "rules": {}
+  "rules": {},
+  "overrides": [
+    {
+      "files": ["src/modules/packages/**/*.ts"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "Math",
+            "property": "random",
+            "message": "Math.random is banned in packages module to guarantee deterministic schedule generation."
+          }
+        ]
+      }
+    }
+  ]
 }

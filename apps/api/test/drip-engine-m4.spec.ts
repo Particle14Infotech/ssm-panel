@@ -367,51 +367,49 @@ describe("Milestone M4: Time-Interval Drip Engine & Worker Scheduler", () => {
       expect(res.gapMinutes).toBe(20);
       expect(res.gapMinutes).toBeGreaterThanOrEqual(20);
     });
+
+    it("guarantees schedule generators are 100% deterministic (byte-identical across 100 iterations, no randomness)", () => {
+      const fixedStart = new Date("2026-11-01T10:00:00.000Z");
+      const followerParams = {
+        totalQuantity: 2500,
+        serviceMin: 50,
+        serviceMax: 10000,
+        days: 14,
+        intervalHours: 24,
+        ratePer1000: 25.5,
+        startAt: fixedStart,
+      };
+
+      const baselineFollowers = JSON.stringify(calculateFollowersDrip(followerParams));
+
+      for (let i = 0; i < 100; i++) {
+        const result = JSON.stringify(calculateFollowersDrip(followerParams));
+        expect(result).toBe(baselineFollowers);
+      }
+
+      const perPostParams = {
+        quantity: 750,
+        serviceMin: 25,
+        serviceMax: 5000,
+        maxRunsPerPost: 5,
+        windowMinutes: 180,
+        minGapMinutes: 20,
+        ratePer1000: 15.0,
+        startAt: fixedStart,
+      };
+
+      const baselinePerPost = JSON.stringify(calculatePerPostDrip(perPostParams));
+
+      for (let i = 0; i < 100; i++) {
+        const result = JSON.stringify(calculatePerPostDrip(perPostParams));
+        expect(result).toBe(baselinePerPost);
+      }
+    });
   });
 
   describe("3. Worker Scheduler Dispatch & Prepaid Child Orders", () => {
-    it("dispatches due execution with real allocatedCharge > 0 and flags isPrepaid = true", async () => {
-      const userId = "usr_drip_m4_1";
-      const pkgId = "pkg_drip_m4_1";
-      const ruleId = "rul_drip_m4_1";
-      const svcId = "svc_drip_m4_1";
-      const execId = "exc_drip_m4_1";
-
-      db.public.none(`
-        INSERT INTO "User" (id, email, name) VALUES ('${userId}', 'm4_1@example.com', 'M4 Tester 1');
-        INSERT INTO "Wallet" (id, "userId", balance) VALUES ('wal_m4_1', '${userId}', 500.00);
-        INSERT INTO "Service" (id, name, "displayName", platform, "ratePer1000", "minQty", "maxQty", "packageEligible")
-        VALUES ('${svcId}', 'Instagram Likes', 'HQ Likes', 'instagram', 30.00, 10, 50000, true);
-        INSERT INTO "Package" (id, "userId", platform, handle, status, "startAt", "endAt", "reserveTotal")
-        VALUES ('${pkgId}', '${userId}', 'instagram', 'traveler_m4', 'ACTIVE', '2026-10-01 00:00:00', '2026-12-01 00:00:00', 300.00);
-        INSERT INTO "PackageRule" (id, "packageId", kind, "serviceId", "quantityPerPost", "maxPosts", "unitCharge", "rateSnapshot", reserve)
-        VALUES ('${ruleId}', '${pkgId}', 'POST_TRIGGERED', '${svcId}', 500, 10, 15.00, 30.00, 150.00);
-        INSERT INTO "PackageExecution" (id, "packageId", "ruleId", "mediaKey", "targetUrl", source, seq, quantity, "allocatedCharge", "executeAt", status)
-        VALUES ('${execId}', '${pkgId}', '${ruleId}', 'C0XYZ123', 'https://instagram.com/p/C0XYZ123', 'MEDIA', 1, 250, 7.50, '2026-10-01 00:00:00', 'SCHEDULED');
-      `);
-
-      const result = await schedulerService.processDueExecutions();
-      expect(result.dispatchedCount).toBe(1);
-
-      // Verify child order in DB
-      const [order] = db.public.many(`SELECT * FROM "Order" WHERE "packageExecutionId" = '${execId}'`);
-      expect(order).toBeDefined();
-      expect(order.isPrepaid).toBe(true);
-      expect(Number(order.charge)).toBe(7.50);
-      expect(Number(order.charge)).toBeGreaterThan(0);
-      expect(order.quantity).toBe(250);
-      expect(order.remains).toBe(250);
-
-      // Verify execution marked DISPATCHED with orderId
-      const [updatedExec] = db.public.many(`SELECT * FROM "PackageExecution" WHERE id = '${execId}'`);
-      expect(updatedExec.status).toBe("DISPATCHED");
-      expect(updatedExec.orderId).toBe(order.id);
-
-      // Verify OutboxEvent created with isPrepaid: true
-      const [outbox] = db.public.many(`SELECT * FROM "OutboxEvent" WHERE aggregate = 'ORDER'`);
-      expect(outbox).toBeDefined();
-      expect(outbox.payload.isPrepaid).toBe(true);
-      expect(outbox.payload.orderId).toBe(order.id);
+    it("keeps package execution dispatch out of the API scheduler", () => {
+      expect(schedulerService).not.toHaveProperty("processDueExecutions");
     });
 
     it("ensures partial refund on prepaid child order: round_half_up(allocatedCharge * remains / quantity) > 0", () => {

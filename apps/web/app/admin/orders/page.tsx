@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 export default function AdminOrdersPage() {
-  const { orders, updateOrderStatus, resendOrderToProvider, refreshAdminData } = useAdmin();
+  const { orders, providers, updateOrderStatus, resendOrderToProvider, refreshAdminData } = useAdmin();
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
@@ -29,6 +29,15 @@ export default function AdminOrdersPage() {
   const [dripFeedOnly, setDripFeedOnly] = useState<boolean>(false);
   const [lateRunsOnly, setLateRunsOnly] = useState<boolean>(false);
   const [selectedTraceOrder, setSelectedTraceOrder] = useState<OrderItem | null>(null);
+  const [reconciliationOutcome, setReconciliationOutcome] = useState<
+    "UNRESOLVED" | "ACCEPTED" | "REJECTED"
+  >("UNRESOLVED");
+  const [reconciliationProviderId, setReconciliationProviderId] = useState("");
+  const [reconciliationProviderOrderId, setReconciliationProviderOrderId] = useState("");
+  const [reconciliationEvidence, setReconciliationEvidence] = useState("");
+  const [confirmedNoAcceptance, setConfirmedNoAcceptance] = useState(false);
+  const [isReconciling, setIsReconciling] = useState(false);
+  const [reconciliationError, setReconciliationError] = useState<string | null>(null);
 
   const isLate = (o: OrderItem) => {
     if (!o.runsList || o.runsList.length === 0) return false;
@@ -76,6 +85,107 @@ export default function AdminOrdersPage() {
   const handleResend = async (orderId: string) => {
     await resendOrderToProvider(orderId);
     alert(`Order ${orderId} resent to upstream provider node queue.`);
+  };
+
+  const handleReconcileProviderOutcome = async () => {
+    if (!selectedTraceOrder) return;
+    const evidence = reconciliationEvidence.trim();
+    if (!evidence) {
+      setReconciliationError("Record the provider review evidence before saving.");
+      return;
+    }
+    if (
+      reconciliationOutcome !== "UNRESOLVED" &&
+      !reconciliationProviderId
+    ) {
+      setReconciliationError("Select the provider that was reviewed.");
+      return;
+    }
+    if (reconciliationOutcome === "ACCEPTED" && !reconciliationProviderOrderId.trim()) {
+      setReconciliationError("Enter the verified provider order reference.");
+      return;
+    }
+    if (reconciliationOutcome === "REJECTED" && !confirmedNoAcceptance) {
+      setReconciliationError("Confirm that the provider did not accept the request.");
+      return;
+    }
+
+    const token = localStorage.getItem("authToken") || localStorage.getItem("token");
+    if (!token) {
+      setReconciliationError("An administrator session is required.");
+      return;
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
+    const apiBase = apiUrl.endsWith("/api/v1")
+      ? apiUrl
+      : `${apiUrl.replace(/\/+$/, "")}/api/v1`;
+    const body: Record<string, unknown> = {
+      outcome: reconciliationOutcome,
+      evidence,
+    };
+    if (reconciliationOutcome !== "UNRESOLVED") {
+      body.providerId = reconciliationProviderId;
+    }
+    if (reconciliationOutcome === "ACCEPTED") {
+      body.providerOrderId = reconciliationProviderOrderId.trim();
+    }
+    if (reconciliationOutcome === "REJECTED") {
+      body.confirmedNoAcceptance = true;
+    }
+
+    setIsReconciling(true);
+    setReconciliationError(null);
+    try {
+      const response = await fetch(
+        `${apiBase}/orders/${selectedTraceOrder.id}/package-provider-reconciliation`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        },
+      );
+      let result: unknown;
+      try {
+        result = await response.json();
+      } catch {
+        setReconciliationError("The server response could not be read. Refresh orders before retrying.");
+        await refreshAdminData();
+        return;
+      }
+
+      if (!response.ok) {
+        setReconciliationError(
+          typeof result === "object" &&
+            result !== null &&
+            "message" in result &&
+            typeof result.message === "string"
+            ? result.message
+            : "Provider reconciliation failed.",
+        );
+        return;
+      }
+
+      await refreshAdminData();
+      setSelectedTraceOrder(null);
+      setReconciliationEvidence("");
+      setReconciliationProviderOrderId("");
+      setConfirmedNoAcceptance(false);
+      alert(
+        reconciliationOutcome === "REJECTED"
+          ? "Provider rejection recorded and one retry queued."
+          : reconciliationOutcome === "ACCEPTED"
+            ? "Provider reference recorded for normal status polling."
+            : "Unresolved provider review recorded. No retry was queued.",
+      );
+    } catch {
+      setReconciliationError("Network error while recording provider reconciliation.");
+    } finally {
+      setIsReconciling(false);
+    }
   };
 
   return (
@@ -265,7 +375,9 @@ export default function AdminOrdersPage() {
                             <option value="PENDING">PENDING</option>
                             <option value="PROCESSING">PROCESSING</option>
                             <option value="IN_PROGRESS">IN_PROGRESS</option>
-                            <option value="COMPLETED">COMPLETED</option>
+                            <option value="COMPLETED" disabled={Boolean(order.packageExecutionId)}>
+                              {order.packageExecutionId ? "COMPLETED (provider verified)" : "COMPLETED"}
+                            </option>
                             <option value="PARTIAL">PARTIAL</option>
                             <option value="CANCELLED">CANCELLED</option>
                             <option value="REFUNDED">REFUNDED</option>
@@ -295,26 +407,38 @@ export default function AdminOrdersPage() {
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           type="button"
-                          onClick={() => setSelectedTraceOrder(order)}
+                          onClick={() => {
+                            setSelectedTraceOrder(order);
+                            setReconciliationProviderId(order.providerId || "");
+                            setReconciliationOutcome("UNRESOLVED");
+                            setReconciliationEvidence("");
+                            setReconciliationProviderOrderId("");
+                            setConfirmedNoAcceptance(false);
+                            setReconciliationError(null);
+                          }}
                           className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[10px] font-mono transition-colors"
                           title="View Provider Execution Trace & Events"
                         >
                           Trace
                         </button>
-                        <button
-                          onClick={() => handleResend(order.id)}
-                          className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-white text-[10px] font-mono transition-all flex items-center gap-1"
-                          title="Resend to Provider Node"
-                        >
-                          <RefreshCw className="w-3 h-3 text-[#D8EC8D]" />
-                          <span>Resend</span>
-                        </button>
-                        <button
-                          onClick={() => updateOrderStatus(order.id, "COMPLETED")}
-                          className="px-2.5 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-semibold"
-                        >
-                          Force Complete
-                        </button>
+                        {!(order.packageExecutionId && order.status === "PROCESSING" && !order.providerOrderId) && (
+                          <button
+                            onClick={() => handleResend(order.id)}
+                            className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-white text-[10px] font-mono transition-all flex items-center gap-1"
+                            title="Resend to Provider Node"
+                          >
+                            <RefreshCw className="w-3 h-3 text-[#D8EC8D]" />
+                            <span>Resend</span>
+                          </button>
+                        )}
+                        {!order.packageExecutionId && (
+                          <button
+                            onClick={() => updateOrderStatus(order.id, "COMPLETED")}
+                            className="px-2.5 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-semibold"
+                          >
+                            Force Complete
+                          </button>
+                        )}
                         <button
                           onClick={() => updateOrderStatus(order.id, "REFUNDED")}
                           className="px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-[10px] font-mono font-semibold"
@@ -370,6 +494,111 @@ export default function AdminOrdersPage() {
                   <span className="text-emerald-300 font-bold">#{selectedTraceOrder.providerOrderId || "None"}</span>
                 </div>
               </div>
+
+              {selectedTraceOrder.packageExecutionId &&
+                selectedTraceOrder.status === "PROCESSING" &&
+                !selectedTraceOrder.providerOrderId && (
+                  <section className="space-y-3 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-4">
+                    <div>
+                      <h4 className="text-xs font-semibold text-amber-200">
+                        Provider outcome requires review
+                      </h4>
+                      <p className="mt-1 text-[10px] leading-relaxed text-slate-300">
+                        Do not retry unless the selected provider confirms it did not accept this request.
+                        Accepted references are saved for normal provider status polling; unresolved outcomes remain blocked.
+                      </p>
+                    </div>
+                    <label className="block space-y-1">
+                      <span className="text-[10px] text-slate-400">Review result</span>
+                      <select
+                        value={reconciliationOutcome}
+                        onChange={(event) =>
+                          setReconciliationOutcome(
+                            event.target.value as "UNRESOLVED" | "ACCEPTED" | "REJECTED",
+                          )
+                        }
+                        className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-white"
+                      >
+                        <option value="UNRESOLVED">Unresolved — keep dispatch blocked</option>
+                        <option value="ACCEPTED">Accepted — attach verified provider reference</option>
+                        <option value="REJECTED">Rejected — permit one retry</option>
+                      </select>
+                    </label>
+                    {reconciliationOutcome !== "UNRESOLVED" && (
+                      <label className="block space-y-1">
+                        <span className="text-[10px] text-slate-400">Reviewed provider</span>
+                        <select
+                          value={reconciliationProviderId}
+                          onChange={(event) => setReconciliationProviderId(event.target.value)}
+                          className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-white"
+                        >
+                          <option value="">Select provider</option>
+                          {providers.map((provider) => (
+                            <option key={provider.id} value={provider.id}>
+                              {provider.name} ({provider.id})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                    {reconciliationOutcome === "ACCEPTED" && (
+                      <label className="block space-y-1">
+                        <span className="text-[10px] text-slate-400">Verified provider order reference</span>
+                        <input
+                          value={reconciliationProviderOrderId}
+                          onChange={(event) =>
+                            setReconciliationProviderOrderId(event.target.value)
+                          }
+                          maxLength={255}
+                          className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-white"
+                        />
+                      </label>
+                    )}
+                    {reconciliationOutcome === "REJECTED" && (
+                      <label className="flex items-start gap-2 text-[10px] text-rose-200">
+                        <input
+                          type="checkbox"
+                          checked={confirmedNoAcceptance}
+                          onChange={(event) => setConfirmedNoAcceptance(event.target.checked)}
+                          className="mt-0.5 accent-rose-400"
+                        />
+                        I verified that this provider did not accept or create the order. Requeueing may submit the request again.
+                      </label>
+                    )}
+                    <label className="block space-y-1">
+                      <span className="text-[10px] text-slate-400">Audit evidence (ticket, provider lookup, or review notes)</span>
+                      <textarea
+                        value={reconciliationEvidence}
+                        onChange={(event) => setReconciliationEvidence(event.target.value)}
+                        maxLength={2000}
+                        rows={3}
+                        className="w-full resize-y rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-white"
+                      />
+                    </label>
+                    {reconciliationError && (
+                      <p role="alert" className="text-[10px] text-rose-300">
+                        {reconciliationError}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleReconcileProviderOutcome}
+                      disabled={
+                        isReconciling ||
+                        !reconciliationEvidence.trim() ||
+                        (reconciliationOutcome !== "UNRESOLVED" &&
+                          !reconciliationProviderId) ||
+                        (reconciliationOutcome === "ACCEPTED" &&
+                          !reconciliationProviderOrderId.trim()) ||
+                        (reconciliationOutcome === "REJECTED" &&
+                          !confirmedNoAcceptance)
+                      }
+                      className="rounded-lg bg-[#D8EC8D]/15 px-3 py-2 text-[10px] font-semibold text-[#D8EC8D] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {isReconciling ? "Saving review..." : "Record provider review"}
+                    </button>
+                  </section>
+                )}
 
               {/* Order Runs Execution Matrix for Drip Orders */}
               {selectedTraceOrder.runsList && selectedTraceOrder.runsList.length > 0 && (

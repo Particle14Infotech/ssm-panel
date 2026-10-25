@@ -7,11 +7,21 @@ const AUTH_TAG_LENGTH = 16; // 128 bits auth tag
 /**
  * Derives or validates 32-byte master encryption key from environment variable
  */
+let ephemeralDevMasterKey: Buffer | null = null;
+
 function getMasterKey(): Buffer {
-  const secret = process.env.PROVIDER_KEY_ENCRYPTION_KEY || process.env.PROVIDER_KEY_SECRET;
+  const secret =
+    process.env.ENCRYPTION_KEY ||
+    process.env.PROVIDER_KEY_ENCRYPTION_KEY ||
+    process.env.PROVIDER_KEY_SECRET;
   if (!secret) {
-    // Default fallback in local dev sandbox
-    return crypto.scryptSync("smm_master_provider_key_fallback_dev", "salt_smm", 32);
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("ENCRYPTION_KEY must be configured in production.");
+    }
+    if (!ephemeralDevMasterKey) {
+      ephemeralDevMasterKey = crypto.randomBytes(32);
+    }
+    return ephemeralDevMasterKey;
   }
   if (secret.length === 64) {
     // Hex string 32 bytes

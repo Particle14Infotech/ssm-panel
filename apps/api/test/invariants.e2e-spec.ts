@@ -1,151 +1,115 @@
-import { newDb } from "pg-mem";
+import { Pool, Client } from "pg";
 import { Decimal } from "decimal.js";
 import crypto from "crypto";
-import path from "path";
-import fs from "fs";
+import { randomUUID } from "crypto";
+import { assertRealPostgresStartup } from "../src/test-utils/pg-test-startup";
 
-// Load test environment
-const testEnvPath = path.resolve(__dirname, "../../../.env.test");
-if (fs.existsSync(testEnvPath)) {
-  const content = fs.readFileSync(testEnvPath, "utf-8");
-  for (const line of content.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const idx = trimmed.indexOf("=");
-    if (idx !== -1) {
-      const key = trimmed.substring(0, idx).trim();
-      let val = trimmed.substring(idx + 1).trim().replace(/^["']|["']$/g, "");
-      if (!process.env[key]) process.env[key] = val;
-    }
-  }
-}
+jest.setTimeout(60000);
 
-describe("R2. Mission-Critical Financial & Operational Invariants Suite", () => {
-  const TEST_DB_NAME = "smm_db";
-  const DEV_DB_NAME = "smm_dev";
-  let db: any;
+describe("@pg R2. Mission-Critical Financial & Operational Invariants Suite", () => {
+  let pool: Pool;
+  let testDatabaseUrl: string;
+  let hostHash: string;
+  let currentDb: string;
 
-  beforeAll(() => {
+  // Track created IDs for strict cleanup after tests
+  const createdUserIds: string[] = [];
+  const createdWalletIds: string[] = [];
+  const createdOrderIds: string[] = [];
+  const createdServiceIds: string[] = [];
+  const createdCategoryIds: string[] = [];
+
+  beforeAll(async () => {
     // Assert and print database environment isolation
+    const startup = await assertRealPostgresStartup();
+    testDatabaseUrl = startup.testDatabaseUrl;
+    hostHash = startup.hostHash;
+    currentDb = startup.currentDb;
+
     console.log("================================================================================");
-    console.log(`[INVARIANT AUDIT] Test Database Target: ${TEST_DB_NAME}`);
-    console.log(`[INVARIANT AUDIT] Dev Database Target:  ${DEV_DB_NAME}`);
+    console.log(`[INVARIANT AUDIT] Real PostgreSQL Host Hash: ${hostHash}`);
+    console.log(`[INVARIANT AUDIT] Connected Database:         ${currentDb}`);
     console.log("================================================================================");
 
-    expect(TEST_DB_NAME).not.toBe(DEV_DB_NAME);
-
-    const configuredDbUrl = process.env.DATABASE_URL || "";
-    if (configuredDbUrl.includes(DEV_DB_NAME)) {
-      throw new Error(`FATAL: Invariant suite targeting DEV database (${DEV_DB_NAME})! Aborting.`);
-    }
-
-    // Initialize in-memory PostgreSQL engine matching schema.prisma
-    db = newDb();
-    db.public.registerFunction({
-      name: "now",
-      returns: db.public.getType("timestamp"),
-      implementation: () => new Date(),
+    pool = new Pool({
+      connectionString: testDatabaseUrl,
+      ssl: { rejectUnauthorized: false },
+      max: 20,
+      connectionTimeoutMillis: 10000,
     });
 
-    db.public.none(`
-      CREATE TABLE "User" (
-        id VARCHAR(64) PRIMARY KEY,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        role VARCHAR(32) DEFAULT 'CUSTOMER',
-        "apiKeyHash" VARCHAR(128),
-        "isDeleted" BOOLEAN DEFAULT false,
-        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+    // Verify pool connectivity
+    const res = await pool.query("SELECT current_database() AS db, version() AS ver;");
+    expect(res.rows[0].db).toBe(currentDb);
+  }, 60000);
 
-      CREATE TABLE "Wallet" (
-        id VARCHAR(64) PRIMARY KEY,
-        "userId" VARCHAR(64) UNIQUE NOT NULL,
-        balance NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
-        currency VARCHAR(8) DEFAULT 'INR',
-        "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+  afterAll(async () => {
+    try {
+      // Clean up test entities created during this run
+      if (createdUserIds.length > 0) {
+        await pool.query(
+          `DELETE FROM "LedgerEntry" WHERE "walletId" IN (SELECT id FROM "Wallet" WHERE "userId" = ANY($1))`,
+          [createdUserIds]
+        );
+        await pool.query(`DELETE FROM "Order" WHERE "userId" = ANY($1)`, [createdUserIds]);
+        await pool.query(`DELETE FROM "Payment" WHERE "userId" = ANY($1)`, [createdUserIds]);
+        await pool.query(`DELETE FROM "Ticket" WHERE "userId" = ANY($1)`, [createdUserIds]);
+        await pool.query(`DELETE FROM "Session" WHERE "userId" = ANY($1)`, [createdUserIds]);
+        await pool.query(`DELETE FROM "Wallet" WHERE "userId" = ANY($1)`, [createdUserIds]);
+        await pool.query(`DELETE FROM "User" WHERE id = ANY($1)`, [createdUserIds]);
+      }
+      if (createdServiceIds.length > 0) {
+        await pool.query(`DELETE FROM "Service" WHERE id = ANY($1)`, [createdServiceIds]);
+      }
+      if (createdCategoryIds.length > 0) {
+        await pool.query(`DELETE FROM "Category" WHERE id = ANY($1)`, [createdCategoryIds]);
+      }
+    } catch (err) {
+      console.warn("Cleanup warning:", err);
+    } finally {
+      await pool.end();
+    }
+  }, 60000);
 
-      CREATE TABLE "LedgerEntry" (
-        id VARCHAR(64) PRIMARY KEY,
-        "walletId" VARCHAR(64) NOT NULL,
-        amount NUMERIC(12, 2) NOT NULL,
-        type VARCHAR(32) NOT NULL,
-        "orderId" VARCHAR(64),
-        "referenceId" VARCHAR(128) UNIQUE,
-        "idempotencyKey" VARCHAR(128),
-        description TEXT,
-        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+  // Helper: Query utilities on real Postgres
+  async function query(sql: string, params: any[] = []) {
+    const res = await pool.query(sql, params);
+    return res.rows;
+  }
 
-      CREATE UNIQUE INDEX unique_refund_per_order ON "LedgerEntry" ("orderId", type);
+  async function one(sql: string, params: any[] = []) {
+    const rows = await query(sql, params);
+    return rows[0] || null;
+  }
 
-      CREATE TABLE "Service" (
-        id VARCHAR(64) PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        platform VARCHAR(64) NOT NULL,
-        "ratePer1000" NUMERIC(10, 2) NOT NULL,
-        min INT NOT NULL,
-        max INT NOT NULL
-      );
+  // INV-03 Helper: Assert Ledger Balance Conservation on Real Database
+  async function assertLedgerBalance(userId: string) {
+    const wallet = await one('SELECT id, balance FROM "Wallet" WHERE "userId" = $1', [userId]);
+    expect(wallet).not.toBeNull();
 
-      CREATE TABLE "Order" (
-        id VARCHAR(64) PRIMARY KEY,
-        "userId" VARCHAR(64) NOT NULL,
-        "serviceId" VARCHAR(64) NOT NULL,
-        target TEXT NOT NULL,
-        quantity INT NOT NULL,
-        charge NUMERIC(12, 2) NOT NULL,
-        status VARCHAR(32) NOT NULL,
-        remains INT DEFAULT 0,
-        "startCount" INT DEFAULT 0,
-        "idempotencyKey" VARCHAR(128) UNIQUE,
-        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE "Payment" (
-        id VARCHAR(64) PRIMARY KEY,
-        "userId" VARCHAR(64) NOT NULL,
-        "gatewayOrderId" VARCHAR(128) UNIQUE NOT NULL,
-        amount NUMERIC(12, 2) NOT NULL,
-        "bonusAmount" NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
-        status VARCHAR(32) NOT NULL,
-        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE "Ticket" (
-        id VARCHAR(64) PRIMARY KEY,
-        "userId" VARCHAR(64) NOT NULL,
-        subject VARCHAR(255) NOT NULL,
-        status VARCHAR(32) NOT NULL DEFAULT 'OPEN',
-        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE "RefreshToken" (
-        id VARCHAR(64) PRIMARY KEY,
-        "userId" VARCHAR(64) NOT NULL,
-        "tokenHash" VARCHAR(128) NOT NULL,
-        family VARCHAR(64) NOT NULL,
-        revoked BOOLEAN DEFAULT false,
-        "expiresAt" TIMESTAMP NOT NULL
-      );
-    `);
-  });
-
-  // INV-03 Helper: Assert Ledger Balance Conservation
-  function assertLedgerBalance(userId: string) {
-    const wallet = db.public.one(`SELECT * FROM "Wallet" WHERE "userId" = '${userId}'`);
-    const entries = db.public.many(`
-      SELECT * FROM "LedgerEntry" WHERE "walletId" = '${wallet.id}'
-    `);
+    const entries = await query(
+      'SELECT amount, type FROM "LedgerEntry" WHERE "walletId" = $1',
+      [wallet.id]
+    );
 
     let sumCredits = new Decimal(0);
     let sumDebits = new Decimal(0);
 
     for (const entry of entries) {
       const amt = new Decimal(entry.amount);
-      if (entry.type === "DEPOSIT" || entry.type === "REFUND" || entry.type === "REFUND_PARTIAL" || entry.type === "BONUS" || entry.type === "ADJUSTMENT") {
+      if (
+        entry.type === "DEPOSIT" ||
+        entry.type === "REFUND" ||
+        entry.type === "REFUND_PARTIAL" ||
+        entry.type === "BONUS" ||
+        entry.type === "ADMIN_ADJUST" ||
+        entry.type === "PACKAGE_REFUND"
+      ) {
         sumCredits = sumCredits.plus(amt);
-      } else if (entry.type === "ORDER_CHARGE") {
+      } else if (
+        entry.type === "ORDER_CHARGE" ||
+        entry.type === "PACKAGE_PURCHASE"
+      ) {
         sumDebits = sumDebits.plus(amt);
       }
     }
@@ -159,39 +123,85 @@ describe("R2. Mission-Critical Financial & Operational Invariants Suite", () => 
 
   // --- INV-01 ---
   it("INV-01: 50 parallel orders with balance for 5 -> exactly 5 succeed, 45 fail with 402, balance = 0, no negative balance", async () => {
-    const userId = "usr_inv01";
-    const walletId = "wal_inv01";
-    db.public.none(`
-      INSERT INTO "User" (id, email) VALUES ('${userId}', 'inv01@smm.io');
-      INSERT INTO "Wallet" (id, "userId", balance) VALUES ('${walletId}', '${userId}', 500.00);
-      INSERT INTO "LedgerEntry" (id, "walletId", amount, type, description)
-        VALUES ('led_seed_01', '${walletId}', 500.00, 'DEPOSIT', 'Initial seed');
-    `);
+    const suffix = randomUUID().substring(0, 8);
+    const userId = `usr_inv01_${suffix}`;
+    const walletId = `wal_inv01_${suffix}`;
+    createdUserIds.push(userId);
+    createdWalletIds.push(walletId);
+
+    // Setup Category & Service
+    const catId = `cat_inv01_${suffix}`;
+    const srvId = `srv_inv01_${suffix}`;
+    createdCategoryIds.push(catId);
+    createdServiceIds.push(srvId);
+
+    await pool.query(
+      `INSERT INTO "Category" (id, name, slug, "updatedAt") VALUES ($1, $2, $3, NOW())`,
+      [catId, `Cat ${suffix}`, `slug-${suffix}`]
+    );
+    await pool.query(
+      `INSERT INTO "Service" (id, "categoryId", name, platform, "ratePer1000", "minQty", "maxQty", "updatedAt")
+       VALUES ($1, $2, $3, 'INSTAGRAM', 100.00, 10, 10000, NOW())`,
+      [srvId, catId, `Service ${suffix}`]
+    );
+
+    // Create User, Wallet with 500.00 INR, and Seed Ledger
+    await pool.query(
+      `INSERT INTO "User" (id, email, "passwordHash", name, role, "updatedAt")
+       VALUES ($1, $2, 'hash_placeholder', 'Inv01 User', 'CUSTOMER', NOW())`,
+      [userId, `inv01_${suffix}@smm.io`]
+    );
+    await pool.query(
+      `INSERT INTO "Wallet" (id, "userId", balance, currency, "updatedAt")
+       VALUES ($1, $2, 500.00, 'INR', NOW())`,
+      [walletId, userId]
+    );
+    await pool.query(
+      `INSERT INTO "LedgerEntry" (id, "walletId", amount, type, description)
+       VALUES ($1, $2, 500.00, 'DEPOSIT', 'Initial seed')`,
+      [`led_seed_01_${suffix}`, walletId]
+    );
 
     const orderCost = 100.0; // 500 / 100 = 5 orders affordable
     const results: { status: number; orderId?: string }[] = [];
 
-    // Simulate 50 concurrent order requests
+    // Simulate 50 concurrent order requests using atomic row-level update on real PostgreSQL
     const attempts = Array.from({ length: 50 }, (_, i) => async () => {
+      const client = await pool.connect();
       try {
-        const wal = db.public.one(`SELECT balance FROM "Wallet" WHERE id = '${walletId}'`);
-        const currentBal = parseFloat(wal.balance);
-        if (currentBal >= orderCost) {
-          const nextBal = currentBal - orderCost;
-          db.public.none(`UPDATE "Wallet" SET balance = ${nextBal.toFixed(2)} WHERE id = '${walletId}'`);
-          const ordId = `ord_inv01_${i}`;
-          db.public.none(`
-            INSERT INTO "Order" (id, "userId", "serviceId", target, quantity, charge, status)
-            VALUES ('${ordId}', '${userId}', '1042', 'https://test.link', 100, ${orderCost}, 'PENDING');
-            INSERT INTO "LedgerEntry" (id, "walletId", amount, type, "orderId", description)
-            VALUES ('led_inv01_${i}', '${walletId}', ${orderCost}, 'ORDER_CHARGE', '${ordId}', 'Order charge');
-          `);
+        await client.query("BEGIN;");
+        // Atomic balance check and deduction with row lock
+        const updateRes = await client.query(
+          `UPDATE "Wallet"
+           SET balance = balance - $1, "updatedAt" = NOW()
+           WHERE id = $2 AND balance >= $1
+           RETURNING balance;`,
+          [orderCost, walletId]
+        );
+
+        if (updateRes.rowCount && updateRes.rowCount > 0) {
+          const ordId = `ord_inv01_${suffix}_${i}`;
+          await client.query(
+            `INSERT INTO "Order" (id, "userId", "serviceId", target, quantity, charge, status, "updatedAt")
+             VALUES ($1, $2, $3, 'https://test.link', 100, $4, 'PENDING', NOW());`,
+            [ordId, userId, srvId, orderCost]
+          );
+          await client.query(
+            `INSERT INTO "LedgerEntry" (id, "walletId", amount, type, "orderId", description)
+             VALUES ($1, $2, $3, 'ORDER_CHARGE', $4, 'Order charge');`,
+            [`led_inv01_${suffix}_${i}`, walletId, orderCost, ordId]
+          );
+          await client.query("COMMIT;");
           results.push({ status: 201, orderId: ordId });
         } else {
-          results.push({ status: 402 });
+          await client.query("ROLLBACK;");
+          results.push({ status: 402 }); // Insufficient balance
         }
-      } catch {
+      } catch (err) {
+        await client.query("ROLLBACK;");
         results.push({ status: 500 });
+      } finally {
+        client.release();
       }
     });
 
@@ -203,109 +213,233 @@ describe("R2. Mission-Critical Financial & Operational Invariants Suite", () => 
     expect(successCount).toBe(5);
     expect(failCount).toBe(45);
 
-    const finalBalance = assertLedgerBalance(userId);
+    const finalBalance = await assertLedgerBalance(userId);
     expect(finalBalance.toNumber()).toBe(0.0);
   });
 
   // --- INV-02 ---
   it("INV-02: Duplicate idempotency key across parallel workers -> exactly 1 charge, 1 order created, second returns identical order", async () => {
-    const userId = "usr_inv02";
-    const walletId = "wal_inv02";
-    const idemKey = "idem_key_unique_concurrent_99";
-    db.public.none(`
-      INSERT INTO "User" (id, email) VALUES ('${userId}', 'inv02@smm.io');
-      INSERT INTO "Wallet" (id, "userId", balance) VALUES ('${walletId}', '${userId}', 200.00);
-      INSERT INTO "LedgerEntry" (id, "walletId", amount, type, description)
-        VALUES ('led_seed_02', '${walletId}', 200.00, 'DEPOSIT', 'Seed');
-    `);
+    const suffix = randomUUID().substring(0, 8);
+    const userId = `usr_inv02_${suffix}`;
+    const walletId = `wal_inv02_${suffix}`;
+    const catId = `cat_inv02_${suffix}`;
+    const srvId = `srv_inv02_${suffix}`;
+    const idemKey = `idem_unique_${suffix}`;
+
+    createdUserIds.push(userId);
+    createdWalletIds.push(walletId);
+    createdCategoryIds.push(catId);
+    createdServiceIds.push(srvId);
+
+    await pool.query(
+      `INSERT INTO "Category" (id, name, slug, "updatedAt") VALUES ($1, $2, $3, NOW())`,
+      [catId, `Cat ${suffix}`, `slug-${suffix}`]
+    );
+    await pool.query(
+      `INSERT INTO "Service" (id, "categoryId", name, platform, "ratePer1000", "minQty", "maxQty", "updatedAt")
+       VALUES ($1, $2, $3, 'INSTAGRAM', 50.00, 10, 10000, NOW())`,
+      [srvId, catId, `Service ${suffix}`]
+    );
+    await pool.query(
+      `INSERT INTO "User" (id, email, "passwordHash", name, role, "updatedAt")
+       VALUES ($1, $2, 'hash_placeholder', 'Inv02 User', 'CUSTOMER', NOW())`,
+      [userId, `inv02_${suffix}@smm.io`]
+    );
+    await pool.query(
+      `INSERT INTO "Wallet" (id, "userId", balance, currency, "updatedAt")
+       VALUES ($1, $2, 200.00, 'INR', NOW())`,
+      [walletId, userId]
+    );
+    await pool.query(
+      `INSERT INTO "LedgerEntry" (id, "walletId", amount, type, description)
+       VALUES ($1, $2, 200.00, 'DEPOSIT', 'Seed')`,
+      [`led_seed_02_${suffix}`, walletId]
+    );
 
     async function dispatchOrder() {
-      const existing = db.public.many(`SELECT * FROM "Order" WHERE "idempotencyKey" = '${idemKey}'`);
-      if (existing.length > 0) {
-        return { order: existing[0], isDuplicate: true };
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN;");
+        // Check existing order with idempotency key
+        const existing = await client.query(
+          `SELECT id, "idempotencyKey" FROM "Order" WHERE "idempotencyKey" = $1;`,
+          [idemKey]
+        );
+        if (existing.rows.length > 0) {
+          await client.query("COMMIT;");
+          return { order: existing.rows[0], isDuplicate: true };
+        }
+
+        // Deduct balance and create order
+        await client.query(
+          `UPDATE "Wallet" SET balance = balance - 50.00, "updatedAt" = NOW() WHERE id = $1;`,
+          [walletId]
+        );
+        const ordId = `ord_idem_${suffix}_${randomUUID().substring(0, 6)}`;
+        await client.query(
+          `INSERT INTO "Order" (id, "userId", "serviceId", target, quantity, charge, status, "idempotencyKey", "updatedAt")
+           VALUES ($1, $2, $3, 'https://test', 100, 50.00, 'PENDING', $4, NOW());`,
+          [ordId, userId, srvId, idemKey]
+        );
+        await client.query(
+          `INSERT INTO "LedgerEntry" (id, "walletId", amount, type, "orderId", "idempotencyKey", description)
+           VALUES ($1, $2, 50.00, 'ORDER_CHARGE', $3, $4, 'Order debited');`,
+          [`led_idem_${ordId}`, walletId, ordId, idemKey]
+        );
+        await client.query("COMMIT;");
+        const created = await one('SELECT id, "idempotencyKey" FROM "Order" WHERE id = $1', [ordId]);
+        return { order: created, isDuplicate: false };
+      } catch (err) {
+        await client.query("ROLLBACK;");
+        // If unique violation occurred concurrently, fetch the winner's order
+        const fallback = await one(
+          'SELECT id, "idempotencyKey" FROM "Order" WHERE "idempotencyKey" = $1',
+          [idemKey]
+        );
+        return { order: fallback, isDuplicate: true };
+      } finally {
+        client.release();
       }
-      const ordId = `ord_idem_${Date.now()}_${Math.random()}`;
-      db.public.none(`
-        UPDATE "Wallet" SET balance = balance - 50.00 WHERE id = '${walletId}';
-        INSERT INTO "Order" (id, "userId", "serviceId", target, quantity, charge, status, "idempotencyKey")
-        VALUES ('${ordId}', '${userId}', '1042', 'https://test', 100, 50.00, 'PENDING', '${idemKey}');
-        INSERT INTO "LedgerEntry" (id, "walletId", amount, type, "orderId", "idempotencyKey", description)
-        VALUES ('led_idem_${ordId}', '${walletId}', 50.00, 'ORDER_CHARGE', '${ordId}', '${idemKey}', 'Order debited');
-      `);
-      const created = db.public.one(`SELECT * FROM "Order" WHERE id = '${ordId}'`);
-      return { order: created, isDuplicate: false };
     }
 
     const [resA, resB] = await Promise.all([dispatchOrder(), dispatchOrder()]);
 
     expect(resA.order.id).toBe(resB.order.id);
-    const orderCount = db.public.one(`SELECT count(*)::int as c FROM "Order" WHERE "idempotencyKey" = '${idemKey}'`).c;
-    expect(orderCount).toBe(1);
+    const orderCountRes = await one(
+      `SELECT count(*)::int as c FROM "Order" WHERE "idempotencyKey" = $1`,
+      [idemKey]
+    );
+    expect(orderCountRes.c).toBe(1);
 
-    const finalBal = assertLedgerBalance(userId);
+    const finalBal = await assertLedgerBalance(userId);
     expect(finalBal.toNumber()).toBe(150.0);
   });
 
   // --- INV-03 ---
-  it("INV-03: Ledger balance equals sum(credits) - sum(debits) at all times across multi-stage order and refund lifecycle", () => {
-    const userId = "usr_inv03";
-    const walletId = "wal_inv03";
-    db.public.none(`
-      INSERT INTO "User" (id, email) VALUES ('${userId}', 'inv03@smm.io');
-      INSERT INTO "Wallet" (id, "userId", balance) VALUES ('${walletId}', '${userId}', 1000.00);
-      INSERT INTO "LedgerEntry" (id, "walletId", amount, type, description)
-        VALUES ('led_seed_03', '${walletId}', 1000.00, 'DEPOSIT', 'Initial seed');
-    `);
+  it("INV-03: Ledger balance equals sum(credits) - sum(debits) at all times across multi-stage order and refund lifecycle", async () => {
+    const suffix = randomUUID().substring(0, 8);
+    const userId = `usr_inv03_${suffix}`;
+    const walletId = `wal_inv03_${suffix}`;
+    createdUserIds.push(userId);
+    createdWalletIds.push(walletId);
+
+    await pool.query(
+      `INSERT INTO "User" (id, email, "passwordHash", name, role, "updatedAt")
+       VALUES ($1, $2, 'hash_placeholder', 'Inv03 User', 'CUSTOMER', NOW())`,
+      [userId, `inv03_${suffix}@smm.io`]
+    );
+    await pool.query(
+      `INSERT INTO "Wallet" (id, "userId", balance, currency, "updatedAt")
+       VALUES ($1, $2, 1000.00, 'INR', NOW())`,
+      [walletId, userId]
+    );
+    await pool.query(
+      `INSERT INTO "LedgerEntry" (id, "walletId", amount, type, description)
+       VALUES ($1, $2, 1000.00, 'DEPOSIT', 'Initial seed')`,
+      [`led_seed_03_${suffix}`, walletId]
+    );
 
     // Debit 300 for order
-    db.public.none(`
-      UPDATE "Wallet" SET balance = balance - 300.00 WHERE id = '${walletId}';
-      INSERT INTO "LedgerEntry" (id, "walletId", amount, type, description)
-        VALUES ('led_chg_03', '${walletId}', 300.00, 'ORDER_CHARGE', 'Order charge');
-    `);
-    assertLedgerBalance(userId);
+    await pool.query(
+      `UPDATE "Wallet" SET balance = balance - 300.00, "updatedAt" = NOW() WHERE id = $1;`,
+      [walletId]
+    );
+    await pool.query(
+      `INSERT INTO "LedgerEntry" (id, "walletId", amount, type, description)
+       VALUES ($1, $2, 300.00, 'ORDER_CHARGE', 'Order charge');`,
+      [`led_chg_03_${suffix}`, walletId]
+    );
+    await assertLedgerBalance(userId);
 
     // Credit 50 for bonus
-    db.public.none(`
-      UPDATE "Wallet" SET balance = balance + 50.00 WHERE id = '${walletId}';
-      INSERT INTO "LedgerEntry" (id, "walletId", amount, type, description)
-        VALUES ('led_bon_03', '${walletId}', 50.00, 'BONUS', 'Deposit bonus');
-    `);
-    assertLedgerBalance(userId);
+    await pool.query(
+      `UPDATE "Wallet" SET balance = balance + 50.00, "updatedAt" = NOW() WHERE id = $1;`,
+      [walletId]
+    );
+    await pool.query(
+      `INSERT INTO "LedgerEntry" (id, "walletId", amount, type, description)
+       VALUES ($1, $2, 50.00, 'BONUS', 'Deposit bonus');`,
+      [`led_bon_03_${suffix}`, walletId]
+    );
+    await assertLedgerBalance(userId);
 
     // Credit 150 for partial refund
-    db.public.none(`
-      UPDATE "Wallet" SET balance = balance + 150.00 WHERE id = '${walletId}';
-      INSERT INTO "LedgerEntry" (id, "walletId", amount, type, description)
-        VALUES ('led_ref_03', '${walletId}', 150.00, 'REFUND_PARTIAL', 'Partial cancellation');
-    `);
-    const finalBal = assertLedgerBalance(userId);
+    await pool.query(
+      `UPDATE "Wallet" SET balance = balance + 150.00, "updatedAt" = NOW() WHERE id = $1;`,
+      [walletId]
+    );
+    await pool.query(
+      `INSERT INTO "LedgerEntry" (id, "walletId", amount, type, description)
+       VALUES ($1, $2, 150.00, 'REFUND', 'Partial cancellation');`,
+      [`led_ref_03_${suffix}`, walletId]
+    );
+    const finalBal = await assertLedgerBalance(userId);
     expect(finalBal.toNumber()).toBe(900.0);
   });
 
   // --- INV-04 ---
   it("INV-04: Concurrent refund: two admin refund calls on same order -> exactly 1 succeeds, DB constraint rejects second", async () => {
-    const userId = "usr_inv04";
-    const walletId = "wal_inv04";
-    const orderId = "ord_inv04_target";
-    db.public.none(`
-      INSERT INTO "User" (id, email) VALUES ('${userId}', 'inv04@smm.io');
-      INSERT INTO "Wallet" (id, "userId", balance) VALUES ('${walletId}', '${userId}', 0.00);
-      INSERT INTO "Order" (id, "userId", "serviceId", target, quantity, charge, status)
-      VALUES ('${orderId}', '${userId}', '1042', 'https://test', 100, 80.00, 'IN_PROGRESS');
-    `);
+    const suffix = randomUUID().substring(0, 8);
+    const userId = `usr_inv04_${suffix}`;
+    const walletId = `wal_inv04_${suffix}`;
+    const catId = `cat_inv04_${suffix}`;
+    const srvId = `srv_inv04_${suffix}`;
+    const orderId = `ord_inv04_${suffix}`;
+
+    createdUserIds.push(userId);
+    createdWalletIds.push(walletId);
+    createdCategoryIds.push(catId);
+    createdServiceIds.push(srvId);
+
+    await pool.query(
+      `INSERT INTO "Category" (id, name, slug, "updatedAt") VALUES ($1, $2, $3, NOW())`,
+      [catId, `Cat ${suffix}`, `slug-${suffix}`]
+    );
+    await pool.query(
+      `INSERT INTO "Service" (id, "categoryId", name, platform, "ratePer1000", "minQty", "maxQty", "updatedAt")
+       VALUES ($1, $2, $3, 'INSTAGRAM', 80.00, 10, 10000, NOW())`,
+      [srvId, catId, `Service ${suffix}`]
+    );
+    await pool.query(
+      `INSERT INTO "User" (id, email, "passwordHash", name, role, "updatedAt")
+       VALUES ($1, $2, 'hash_placeholder', 'Inv04 User', 'CUSTOMER', NOW())`,
+      [userId, `inv04_${suffix}@smm.io`]
+    );
+    await pool.query(
+      `INSERT INTO "Wallet" (id, "userId", balance, currency, "updatedAt")
+       VALUES ($1, $2, 0.00, 'INR', NOW())`,
+      [walletId, userId]
+    );
+    await pool.query(
+      `INSERT INTO "Order" (id, "userId", "serviceId", target, quantity, charge, status, "updatedAt")
+       VALUES ($1, $2, $3, 'https://test', 100, 80.00, 'IN_PROGRESS', NOW())`,
+      [orderId, userId, srvId]
+    );
 
     async function executeRefund() {
+      const client = await pool.connect();
       try {
-        db.public.none(`
-          INSERT INTO "LedgerEntry" (id, "walletId", amount, type, "orderId", description)
-          VALUES ('led_ref_${Math.random()}', '${walletId}', 80.00, 'REFUND', '${orderId}', 'Full refund');
-          UPDATE "Wallet" SET balance = balance + 80.00 WHERE id = '${walletId}';
-          UPDATE "Order" SET status = 'CANCELLED' WHERE id = '${orderId}';
-        `);
+        await client.query("BEGIN;");
+        await client.query(
+          `INSERT INTO "LedgerEntry" (id, "walletId", amount, type, "orderId", description)
+           VALUES ($1, $2, 80.00, 'REFUND', $3, 'Full refund');`,
+          [`led_ref_${suffix}_${randomUUID().substring(0, 6)}`, walletId, orderId]
+        );
+        await client.query(
+          `UPDATE "Wallet" SET balance = balance + 80.00, "updatedAt" = NOW() WHERE id = $1;`,
+          [walletId]
+        );
+        await client.query(
+          `UPDATE "Order" SET status = 'CANCELLED', "updatedAt" = NOW() WHERE id = $1;`,
+          [orderId]
+        );
+        await client.query("COMMIT;");
         return { success: true };
       } catch (err: any) {
-        return { success: false, error: err.message };
+        await client.query("ROLLBACK;");
+        return { success: false, error: err.message, code: err.code };
+      } finally {
+        client.release();
       }
     }
 
@@ -317,36 +451,23 @@ describe("R2. Mission-Critical Financial & Operational Invariants Suite", () => 
     expect(successes).toBe(1);
     expect(failures).toBe(1);
 
-    const finalBal = assertLedgerBalance(userId);
+    const finalBal = await assertLedgerBalance(userId);
     expect(finalBal.toNumber()).toBe(80.0);
   });
 
   // --- INV-05 ---
-  it("INV-05: Partial refund: order canceled at remains=600 of 1000 -> refund is exactly (600/1000)*price, rounded correctly", () => {
-    const userId = "usr_inv05";
-    const walletId = "wal_inv05";
-    const orderId = "ord_inv05_partial";
+  it("INV-05: Partial refund: order canceled at remains=600 of 1000 -> refund is exactly (600/1000)*price, rounded correctly", async () => {
     const totalCharge = 180.0;
     const totalQty = 1000;
     const remainsQty = 600;
 
     // Mathematical formula: (remains / quantity) * charge
     const refundRatio = new Decimal(remainsQty).dividedBy(new Decimal(totalQty));
-    const refundAmount = new Decimal(totalCharge).times(refundRatio).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+    const refundAmount = new Decimal(totalCharge)
+      .times(refundRatio)
+      .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 
     expect(refundAmount.toNumber()).toBe(108.0);
-
-    db.public.none(`
-      INSERT INTO "User" (id, email) VALUES ('${userId}', 'inv05@smm.io');
-      INSERT INTO "Wallet" (id, "userId", balance) VALUES ('${walletId}', '${userId}', 50.00);
-      INSERT INTO "LedgerEntry" (id, "walletId", amount, type, description)
-        VALUES ('led_seed_05', '${walletId}', 50.00, 'DEPOSIT', 'Seed');
-      INSERT INTO "Order" (id, "userId", "serviceId", target, quantity, charge, status, remains)
-        VALUES ('${orderId}', '${userId}', '1042', 'https://test', ${totalQty}, ${totalCharge}, 'PARTIAL', ${remainsQty});
-      INSERT INTO "LedgerEntry" (id, "walletId", amount, type, "orderId", description)
-        VALUES ('led_inv05_ref', '${walletId}', ${refundAmount.toNumber()}, 'REFUND_PARTIAL', '${orderId}', 'Partial refund');
-      UPDATE "Wallet" SET balance = balance + ${refundAmount.toNumber()} WHERE id = '${walletId}';
-    `);
 
     // Boundary edge cases:
     // (a) quantity 1, remains 0 -> refund is 0
@@ -365,61 +486,107 @@ describe("R2. Mission-Critical Financial & Operational Invariants Suite", () => 
     expect(edgeRefundFull.toNumber()).toBe(250.0);
   });
 
-  // --- Provider Failure Invariant ---
-  it("INV-05b: Provider failure: refund triggered only after retries are exhausted, exactly one REFUND", () => {
-    const userId = "usr_pf_retry";
-    const walletId = "wal_pf_retry";
-    const orderId = "ord_pf_exhaust";
+  // --- INV-05b: Provider Failure Invariant ---
+  it("INV-05b: Provider failure: refund triggered only after retries are exhausted, exactly one REFUND", async () => {
+    const suffix = randomUUID().substring(0, 8);
+    const userId = `usr_pf_${suffix}`;
+    const walletId = `wal_pf_${suffix}`;
+    const catId = `cat_pf_${suffix}`;
+    const srvId = `srv_pf_${suffix}`;
+    const orderId = `ord_pf_${suffix}`;
     const charge = 120.0;
     const MAX_RETRIES = 5;
 
-    db.public.none(`
-      INSERT INTO "User" (id, email) VALUES ('${userId}', 'pf_retry@smm.io');
-      INSERT INTO "Wallet" (id, "userId", balance) VALUES ('${walletId}', '${userId}', 0.00);
-      INSERT INTO "Order" (id, "userId", "serviceId", target, quantity, charge, status)
-      VALUES ('${orderId}', '${userId}', '1042', 'https://test', 500, ${charge}, 'PROCESSING');
-    `);
+    createdUserIds.push(userId);
+    createdWalletIds.push(walletId);
+    createdCategoryIds.push(catId);
+    createdServiceIds.push(srvId);
 
-    // Simulate provider failure retry attempts
+    await pool.query(
+      `INSERT INTO "Category" (id, name, slug, "updatedAt") VALUES ($1, $2, $3, NOW())`,
+      [catId, `Cat ${suffix}`, `slug-${suffix}`]
+    );
+    await pool.query(
+      `INSERT INTO "Service" (id, "categoryId", name, platform, "ratePer1000", "minQty", "maxQty", "updatedAt")
+       VALUES ($1, $2, $3, 'INSTAGRAM', 120.00, 10, 10000, NOW())`,
+      [srvId, catId, `Service ${suffix}`]
+    );
+    await pool.query(
+      `INSERT INTO "User" (id, email, "passwordHash", name, role, "updatedAt")
+       VALUES ($1, $2, 'hash_placeholder', 'PF User', 'CUSTOMER', NOW())`,
+      [userId, `pf_${suffix}@smm.io`]
+    );
+    await pool.query(
+      `INSERT INTO "Wallet" (id, "userId", balance, currency, "updatedAt")
+       VALUES ($1, $2, 0.00, 'INR', NOW())`,
+      [walletId, userId]
+    );
+    await pool.query(
+      `INSERT INTO "Order" (id, "userId", "serviceId", target, quantity, charge, status, "updatedAt")
+       VALUES ($1, $2, $3, 'https://test', 500, $4, 'PROCESSING', NOW())`,
+      [orderId, userId, srvId, charge]
+    );
+
     let attempts = 0;
     let refundIssued = false;
 
     for (let i = 1; i <= MAX_RETRIES + 2; i++) {
       attempts++;
       if (attempts < MAX_RETRIES) {
-        // Retry phase: no refund
         expect(refundIssued).toBe(false);
       } else if (attempts === MAX_RETRIES) {
         // Exhausted: trigger refund
-        db.public.none(`
-          INSERT INTO "LedgerEntry" (id, "walletId", amount, type, "orderId", description)
-          VALUES ('led_pf_ref_${orderId}', '${walletId}', ${charge}, 'REFUND', '${orderId}', 'Provider exhausted refund');
-          UPDATE "Wallet" SET balance = balance + ${charge} WHERE id = '${walletId}';
-          UPDATE "Order" SET status = 'FAILED' WHERE id = '${orderId}';
-        `);
+        await pool.query(
+          `INSERT INTO "LedgerEntry" (id, "walletId", amount, type, "orderId", description)
+           VALUES ($1, $2, $3, 'REFUND', $4, 'Provider exhausted refund');`,
+          [`led_pf_ref_${suffix}`, walletId, charge, orderId]
+        );
+        await pool.query(
+          `UPDATE "Wallet" SET balance = balance + $1, "updatedAt" = NOW() WHERE id = $2;`,
+          [charge, walletId]
+        );
+        await pool.query(
+          `UPDATE "Order" SET status = 'FAILED', "updatedAt" = NOW() WHERE id = $1;`,
+          [orderId]
+        );
         refundIssued = true;
       } else {
-        // Post-exhaustion: attempting another refund must be blocked by unique constraint
-        expect(() => {
-          db.public.none(`
-            INSERT INTO "LedgerEntry" (id, "walletId", amount, type, "orderId", description)
-            VALUES ('led_pf_dup_${i}', '${walletId}', ${charge}, 'REFUND', '${orderId}', 'Duplicate refund');
-          `);
-        }).toThrow();
+        // Post-exhaustion: attempting duplicate refund must fail DB unique constraint
+        let duplicateFailed = false;
+        try {
+          await pool.query(
+            `INSERT INTO "LedgerEntry" (id, "walletId", amount, type, "orderId", description)
+             VALUES ($1, $2, $3, 'REFUND', $4, 'Duplicate refund');`,
+            [`led_pf_dup_${suffix}_${i}`, walletId, charge, orderId]
+          );
+        } catch {
+          duplicateFailed = true;
+        }
+        expect(duplicateFailed).toBe(true);
       }
     }
 
-    const orderRow = db.public.one(`SELECT status FROM "Order" WHERE id = '${orderId}'`);
+    const orderRow = await one('SELECT status FROM "Order" WHERE id = $1', [orderId]);
     expect(orderRow.status).toBe("FAILED");
-    const refunds = db.public.many(`SELECT * FROM "LedgerEntry" WHERE "orderId" = '${orderId}' AND type = 'REFUND'`);
+    const refunds = await query(
+      `SELECT * FROM "LedgerEntry" WHERE "orderId" = $1 AND type = 'REFUND'`,
+      [orderId]
+    );
     expect(refunds.length).toBe(1);
-    const finalBal = assertLedgerBalance(userId);
+    const finalBal = await assertLedgerBalance(userId);
     expect(finalBal.toNumber()).toBe(charge);
   });
 
-  // --- Strict Wallet Credit Source Invariant ---
+  // --- INV-05c: Strict Wallet Credit Source Invariant ---
   it("INV-05c: No endpoint credits a wallet except verified webhook, admin adjustment with mandatory reason, refund, bonus", () => {
-    const ALLOWED_CREDIT_TYPES = new Set(["DEPOSIT", "REFUND", "REFUND_PARTIAL", "BONUS", "ADJUSTMENT"]);
+    const ALLOWED_CREDIT_TYPES = new Set([
+      "DEPOSIT",
+      "REFUND",
+      "REFUND_PARTIAL",
+      "BONUS",
+      "ADMIN_ADJUST",
+      "PACKAGE_REFUND",
+    ]);
 
     function validateCreditRequest(type: string, reason?: string, isWebhookVerified?: boolean) {
       if (!ALLOWED_CREDIT_TYPES.has(type)) {
@@ -428,32 +595,24 @@ describe("R2. Mission-Critical Financial & Operational Invariants Suite", () => 
       if (type === "DEPOSIT" && !isWebhookVerified) {
         throw new Error("UNVERIFIED_WEBHOOK: Deposits require cryptographically verified gateway webhook.");
       }
-      if (type === "ADJUSTMENT" && (!reason || reason.trim().length < 5)) {
+      if (type === "ADMIN_ADJUST" && (!reason || reason.trim().length < 5)) {
         throw new Error("MANDATORY_REASON: Admin adjustment requires mandatory non-empty reason (min 5 chars).");
       }
       return true;
     }
 
-    // Direct / unverified deposit rejected
     expect(() => validateCreditRequest("DEPOSIT", undefined, false)).toThrow("UNVERIFIED_WEBHOOK");
     expect(validateCreditRequest("DEPOSIT", undefined, true)).toBe(true);
-
-    // Arbitrary credit type rejected
     expect(() => validateCreditRequest("ARBITRARY_CREDIT")).toThrow("ILLEGAL_CREDIT_TYPE");
-
-    // Admin adjustment without reason rejected
-    expect(() => validateCreditRequest("ADJUSTMENT", "")).toThrow("MANDATORY_REASON");
-    expect(() => validateCreditRequest("ADJUSTMENT", "   ")).toThrow("MANDATORY_REASON");
-    expect(validateCreditRequest("ADJUSTMENT", "Billing correction per ticket #402")).toBe(true);
-
-    // Refund & Bonus allowed
+    expect(() => validateCreditRequest("ADMIN_ADJUST", "")).toThrow("MANDATORY_REASON");
+    expect(() => validateCreditRequest("ADMIN_ADJUST", "   ")).toThrow("MANDATORY_REASON");
+    expect(validateCreditRequest("ADMIN_ADJUST", "Billing correction per ticket #402")).toBe(true);
     expect(validateCreditRequest("REFUND")).toBe(true);
     expect(validateCreditRequest("BONUS")).toBe(true);
   });
 
   // --- INV-06 ---
   it("INV-06: Customer cannot credit own wallet: POST /wallet/deposit returns 404 in prod, sandbox rejected in production", () => {
-    // Controller logic validation under production mode
     const checkDeposit = (env: string) => {
       if (env === "production") {
         throw new Error("HTTP 404: POST /wallet/deposit is disabled in production.");
@@ -466,7 +625,7 @@ describe("R2. Mission-Critical Financial & Operational Invariants Suite", () => 
   });
 
   // --- INV-07 ---
-  it("INV-07: Webhook signature verification rejects forged/missing signature; replay of same webhook is idempotent", () => {
+  it("INV-07: Webhook signature verification rejects forged/missing signature; replay of same webhook is idempotent", async () => {
     const secret = "hmac_secret_key_123";
     const payload = JSON.stringify({ gatewayOrderId: "order_gw_77", amount: 1000 });
     const validSignature = crypto.createHmac("sha256", secret).update(payload).digest("hex");
@@ -483,39 +642,71 @@ describe("R2. Mission-Critical Financial & Operational Invariants Suite", () => 
     expect(() => verifyWebhook(forgedSignature, payload)).toThrow("HTTP 401");
     expect(verifyWebhook(validSignature, payload)).toBe(true);
 
-    // Replay idempotency check
-    db.public.none(`
-      INSERT INTO "Payment" (id, "userId", "gatewayOrderId", amount, status)
-      VALUES ('pay_77', 'usr_inv01', 'order_gw_77', 1000.00, 'SUCCESS');
-    `);
+    // Replay idempotency on real PostgreSQL
+    const suffix = randomUUID().substring(0, 8);
+    const userId = `usr_inv07_${suffix}`;
+    createdUserIds.push(userId);
+    await pool.query(
+      `INSERT INTO "User" (id, email, "passwordHash", name, role, "updatedAt")
+       VALUES ($1, $2, 'hash_placeholder', 'Inv07 User', 'CUSTOMER', NOW())`,
+      [userId, `inv07_${suffix}@smm.io`]
+    );
+    const gwOrderId = `gw_${suffix}`;
+    await pool.query(
+      `INSERT INTO "Payment" (id, "userId", "gatewayOrderId", amount, status, method, "updatedAt")
+       VALUES ($1, $2, $3, 1000.00, 'SUCCESS', 'RAZORPAY', NOW());`,
+      [`pay_${suffix}`, userId, gwOrderId]
+    );
 
-    const existingPayment = db.public.one(`SELECT * FROM "Payment" WHERE "gatewayOrderId" = 'order_gw_77'`);
+    const existingPayment = await one('SELECT status FROM "Payment" WHERE "gatewayOrderId" = $1', [gwOrderId]);
     expect(existingPayment.status).toBe("SUCCESS");
   });
 
   // --- INV-08 ---
-  it("INV-08: IDOR protection: customer A cannot view/cancel customer B's order or ticket", () => {
-    const customerA = "usr_cust_a";
-    const customerB = "usr_cust_b";
-    const orderB = "ord_b_private";
+  it("INV-08: IDOR protection: customer A cannot view/cancel customer B's order or ticket", async () => {
+    const suffix = randomUUID().substring(0, 8);
+    const customerA = `usr_cust_a_${suffix}`;
+    const customerB = `usr_cust_b_${suffix}`;
+    const catId = `cat_inv08_${suffix}`;
+    const srvId = `srv_inv08_${suffix}`;
+    const orderB = `ord_b_${suffix}`;
 
-    db.public.none(`
-      INSERT INTO "User" (id, email) VALUES ('${customerA}', 'a@smm.io'), ('${customerB}', 'b@smm.io');
-      INSERT INTO "Order" (id, "userId", "serviceId", target, quantity, charge, status)
-      VALUES ('${orderB}', '${customerB}', '1042', 'https://private', 100, 10.0, 'PENDING');
-    `);
+    createdUserIds.push(customerA, customerB);
+    createdCategoryIds.push(catId);
+    createdServiceIds.push(srvId);
 
-    function accessOrder(requesterId: string, targetOrderId: string) {
-      const rows = db.public.many(`SELECT * FROM "Order" WHERE id = '${targetOrderId}'`);
-      const order = rows[0] || null;
+    await pool.query(
+      `INSERT INTO "Category" (id, name, slug, "updatedAt") VALUES ($1, $2, $3, NOW())`,
+      [catId, `Cat ${suffix}`, `slug-${suffix}`]
+    );
+    await pool.query(
+      `INSERT INTO "Service" (id, "categoryId", name, platform, "ratePer1000", "minQty", "maxQty", "updatedAt")
+       VALUES ($1, $2, $3, 'INSTAGRAM', 10.00, 10, 10000, NOW())`,
+      [srvId, catId, `Service ${suffix}`]
+    );
+    await pool.query(
+      `INSERT INTO "User" (id, email, "passwordHash", name, role, "updatedAt")
+       VALUES ($1, $2, 'hash', 'Alice', 'CUSTOMER', NOW()),
+              ($3, $4, 'hash', 'Bob', 'CUSTOMER', NOW());`,
+      [customerA, `a_${suffix}@smm.io`, customerB, `b_${suffix}@smm.io`]
+    );
+    await pool.query(
+      `INSERT INTO "Order" (id, "userId", "serviceId", target, quantity, charge, status, "updatedAt")
+       VALUES ($1, $2, $3, 'https://private', 100, 10.0, 'PENDING', NOW());`,
+      [orderB, customerB, srvId]
+    );
+
+    async function accessOrder(requesterId: string, targetOrderId: string) {
+      const order = await one('SELECT * FROM "Order" WHERE id = $1', [targetOrderId]);
       if (!order || order.userId !== requesterId) {
         throw new Error("HTTP 404: Order not found");
       }
       return order;
     }
 
-    expect(() => accessOrder(customerA, orderB)).toThrow("HTTP 404");
-    expect(accessOrder(customerB, orderB).id).toBe(orderB);
+    await expect(accessOrder(customerA, orderB)).rejects.toThrow("HTTP 404");
+    const retrieved = await accessOrder(customerB, orderB);
+    expect(retrieved.id).toBe(orderB);
   });
 
   // --- INV-09 ---
@@ -532,33 +723,43 @@ describe("R2. Mission-Critical Financial & Operational Invariants Suite", () => 
   });
 
   // --- INV-10 ---
-  it("INV-10: Refresh token reuse revokes entire family and kills active sessions", () => {
-    const userId = "usr_refresh_test";
-    const family = "fam_session_1";
+  it("INV-10: Refresh token reuse revokes entire family and kills active sessions", async () => {
+    const suffix = randomUUID().substring(0, 8);
+    const userId = `usr_session_${suffix}`;
+    createdUserIds.push(userId);
 
-    db.public.none(`
-      INSERT INTO "RefreshToken" (id, "userId", "tokenHash", family, revoked, "expiresAt")
-      VALUES
-        ('tok_1', '${userId}', 'hash_1', '${family}', true, NOW() + INTERVAL '7 days'),
-        ('tok_2', '${userId}', 'hash_2', '${family}', false, NOW() + INTERVAL '7 days');
-    `);
+    await pool.query(
+      `INSERT INTO "User" (id, email, "passwordHash", name, role, "updatedAt")
+       VALUES ($1, $2, 'hash', 'Session User', 'CUSTOMER', NOW())`,
+      [userId, `session_${suffix}@smm.io`]
+    );
 
-    // Attempt reuse of revoked tok_1
-    function rotateToken(tokenId: string) {
-      const token = db.public.one(`SELECT * FROM "RefreshToken" WHERE id = '${tokenId}'`);
-      if (token.revoked) {
-        // Token reuse detected! Revoke entire family
-        db.public.none(`UPDATE "RefreshToken" SET revoked = true WHERE family = '${token.family}'`);
+    const token1 = `tok_revoked_${suffix}`;
+    const token2 = `tok_active_${suffix}`;
+
+    await pool.query(
+      `INSERT INTO "Session" (id, "userId", "refreshToken", "isRevoked", "expiresAt")
+       VALUES ($1, $2, $3, true, NOW() + INTERVAL '7 days'),
+              ($4, $2, $5, false, NOW() + INTERVAL '7 days');`,
+      [`sess_1_${suffix}`, userId, token1, `sess_2_${suffix}`, token2]
+    );
+
+    // Attempt reuse of revoked token -> revokes all sessions for user
+    async function rotateToken(token: string) {
+      const sess = await one('SELECT * FROM "Session" WHERE "refreshToken" = $1', [token]);
+      if (!sess || sess.isRevoked) {
+        await pool.query('UPDATE "Session" SET "isRevoked" = true WHERE "userId" = $1', [userId]);
         throw new Error("HTTP 401: Token reuse detected. Session family invalidated.");
       }
       return true;
     }
 
-    expect(() => rotateToken("tok_1")).toThrow("Token reuse detected");
-    const activeTokensInFamily = db.public.many(
-      `SELECT * FROM "RefreshToken" WHERE family = '${family}' AND revoked = false`
+    await expect(rotateToken(token1)).rejects.toThrow("Token reuse detected");
+    const activeSessions = await query(
+      'SELECT * FROM "Session" WHERE "userId" = $1 AND "isRevoked" = false',
+      [userId]
     );
-    expect(activeTokensInFamily.length).toBe(0);
+    expect(activeSessions.length).toBe(0);
   });
 
   // --- INV-11 ---
@@ -580,11 +781,9 @@ describe("R2. Mission-Critical Financial & Operational Invariants Suite", () => 
     enqueue("job_1");
     enqueue("job_2");
 
-    // Paused: no jobs processed
     expect(processNext()).toBeNull();
     expect(queue.length).toBe(2);
 
-    // Resume queue
     isPaused = false;
     const firstOut = processNext();
     expect(firstOut?.id).toBe("job_1");
@@ -664,23 +863,53 @@ describe("R2. Mission-Critical Financial & Operational Invariants Suite", () => 
     expect(sanitized.maskedKey).toBe("***z999");
   });
 
-  // --- INV-15 ---
+  // --- INV-15: Real Postgres Reconnection ---
   it("INV-15: Database reconnection: kill DB connection, app reconnects within 5s without crash", async () => {
-    let connectionAlive = false;
+    // 1. Establish real PostgreSQL client connection to Neon branch
+    const client = new Client({
+      connectionString: testDatabaseUrl,
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 5000,
+    });
+    await client.connect();
 
-    async function reconnectWithRetry(maxAttempts = 5, delayMs = 10): Promise<boolean> {
-      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        if (attempt >= 2) {
-          connectionAlive = true; // Reconnected on second try
+    const initialCheck = await client.query("SELECT 1 AS alive");
+    expect(initialCheck.rows[0].alive).toBe(1);
+
+    // 2. Forcefully kill the active TCP/TLS connection stream
+    await client.end();
+
+    // 3. Reconnect with retry loop against the real PostgreSQL engine
+    let reconnected = false;
+    let attempts = 0;
+    const maxAttempts = 5;
+    const delayMs = 300;
+
+    let reconnectedClient: Client | null = null;
+    while (!reconnected && attempts < maxAttempts) {
+      attempts++;
+      try {
+        reconnectedClient = new Client({
+          connectionString: testDatabaseUrl,
+          ssl: { rejectUnauthorized: false },
+          connectionTimeoutMillis: 3000,
+        });
+        await reconnectedClient.connect();
+        const check = await reconnectedClient.query("SELECT 1 AS alive");
+        if (check.rows[0]?.alive === 1) {
+          reconnected = true;
+          break;
         }
-        if (connectionAlive) return true;
+      } catch {
         await new Promise((r) => setTimeout(r, delayMs));
       }
-      return false;
     }
 
-    const result = await reconnectWithRetry();
-    expect(result).toBe(true);
-    expect(connectionAlive).toBe(true);
+    expect(reconnected).toBe(true);
+    expect(attempts).toBeLessThanOrEqual(maxAttempts);
+
+    if (reconnectedClient) {
+      await reconnectedClient.end();
+    }
   });
 });

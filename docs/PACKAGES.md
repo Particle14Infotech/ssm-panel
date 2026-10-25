@@ -52,15 +52,41 @@ Endpoint: `POST /packages/quote`
   $$\text{itemCharge} = \left\lceil \frac{\text{rateSnapshot} \times \text{totalQuantity}}{1000} \right\rceil$$
 - Calculates total reserve as the sum of all item charges.
 - Returns pure quote without mutating database state.
+- Generates a cryptographically secure, deterministic canonical payload hash:
+  `quoteHash`: `qh_v1_<expiresAtMs>_<hmac>` with a default 15-minute time-to-live.
 
 ### 3.2 Purchase Flow
 Endpoint: `POST /packages`
 - Requires explicit consent: `consentRulesUnderstood: true`.
 - Requires `idempotencyKey` per user.
+- **Quote Hash Integrity**: When `quoteHash` is provided (or when `PACKAGES_REQUIRE_QUOTE_HASH=true`), the backend recomputes the authoritative quote from database pricing and verifies that the quote has not expired and that service pricing, parameters, or schedule have not been tampered with. Tampered or expired quotes return HTTP 409 Conflict.
 - Enforces active package constraints:
   - Max 5 distinct handles per user.
   - At most 1 `ACTIVE` package per `(platform, handle)` tuple.
-- Atomically locks wallet, checks `balance >= reserveTotal`, debits wallet, creates `Package` row, `PackageRule` rows, and records `PACKAGE_RESERVE` in the ledger.
+- Atomically locks wallet, checks `balance >= reserveTotal`, debits wallet, creates `Package` row, `PackageRule` rows, and records `PACKAGE_PURCHASE` in the ledger.
+
+### 3.3 Financial Correctness & Double-Refund Prevention
+The package lifecycle uses a single canonical accounting utility (`package-accounting.util.ts`) that enforces the invariant:
+$$\text{reserveTotal} \equiv \text{totalConsumed} + \text{totalAlreadyRefunded} + \text{netRefundDue}$$
+- Partially delivered child orders (`remains > 0`) have their consumed charge computed as:
+  $$\text{consumed} = \frac{\text{quantity} - \text{remains}}{\text{quantity}} \times \text{allocatedCharge}$$
+- All prior refunds are tracked and subtracted from `netRefundDue`.
+- Cancellation, expiry, or provider reconciliation will never refund more than the remaining refundable balance, making double refunds impossible.
+
+### 3.4 Worker Concurrency & Execution Ownership
+Worker dispatch claims use a PostgreSQL atomic transaction:
+```sql
+SELECT ... FROM "PackageExecution" e ...
+WHERE e.id = $1 AND e."packageId" = $2 AND e.status = 'SCHEDULED' AND e."executeAt" <= $3
+FOR UPDATE OF e SKIP LOCKED;
+```
+Combined with a compare-and-swap update (`if (claim.count !== 1) return false;`), concurrent workers skip locked rows without blocking or duplicating child orders.
+
+### 3.5 Admin Queue & Monitoring
+Endpoint: `GET /packages/admin/executions/queue`
+- Protected by `JwtAuthGuard` and `RolesGuard(ADMIN)`.
+- Supports pagination (`page`, `limit`), status filtering (`status`), and stable execution ordering (`executeAt ASC, id ASC`).
+- Exposes operational execution data without leaking secrets, tokens, or customer wallet balances.
 
 ---
 

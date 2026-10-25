@@ -8,9 +8,13 @@ import {
   Query,
   Body,
   NotFoundException,
+  UseGuards,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiQuery } from "@nestjs/swagger";
 import { ServicesService } from "./services.service";
+import { JwtAuthGuard } from "../../common/jwt-auth.guard";
+import { RolesGuard, Roles } from "../../common/roles.guard";
+import { Role } from "@prisma/client";
 
 @ApiTags("Services Catalog")
 @Controller("services")
@@ -29,7 +33,16 @@ export class ServicesController {
     return this.servicesService.getCategories();
   }
 
+  @Get("grouped")
+  @ApiOperation({ summary: "Get Grouped Catalog by Category" })
+  @ApiQuery({ name: "platform", required: false })
+  getGrouped(@Query("platform") platform?: string) {
+    return this.servicesService.getGroupedCatalog(platform);
+  }
+
   @Post("categories")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Admin Create Category" })
   createCategory(@Body() body: { name: string; slug?: string }) {
     return this.servicesService.createCategory(body);
@@ -61,12 +74,16 @@ export class ServicesController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Admin Create Service" })
   create(@Body() body: any) {
     return this.servicesService.create(body);
   }
 
   @Put(":id")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Admin Update Service" })
   update(@Param("id") id: string, @Body() body: any) {
     const res = this.servicesService.update(id, body);
@@ -75,6 +92,8 @@ export class ServicesController {
   }
 
   @Delete(":id")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: "Admin Delete Service" })
   remove(@Param("id") id: string) {
     const deleted = this.servicesService.remove(id);

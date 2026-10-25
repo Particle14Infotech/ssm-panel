@@ -162,6 +162,9 @@ describe("Milestone M3: Package Creation Flow, Honest Quote, Guardrails & Blockl
       INSERT INTO "User" (id, email, name) VALUES ('usr_buyer', 'buyer@test.local', 'Package Buyer');
       INSERT INTO "Wallet" (id, "userId", balance) VALUES ('w_buyer', 'usr_buyer', 50000.00);
 
+      INSERT INTO "User" (id, email, name) VALUES ('usr_buyer_phase2', 'buyer2@test.local', 'Package Buyer 2');
+      INSERT INTO "Wallet" (id, "userId", balance) VALUES ('w_buyer2', 'usr_buyer_phase2', 50000.00);
+
       INSERT INTO "Service" (id, name, "displayName", platform, "ratePer1000", "minQty", "maxQty", "packageEligible", "costINR")
       VALUES
         ('srv_ig_followers', 'Instagram Followers Steady', 'Instagram Followers', 'INSTAGRAM', 120.00, 50, 50000, true, 80.00),
@@ -290,7 +293,9 @@ describe("Milestone M3: Package Creation Flow, Honest Quote, Guardrails & Blockl
 
       expect(quote.valid).toBe(true);
       expect(quote.totalCharge).toBe(345.00); // 120 + 225 = 345.00
-      expect(quote.disclaimer).toBe("Maximum total; unused is refunded at the end");
+      expect(quote.disclaimer).toBe(
+        "Maximum total; unused balance is automatically refunded to your wallet upon package completion or cancellation."
+      );
       expect(quote.items.length).toBe(2);
 
       // Verify followers line
@@ -340,6 +345,7 @@ describe("Milestone M3: Package Creation Flow, Honest Quote, Guardrails & Blockl
 
       const purchaseRes = await packagesService.purchasePackage("usr_buyer", {
         ...quoteInput,
+        quoteHash: quote.quoteHash,
         idempotencyKey: "idem_quote_match_1",
       });
 
@@ -353,12 +359,18 @@ describe("Milestone M3: Package Creation Flow, Honest Quote, Guardrails & Blockl
 
   describe("2. Safety Guardrails: Consent, Blocklist, Limit & Uniqueness", () => {
     it("rejects package purchase if consent checkbox is not checked", async () => {
+      const qConsent = await quoteService.calculateQuote({
+        platform: "instagram",
+        handle: "@fitness_star",
+        postRules: [{ serviceId: "srv_ig_likes", maxPosts: 5, maxQtyPerPost: 100, defaultWindowMin: 180 }],
+      });
       await expect(
         packagesService.purchasePackage("usr_buyer", {
           platform: "instagram",
           handle: "@fitness_star",
           postRules: [{ serviceId: "srv_ig_likes", maxPosts: 5, maxQtyPerPost: 100, defaultWindowMin: 180 }],
           idempotencyKey: "idem_no_consent",
+          quoteHash: qConsent.quoteHash,
           consentRulesUnderstood: false,
         })
       ).rejects.toThrow(/acknowledge and agree/i);
@@ -387,18 +399,25 @@ describe("Milestone M3: Package Creation Flow, Honest Quote, Guardrails & Blockl
           handle: "@banned_spammer",
           postRules: [{ serviceId: "srv_ig_likes", maxPosts: 5, maxQtyPerPost: 100, defaultWindowMin: 180 }],
           idempotencyKey: "idem_blocked_handle",
+          quoteHash: "qh_v1_9999999999999_fake",
           consentRulesUnderstood: true,
         })
       ).rejects.toThrow(/blocked from purchasing packages/i);
     });
 
     it("rejects a second ACTIVE package for the same (platform, handle)", async () => {
+      const qUnique = await quoteService.calculateQuote({
+        platform: "instagram",
+        handle: "@unique_handle_star",
+        postRules: [{ serviceId: "srv_ig_likes", maxPosts: 5, maxQtyPerPost: 100, defaultWindowMin: 180 }],
+      });
       // First purchase succeeds
       const first = await packagesService.purchasePackage("usr_buyer", {
         platform: "instagram",
         handle: "@unique_handle_star",
         postRules: [{ serviceId: "srv_ig_likes", maxPosts: 5, maxQtyPerPost: 100, defaultWindowMin: 180 }],
         idempotencyKey: "idem_unique_1",
+        quoteHash: qUnique.quoteHash,
         consentRulesUnderstood: true,
       });
       expect(first.success).toBe(true);
@@ -410,18 +429,25 @@ describe("Milestone M3: Package Creation Flow, Honest Quote, Guardrails & Blockl
           handle: "@unique_handle_star",
           postRules: [{ serviceId: "srv_ig_likes", maxPosts: 5, maxQtyPerPost: 100, defaultWindowMin: 180 }],
           idempotencyKey: "idem_unique_2",
+          quoteHash: qUnique.quoteHash,
           consentRulesUnderstood: true,
         })
       ).rejects.toThrow(/ACTIVE package already exists/i);
     });
 
     it("allows package on different platform for the same handle name", async () => {
+      const qTT = await quoteService.calculateQuote({
+        platform: "tiktok",
+        handle: "@unique_handle_star",
+        postRules: [{ serviceId: "srv_tt_likes", maxPosts: 5, maxQtyPerPost: 100, defaultWindowMin: 180 }],
+      });
       // TikTok with same handle name succeeds
       const ttRes = await packagesService.purchasePackage("usr_buyer", {
         platform: "tiktok",
         handle: "@unique_handle_star",
         postRules: [{ serviceId: "srv_tt_likes", maxPosts: 5, maxQtyPerPost: 100, defaultWindowMin: 180 }],
         idempotencyKey: "idem_diff_platform_1",
+        quoteHash: qTT.quoteHash,
         consentRulesUnderstood: true,
       });
       expect(ttRes.success).toBe(true);
@@ -430,22 +456,39 @@ describe("Milestone M3: Package Creation Flow, Honest Quote, Guardrails & Blockl
     it("enforces maximum N active handles per user", async () => {
       // User currently has @travel_creator (IG), @unique_handle_star (IG), @unique_handle_star (TT) -> 3 handles
       // Add handle 4 and handle 5
+      const q4 = await quoteService.calculateQuote({
+        platform: "instagram",
+        handle: "@handle_four",
+        postRules: [{ serviceId: "srv_ig_likes", maxPosts: 1, maxQtyPerPost: 100, defaultWindowMin: 180 }],
+      });
       await packagesService.purchasePackage("usr_buyer", {
         platform: "instagram",
         handle: "@handle_four",
         postRules: [{ serviceId: "srv_ig_likes", maxPosts: 1, maxQtyPerPost: 100, defaultWindowMin: 180 }],
         idempotencyKey: "idem_h4",
+        quoteHash: q4.quoteHash,
         consentRulesUnderstood: true,
       });
 
+      const q5 = await quoteService.calculateQuote({
+        platform: "instagram",
+        handle: "@handle_five",
+        postRules: [{ serviceId: "srv_ig_likes", maxPosts: 1, maxQtyPerPost: 100, defaultWindowMin: 180 }],
+      });
       await packagesService.purchasePackage("usr_buyer", {
         platform: "instagram",
         handle: "@handle_five",
         postRules: [{ serviceId: "srv_ig_likes", maxPosts: 1, maxQtyPerPost: 100, defaultWindowMin: 180 }],
         idempotencyKey: "idem_h5",
+        quoteHash: q5.quoteHash,
         consentRulesUnderstood: true,
       });
 
+      const q6 = await quoteService.calculateQuote({
+        platform: "instagram",
+        handle: "@handle_six_rejected",
+        postRules: [{ serviceId: "srv_ig_likes", maxPosts: 1, maxQtyPerPost: 100, defaultWindowMin: 180 }],
+      });
       // 6th handle for the same user is rejected under max handles limit
       await expect(
         packagesService.purchasePackage("usr_buyer", {
@@ -453,9 +496,97 @@ describe("Milestone M3: Package Creation Flow, Honest Quote, Guardrails & Blockl
           handle: "@handle_six_rejected",
           postRules: [{ serviceId: "srv_ig_likes", maxPosts: 1, maxQtyPerPost: 100, defaultWindowMin: 180 }],
           idempotencyKey: "idem_h6",
+          quoteHash: q6.quoteHash,
           consentRulesUnderstood: true,
         })
       ).rejects.toThrow(/Account handle limit reached: you may manage at most 5 active handles/i);
+    });
+  });
+
+  describe("Phase 2: Quote Integrity and quoteHash Validation", () => {
+    it("returns quoteHash and expiresAt with every quote", async () => {
+      const quote = await quoteService.calculateQuote({
+        platform: "instagram",
+        handle: "@quote_hash_user",
+        postRules: [{ serviceId: "srv_ig_likes", maxPosts: 3, maxQtyPerPost: 100, defaultWindowMin: 180 }],
+      });
+
+      expect(quote.quoteHash).toBeDefined();
+      expect(typeof quote.quoteHash).toBe("string");
+      expect(quote.quoteHash?.startsWith("qh_v1_")).toBe(true);
+      expect(quote.expiresAt).toBeDefined();
+    });
+
+    it("accepts a purchase with the authentic, matching quoteHash", async () => {
+      const quote = await quoteService.calculateQuote({
+        platform: "instagram",
+        handle: "@hash_valid_buyer",
+        postRules: [{ serviceId: "srv_ig_likes", maxPosts: 2, maxQtyPerPost: 100, defaultWindowMin: 180 }],
+      });
+
+      const res = await packagesService.purchasePackage("usr_buyer_phase2", {
+        platform: "instagram",
+        handle: "@hash_valid_buyer",
+        postRules: [{ serviceId: "srv_ig_likes", maxPosts: 2, maxQtyPerPost: 100, defaultWindowMin: 180 }],
+        idempotencyKey: "idem_hash_valid",
+        quoteHash: quote.quoteHash,
+        consentRulesUnderstood: true,
+      });
+
+      expect(res.success).toBe(true);
+    });
+
+    it("rejects purchase when quoteHash is expired with ConflictException", async () => {
+      const expiredHash = `qh_v1_${Date.now() - 5000}_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef`;
+
+      await expect(
+        packagesService.purchasePackage("usr_buyer_phase2", {
+          platform: "instagram",
+          handle: "@expired_quote_user",
+          postRules: [{ serviceId: "srv_ig_likes", maxPosts: 2, maxQtyPerPost: 100, defaultWindowMin: 180 }],
+          idempotencyKey: "idem_expired_quote",
+          quoteHash: expiredHash,
+          consentRulesUnderstood: true,
+        })
+      ).rejects.toThrow(/quote has expired/i);
+    });
+
+    it("rejects purchase when quoteHash is tampered or service pricing changed", async () => {
+      const quote = await quoteService.calculateQuote({
+        platform: "instagram",
+        handle: "@tampered_quote_user",
+        postRules: [{ serviceId: "srv_ig_likes", maxPosts: 2, maxQtyPerPost: 100, defaultWindowMin: 180 }],
+      });
+
+      // Submit the hash with modified quantity
+      await expect(
+        packagesService.purchasePackage("usr_buyer_phase2", {
+          platform: "instagram",
+          handle: "@tampered_quote_user",
+          postRules: [{ serviceId: "srv_ig_likes", maxPosts: 5, maxQtyPerPost: 500, defaultWindowMin: 180 }], // changed!
+          idempotencyKey: "idem_tampered_quote",
+          quoteHash: quote.quoteHash,
+          consentRulesUnderstood: true,
+        })
+      ).rejects.toThrow(/pricing, schedule, or catalog has changed/i);
+    });
+
+    it("rejects missing quoteHash when PACKAGES_REQUIRE_QUOTE_HASH=true", async () => {
+      const origEnv = process.env.PACKAGES_REQUIRE_QUOTE_HASH;
+      try {
+        process.env.PACKAGES_REQUIRE_QUOTE_HASH = "true";
+        await expect(
+          packagesService.purchasePackage("usr_buyer_phase2", {
+            platform: "instagram",
+            handle: "@require_hash_user",
+            postRules: [{ serviceId: "srv_ig_likes", maxPosts: 2, maxQtyPerPost: 100, defaultWindowMin: 180 }],
+            idempotencyKey: "idem_require_hash",
+            consentRulesUnderstood: true,
+          })
+        ).rejects.toThrow(/quoteHash is required/i);
+      } finally {
+        process.env.PACKAGES_REQUIRE_QUOTE_HASH = origEnv;
+      }
     });
   });
 });

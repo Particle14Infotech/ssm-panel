@@ -14,6 +14,15 @@ export class SMMCacheService {
     if (redisClient) {
       this.redis = redisClient;
     } else {
+      if (
+        process.env.NODE_ENV === "test" ||
+        process.env.CI === "true" ||
+        (!process.env.REDIS_URL && !process.env.REDIS_HOST)
+      ) {
+        this.redis = null;
+        this.redisAvailable = false;
+        return;
+      }
       try {
         const redisUrl = process.env.REDIS_URL;
         if (redisUrl) {
@@ -101,6 +110,48 @@ export class SMMCacheService {
     }
   }
 
+  async checkRateLimit(
+    key: string,
+    limit: number,
+    windowSeconds: number
+  ): Promise<{ allowed: boolean; remaining: number; retryAfter: number }> {
+    if (this.redisAvailable && this.redis) {
+      try {
+        const count = await this.redis.incr(key);
+        if (count === 1) {
+          await this.redis.expire(key, windowSeconds);
+        }
+        if (count > limit) {
+          const ttl = await this.redis.ttl(key);
+          return { allowed: false, remaining: 0, retryAfter: Math.max(1, ttl) };
+        }
+        return { allowed: true, remaining: limit - count, retryAfter: 0 };
+      } catch {
+        // Fall back to memory store on redis error
+      }
+    }
+
+    const now = Date.now();
+    const memKey = `ratelimit:${key}`;
+    const entry = this.inMemoryFallback.get(memKey);
+    let data: { count: number; resetAt: number };
+    if (!entry || now >= entry.expiresAt) {
+      data = { count: 1, resetAt: now + windowSeconds * 1000 };
+    } else {
+      const parsed = JSON.parse(entry.value);
+      data = { count: parsed.count + 1, resetAt: parsed.resetAt };
+    }
+    this.inMemoryFallback.set(memKey, {
+      value: JSON.stringify(data),
+      expiresAt: data.resetAt,
+    });
+    if (data.count > limit) {
+      const retryAfter = Math.ceil((data.resetAt - now) / 1000);
+      return { allowed: false, remaining: 0, retryAfter: Math.max(1, retryAfter) };
+    }
+    return { allowed: true, remaining: limit - data.count, retryAfter: 0 };
+  }
+
   async close(): Promise<void> {
     if (this.redis) {
       try {
@@ -109,3 +160,6 @@ export class SMMCacheService {
     }
   }
 }
+
+export const CacheService = SMMCacheService;
+export type CacheService = SMMCacheService;

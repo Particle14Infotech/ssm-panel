@@ -138,6 +138,40 @@ export const DEFAULT_PLATFORM_CONFIGS: PlatformRuleDefinition[] = [
     limits: { exampleMinQty: 100, exampleMaxQty: 100000 },
     active: true,
   },
+  {
+    platform: "linkedin",
+    displayName: "LinkedIn",
+    handleRegex: "^[a-zA-Z0-9_-]{3,100}$",
+    handleMaxLength: 100,
+    hostAllowlist: ["linkedin.com", "www.linkedin.com"],
+    pathPattern: "^/(?:feed/update/urn:li:(?:activity|share):([0-9]+)|posts/[a-zA-Z0-9_-]+|pulse/[a-zA-Z0-9_-]+)/?",
+    mediaKeyExtractor: "$1",
+    urlContainsHandle: false,
+    eligibleRuleKinds: ["POST_TRIGGERED", "TIME_DRIP"],
+    followersIntervals: [1, 2, 4, 8, 12, 24],
+    minGapMinutes: 15,
+    maxRunsPerPost: 10,
+    defaultWindowMinutes: 180,
+    limits: { exampleMinQty: 50, exampleMaxQty: 25000 },
+    active: true,
+  },
+  {
+    platform: "spotify",
+    displayName: "Spotify",
+    handleRegex: "^[a-zA-Z0-9]{22}$",
+    handleMaxLength: 30,
+    hostAllowlist: ["spotify.com", "open.spotify.com"],
+    pathPattern: "^/(?:track|album|playlist|artist)/([a-zA-Z0-9]{22})/?",
+    mediaKeyExtractor: "$1",
+    urlContainsHandle: false,
+    eligibleRuleKinds: ["TIME_DRIP"],
+    followersIntervals: [1, 2, 4, 8, 12, 24],
+    minGapMinutes: 15,
+    maxRunsPerPost: 10,
+    defaultWindowMinutes: 180,
+    limits: { exampleMinQty: 100, exampleMaxQty: 100000 },
+    active: true,
+  },
 ];
 
 /**
@@ -180,6 +214,20 @@ export interface LinkValidationResult {
   error?: string;
 }
 
+const pathRegexCache = new Map<string, RegExp>();
+for (const cfg of DEFAULT_PLATFORM_CONFIGS) {
+  pathRegexCache.set(cfg.pathPattern, new RegExp(cfg.pathPattern));
+}
+
+function getCachedPathRegex(pattern: string): RegExp {
+  let re = pathRegexCache.get(pattern);
+  if (!re) {
+    re = new RegExp(pattern);
+    pathRegexCache.set(pattern, re);
+  }
+  return re;
+}
+
 /**
  * Validates and extracts media key from a post link strictly using offline regex/URL parsing.
  * NEVER makes outbound HTTP requests.
@@ -195,6 +243,69 @@ export function validatePlatformLink(
   }
 
   const trimmed = rawUrl.trim();
+  if (trimmed.length > 2048) {
+    throw new BadRequestException("URL exceeds maximum length of 2048 characters.");
+  }
+
+  if (!trimmed.startsWith("https://")) {
+    throw new BadRequestException("Only secure https:// URLs are allowed.");
+  }
+
+  // Fast host extraction for validation
+  const slashIdx = trimmed.indexOf("/", 8);
+  const rawHost = slashIdx === -1 ? trimmed.slice(8) : trimmed.slice(8, slashIdx);
+
+  if (rawHost.includes("@")) {
+    throw new BadRequestException("URLs containing user credentials are not permitted.");
+  }
+
+  if (rawHost.includes(":")) {
+    throw new BadRequestException("URLs with non-default ports are not permitted.");
+  }
+
+  if (rawHost.includes("xn--") || /[^\x20-\x7E]/.test(rawHost)) {
+    throw new BadRequestException(
+      "Internationalized domain names or punycode URLs are not permitted."
+    );
+  }
+
+  const hostname = rawHost.toLowerCase();
+
+  // 1. Strict short-link rejection
+  let isShortLink = SHORT_LINK_HOSTS.has(hostname);
+  if (!isShortLink) {
+    const dot = hostname.indexOf(".");
+    if (dot !== -1 && hostname.indexOf(".", dot + 1) !== -1) {
+      for (const s of SHORT_LINK_HOSTS) {
+        if (hostname.endsWith("." + s)) {
+          isShortLink = true;
+          break;
+        }
+      }
+    }
+  }
+  if (isShortLink) {
+    throw new BadRequestException(
+      "Shortened URLs are not permitted. Please provide the direct platform link."
+    );
+  }
+
+  // 2. Host allowlist check
+  let hostAllowed = false;
+  for (let i = 0; i < config.hostAllowlist.length; i++) {
+    const allowed = config.hostAllowlist[i];
+    if (hostname === allowed || hostname.endsWith("." + allowed)) {
+      hostAllowed = true;
+      break;
+    }
+  }
+
+  if (!hostAllowed) {
+    throw new BadRequestException(
+      `Invalid host "${hostname}" for ${config.displayName}.`
+    );
+  }
+
   let parsed: URL;
   try {
     parsed = new URL(trimmed);
@@ -202,31 +313,23 @@ export function validatePlatformLink(
     throw new BadRequestException("Invalid URL format. Please provide a full URL with https://");
   }
 
-  const hostname = parsed.hostname.toLowerCase();
-
-  // 1. Strict short-link rejection
-  if (SHORT_LINK_HOSTS.has(hostname) || hostname.endsWith(".bit.ly") || hostname.endsWith(".tinyurl.com")) {
-    throw new BadRequestException(
-      "Shortened URLs are not permitted. Please provide the direct platform link."
-    );
+  if (parsed.protocol !== "https:") {
+    throw new BadRequestException("Only secure https:// URLs are allowed.");
   }
 
-  // 2. Host allowlist check
-  const hostAllowed = config.hostAllowlist.some(
-    (allowed) => hostname === allowed.toLowerCase() || hostname.endsWith(`.${allowed.toLowerCase()}`)
-  );
+  if (parsed.username || parsed.password) {
+    throw new BadRequestException("URLs containing user credentials are not permitted.");
+  }
 
-  if (!hostAllowed) {
-    throw new BadRequestException(
-      `Invalid host "${hostname}" for ${config.displayName}. Allowed hosts: ${config.hostAllowlist.join(", ")}`
-    );
+  if (parsed.port !== "" && parsed.port !== "443") {
+    throw new BadRequestException("URLs with non-default ports are not permitted.");
   }
 
   // 3. Path pattern and media key extraction
   // Combine pathname and search for platforms like YouTube (?v=...)
   const fullPath = parsed.pathname + parsed.search;
-  const pathRegex = new RegExp(config.pathPattern);
-  const match = fullPath.match(pathRegex);
+  const pathRegex = getCachedPathRegex(config.pathPattern);
+  const match = pathRegex.exec(fullPath);
 
   if (!match) {
     throw new BadRequestException(

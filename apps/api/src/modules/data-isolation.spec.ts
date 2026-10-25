@@ -5,7 +5,11 @@ import * as jwt from "jsonwebtoken";
 import { AppModule } from "../app.module";
 import { NotificationsService } from "./notifications/notifications.service";
 
-describe("PHASE 1: Cross-User Data Isolation Tests", () => {
+import { assertRealPostgresStartup } from "../test-utils/pg-test-startup";
+
+jest.setTimeout(60000);
+
+describe("@pg PHASE 1: Cross-User Data Isolation Tests", () => {
   let app: INestApplication;
   let notificationsService: NotificationsService;
 
@@ -42,6 +46,8 @@ describe("PHASE 1: Cross-User Data Isolation Tests", () => {
   let notifAId: string;
 
   beforeAll(async () => {
+    await assertRealPostgresStartup();
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -51,11 +57,11 @@ describe("PHASE 1: Cross-User Data Isolation Tests", () => {
     await app.init();
 
     notificationsService = app.get<NotificationsService>(NotificationsService);
-  });
+  }, 60000);
 
   afterAll(async () => {
     await app.close();
-  });
+  }, 60000);
 
   describe("1. Resource Creation for User A", () => {
     it("User A opens a support ticket", async () => {

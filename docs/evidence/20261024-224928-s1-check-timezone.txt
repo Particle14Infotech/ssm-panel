@@ -1,0 +1,81 @@
+﻿Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-24T22:49:28.8932119+05:30
+Status: RUNNING
+---
+
+{"level":30,"time":"2026-10-24T17:19:32.122Z","pid":31532,"hostname":"VK","msg":"[Package Engine] Dispatched 1 of 1 due execution(s); 0 failed"}
+{"level":30,"time":"2026-10-24T17:19:32.123Z","pid":31532,"hostname":"VK","msg":"[Package Engine] Dispatched 0 of 1 due execution(s); 0 failed"}
+{"level":50,"time":"2026-10-24T17:19:32.124Z","pid":31532,"hostname":"VK","err":"simulated order insert failure","msg":"[Package Engine] Error dispatching execution #exec_dispatch_1"}
+{"level":30,"time":"2026-10-24T17:19:32.124Z","pid":31532,"hostname":"VK","msg":"[Package Engine] Dispatched 0 of 1 due execution(s); 1 failed"}
+{"level":30,"time":"2026-10-24T17:19:32.124Z","pid":31532,"hostname":"VK","msg":"[Package Engine] Dispatched 1 of 1 due execution(s); 0 failed"}
+{"level":50,"time":"2026-10-24T17:19:32.125Z","pid":31532,"hostname":"VK","err":"simulated outbox insert failure","msg":"[Package Engine] Error dispatching execution #exec_dispatch_1"}
+{"level":30,"time":"2026-10-24T17:19:32.125Z","pid":31532,"hostname":"VK","msg":"[Package Engine] Dispatched 0 of 1 due execution(s); 1 failed"}
+{"level":30,"time":"2026-10-24T17:19:32.125Z","pid":31532,"hostname":"VK","msg":"[Package Engine] Dispatched 1 of 1 due execution(s); 0 failed"}
+{"level":30,"time":"2026-10-24T17:19:32.126Z","pid":31532,"hostname":"VK","msg":"[Package Engine] Dispatched 0 of 1 due execution(s); 0 failed"}
+{"level":30,"time":"2026-10-24T17:19:32.127Z","pid":31532,"hostname":"VK","msg":"[Package Engine] Dispatched 0 of 1 due execution(s); 0 failed"}
+{"level":30,"time":"2026-10-24T17:19:32.128Z","pid":31532,"hostname":"VK","msg":"[Worker Engine] Dispatching Order #child_order_uncertain (Service: Test service)"}
+{"level":30,"time":"2026-10-24T17:19:32.128Z","pid":31532,"hostname":"VK","msg":"[Worker Engine] Dispatching Order #child_order_uncertain (Service: Test service)"}
+{"level":50,"time":"2026-10-24T17:19:32.129Z","pid":31532,"hostname":"VK","msg":"[Worker Engine] Upstream provider dispatch failed for #child_order_uncertain: request timeout after provider accepted the request"}
+{"level":40,"time":"2026-10-24T17:19:32.131Z","pid":31532,"hostname":"VK","msg":"[Worker Watchdog] Paused provider status polling for package order #child_order_stalled after 24 hours without a terminal result."}
+{"level":30,"time":"2026-10-24T17:19:32.135Z","pid":31532,"hostname":"VK","msg":"[Drip Scheduler] Found 1 due run(s) to dispatch."}
+{"level":40,"time":"2026-10-24T17:19:32.136Z","pid":31532,"hostname":"VK","msg":"[Drip Scheduler] Moved 1 stale dispatch claim(s) to UNCERTAIN; automatic redispatch is suppressed."}
+{"level":30,"time":"2026-10-24T17:19:32.137Z","pid":31532,"hostname":"VK","msg":"[Package Engine] Dispatched 0 of 1 due execution(s); 0 failed"}
+{"level":30,"time":"2026-10-24T17:19:32.137Z","pid":31532,"hostname":"VK","msg":"[Package Engine] Dispatched 1 of 1 due execution(s); 0 failed"}
+{"level":30,"time":"2026-10-24T17:19:32.138Z","pid":31532,"hostname":"VK","msg":"[Package Engine] Dispatched 0 of 1 due execution(s); 0 failed"}
+pnpm.exe : FAIL test/package-timezone-reschedule.spec.ts
+At C:\Users\vaibh\AppData\Roaming\npm\pnpm.ps1:14 char:3
++   & "$basedir/node_modules/pnpm/pnpm.exe"   $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL test/packa...chedule.spec.ts:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  package timezone and rescheduling
+    √ converts package-local schedule times to unambiguous absolute instants (34 ms)
+    √ accepts IANA timezones, rejects invalid values, and returns the timezone in the quote (8 ms)
+    √ reschedules only a future scheduled sandbox execution owned by the package user (15 ms)
+    × persists the requested timezone when creating a package (2 ms)
+    √ adds UTC defaults to historical package rows without changing their schedule instants (30 ms)
+    √ adds provider status health fields without changing provider activation (27 ms)
+    √ locks and audits a database-backed reschedule
+    √ does not update another user's package during a database-backed reschedule
+    √ validates reschedule requests at the API boundary (5 ms)
+    √ keeps only expiry settlement on the API timer (7 ms)
+    √ dispatches a due execution once under duplicate worker polls and atomically writes order and outbox (2 ms)
+    √ rolls back a failed child-order transaction and retries the due execution on a later poll
+    √ rolls back child order and execution state when outbox persistence fails
+    √ does not create child orders or outbox events for paused packages
+    √ does not dispatch an execution after package cancellation wins the row-lock race (1 ms)
+    √ does not retry an uncertain provider outcome for a package order on duplicate worker jobs (2 ms)
+    √ does not simulate fulfillment for a package order with an uncertain provider reference (1 ms)
+    √ pauses polling for a non-terminal package order after 24 hours (2 ms)
+    √ rate-limits provider health telemetry and resets failures after a successful check (1 ms)
+    √ updates package execution state from terminal child-order status (1 ms)
+    √ atomically claims due managed runs and dispatches only the successful claimant (1 ms)
+    √ moves an abandoned managed-run claim to UNCERTAIN instead of redispatching it (1 ms)
+    √ holds a due package execution while its predecessor is still processing (1 ms)
+    √ releases a due package execution after its predecessor completes
+    √ keeps later package executions held after a failed predecessor
+
+  ● package timezone and rescheduling › persists the requested timezone when creating a package
+
+    ConflictException: Service pricing, schedule, or catalog has changed since this quote was generated. Please 
+refresh your quote before purchasing.
+
+    [0m [90m 141 |[39m         verification[33m.[39mreason [33m===[39m [32m"USER_MISMATCH"[39m
+     [90m 142 |[39m       ) {
+    [31m[1m>[22m[39m[90m 143 |[39m         [36mthrow[39m [36mnew[39m [33mConflictException[39m({
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 144 |[39m           statusCode[33m:[39m [35m409[39m[33m,[39m
+     [90m 145 |[39m           error[33m:[39m [32m"Conflict"[39m[33m,[39m
+     [90m 146 |[39m           code[33m:[39m [32m"QUOTE_CHANGED"[39m[33m,[39m[0m
+
+      at PackagesService.purchasePackage (src/modules/packages/packages.service.ts:143:15)
+      at Object.<anonymous> (test/package-timezone-reschedule.spec.ts:314:5)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 24 passed, 25 total
+Snapshots:   0 total
+Time:        2.46 s
+Ran all test suites matching /test\\package-timezone-reschedule.spec.ts/i.

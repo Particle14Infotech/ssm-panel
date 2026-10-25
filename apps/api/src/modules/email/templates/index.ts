@@ -6,6 +6,16 @@ interface BaseEmailParams {
   ctaUrl?: string;
 }
 
+export function escapeHtml(str: string): string {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 export function renderBaseLayout(params: BaseEmailParams): string {
   const ctaSection = params.ctaText && params.ctaUrl
     ? `
@@ -233,25 +243,30 @@ export function getOrderRefundTemplate(params: {
   reason: string;
   ordersUrl: string;
 }) {
-  const subject = `Order refund: ${params.amountFormatted} credited for Order #${params.orderId.slice(0, 8)}`;
+  const safeName = escapeHtml(params.name);
+  const safeOrderId = escapeHtml(params.orderId);
+  const safeReason = escapeHtml(params.reason);
+  const safeAmount = escapeHtml(params.amountFormatted);
+
+  const subject = `Order refund: ${safeAmount} credited for Order #${safeOrderId.slice(0, 8)}`;
   const html = renderBaseLayout({
     title: "Order Refund Processed",
-    preheader: `Refund notice: ${params.amountFormatted} returned to your wallet.`,
+    preheader: `Refund notice: ${safeAmount} returned to your wallet.`,
     bodyHtml: `
-      <p style="margin: 0 0 12px 0;">Hello ${params.name},</p>
-      <p style="margin: 0 0 16px 0;">A refund has been issued and credited back to your wallet balance for Order #${params.orderId}.</p>
+      <p style="margin: 0 0 12px 0;">Hello ${safeName},</p>
+      <p style="margin: 0 0 16px 0;">A refund has been issued and credited back to your wallet balance for Order #${safeOrderId}.</p>
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #242424; border-radius: 12px; padding: 16px; margin: 16px 0; font-size: 13px;">
         <tr>
           <td style="padding: 6px 0; color: #c7c8b6;">Order ID:</td>
-          <td align="right" style="padding: 6px 0; color: #ffffff; font-family: monospace; font-size: 11px;">${params.orderId}</td>
+          <td align="right" style="padding: 6px 0; color: #ffffff; font-family: monospace; font-size: 11px;">${safeOrderId}</td>
         </tr>
         <tr>
           <td style="padding: 6px 0; color: #c7c8b6;">Refund Amount:</td>
-          <td align="right" style="padding: 6px 0; color: #D8EC8D; font-weight: 700; font-size: 15px;">${params.amountFormatted}</td>
+          <td align="right" style="padding: 6px 0; color: #D8EC8D; font-weight: 700; font-size: 15px;">${safeAmount}</td>
         </tr>
         <tr>
           <td style="padding: 6px 0; color: #c7c8b6;">Reason:</td>
-          <td align="right" style="padding: 6px 0; color: #ffffff;">${params.reason}</td>
+          <td align="right" style="padding: 6px 0; color: #ffffff;">${safeReason}</td>
         </tr>
       </table>
     `,
@@ -279,15 +294,20 @@ export function getSupportReplyTemplate(params: {
   replyExcerpt: string;
   ticketUrl: string;
 }) {
-  const emailSubject = `Support reply: Ticket #${params.ticketId.slice(0, 8)} - ${params.subject}`;
+  const safeName = escapeHtml(params.name);
+  const safeTicketId = escapeHtml(params.ticketId);
+  const safeSubject = escapeHtml(params.subject);
+  const safeExcerpt = escapeHtml(params.replyExcerpt);
+
+  const emailSubject = `Support reply: Ticket #${safeTicketId.slice(0, 8)} - ${safeSubject}`;
   const html = renderBaseLayout({
     title: "New Support Reply",
-    preheader: `New reply on ticket: ${params.subject}`,
+    preheader: `New reply on ticket: ${safeSubject}`,
     bodyHtml: `
-      <p style="margin: 0 0 12px 0;">Hello ${params.name},</p>
-      <p style="margin: 0 0 16px 0;">A member of our support team has replied to your ticket regarding <strong>${params.subject}</strong>.</p>
+      <p style="margin: 0 0 12px 0;">Hello ${safeName},</p>
+      <p style="margin: 0 0 16px 0;">A member of our support team has replied to your ticket regarding <strong>${safeSubject}</strong>.</p>
       <div style="background-color: #242424; border-left: 3px solid #D8EC8D; border-radius: 0 12px 12px 0; padding: 16px; margin: 16px 0; font-size: 13px; color: #e2e3d8; line-height: 1.5;">
-        ${params.replyExcerpt}
+        ${safeExcerpt}
       </div>
       <p style="margin: 12px 0 0 0; color: #c7c8b6; font-size: 12px;">To view the complete thread or submit additional information, open the ticket link below.</p>
     `,

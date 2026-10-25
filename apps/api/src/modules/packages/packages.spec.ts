@@ -4,6 +4,7 @@ import { PackagesSchedulerService } from "./packages-scheduler.service";
 import { PlatformsService } from "../platforms/platforms.service";
 import { BadRequestException } from "@nestjs/common";
 import { Decimal } from "decimal.js";
+import { calculateFollowersDrip } from "./drip-engine.util";
 
 describe("Custom Platform Package Engine & Invariants", () => {
   let quoteService: PackagesQuoteService;
@@ -96,6 +97,9 @@ describe("Custom Platform Package Engine & Invariants", () => {
               minQty: 100,
               maxQty: 100000,
               status: "ACTIVE",
+              active: true,
+              packageEligible: true,
+              platform: "INSTAGRAM",
             },
           ]),
         },
@@ -157,7 +161,170 @@ describe("Custom Platform Package Engine & Invariants", () => {
       expect(quote.valid).toBe(true);
       expect(quote.items[0].quantityPerPost).toBe(500);
       expect(quote.items[0].maxPosts).toBe(6);
-      expect(quote.disclaimer).toBe("Maximum total; unused is refunded at the end");
+      expect(quote.disclaimer).toBe(
+        "Maximum total; unused balance is automatically refunded to your wallet upon package completion or cancellation."
+      );
+    });
+
+    it("uses the same bounded run calculation for the quote timeline and persisted schedule", async () => {
+      const service = {
+        id: "srv-schedule",
+        name: "Schedule service",
+        displayName: "Schedule service",
+        platform: "INSTAGRAM",
+        ratePer1000: new Decimal(120),
+        minQty: 10,
+        maxQty: 500000,
+        status: "ACTIVE",
+        active: true,
+        packageEligible: true,
+      };
+      const connectedPrisma = {
+        isConnected: true,
+        package: { findFirst: jest.fn().mockResolvedValue(null) },
+        service: { findMany: jest.fn().mockResolvedValue([service]) },
+      } as any;
+      const quote = await new PackagesQuoteService(connectedPrisma).calculateQuote({
+        platform: "instagram",
+        handle: "schedule_test",
+        timezone: "UTC",
+        followersDrip: {
+          serviceId: service.id,
+          quantity: 10000,
+          days: 7,
+          intervalHours: 16,
+        },
+      });
+      const persistedSchedule = calculateFollowersDrip({
+        totalQuantity: quote.items[0].totalQuantity,
+        serviceMin: quote.items[0].minQty!,
+        serviceMax: quote.items[0].maxQty!,
+        days: quote.days,
+        intervalHours: 16,
+        ratePer1000: quote.items[0].ratePer1000,
+        startAt: new Date(quote.timeline[0].scheduledAt),
+      });
+
+      expect(quote.timeline).toHaveLength(10);
+      expect(quote.timeline.map((run) => ({
+        quantity: run.quantity,
+        chargeShare: run.chargeShare,
+        scheduledAt: run.scheduledAt,
+      }))).toEqual(persistedSchedule.runs.map((run) => ({
+        quantity: run.quantity,
+        chargeShare: run.allocatedCharge,
+        scheduledAt: run.executeAt.toISOString(),
+      })));
+    });
+
+    it("persists the exact schedule returned by the quote", async () => {
+      const fixedStart = new Date("2026-10-23T08:00:00.000Z");
+      jest.useFakeTimers().setSystemTime(fixedStart);
+      try {
+        const input = {
+          days: 7,
+          platform: "instagram" as const,
+          handle: "schedule_match",
+          timezone: "UTC",
+          items: [
+            {
+              serviceId: "srv-schedule-match",
+              target: "https://instagram.com/schedule_match",
+              targetType: "PROFILE" as const,
+              quantity: 700,
+            },
+          ],
+        };
+        const quote = await quoteService.calculateQuote(input, fixedStart);
+        const purchased = await packagesService.purchasePackage(
+          "user-schedule",
+          {
+            ...input,
+            consentRulesUnderstood: true,
+            idempotencyKey: "idem_schedule_match",
+          },
+        );
+
+        expect(purchased.package.executions).toEqual(quote.timeline);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("rejects package services that are ineligible or belong to another platform", async () => {
+      const baseService = {
+        id: "srv-invalid",
+        name: "Invalid package service",
+        displayName: "Invalid package service",
+        platform: "INSTAGRAM",
+        ratePer1000: new Decimal(120),
+        minQty: 10,
+        maxQty: 500000,
+        status: "ACTIVE",
+        active: true,
+        packageEligible: true,
+      };
+      const input = {
+        platform: "instagram" as const,
+        handle: "schedule_test",
+        timezone: "UTC",
+        followersDrip: {
+          serviceId: baseService.id,
+          quantity: 1000,
+          days: 1,
+          intervalHours: 24,
+        },
+      };
+
+      for (const service of [
+        { ...baseService, packageEligible: false },
+        { ...baseService, platform: "YOUTUBE" },
+        { ...baseService, active: false },
+        { ...baseService, status: "INACTIVE" },
+      ]) {
+        const connectedPrisma = {
+          isConnected: true,
+          package: { findFirst: jest.fn().mockResolvedValue(null) },
+          service: { findMany: jest.fn().mockResolvedValue([service]) },
+        } as any;
+        await expect(
+          new PackagesQuoteService(connectedPrisma).calculateQuote(input)
+        ).rejects.toThrow(BadRequestException);
+      }
+    });
+
+    it("rejects time-drip quantities that cannot fit the per-run service maximum", async () => {
+      const service = {
+        id: "srv-max",
+        name: "Maximum-limited service",
+        displayName: "Maximum-limited service",
+        platform: "INSTAGRAM",
+        ratePer1000: new Decimal(120),
+        minQty: 10,
+        maxQty: 500000,
+        status: "ACTIVE",
+        active: true,
+        packageEligible: true,
+      };
+      const connectedPrisma = {
+        isConnected: true,
+        package: { findFirst: jest.fn().mockResolvedValue(null) },
+        service: { findMany: jest.fn().mockResolvedValue([service]) },
+      } as any;
+
+      await expect(
+        new PackagesQuoteService(connectedPrisma).calculateQuote({
+          platform: "instagram",
+          handle: "schedule_test",
+          timezone: "UTC",
+          followersDrip: {
+            serviceId: service.id,
+            quantity: 600000,
+            days: 1,
+            intervalHours: 24,
+          },
+        })
+      ).rejects.toThrow("cannot be split into runs");
     });
   });
 

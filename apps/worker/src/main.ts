@@ -1,5 +1,12 @@
 import dotenv from "dotenv";
-import { PrismaClient, OrderStatus, OutboxStatus } from "@prisma/client";
+import {
+  PrismaClient,
+  OrderStatus,
+  OutboxStatus,
+  ExecutionSource,
+  PackageExecutionStatus,
+  PackageStatus,
+} from "@prisma/client";
 import Redis from "ioredis";
 import { Queue, Worker as BullWorker, Job } from "bullmq";
 import pino from "pino";
@@ -13,6 +20,7 @@ import {
   EmailSendOptions,
   isLinkRestrictionError,
   aggregateRunStatuses,
+  PACKAGE_PROVIDER_STATUS_STALLED_REASON,
 } from "@smm/contracts";
 
 dotenv.config();
@@ -26,9 +34,26 @@ const prisma = new PrismaClient();
 
 const MAX_OUTBOX_ATTEMPTS = 5;
 const BASE_BACKOFF_MS = 1000;
+const ORDER_RUN_CLAIM_STALE_MS = 2 * 60 * 1000;
+const PACKAGE_PROVIDER_STATUS_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const PACKAGE_PROVIDER_OUTCOME_UNCERTAIN_REASON =
+  "Provider outcome is uncertain; automatic resubmission is blocked.";
+
+function packageExecutionStatusFromOrderStatus(
+  status: OrderStatus
+): PackageExecutionStatus | null {
+  if (status === OrderStatus.COMPLETED) return PackageExecutionStatus.COMPLETED;
+  if (status === OrderStatus.PARTIAL) return PackageExecutionStatus.PARTIAL;
+  if (status === OrderStatus.FAILED) return PackageExecutionStatus.FAILED;
+  if (status === OrderStatus.CANCELLED || status === OrderStatus.REFUNDED) {
+    return PackageExecutionStatus.CANCELLED;
+  }
+  return null;
+}
 
 export class SMMWorkerEngine {
   private isRunning = false;
+  private providerHealthTelemetryCache = new Map<string, number>();
   private pollInterval: NodeJS.Timeout | null = null;
   private syncInterval: NodeJS.Timeout | null = null;
   private dripRunInterval: NodeJS.Timeout | null = null;
@@ -177,7 +202,7 @@ export class SMMWorkerEngine {
       }
     }, 15000);
 
-    // 7. Package Engine Execution Dispatcher Daemon (FOR UPDATE SKIP LOCKED)
+    // 7. Package Engine Execution Dispatcher Daemon
     this.packageExecutionInterval = setInterval(async () => {
       if (!this.isRunning) return;
       try {
@@ -321,14 +346,19 @@ export class SMMWorkerEngine {
   /**
    * Dispatches order to upstream SMM provider
    */
-  async dispatchOrderToProvider(orderId: string) {
-    const order = await prisma.order.findUnique({
+  async dispatchOrderToProvider(orderId: string, database: PrismaClient = prisma) {
+    const order = await database.order.findUnique({
       where: { id: orderId },
       include: {
         service: true,
         provider: true,
       },
     });
+
+    if (order?.packageExecutionId && process.env.PACKAGES_ENABLED !== "true") {
+      logger.info(`[Worker] Package order #${order.id} not dispatched because PACKAGES_ENABLED is off.`);
+      return;
+    }
 
     if (!order || order.status !== OrderStatus.PENDING) {
       return;
@@ -339,11 +369,11 @@ export class SMMWorkerEngine {
     // Managed drip-feed orders are dispatched run-by-run through the scheduler
     if ((order as any).dripMode === "MANAGED") {
       logger.info(`[Worker Engine] Order #${order.id} is MANAGED drip-feed. Transitioning to IN_PROGRESS and scheduling runs.`);
-      await prisma.order.update({
+      await database.order.update({
         where: { id: order.id },
         data: { status: OrderStatus.IN_PROGRESS },
       });
-      await prisma.orderStatusHistory.create({
+      await database.orderStatusHistory.create({
         data: {
           orderId: order.id,
           status: OrderStatus.IN_PROGRESS,
@@ -352,6 +382,32 @@ export class SMMWorkerEngine {
       });
       await this.pollAndDispatchDueRuns();
       return;
+    }
+
+    const isPackageExecutionOrder = Boolean(order.packageExecutionId);
+    if (isPackageExecutionOrder) {
+      const claimed = await database.$transaction(async (tx) => {
+        const result = await tx.order.updateMany({
+          where: {
+            id: order.id,
+            status: OrderStatus.PENDING,
+            packageExecutionId: { not: null },
+          },
+          data: { status: OrderStatus.PROCESSING },
+        });
+        if (result.count !== 1) return false;
+
+        await tx.orderStatusHistory.create({
+          data: {
+            orderId: order.id,
+            status: OrderStatus.PROCESSING,
+            notes: "Package execution provider dispatch claimed.",
+          },
+        });
+        return true;
+      });
+      if (!claimed) return;
+      order.status = OrderStatus.PROCESSING;
     }
 
     let providerOrderId: string | null = null;
@@ -372,13 +428,34 @@ export class SMMWorkerEngine {
         );
       } catch (err: any) {
         logger.error(`[Worker Engine] Upstream provider dispatch failed for #${order.id}: ${err.message}`);
+        if (isPackageExecutionOrder) {
+          await database.$transaction(async (tx) => {
+            await tx.packageExecution.updateMany({
+              where: {
+                id: order.packageExecutionId!,
+                orderId: order.id,
+                status: PackageExecutionStatus.DISPATCHED,
+              },
+              data: { skipReason: PACKAGE_PROVIDER_OUTCOME_UNCERTAIN_REASON },
+            });
+            await tx.orderStatusHistory.create({
+              data: {
+                orderId: order.id,
+                status: OrderStatus.PROCESSING,
+                notes: `${PACKAGE_PROVIDER_OUTCOME_UNCERTAIN_REASON} ${err.message}`,
+              },
+            });
+          });
+          return;
+        }
+
         const isUpstreamError = err.message && err.message.includes("Upstream provider error:");
         const service = order.service as any;
 
         // Hybrid Auto-Failover: If primary provider rejects with low balance or error, attempt backup provider
         if (isUpstreamError && service?.routingMode === "AUTO_FAILOVER" && service?.backupProviderId) {
           try {
-            const backupProvider = await prisma.provider.findUnique({
+            const backupProvider = await database.provider.findUnique({
               where: { id: service.backupProviderId },
             });
             if (backupProvider && backupProvider.active && service.backupProviderServiceId) {
@@ -397,8 +474,8 @@ export class SMMWorkerEngine {
               );
 
               // Update order to reference the backup provider and proceed to PROCESSING
-              await prisma.$transaction([
-                prisma.order.update({
+              await database.$transaction([
+                database.order.update({
                   where: { id: order.id },
                   data: {
                     providerId: backupProvider.id,
@@ -407,7 +484,7 @@ export class SMMWorkerEngine {
                     startCount: 0,
                   },
                 }),
-                prisma.orderStatusHistory.create({
+                database.orderStatusHistory.create({
                   data: {
                     orderId: order.id,
                     status: OrderStatus.PROCESSING,
@@ -429,19 +506,29 @@ export class SMMWorkerEngine {
           await this.handleFinalOrderFailure(order.id, err.message);
           return;
         }
-        await prisma.orderStatusHistory.create({
-          data: {
-            orderId: order.id,
-            status: OrderStatus.PENDING,
-            notes: `Dispatch attempt failed: ${err.message}`,
-          },
-        }).catch(() => null);
+        if (isPackageExecutionOrder) {
+          await database.orderStatusHistory.create({
+            data: {
+              orderId: order.id,
+              status: OrderStatus.PROCESSING,
+              notes: `Package provider outcome is uncertain; automatic retries are suppressed to prevent duplicate fulfillment. ${err.message}`,
+            },
+          });
+        } else {
+          await database.orderStatusHistory.create({
+            data: {
+              orderId: order.id,
+              status: OrderStatus.PENDING,
+              notes: `Dispatch attempt failed: ${err.message}`,
+            },
+          }).catch(() => null);
+        }
         throw err;
       }
     } else {
       // Internal or simulated fulfillment
       providerOrderId = `sim_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
-      await prisma.orderProviderEvent.create({
+      await database.orderProviderEvent.create({
         data: {
           orderId: order.id,
           providerId: order.provider?.id || null,
@@ -460,8 +547,8 @@ export class SMMWorkerEngine {
     }
 
     // Update order status to PROCESSING and record history
-    await prisma.$transaction([
-      prisma.order.update({
+    await database.$transaction([
+      database.order.update({
         where: { id: order.id },
         data: {
           status: OrderStatus.PROCESSING,
@@ -469,13 +556,26 @@ export class SMMWorkerEngine {
           startCount: 0,
         },
       }),
-      prisma.orderStatusHistory.create({
+      database.orderStatusHistory.create({
         data: {
           orderId: order.id,
           status: OrderStatus.PROCESSING,
           notes: `Dispatched to upstream provider. Upstream Reference ID: ${providerOrderId}`,
         },
       }),
+      ...(isPackageExecutionOrder
+        ? [
+            database.packageExecution.updateMany({
+              where: {
+                id: order.packageExecutionId!,
+                orderId: order.id,
+                status: PackageExecutionStatus.DISPATCHED,
+                skipReason: PACKAGE_PROVIDER_OUTCOME_UNCERTAIN_REASON,
+              },
+              data: { skipReason: null },
+            }),
+          ]
+        : []),
     ]);
 
     logger.info(`[Worker Engine] Order #${order.id} transitioned to PROCESSING (Upstream ID: ${providerOrderId})`);
@@ -583,13 +683,21 @@ export class SMMWorkerEngine {
   /**
    * Periodic daemon polling non-final orders and updating statuses
    */
-  async syncNonFinalOrders() {
-    const activeOrders = await prisma.order.findMany({
+  async syncNonFinalOrders(database: PrismaClient = prisma) {
+    const activeOrders = await database.order.findMany({
       where: {
         status: { in: [OrderStatus.PROCESSING, OrderStatus.IN_PROGRESS] },
+        NOT: {
+          packageExecution: {
+            is: { skipReason: PACKAGE_PROVIDER_STATUS_STALLED_REASON },
+          },
+        },
       },
       include: {
         provider: true,
+        packageExecution: {
+          select: { status: true, skipReason: true },
+        },
       },
       take: 20,
       orderBy: { updatedAt: "asc" },
@@ -608,6 +716,35 @@ export class SMMWorkerEngine {
         const stuckThresholdMs = (baseWatchdogMinutes + dripDurationMinutes) * 60 * 1000;
         const orderAgeMs = Date.now() - new Date(order.createdAt).getTime();
 
+        if (
+          order.packageExecution?.skipReason ===
+          PACKAGE_PROVIDER_STATUS_STALLED_REASON
+        ) {
+          continue;
+        }
+
+        if (
+          order.packageExecutionId &&
+          order.providerOrderId &&
+          order.packageExecution?.status === PackageExecutionStatus.DISPATCHED &&
+          orderAgeMs >= PACKAGE_PROVIDER_STATUS_MAX_AGE_MS
+        ) {
+          const stalled = await database.packageExecution.updateMany({
+            where: {
+              id: order.packageExecutionId,
+              orderId: order.id,
+              status: PackageExecutionStatus.DISPATCHED,
+            },
+            data: { skipReason: PACKAGE_PROVIDER_STATUS_STALLED_REASON },
+          });
+          if (stalled.count > 0) {
+            logger.warn(
+              `[Worker Watchdog] Paused provider status polling for package order #${order.id} after 24 hours without a terminal result.`
+            );
+          }
+          continue;
+        }
+
         if (orderAgeMs > stuckThresholdMs) {
           logger.warn(
             `[Worker Watchdog] Order #${order.id} exceeded stuck threshold (${Math.round(stuckThresholdMs / 60000)} mins). Age: ${Math.round(orderAgeMs / 60000)} mins. Flagging for review.`
@@ -622,11 +759,26 @@ export class SMMWorkerEngine {
 
         if (order.provider && order.providerOrderId && order.provider.active) {
           const apiKey = decryptProviderKey(order.provider.apiKeyEncrypted);
-          const statusRes = await this.callUpstreamOrderStatus(order.provider.apiUrl, apiKey, order.providerOrderId);
+          const statusRes = await this.callUpstreamOrderStatus(
+            order.provider.apiUrl,
+            apiKey,
+            order.providerOrderId,
+            order.provider.id
+          );
           await this.applyStatusTransition(order, statusRes);
+        } else if (
+          order.packageExecutionId &&
+          (order.providerId || order.provider)
+        ) {
+          // Package orders tied to an upstream provider must never be simulated.
+          await this.syncPackageExecutionStatus(order.id, database);
+          continue;
         } else {
           // Simulated progress for internal/sandbox orders
           await this.simulateOrderProgression(order);
+        }
+        if (order.packageExecutionId) {
+          await this.syncPackageExecutionStatus(order.id, database);
         }
       } catch (err: any) {
         logger.error(`[Worker Sync] Error syncing status for order #${order.id}: ${err.message}`);
@@ -635,7 +787,7 @@ export class SMMWorkerEngine {
 
     // 2. Sync active managed runs with provider
     try {
-      const activeRuns = await prisma.orderRun.findMany({
+      const activeRuns = await database.orderRun.findMany({
         where: {
           status: "PROCESSING" as any,
           providerOrderId: { not: null },
@@ -652,7 +804,12 @@ export class SMMWorkerEngine {
         if (!run.order.provider || !run.providerOrderId || !run.order.provider.active) continue;
         try {
           const apiKey = decryptProviderKey(run.order.provider.apiKeyEncrypted);
-          const statusRes = await this.callUpstreamOrderStatus(run.order.provider.apiUrl, apiKey, run.providerOrderId);
+          const statusRes = await this.callUpstreamOrderStatus(
+            run.order.provider.apiUrl,
+            apiKey,
+            run.providerOrderId,
+            run.order.provider.id
+          );
 
           if (statusRes.error) {
             logger.warn(`[Run Sync] Provider error for run #${run.id}: ${statusRes.error}`);
@@ -661,13 +818,13 @@ export class SMMWorkerEngine {
 
           const rawStatus = (statusRes.status || "").toLowerCase();
           if (rawStatus.includes("complete")) {
-            await prisma.orderRun.update({
+            await database.orderRun.update({
               where: { id: run.id },
               data: { status: "COMPLETED" as any, delivered: run.quantity },
             });
             await this.aggregateParentOrderStatus(run.orderId);
           } else if (rawStatus.includes("cancel")) {
-            await prisma.orderRun.update({
+            await database.orderRun.update({
               where: { id: run.id },
               data: { status: "CANCELED" as any, lastError: "Cancelled upstream" },
             });
@@ -676,7 +833,7 @@ export class SMMWorkerEngine {
           } else if (rawStatus.includes("partial")) {
             const remains = statusRes.remains !== undefined ? parseInt(String(statusRes.remains), 10) : 0;
             const delivered = Math.max(0, run.quantity - remains);
-            await prisma.orderRun.update({
+            await database.orderRun.update({
               where: { id: run.id },
               data: { status: "PARTIAL" as any, delivered },
             });
@@ -695,6 +852,64 @@ export class SMMWorkerEngine {
       }
     } catch (err: any) {
       logger.error(`[Run Sync] Error during managed runs sync: ${err.message}`);
+    }
+  }
+
+  async syncPackageExecutionStatus(orderId: string, database: PrismaClient = prisma) {
+    const order = await database.order.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        packageExecutionId: true,
+        status: true,
+        remains: true,
+        providerOrderId: true,
+      },
+    });
+    if (!order?.packageExecutionId) return;
+
+    const status = packageExecutionStatusFromOrderStatus(order.status);
+    const data: {
+      status?: PackageExecutionStatus;
+      remainingQuantity: number;
+      skipReason?: string | null;
+    } = {
+      remainingQuantity: order.remains,
+    };
+    if (status) {
+      data.status = status;
+      data.skipReason = null;
+    } else if (
+      !order.providerOrderId &&
+      (order.status === OrderStatus.PROCESSING ||
+        order.status === OrderStatus.IN_PROGRESS)
+    ) {
+      data.skipReason = PACKAGE_PROVIDER_OUTCOME_UNCERTAIN_REASON;
+    }
+
+    const synced = await database.packageExecution.updateMany({
+      where: {
+        id: order.packageExecutionId,
+        orderId: order.id,
+        status: PackageExecutionStatus.DISPATCHED,
+      },
+      data,
+    });
+
+    if (
+      synced.count === 1 &&
+      !status &&
+      order.providerOrderId
+    ) {
+      await database.packageExecution.updateMany({
+        where: {
+          id: order.packageExecutionId,
+          orderId: order.id,
+          status: PackageExecutionStatus.DISPATCHED,
+          skipReason: PACKAGE_PROVIDER_OUTCOME_UNCERTAIN_REASON,
+        },
+        data: { skipReason: null },
+      });
     }
   }
 
@@ -944,36 +1159,49 @@ export class SMMWorkerEngine {
   /**
    * Panel-Managed Drip-Feed: Poll and dispatch due runs
    */
-  async pollAndDispatchDueRuns() {
-    let dueRuns: any[] = [];
-    try {
-      dueRuns = await prisma.$queryRawUnsafe<any[]>(`
-        SELECT r.id, r."orderId", r."runIndex", r.quantity, r."scheduledAt", r.attempts, r."chargeShare"
-        FROM "OrderRun" r
-        JOIN "Order" o ON o.id = r."orderId"
-        WHERE r.status = 'SCHEDULED'
-          AND r."scheduledAt" <= NOW()
-          AND (r."nextAttemptAt" IS NULL OR r."nextAttemptAt" <= NOW())
-          AND o.status IN ('PENDING', 'PROCESSING', 'IN_PROGRESS')
-        ORDER BY r."scheduledAt" ASC
-        LIMIT 50
-        FOR UPDATE OF r SKIP LOCKED
-      `);
-    } catch {
-      dueRuns = await prisma.orderRun.findMany({
+  async pollAndDispatchDueRuns(database: PrismaClient = prisma) {
+    const { dueRuns, staleCount } = await database.$transaction(async (tx) => {
+      const staleRuns = await tx.orderRun.updateMany({
         where: {
-          status: "SCHEDULED" as any,
-          scheduledAt: { lte: new Date() },
-          OR: [{ nextAttemptAt: null }, { nextAttemptAt: { lte: new Date() } }],
-          order: {
-            status: { in: [OrderStatus.PENDING, OrderStatus.PROCESSING, OrderStatus.IN_PROGRESS] },
-          },
+          status: "DISPATCHING" as any,
+          updatedAt: { lte: new Date(Date.now() - ORDER_RUN_CLAIM_STALE_MS) },
         },
-        take: 50,
-        orderBy: { scheduledAt: "asc" },
+        data: {
+          status: "UNCERTAIN" as any,
+          lastError: "Dispatch claim expired; provider outcome requires reconciliation.",
+        },
       });
-    }
 
+      const claimedRuns = await tx.$queryRawUnsafe<any[]>(`
+        WITH due_runs AS (
+          SELECT r.id
+          FROM "OrderRun" r
+          JOIN "Order" o ON o.id = r."orderId"
+          WHERE r.status = 'SCHEDULED'
+            AND r."scheduledAt" <= NOW()
+            AND (r."nextAttemptAt" IS NULL OR r."nextAttemptAt" <= NOW())
+            AND o.status IN ('PENDING', 'PROCESSING', 'IN_PROGRESS')
+          ORDER BY r."scheduledAt" ASC
+          LIMIT 50
+          FOR UPDATE OF r SKIP LOCKED
+        )
+        UPDATE "OrderRun" AS r
+        SET status = 'DISPATCHING', "updatedAt" = NOW()
+        FROM due_runs
+        WHERE r.id = due_runs.id
+          AND r.status = 'SCHEDULED'
+        RETURNING r.id, r."orderId", r."runIndex", r.quantity, r."scheduledAt",
+                  r.attempts, r."chargeShare", r.status
+      `);
+
+      return { dueRuns: claimedRuns, staleCount: staleRuns.count };
+    });
+
+    if (staleCount > 0) {
+      logger.warn(
+        `[Drip Scheduler] Moved ${staleCount} stale dispatch claim(s) to UNCERTAIN; automatic redispatch is suppressed.`
+      );
+    }
     if (!dueRuns || dueRuns.length === 0) return;
 
     logger.info(`[Drip Scheduler] Found ${dueRuns.length} due run(s) to dispatch.`);
@@ -985,12 +1213,11 @@ export class SMMWorkerEngine {
   /**
    * Dispatches a single OrderRun to the upstream provider
    */
-  async dispatchSingleRun(run: any) {
-    // 1. Persist DISPATCHING status before calling provider to prevent double-dispatches
-    await prisma.orderRun.update({
-      where: { id: run.id },
-      data: { status: "DISPATCHING" as any },
-    });
+   async dispatchSingleRun(run: any) {
+     if (run.status !== "DISPATCHING") {
+       logger.warn(`[Drip Scheduler] Refusing to dispatch unclaimed run #${run.id}.`);
+       return;
+     }
 
     const order = await prisma.order.findUnique({
       where: { id: run.orderId },
@@ -1329,7 +1556,8 @@ export class SMMWorkerEngine {
   async callUpstreamOrderStatus(
     apiUrl: string,
     apiKey: string,
-    orderId: string
+    orderId: string,
+    providerId?: string
   ): Promise<{ status?: string; start_count?: number; remains?: number; error?: string }> {
     if (apiUrl.includes("example.com") || apiUrl.includes("test") || apiUrl.startsWith("simulated://")) {
       return { status: "Completed", start_count: 50, remains: 0 };
@@ -1341,18 +1569,80 @@ export class SMMWorkerEngine {
       order: orderId,
     };
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams(payload as any).toString(),
-      signal: AbortSignal.timeout(15000),
-    });
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(payload as any).toString(),
+        signal: AbortSignal.timeout(15000),
+      });
 
-    if (!response.ok) {
-      throw new Error(`Upstream SMM API status check returned HTTP ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`Upstream SMM API status check returned HTTP ${response.status}`);
+      }
+
+      const status = (await response.json()) as any;
+      if (providerId) {
+        await this.recordProviderStatusCheck(providerId, true);
+      }
+      return status;
+    } catch (err: any) {
+      if (providerId) {
+        await this.recordProviderStatusCheck(providerId, false, err.message);
+      }
+      throw err;
     }
+  }
 
-    return (await response.json()) as any;
+  private async recordProviderStatusCheck(
+    providerId: string,
+    success: boolean,
+    error?: string,
+    database: PrismaClient = prisma
+  ) {
+    const now = new Date();
+    const cacheKey = `${providerId}:${success ? "success" : "failure"}`;
+    const minimumIntervalMs = success ? 5 * 60 * 1000 : 60 * 1000;
+    const lastRecordedAt = this.providerHealthTelemetryCache.get(cacheKey) || 0;
+    if (now.getTime() - lastRecordedAt < minimumIntervalMs) return;
+    this.providerHealthTelemetryCache.set(cacheKey, now.getTime());
+
+    try {
+      await database.provider.updateMany({
+        where: success
+          ? {
+              id: providerId,
+              OR: [
+                { consecutiveStatusFailures: { gt: 0 } },
+                { lastStatusCheckAt: null },
+                { lastStatusCheckAt: { lte: new Date(now.getTime() - 5 * 60 * 1000) } },
+              ],
+            }
+          : {
+              id: providerId,
+              OR: [
+                { lastStatusCheckAt: null },
+                { lastStatusCheckAt: { lte: new Date(now.getTime() - 60 * 1000) } },
+              ],
+            },
+        data: success
+          ? {
+              consecutiveStatusFailures: 0,
+              lastStatusCheckAt: now,
+              lastStatusCheckError: null,
+            }
+          : {
+              consecutiveStatusFailures: { increment: 1 },
+              lastStatusCheckAt: now,
+              lastStatusCheckError: error?.slice(0, 500) || "Provider status check failed.",
+            },
+      });
+    } catch (telemetryError: any) {
+      logger.warn(
+        { err: telemetryError.message, providerId },
+        "[Provider Health] Unable to update provider status-check telemetry."
+      );
+    }
   }
 
   async stop() {
@@ -1518,145 +1808,259 @@ export class SMMWorkerEngine {
 
   /**
    * Package Engine: Polls due SCHEDULED executions and dispatches them via prepaid child orders.
-   * Concurrency safe via FOR UPDATE SKIP LOCKED.
+   * Package/execution row locks serialize rescheduling and dispatch; order, state, and outbox writes commit together.
    */
-  async pollAndDispatchPackageExecutions() {
-    let dueExecutions: any[] = [];
-    const now = new Date();
-    try {
-      dueExecutions = await prisma.$queryRawUnsafe<any[]>(`
-        SELECT 
-          e.id,
-          e."packageId",
-          e."ruleId",
-          e.source,
-          e.seq,
-          e.quantity,
-          e."allocatedCharge",
-          e."executeAt",
-          e."targetUrl",
-          e."mediaKey",
-          p."userId",
-          p.handle,
-          p.platform,
-          p.status as "packageStatus",
-          p."endAt" as "packageEndAt",
-          r."serviceId",
-          s."providerId",
-          s."providerServiceId"
-        FROM "PackageExecution" e
-        JOIN "Package" p ON e."packageId" = p.id
-        JOIN "PackageRule" r ON e."ruleId" = r.id
-        JOIN "Service" s ON r."serviceId" = s.id
-        WHERE e.status = 'SCHEDULED'
-          AND e."executeAt" <= $1
-        ORDER BY e."executeAt" ASC
-        LIMIT 25
-        FOR UPDATE OF e SKIP LOCKED
-      `, now);
-    } catch {
-      dueExecutions = await prisma.packageExecution.findMany({
-        where: {
-          status: "SCHEDULED" as any,
-          executeAt: { lte: now },
-        },
-        include: {
-          package: true,
-          rule: { include: { service: true } },
-        },
-        take: 25,
-        orderBy: { executeAt: "asc" },
-      });
+  async pollAndDispatchPackageExecutions(database: PrismaClient = prisma) {
+    if (process.env.NODE_ENV === "production" || process.env.PACKAGES_ENABLED !== "true") {
+      return { dispatchedCount: 0, errorsCount: 0 };
     }
 
-    if (!dueExecutions || dueExecutions.length === 0) return;
+    const allowlistEnv = process.env.PACKAGES_ALLOWED_USER_IDS;
+    const allowedUserIds = (allowlistEnv && allowlistEnv.trim() !== "" && allowlistEnv.trim() !== "*")
+      ? allowlistEnv.split(",").map((id) => id.trim()).filter(Boolean)
+      : null;
 
-    logger.info(`[Package Engine] Processing ${dueExecutions.length} due package execution(s)`);
+    const whereClause: any = {
+      status: PackageExecutionStatus.SCHEDULED,
+      executeAt: { lte: new Date() },
+    };
+    if (allowedUserIds) {
+      whereClause.package = { userId: { in: allowedUserIds } };
+    }
 
-    for (const exec of dueExecutions) {
+    const dueCandidates = await database.packageExecution.findMany({
+      where: whereClause,
+      select: { id: true, packageId: true },
+      take: 25,
+      orderBy: { executeAt: "asc" },
+    });
+    let dispatchedCount = 0;
+    let errorsCount = 0;
+
+    for (const candidate of dueCandidates) {
       try {
-        const packageStatus = exec.packageStatus || exec.package?.status;
-        const packageEndAt = exec.packageEndAt || exec.package?.endAt;
-        const userId = exec.userId || exec.package?.userId;
-        const handle = exec.handle || exec.package?.handle;
-        const platform = (exec.platform || exec.package?.platform || "instagram").toLowerCase();
-        const serviceId = exec.serviceId || exec.rule?.serviceId;
-        const providerId = exec.providerId || exec.rule?.service?.providerId;
-        const targetUrl = exec.targetUrl || exec.targetUrl;
+        const dispatched = await database.$transaction(async (tx) => {
+          const [pkg] = await tx.$queryRawUnsafe<Array<{
+            status: PackageStatus;
+            endAt: Date;
+          }>>(
+            `SELECT status, "endAt"
+             FROM "Package"
+             WHERE id = $1
+             FOR UPDATE`,
+            candidate.packageId
+          );
+          if (!pkg) return false;
 
-        // 1. Status checks
-        if (packageStatus === "CANCELLED") {
-          await prisma.packageExecution.update({
-            where: { id: exec.id },
-            data: { status: "CANCELLED" as any, skipReason: "Package cancelled" },
-          });
-          continue;
-        }
+          const [execution] = await tx.$queryRawUnsafe<Array<{
+            id: string;
+            packageId: string;
+            ruleId: string;
+            source: ExecutionSource;
+            seq: number;
+            quantity: number;
+            allocatedCharge: { toString(): string };
+            executeAt: Date;
+            skipReason: string | null;
+            targetUrl: string | null;
+            userId: string;
+            handle: string;
+            platform: string;
+            serviceId: string;
+            providerId: string | null;
+          }>>(
+            `SELECT e.id, e."packageId", e."ruleId", e.source, e.seq, e.quantity,
+                    e."allocatedCharge", e."executeAt", e."skipReason", e."targetUrl",
+                    p."userId", p.handle, p.platform,
+                    r."serviceId", s."providerId"
+             FROM "PackageExecution" e
+             JOIN "Package" p ON p.id = e."packageId"
+             JOIN "PackageRule" r ON r.id = e."ruleId"
+             JOIN "Service" s ON s.id = r."serviceId"
+             WHERE e.id = $1 AND e."packageId" = $2
+               AND e.status = 'SCHEDULED' AND e."executeAt" <= $3
+             FOR UPDATE OF e SKIP LOCKED`,
+            candidate.id,
+            candidate.packageId,
+            new Date()
+          );
+          if (!execution) return false;
 
-        if (packageStatus === "PAUSED") {
-          await prisma.packageExecution.update({
-            where: { id: exec.id },
-            data: { status: "SKIPPED_PAUSED" as any, skipReason: "Package paused" },
-          });
-          continue;
-        }
-
-        if (now > new Date(packageEndAt)) {
-          await prisma.packageExecution.update({
-            where: { id: exec.id },
-            data: { status: "CANCELLED" as any, skipReason: "Package duration expired" },
-          });
-          continue;
-        }
-
-        // 2. Target URL
-        let target = targetUrl;
-        if (!target || target.trim() === "") {
-          const rawHandle = (handle || "").replace(/^@/, "");
-          if (rawHandle.startsWith("http")) {
-            target = rawHandle;
-          } else if (platform === "x") {
-            target = `https://x.com/${rawHandle}`;
-          } else if (platform === "tiktok") {
-            target = `https://tiktok.com/@${rawHandle}`;
-          } else if (platform === "youtube") {
-            target = `https://youtube.com/@${rawHandle}`;
-          } else if (platform === "facebook") {
-            target = `https://facebook.com/${rawHandle}`;
-          } else if (platform === "telegram") {
-            target = `https://t.me/${rawHandle}`;
-          } else {
-            target = `https://instagram.com/${rawHandle}`;
+          if (pkg.status === PackageStatus.PAUSED) {
+            await tx.packageExecution.updateMany({
+              where: {
+                id: execution.id,
+                status: PackageExecutionStatus.SCHEDULED,
+              },
+              data: {
+                status: PackageExecutionStatus.SKIPPED_PAUSED,
+                skipReason: "Package is currently paused",
+              },
+            });
+            return false;
           }
-        }
 
-        const allocatedCharge = new Decimal(exec.allocatedCharge.toString());
+          if (pkg.status !== PackageStatus.ACTIVE) {
+            await tx.packageExecution.updateMany({
+              where: {
+                id: execution.id,
+                status: PackageExecutionStatus.SCHEDULED,
+              },
+              data: {
+                status: PackageExecutionStatus.CANCELLED,
+                skipReason: pkg.status === PackageStatus.CANCELLED
+                  ? "Package cancelled"
+                  : `Package is ${pkg.status.toLowerCase()}`,
+              },
+            });
+            return false;
+          }
 
-        // 4. Create child order (prepaid, real charge) and outbox event in one transaction
-        await prisma.$transaction(async (tx) => {
+          if (new Date(pkg.endAt).getTime() <= Date.now()) {
+            await tx.packageExecution.updateMany({
+              where: {
+                id: execution.id,
+                status: PackageExecutionStatus.SCHEDULED,
+              },
+              data: {
+                status: PackageExecutionStatus.CANCELLED,
+                skipReason: "Package duration expired",
+              },
+            });
+            return false;
+          }
+
+          if (execution.source === ExecutionSource.SCHEDULE && execution.seq > 1) {
+            const predecessor = await tx.packageExecution.findFirst({
+              where: {
+                packageId: execution.packageId,
+                ruleId: execution.ruleId,
+                source: ExecutionSource.SCHEDULE,
+                seq: { lt: execution.seq },
+              },
+              orderBy: { seq: "desc" },
+              select: {
+                id: true,
+                status: true,
+                order: { select: { status: true } },
+              },
+            });
+
+            if (predecessor) {
+              let predecessorStatus = predecessor.status;
+              if (
+                predecessorStatus === PackageExecutionStatus.DISPATCHED &&
+                predecessor.order
+              ) {
+                const terminalStatus = packageExecutionStatusFromOrderStatus(
+                  predecessor.order.status
+                );
+                if (terminalStatus) {
+                  await tx.packageExecution.updateMany({
+                    where: {
+                      id: predecessor.id,
+                      status: PackageExecutionStatus.DISPATCHED,
+                    },
+                    data: { status: terminalStatus, skipReason: null },
+                  });
+                  predecessorStatus = terminalStatus;
+                }
+              }
+
+              const predecessorAllowsNextRun = new Set<PackageExecutionStatus>([
+                PackageExecutionStatus.COMPLETED,
+                PackageExecutionStatus.PARTIAL,
+                PackageExecutionStatus.CANCELLED,
+                PackageExecutionStatus.SKIPPED_PAUSED,
+                PackageExecutionStatus.SKIPPED_QUOTA,
+                PackageExecutionStatus.SKIPPED_TYPE,
+                PackageExecutionStatus.SKIPPED_DELETED,
+                PackageExecutionStatus.SKIPPED_LIMIT,
+              ]).has(predecessorStatus);
+
+              if (!predecessorAllowsNextRun) {
+                const skipReason = predecessorStatus === PackageExecutionStatus.FAILED
+                  ? `Held because prior execution ${predecessor.id} failed and requires recovery.`
+                  : `Waiting for prior execution ${predecessor.id} to reach a terminal provider status.`;
+                if (execution.skipReason !== skipReason) {
+                  await tx.packageExecution.updateMany({
+                    where: {
+                      id: execution.id,
+                      status: PackageExecutionStatus.SCHEDULED,
+                    },
+                    data: { skipReason },
+                  });
+                }
+                return false;
+              }
+            }
+          }
+
+          const platform = (execution.platform || "instagram").toLowerCase();
+          let target = execution.targetUrl;
+          if (!target || target.trim() === "") {
+            const rawHandle = (execution.handle || "").replace(/^@/, "");
+            if (rawHandle.startsWith("http")) {
+              target = rawHandle;
+            } else if (platform === "x") {
+              target = `https://x.com/${rawHandle}`;
+            } else if (platform === "tiktok") {
+              target = `https://tiktok.com/@${rawHandle}`;
+            } else if (platform === "youtube") {
+              target = `https://youtube.com/@${rawHandle}`;
+            } else if (platform === "facebook") {
+              target = `https://facebook.com/${rawHandle}`;
+            } else if (platform === "telegram") {
+              target = `https://t.me/${rawHandle}`;
+            } else {
+              target = `https://instagram.com/${rawHandle}`;
+            }
+          }
+
+          const claim = await tx.packageExecution.updateMany({
+            where: {
+              id: execution.id,
+              packageId: execution.packageId,
+              status: PackageExecutionStatus.SCHEDULED,
+              orderId: null,
+            },
+            data: {
+              status: PackageExecutionStatus.DISPATCHED,
+              remainingQuantity: execution.quantity,
+              skipReason: null,
+            },
+          });
+          if (claim.count !== 1) return false;
+
           const childOrder = await tx.order.create({
             data: {
-              userId,
-              serviceId,
+              userId: execution.userId,
+              serviceId: execution.serviceId,
               target,
-              quantity: exec.quantity,
-              charge: allocatedCharge, // Real charge! Never 0 to preserve partial refund calculation
-              isPrepaid: true,          // Prepaid upfront by package reserve
+              quantity: execution.quantity,
+              charge: new Decimal(execution.allocatedCharge.toString()),
+              isPrepaid: true,
               status: OrderStatus.PENDING,
               startCount: 0,
-              remains: exec.quantity,
-              providerId: providerId || null,
-              packageExecutionId: exec.id,
+              remains: execution.quantity,
+              providerId: execution.providerId,
+              packageExecutionId: execution.id,
             },
           });
 
-          await tx.packageExecution.update({
-            where: { id: exec.id },
+          const linked = await tx.packageExecution.updateMany({
+            where: {
+              id: execution.id,
+              status: PackageExecutionStatus.DISPATCHED,
+              orderId: null,
+            },
             data: {
-              status: "DISPATCHED" as any,
               orderId: childOrder.id,
             },
           });
+          if (linked.count !== 1) {
+            throw new Error(`Package execution ${execution.id} lost its dispatch claim.`);
+          }
 
           await tx.outboxEvent.create({
             data: {
@@ -1664,22 +2068,38 @@ export class SMMWorkerEngine {
               eventType: "ORDER_CREATED",
               payload: {
                 orderId: childOrder.id,
-                packageId: exec.packageId,
-                ruleId: exec.ruleId,
-                packageExecutionId: exec.id,
-                serviceId,
+                packageId: execution.packageId,
+                ruleId: execution.ruleId,
+                packageExecutionId: execution.id,
+                serviceId: execution.serviceId,
                 target,
-                quantity: exec.quantity,
+                quantity: execution.quantity,
                 isPrepaid: true,
               },
               status: OutboxStatus.PENDING,
             },
           });
+
+          return true;
         });
-      } catch (execErr: any) {
-        logger.error({ err: execErr.message }, `[Package Engine] Error dispatching execution #${exec.id}`);
+
+        if (dispatched) dispatchedCount++;
+      } catch (dispatchError: any) {
+        errorsCount++;
+        logger.error(
+          { err: dispatchError.message },
+          `[Package Engine] Error dispatching execution #${candidate.id}`
+        );
       }
     }
+
+    if (dueCandidates.length > 0) {
+      logger.info(
+        `[Package Engine] Dispatched ${dispatchedCount} of ${dueCandidates.length} due execution(s); ${errorsCount} failed`
+      );
+    }
+
+    return { dispatchedCount, errorsCount };
   }
 }
 

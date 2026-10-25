@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit, NotFoundException, ConflictException } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit, NotFoundException, ConflictException, ServiceUnavailableException } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import {
   DEFAULT_PLATFORM_CONFIGS,
@@ -177,7 +177,9 @@ export class PlatformsService implements OnModuleInit {
    * Admin: create platform
    */
   async adminCreatePlatform(data: any) {
-    if (!this.prisma.isConnected) return { success: true, ...data };
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
+    }
     const platform = (data.platform || "").toLowerCase().trim();
     const existing = await this.prisma.platformConfig.findUnique({
       where: { platform },
@@ -211,7 +213,9 @@ export class PlatformsService implements OnModuleInit {
    * Admin: update platform
    */
   async adminUpdatePlatform(id: string, data: any) {
-    if (!this.prisma.isConnected) return { success: true, id, ...data };
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
+    }
     return this.prisma.platformConfig.update({
       where: { id },
       data: {
@@ -268,7 +272,9 @@ export class PlatformsService implements OnModuleInit {
   async adminAddBlocklist(platform: string, handle: string, reason?: string) {
     const plat = (platform || "").toLowerCase().trim();
     const normalized = normalizeHandle(handle);
-    if (!this.prisma.isConnected) return { success: true, platform: plat, handle: normalized };
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
+    }
 
     return this.prisma.platformHandleBlocklist.upsert({
       where: {
@@ -290,7 +296,9 @@ export class PlatformsService implements OnModuleInit {
    * Admin remove handle from blocklist
    */
   async adminRemoveBlocklist(id: string) {
-    if (!this.prisma.isConnected) return { success: true };
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
+    }
     return this.prisma.platformHandleBlocklist.delete({
       where: { id },
     });

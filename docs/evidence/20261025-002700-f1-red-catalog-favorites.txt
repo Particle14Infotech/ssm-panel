@@ -1,0 +1,49 @@
+Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-25T00:27:00+05:30
+Status: RED_FAILURE (Pre-implementation verification)
+---
+FAIL test/package-catalog-and-favorites-f1.spec.ts
+  Phase F1: Grouped Catalog, Timeline Chart, Balance Hint & Favorites
+    1. Grouped Catalog (GET /catalog/grouped)
+      × returns grouped categories in a single query, hiding empty and disabled categories (3 ms)
+    2. Quantity Balance Hint Heuristic
+      √ triggers neutral advisory when likes exceed views in the same cart (2 ms)
+      √ does not trigger advisory when quantities are balanced
+    3. Favorites with Generic Config JSON and IDOR Protection
+      × stores config JSON with computed configHash and verifies IDOR safety (1 ms)
+
+  ● Phase F1: Grouped Catalog, Timeline Chart, Balance Hint & Favorites › 1. Grouped Catalog (GET /catalog/grouped) › returns grouped categories in a single query, hiding empty and disabled categories
+
+    TypeError: servicesService.getGroupedCatalog is not a function
+
+      90 |
+      91 |       // Call getGroupedCatalog
+    > 92 |       const result = await (servicesService as any).getGroupedCatalog("INSTAGRAM");
+         |                                                     ^
+      93 |
+      94 |       // Verify category.findMany was called exactly ONCE (zero N+1)
+      95 |       expect(mockPrisma.category.findMany).toHaveBeenCalledTimes(1);
+
+      at Object.<anonymous> (test/package-catalog-and-favorites-f1.spec.ts:92:53)
+
+  ● Phase F1: Grouped Catalog, Timeline Chart, Balance Hint & Favorites › 3. Favorites with Generic Config JSON and IDOR Protection › stores config JSON with computed configHash and verifies IDOR safety
+
+    TypeError: favoritesService.createFavoriteWithConfig is not a function
+
+      171 |
+      172 |       // User A creates favorite with config
+    > 173 |       const created = await (favoritesService as any).createFavoriteWithConfig("user_a", {
+          |                                                       ^
+      174 |         serviceId: "srv_test",
+      175 |         targetUrl: "https://instagram.com/test_creator",
+      176 |         defaultQuantity: 1000,
+
+      at Object.<anonymous> (test/package-catalog-and-favorites-f1.spec.ts:173:55)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 2 passed, 4 total
+Snapshots:   0 total
+Time:        1 s
+Ran all test suites matching /package-catalog-and-favorites-f1.spec.ts/i.

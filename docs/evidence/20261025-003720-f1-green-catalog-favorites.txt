@@ -1,0 +1,21 @@
+Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-25T00:37:20+05:30
+Status: GREEN_SUCCESS
+---
+PASS test/package-catalog-and-favorites-f1.spec.ts
+  Phase F1: Grouped Catalog, Timeline Chart, Balance Hint & Favorites
+    1. Grouped Catalog (GET /catalog/grouped)
+      √ returns grouped categories in a single query, hiding empty and disabled categories (3 ms)
+    2. Quantity Balance Hint Heuristic
+      √ triggers neutral advisory when likes exceed views in the same cart (1 ms)
+      √ does not trigger advisory when quantities are balanced (1 ms)
+    3. Favorites with Generic Config JSON and IDOR Protection
+      √ stores config JSON with computed configHash and verifies IDOR safety (13 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       4 passed, 4 total
+Snapshots:   0 total
+Time:        0.833 s, estimated 1 s
+Ran all test suites matching /package-catalog-and-favorites-f1.spec.ts/i.

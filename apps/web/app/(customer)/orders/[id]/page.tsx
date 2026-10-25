@@ -56,11 +56,18 @@ export default function OrderDetailPage() {
     ? Math.min(100, Math.round((deliveredUnits / totalAimUnits) * 100))
     : 0;
 
-  const pkgRun = (order as any).packageRun;
+  const pkgRun = (order as any).packageExecution || (order as any).packageRun;
   const parentPackage = pkgRun?.package;
-  const pkgPercent = parentPackage && parentPackage.totalRuns > 0
-    ? Math.min(100, Math.round((parentPackage.completedRuns / parentPackage.totalRuns) * 100))
-    : 0;
+  const pkgRunIndex = pkgRun?.seq ?? pkgRun?.runIndex ?? 1;
+  const pkgTotalRuns =
+    parentPackage?.totalRuns ??
+    (parentPackage?.rules?.reduce((acc: number, r: any) => acc + (r.maxPosts || 1), 0) ||
+      pkgRunIndex);
+  const pkgCompletedRuns = parentPackage?.completedRuns ?? pkgRunIndex;
+  const pkgPercent =
+    pkgTotalRuns > 0
+      ? Math.min(100, Math.round((pkgCompletedRuns / pkgTotalRuns) * 100))
+      : 0;
 
   const handleCancel = async () => {
     setCancelling(true);
@@ -129,10 +136,11 @@ export default function OrderDetailPage() {
 
           <Link
             href={`/support?orderId=${order.id}`}
+            title="Report a Problem"
             className="px-4 py-2 rounded-full btn-primary-gradient text-[#171e00] text-xs font-bold shadow-[0_0_20px_rgba(216,236,141,0.2)] transition-all flex items-center gap-1.5"
           >
             <HelpCircle className="w-3.5 h-3.5" />
-            <span>Open Ticket</span>
+            <span>Report a Problem</span>
           </Link>
         </div>
       </div>
@@ -214,12 +222,16 @@ export default function OrderDetailPage() {
                   <div>
                     <h3 className="text-sm font-semibold text-white">Part of Growth Package</h3>
                     <p className="text-xs text-purple-300/80 font-mono">
-                      {parentPackage.name} - Run #{pkgRun?.runIndex ?? 1}
+                      {parentPackage.name ||
+                        (parentPackage.platform && parentPackage.handle
+                          ? `${parentPackage.platform} @${parentPackage.handle}`
+                          : "Growth Package")}{" "}
+                      - Run #{pkgRunIndex}
                     </p>
                   </div>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                  {parentPackage.status}
+                  {parentPackage.status || "ACTIVE"}
                 </span>
               </div>
 
@@ -235,14 +247,19 @@ export default function OrderDetailPage() {
                   />
                 </div>
                 <div className="flex justify-between text-[11px] font-mono text-[#c7c8b6] mt-2">
-                  <span>Completed: {parentPackage.completedRuns} / {parentPackage.totalRuns} runs</span>
-                  <span>Failed/Cancelled: {parentPackage.failedRuns + parentPackage.cancelledRuns}</span>
+                  <span>
+                    Completed: {pkgCompletedRuns} / {pkgTotalRuns} runs
+                  </span>
+                  <span>
+                    Failed/Cancelled:{" "}
+                    {(parentPackage.failedRuns || 0) + (parentPackage.cancelledRuns || 0)}
+                  </span>
                 </div>
               </div>
 
               <div className="pt-2 flex justify-end">
                 <Link
-                  href={`/packages/${parentPackage.id}`}
+                  href={`/packages/${parentPackage.id || pkgRun?.packageId}`}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-300 hover:text-white transition-colors"
                 >
                   <span>View Full Package Aim & Schedule</span>

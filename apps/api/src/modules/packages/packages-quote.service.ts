@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  UnprocessableEntityException,
+  Logger,
+} from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { PlatformsService } from "../platforms/platforms.service";
 import {
@@ -12,8 +17,28 @@ import {
   normalizeHandle,
   validateHandle,
 } from "../platforms/platform-rules.util";
+import { calculateFollowersDrip } from "./drip-engine.util";
+import { generateQuoteHash } from "./package-quote-hash.util";
+
+export const MAX_RUNS_PER_PACKAGE_DEFAULT = 365;
+export const MAX_RUNS_PER_PACKAGE_CAP = 730;
+export const MAX_ITEMS_PER_PACKAGE = 10;
+export const MAX_DURATION_DAYS = 365;
+export const MIN_INTERVAL_HOURS = 1;
+export const MAX_PLATFORM_LENGTH = 32;
+export const MAX_HANDLE_LENGTH = 100;
+export const MAX_TARGET_URL_LENGTH = 500;
 
 const DEFAULT_MARGIN_FLOOR = 0.15; // 15% floor
+
+function isServicePlatformCompatible(servicePlatform: string, packagePlatform: string): boolean {
+  const normalize = (value: string) => {
+    const normalized = value.toLowerCase().trim();
+    return normalized === "x_twitter" || normalized === "twitter" ? "x" : normalized;
+  };
+
+  return normalize(servicePlatform) === "all" || normalize(servicePlatform) === normalize(packagePlatform);
+}
 
 export interface NormalizedRule {
   kind: "POST_TRIGGERED" | "TIME_DRIP";
@@ -49,12 +74,88 @@ export class PackagesQuoteService {
    * 5. TIME_DRIP reserve = ceil(rate x totalQty / 1000) split over runs, last run absorbs remainder
    * 6. sum(run.quantity) === totalQty and sum(run.chargeShare) === reserve
    * 7. Warning if Q is too small to split across durationDays
-   * 8. Disclaimer label: "Maximum total; unused is refunded at the end"
+   * 8. Disclaimer label communicates the maximum reserve and settlement behavior.
    * 9. Equals exact purchase price with zero state mutations.
    */
-  async calculateQuote(input: PackageQuoteInput): Promise<PackageQuoteResponse> {
-    const platform = (input.platform || "instagram").toLowerCase().trim();
+  async calculateQuote(
+    input: PackageQuoteInput,
+    scheduleStartAt?: Date
+  ): Promise<PackageQuoteResponse> {
+    // 0. Hard caps enforced BEFORE computation (GAP-2 DoS hardening)
+    if (input.platform && input.platform.length > MAX_PLATFORM_LENGTH) {
+      throw new UnprocessableEntityException(
+        `Platform exceeds maximum allowed length of ${MAX_PLATFORM_LENGTH} characters.`
+      );
+    }
     const handleRaw = input.handle || (input as any).accountUsername || "";
+    if (handleRaw && handleRaw.length > MAX_HANDLE_LENGTH) {
+      throw new UnprocessableEntityException(
+        `Handle exceeds maximum allowed length of ${MAX_HANDLE_LENGTH} characters.`
+      );
+    }
+    const rawItemsCount = (input.items?.length || 0) + ((input as any).rules?.length || 0) + (input.postRules?.length || 0);
+    if (rawItemsCount > MAX_ITEMS_PER_PACKAGE) {
+      throw new UnprocessableEntityException(
+        `Items count (${rawItemsCount}) exceeds maximum allowed of ${MAX_ITEMS_PER_PACKAGE}.`
+      );
+    }
+
+    const checkDays = input.durationDays ?? input.days ?? input.followersDrip?.days;
+    if (checkDays !== undefined && checkDays > MAX_DURATION_DAYS) {
+      throw new UnprocessableEntityException(
+        `Schedule duration (${checkDays} days) exceeds maximum allowed of ${MAX_DURATION_DAYS} days.`
+      );
+    }
+
+    const checkInterval = input.followersDrip?.intervalHours ?? (input as any).intervalHours;
+    if (checkInterval !== undefined && checkInterval < MIN_INTERVAL_HOURS) {
+      throw new UnprocessableEntityException(
+        `Run interval (${checkInterval} hours) is below minimum allowed of ${MIN_INTERVAL_HOURS} hour.`
+      );
+    }
+
+    // O(runs) prevention: calculate estimated total runs BEFORE any iterations or loops
+    let estimatedRuns = 0;
+    if (input.followersDrip) {
+      const f = input.followersDrip;
+      const fDays = f.days ?? input.durationDays ?? input.days ?? 30;
+      const fInterval = f.intervalHours ?? (input as any).intervalHours ?? 24;
+      if (fDays > MAX_DURATION_DAYS) {
+        throw new UnprocessableEntityException(
+          `Schedule duration (${fDays} days) exceeds maximum allowed of ${MAX_DURATION_DAYS} days.`
+        );
+      }
+      if (fInterval < MIN_INTERVAL_HOURS) {
+        throw new UnprocessableEntityException(
+          `Run interval (${fInterval} hours) is below minimum allowed of ${MIN_INTERVAL_HOURS} hour.`
+        );
+      }
+      estimatedRuns += Math.floor((fDays * 24) / Math.max(1, fInterval));
+    }
+    if (input.postRules) {
+      for (const pr of input.postRules) {
+        estimatedRuns += (pr.maxPosts || 1);
+      }
+    }
+    if (input.items) {
+      for (const itm of input.items) {
+        estimatedRuns += (itm.maxPosts || (itm as any).runs || 1);
+      }
+    }
+    if ((input as any).rules) {
+      for (const r of (input as any).rules) {
+        estimatedRuns += (r.maxPosts || r.runs || 1);
+      }
+    }
+
+    if (estimatedRuns > MAX_RUNS_PER_PACKAGE_CAP) {
+      throw new UnprocessableEntityException(
+        `Requested schedule produces ${estimatedRuns} estimated runs, which exceeds the maximum limit of ${MAX_RUNS_PER_PACKAGE_CAP} runs per package.`
+      );
+    }
+
+    const platform = (input.platform || "instagram").toLowerCase().trim();
+    const timezone = input.timezone || "UTC";
     const warnings: string[] = [];
 
     // 1. Validate platform config and handle if handle is provided
@@ -62,6 +163,9 @@ export class PackagesQuoteService {
     if (handleRaw) {
       if (this.platformsService) {
         const config = await this.platformsService.getPlatformConfig(platform);
+        if (!config.active) {
+          throw new BadRequestException(`Packages are currently unavailable for ${config.displayName}.`);
+        }
         normalizedHandle = validateHandle(handleRaw, config);
 
         const isBlocked = await this.platformsService.isHandleBlocked(platform, normalizedHandle);
@@ -93,13 +197,26 @@ export class PackagesQuoteService {
 
     // 3. Normalize input into normalized rules:
     // Support followersDrip + postRules (M3 standard), or rules, or items (legacy)
+    if (input.days !== undefined && (!Number.isInteger(input.days) || input.days <= 0)) {
+      throw new BadRequestException("Schedule duration must be a positive integer.");
+    }
+    if (input.durationDays !== undefined && (!Number.isInteger(input.durationDays) || input.durationDays <= 0)) {
+      throw new BadRequestException("Schedule duration must be a positive integer.");
+    }
+
     const normalizedRules: NormalizedRule[] = [];
-    let durationDays = input.durationDays || input.days || 30;
+    let durationDays = input.durationDays ?? input.days ?? 30;
     let intervalHours = 24;
 
     if (input.followersDrip) {
       const f = input.followersDrip;
-      durationDays = f.days || durationDays;
+      if (f.days !== undefined && (!Number.isInteger(f.days) || f.days <= 0)) {
+        throw new BadRequestException("Schedule duration must be a positive integer.");
+      }
+      if (f.quantity !== undefined && (!Number.isInteger(f.quantity) || f.quantity <= 0)) {
+        throw new BadRequestException("Quantity must be a positive integer.");
+      }
+      durationDays = f.days ?? durationDays;
       intervalHours = f.intervalHours || 24;
       normalizedRules.push({
         kind: "TIME_DRIP",
@@ -195,6 +312,7 @@ export class PackagesQuoteService {
         maxQty: 500000,
         costINR: new Decimal(90.0),
         status: "ACTIVE",
+        packageEligible: true,
       }));
     }
 
@@ -204,7 +322,10 @@ export class PackagesQuoteService {
     let packageReserveTotal = new Decimal(0);
     const calculatedItems: PackageQuoteResponse["items"] = [];
     const allRuns: PackageRunPreview[] = [];
-    const now = new Date();
+    const now = scheduleStartAt ? new Date(scheduleStartAt.getTime()) : new Date();
+    if (!Number.isFinite(now.getTime())) {
+      throw new BadRequestException("Schedule start time must be a valid date.");
+    }
 
     for (const rule of normalizedRules) {
       const svc = serviceMap.get(rule.serviceId);
@@ -213,6 +334,17 @@ export class PackagesQuoteService {
       }
       if (svc.status !== "ACTIVE") {
         throw new BadRequestException(`Service "${svc.displayName || svc.name}" is currently unavailable.`);
+      }
+      if (svc.active === false) {
+        throw new BadRequestException(`Service "${svc.displayName || svc.name}" is currently unavailable.`);
+      }
+      if (svc.packageEligible !== true) {
+        throw new BadRequestException(`Service "${svc.displayName || svc.name}" is not eligible for packages.`);
+      }
+      if (!isServicePlatformCompatible(svc.platform || "", platform)) {
+        throw new BadRequestException(
+          `Service "${svc.displayName || svc.name}" is not available for the ${platform} platform.`
+        );
       }
 
       const ratePer1k = new Decimal(svc.ratePer1000.toString());
@@ -292,16 +424,25 @@ export class PackagesQuoteService {
           );
         }
 
-        const runsPerDay = Math.max(1, Math.floor(24 / intervalHours));
-        const maxAllowedRuns = Math.max(1, durationDays * runsPerDay);
-        // runs = min(floor(Q / serviceMin), floor(days / interval))
-        const calculatedRuns = Math.min(Math.max(1, Math.floor(totalQty / svc.minQty)), maxAllowedRuns);
-
-        if (calculatedRuns === 1 && durationDays > 1) {
-          warnings.push(
-            `Quantity (${totalQty}) on "${svc.displayName || svc.name}" is too small to split across ${durationDays} days (service minimum per run is ${svc.minQty}). A single run will be scheduled.`
-          );
+        let dripResult;
+        try {
+          dripResult = calculateFollowersDrip({
+            totalQuantity: totalQty,
+            serviceMin: svc.minQty,
+            serviceMax: svc.maxQty,
+            days: durationDays,
+            intervalHours,
+            ratePer1000: ratePer1k.toNumber(),
+            startAt: now,
+          });
+        } catch (error) {
+          if (error instanceof RangeError) {
+            throw new BadRequestException(error.message);
+          }
+          throw error;
         }
+
+        if (dripResult.warning) warnings.push(dripResult.warning);
 
         // TIME_DRIP reserve = ceil(rate x totalQty / 1000)
         const ruleReserve = new Decimal(ratePer1k)
@@ -311,46 +452,15 @@ export class PackagesQuoteService {
 
         packageReserveTotal = packageReserveTotal.plus(ruleReserve);
 
-        // Precompute run splits: remainder goes to first runs
-        const baseQty = Math.floor(totalQty / calculatedRuns);
-        const remQty = totalQty % calculatedRuns;
-
-        const runQuantities: number[] = [];
-        for (let r = 0; r < calculatedRuns; r++) {
-          runQuantities.push(r < remQty ? baseQty + 1 : baseQty);
-        }
-
-        // Split charge over runs: last run takes remainder so sum === ruleReserve
-        const runChargeShares: Decimal[] = [];
-        let runningSum = new Decimal(0);
-
-        for (let r = 0; r < calculatedRuns; r++) {
-          if (r === calculatedRuns - 1) {
-            const lastShare = ruleReserve.minus(runningSum);
-            runChargeShares.push(lastShare);
-          } else {
-            const share = new Decimal(runQuantities[r])
-              .times(ratePer1k)
-              .dividedBy(1000)
-              .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
-            runChargeShares.push(share);
-            runningSum = runningSum.plus(share);
-          }
-        }
-
-        // Generate schedule preview
-        for (let r = 0; r < calculatedRuns; r++) {
-          const offsetHours = r * (24 / runsPerDay);
-          const scheduledTime = new Date(now.getTime() + offsetHours * 3600 * 1000);
-
+        for (const run of dripResult.runs) {
           allRuns.push({
-            runIndex: r + 1,
-            scheduledAt: scheduledTime.toISOString(),
+            runIndex: run.seq,
+            scheduledAt: run.executeAt.toISOString(),
             serviceId: svc.id,
-            serviceName: `${svc.displayName || svc.name} (Time-interval run ${r + 1} of ${calculatedRuns})`,
+            serviceName: `${svc.displayName || svc.name} (Time-interval run ${run.seq} of ${dripResult.runsCount})`,
             target: rule.target || (normalizedHandle ? `@${normalizedHandle}` : undefined),
-            quantity: runQuantities[r],
-            chargeShare: runChargeShares[r].toNumber(),
+            quantity: run.quantity,
+            chargeShare: run.allocatedCharge,
           });
         }
 
@@ -361,10 +471,10 @@ export class PackagesQuoteService {
           targetType: "PROFILE",
           kind: "TIME_DRIP",
           totalQuantity: totalQty,
-          quantityPerPost: runQuantities[0] || totalQty,
+          quantityPerPost: dripResult.runs[0]?.quantity || totalQty,
           charge: ruleReserve.toNumber(),
           ratePer1000: ratePer1k.toNumber(),
-          runs: calculatedRuns,
+          runs: dripResult.runsCount,
           maxPosts: 1,
           minQty: svc.minQty,
           maxQty: svc.maxQty,
@@ -375,15 +485,30 @@ export class PackagesQuoteService {
 
     allRuns.sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
 
+    const { quoteHash, expiresAt } = generateQuoteHash({
+      userId: (input as any).userId || "",
+      platform,
+      handle: normalizedHandle,
+      timezone,
+      days: durationDays,
+      intervalHours,
+      totalCharge: packageReserveTotal.toNumber(),
+      totalRuns: allRuns.length,
+      items: calculatedItems,
+    });
+
     return {
       valid: true,
+      timezone,
       totalCharge: packageReserveTotal.toNumber(),
       totalRuns: allRuns.length,
       days: durationDays,
       items: calculatedItems,
       timeline: allRuns,
       warnings,
-      disclaimer: "Maximum total; unused is refunded at the end",
+      disclaimer: "Maximum total; unused balance is automatically refunded to your wallet upon package completion or cancellation.",
+      quoteHash,
+      expiresAt,
     };
   }
 }

@@ -17,6 +17,9 @@ export interface ProviderDto {
   dripFeedCount?: number;
   refillCount?: number;
   cancelCount?: number;
+  healthStatus: "HEALTHY" | "DEGRADED" | "UNKNOWN";
+  consecutiveStatusFailures: number;
+  lastStatusCheckAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -33,6 +36,33 @@ export class ProvidersService {
   private maskKey(plain: string): string {
     if (!plain || plain.length <= 8) return "••••••••";
     return `${plain.substring(0, 4)}••••${plain.substring(plain.length - 4)}`;
+  }
+
+  private getHealthTelemetry(provider: {
+    consecutiveStatusFailures: number;
+    lastStatusCheckAt: Date | null;
+  }): {
+    healthStatus: ProviderDto["healthStatus"];
+    consecutiveStatusFailures: number;
+    lastStatusCheckAt: string | null;
+  } {
+    const lastStatusCheckAt = provider.lastStatusCheckAt;
+    const consecutiveStatusFailures = provider.consecutiveStatusFailures;
+    const isStale =
+      !lastStatusCheckAt ||
+      Date.now() - lastStatusCheckAt.getTime() > 30 * 60 * 1000;
+
+    return {
+      healthStatus: isStale
+        ? "UNKNOWN"
+        : consecutiveStatusFailures >= 3
+          ? "DEGRADED"
+          : consecutiveStatusFailures === 0
+            ? "HEALTHY"
+            : "UNKNOWN",
+      consecutiveStatusFailures,
+      lastStatusCheckAt: lastStatusCheckAt?.toISOString() || null,
+    };
   }
 
   async findAll(): Promise<ProviderDto[]> {
@@ -64,6 +94,7 @@ export class ProvidersService {
             this.prisma.service.count({ where: { providerId: p.id, refillable: true, isDeleted: false } }).catch(() => 0),
             this.prisma.service.count({ where: { providerId: p.id, cancellable: true, isDeleted: false } }).catch(() => 0),
           ]);
+          const health = this.getHealthTelemetry(p);
 
           return {
             id: p.id,
@@ -77,6 +108,7 @@ export class ProvidersService {
             dripFeedCount,
             refillCount,
             cancelCount,
+            ...health,
             createdAt: p.createdAt.toISOString(),
             updatedAt: p.updatedAt.toISOString(),
           };
@@ -118,6 +150,7 @@ export class ProvidersService {
       this.prisma.service.count({ where: { providerId: p.id, refillable: true, isDeleted: false } }).catch(() => 0),
       this.prisma.service.count({ where: { providerId: p.id, cancellable: true, isDeleted: false } }).catch(() => 0),
     ]);
+    const health = this.getHealthTelemetry(p);
 
     return {
       id: p.id,
@@ -131,6 +164,7 @@ export class ProvidersService {
       dripFeedCount,
       refillCount,
       cancelCount,
+      ...health,
       createdAt: p.createdAt.toISOString(),
       updatedAt: p.updatedAt.toISOString(),
     };
@@ -154,6 +188,9 @@ export class ProvidersService {
         currency: input.currency || "INR",
         active: true,
         serviceCount: 0,
+        healthStatus: "UNKNOWN",
+        consecutiveStatusFailures: 0,
+        lastStatusCheckAt: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -179,6 +216,9 @@ export class ProvidersService {
       currency: created.currency,
       active: created.active,
       serviceCount: 0,
+      healthStatus: "UNKNOWN",
+      consecutiveStatusFailures: 0,
+      lastStatusCheckAt: null,
       createdAt: created.createdAt.toISOString(),
       updatedAt: created.updatedAt.toISOString(),
     };

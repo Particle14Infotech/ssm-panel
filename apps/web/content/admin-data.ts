@@ -23,6 +23,9 @@ export interface AdminProvider {
   dripFeedCount?: number;
   refillCount?: number;
   cancelCount?: number;
+  healthStatus?: "HEALTHY" | "DEGRADED" | "UNKNOWN";
+  consecutiveStatusFailures?: number;
+  lastStatusCheckAt?: string | null;
 }
 
 export interface AdminCoupon {

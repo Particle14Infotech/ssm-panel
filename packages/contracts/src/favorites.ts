@@ -11,6 +11,8 @@ export const FavoriteItemSchema = z.object({
   dripRuns: z.number().int().positive().nullable().optional(),
   dripInterval: z.number().int().positive().nullable().optional(),
   comments: z.string().nullable().optional(),
+  config: z.record(z.any()).nullable().optional(),
+  configHash: z.string().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
   service: z
@@ -39,6 +41,8 @@ export const CreateFavoriteInputSchema = z.object({
   dripRuns: z.number().int().positive().optional(),
   dripInterval: z.number().int().positive().optional(),
   comments: z.string().optional(),
+  config: z.record(z.any()).optional(),
+  configHash: z.string().optional(),
 });
 export type CreateFavoriteInput = z.infer<typeof CreateFavoriteInputSchema>;
 

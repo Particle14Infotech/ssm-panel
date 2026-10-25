@@ -4,10 +4,21 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 
+let ephemeralWorkerDevMasterKey: Buffer | null = null;
+
 function getMasterKey(): Buffer {
-  const secret = process.env.PROVIDER_KEY_ENCRYPTION_KEY || process.env.PROVIDER_KEY_SECRET;
+  const secret =
+    process.env.ENCRYPTION_KEY ||
+    process.env.PROVIDER_KEY_ENCRYPTION_KEY ||
+    process.env.PROVIDER_KEY_SECRET;
   if (!secret) {
-    return crypto.scryptSync("smm_master_provider_key_fallback_dev", "salt_smm", 32);
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("ENCRYPTION_KEY must be configured in production.");
+    }
+    if (!ephemeralWorkerDevMasterKey) {
+      ephemeralWorkerDevMasterKey = crypto.randomBytes(32);
+    }
+    return ephemeralWorkerDevMasterKey;
   }
   if (secret.length === 64) {
     return Buffer.from(secret, "hex");

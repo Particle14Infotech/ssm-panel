@@ -1,0 +1,6 @@
+DO $$
+BEGIN
+    CREATE TYPE "PackageStatus" AS ENUM ('ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;

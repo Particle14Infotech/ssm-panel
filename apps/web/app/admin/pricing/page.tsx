@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { getAuthToken } from "@/lib/auth-session";
 import { GlassCard } from "@/components/shared/GlassCard";
 import {
@@ -130,7 +130,7 @@ export default function AdminPricingPage() {
   };
 
   // Run What-If Simulation
-  const handleSimulate = async () => {
+  const handleSimulate = useCallback(async () => {
     const token = getAuthToken();
     if (!token) return;
     try {
@@ -147,11 +147,11 @@ export default function AdminPricingPage() {
         setSimResult(data);
       }
     } catch {}
-  };
+  }, [simCost, simQty]);
 
   useEffect(() => {
     handleSimulate();
-  }, [simCost, simQty]);
+  }, [handleSimulate]);
 
   // Approve Pending Change
   const handleApprovePending = async (id: string) => {

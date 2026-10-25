@@ -1,8 +1,14 @@
-import { Controller, Get } from "@nestjs/common";
-import { ApiTags, ApiOperation } from "@nestjs/swagger";
+import { Controller, Get, UseGuards } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { ReportsService } from "./reports.service";
+import { JwtAuthGuard } from "../../common/jwt-auth.guard";
+import { RolesGuard, Roles } from "../../common/roles.guard";
+import { Role } from "@prisma/client";
 
 @ApiTags("Reports & Analytics")
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN)
 @Controller("reports")
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}

@@ -438,6 +438,30 @@ export default function AdminProvidersPage() {
                       <span className="text-white font-bold">{p.serviceCount} items</span>
                     </div>
                     <div className="flex justify-between text-slate-400">
+                      <span>Order status API health</span>
+                      <span
+                        className={`font-bold ${
+                          p.healthStatus === "HEALTHY"
+                            ? "text-emerald-300"
+                            : p.healthStatus === "DEGRADED"
+                              ? "text-rose-300"
+                              : "text-slate-300"
+                        }`}
+                      >
+                        {p.healthStatus || "UNKNOWN"}
+                        {!!p.consecutiveStatusFailures &&
+                          ` (${p.consecutiveStatusFailures} consecutive failures)`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Last order status check</span>
+                      <span className="text-slate-300 font-mono text-[10px]">
+                        {p.lastStatusCheckAt
+                          ? new Date(p.lastStatusCheckAt).toLocaleString()
+                          : "No recent checks"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
                       <span>Drip / Refill / Cancel</span>
                       <span className="text-[#D8EC8D] font-bold">
                         {p.dripFeedCount ?? 0} / {p.refillCount ?? 0} / {p.cancelCount ?? 0}

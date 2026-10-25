@@ -100,6 +100,15 @@ jobs:
       - name: Emoji Banned-Pattern Scan
         run: pnpm check:emoji
 
+      - name: Check Prisma Migrations & Schema Drift
+        run: |
+          npx prisma validate
+          npx prisma migrate deploy
+          npx prisma migrate status
+          npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --exit-code
+        env:
+          DATABASE_URL: postgresql://smm_user:smm_password@localhost:5432/smm_test_db
+
       - name: Lint
         run: pnpm turbo run lint --continue
 

@@ -325,6 +325,13 @@ describe("Milestone M6: Money, Reserves, Settlement, Cancellation & Invariant Co
       systemSetting: {
         findUnique: async () => null,
       },
+      packageExecution: {
+        findMany: async ({ where }: any) => {
+          return db.public.many(
+            `SELECT * FROM "PackageExecution" WHERE "packageId" = '${where.packageId}'`
+          );
+        },
+      },
     };
 
     platformsService = new PlatformsService(mockPrisma);
@@ -454,6 +461,43 @@ describe("Milestone M6: Money, Reserves, Settlement, Cancellation & Invariant Co
       const [pkgResumed] = db.public.many(`SELECT status, "pausedDays", "endAt" FROM "Package" WHERE id = '${pkgId}'`);
       expect(pkgResumed.status).toBe("ACTIVE");
       expect(new Date(pkgResumed.endAt).getTime()).toBeGreaterThanOrEqual(endAt.getTime());
+    });
+
+    it("enforces delivered + scheduled == total invariant upon resume", async () => {
+      const userId = "usr_m6_inv_resume";
+      const pkgId = "pkg_m6_inv_resume";
+      const ruleId = "rule_m6_inv_resume";
+      const startAt = new Date("2026-10-01T00:00:00.000Z");
+      const endAt = new Date("2026-10-31T00:00:00.000Z");
+
+      db.public.none(`
+        INSERT INTO "User" (id, email, name) VALUES ('${userId}', 'inv_resume@test.com', 'Inv Resume Tester');
+        INSERT INTO "Service" (id, name, "displayName", platform, "ratePer1000", "minQty", "maxQty", "packageEligible")
+        VALUES ('svc_m6_inv', 'Service', 'Service', 'instagram', 30.00, 50, 50000, true);
+        INSERT INTO "Package" (id, "userId", platform, handle, status, "startAt", "endAt", "pausedDays", "reserveTotal")
+        VALUES ('${pkgId}', '${userId}', 'instagram', 'inv_resume_handle', 'PAUSED', '${startAt.toISOString()}', '${endAt.toISOString()}', 0, 100.00);
+        INSERT INTO "PackageRule" (id, "packageId", kind, "serviceId", "quantityPerPost", "maxPosts", "usedCount", "unitCharge", "rateSnapshot", reserve)
+        VALUES ('${ruleId}', '${pkgId}', 'TIME_DRIP', 'svc_m6_inv', 100, 2, 0, 10.00, 10.00, 100.00);
+        INSERT INTO "PackageExecution" (id, "packageId", "ruleId", source, seq, quantity, "allocatedCharge", "executeAt", status)
+        VALUES
+          ('exec_inv_1', '${pkgId}', '${ruleId}', 'SCHEDULE', 1, 100, 10.00, NOW(), 'COMPLETED'),
+          ('exec_inv_2', '${pkgId}', '${ruleId}', 'SCHEDULE', 2, 100, 10.00, NOW(), 'SCHEDULED');
+      `);
+
+      // Resume succeeds because 1 COMPLETED (delivered) + 1 SCHEDULED == 2 total executions
+      const validResume = await packagesService.resumePackage(userId, pkgId);
+      expect(validResume.success).toBe(true);
+
+      // Violate invariant: change one execution to FAILED so delivered + scheduled != total
+      db.public.none(`
+        UPDATE "Package" SET status = 'PAUSED' WHERE id = '${pkgId}';
+        UPDATE "PackageExecution" SET status = 'FAILED' WHERE id = 'exec_inv_2';
+      `);
+
+      // Resume MUST reject with invariant violation
+      await expect(packagesService.resumePackage(userId, pkgId)).rejects.toThrow(
+        "Package invariant violation: delivered + scheduled != total executions upon resume."
+      );
     });
   });
 

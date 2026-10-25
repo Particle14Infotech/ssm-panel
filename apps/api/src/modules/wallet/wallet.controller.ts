@@ -88,7 +88,7 @@ export class WalletController {
     @Body() body: { amount: number; method: string; userId?: string },
     @CurrentUser() user?: CurrentUserData
   ) {
-    if (process.env.NODE_ENV === "production" && process.env.ALLOW_SIMULATED_PAYMENTS !== "true") {
+    if (process.env.NODE_ENV === "production") {
       throw new NotFoundException("POST /wallet/deposit is disabled in production. Use /payments/initiate with verified webhooks.");
     }
 

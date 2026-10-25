@@ -57,6 +57,105 @@ export class ServicesService {
     }
   }
 
+  async getGroupedCatalog(platform?: string) {
+    if (!this.prisma.isConnected) {
+      return { categories: [] };
+    }
+
+    try {
+      const serviceWhere: any = {
+        isDeleted: false,
+        active: true,
+      };
+
+      if (platform && platform !== "ALL") {
+        const p = platform.toUpperCase();
+        if (p === "X" || p === "TWITTER" || p === "X_TWITTER") {
+          serviceWhere.platform = { in: ["X", "TWITTER", "X_TWITTER"] };
+        } else {
+          serviceWhere.platform = { equals: p, mode: "insensitive" };
+        }
+      }
+
+      // Single query for categories with services to eliminate N+1 overhead
+      const categories = await this.prisma.category.findMany({
+        orderBy: { sortOrder: "asc" },
+        include: {
+          services: {
+            where: serviceWhere,
+            orderBy: { ratePer1000: "asc" },
+          },
+        },
+      });
+
+      // Query any uncategorized active services
+      const uncategorizedServices = await this.prisma.service.findMany({
+        where: {
+          ...serviceWhere,
+          OR: [{ categoryId: null as any }, { categoryId: "" }],
+        },
+        orderBy: { ratePer1000: "asc" },
+      });
+
+      // Filter out empty or disabled categories
+      const activeGroupedCategories = categories
+        .filter((cat) => cat.services && cat.services.length > 0)
+        .map((cat) => ({
+          id: cat.id,
+          name: cat.name,
+          slug: cat.slug,
+          sortOrder: cat.sortOrder,
+          serviceCount: cat.services.length,
+          services: cat.services.map((s) => ({
+            id: s.id,
+            name: s.name,
+            displayName: s.displayName || s.name,
+            description: s.description || "",
+            platform: s.platform,
+            ratePer1000: s.ratePer1000 ? s.ratePer1000.toString() : "0",
+            minQty: s.minQty,
+            maxQty: s.maxQty,
+            avgTime: s.avgTime || "Immediate",
+            refillable: Boolean(s.refillable),
+            cancellable: Boolean(s.cancellable),
+            dripFeedSupported: Boolean(s.dripFeedSupported),
+            serviceType: s.serviceType,
+          })),
+        }));
+
+      // Bundle uncategorized services under 'Other'
+      if (uncategorizedServices && uncategorizedServices.length > 0) {
+        activeGroupedCategories.push({
+          id: "uncategorized",
+          name: "Other",
+          slug: "other",
+          sortOrder: 9999,
+          serviceCount: uncategorizedServices.length,
+          services: uncategorizedServices.map((s) => ({
+            id: s.id,
+            name: s.name,
+            displayName: s.displayName || s.name,
+            description: s.description || "",
+            platform: s.platform,
+            ratePer1000: s.ratePer1000 ? s.ratePer1000.toString() : "0",
+            minQty: s.minQty,
+            maxQty: s.maxQty,
+            avgTime: s.avgTime || "Immediate",
+            refillable: Boolean(s.refillable),
+            cancellable: Boolean(s.cancellable),
+            dripFeedSupported: Boolean(s.dripFeedSupported),
+            serviceType: s.serviceType,
+          })),
+        });
+      }
+
+      return { categories: activeGroupedCategories };
+    } catch (err: any) {
+      this.logger.error(`Error in getGroupedCatalog: ${err.message}`);
+      return { categories: [] };
+    }
+  }
+
   async createCategory(input: { name: string; slug?: string; sortOrder?: number }) {
     const slug = input.slug || input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     if (!this.prisma.isConnected) {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { getAuthToken } from "@/lib/auth-session";
 import { GlassCard } from "@/components/shared/GlassCard";
 import {
@@ -26,7 +26,7 @@ export default function AdminProfitDashboardPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [telemetry, setTelemetry] = useState<any | null>(null);
 
-  const fetchTelemetry = async () => {
+  const fetchTelemetry = useCallback(async () => {
     const token = getAuthToken();
     if (!token) return;
     setLoading(true);
@@ -55,11 +55,11 @@ export default function AdminProfitDashboardPage() {
     } catch {} finally {
       setLoading(false);
     }
-  };
+  }, [dateRange, dripFeedOnly]);
 
   useEffect(() => {
     fetchTelemetry();
-  }, [dateRange, dripFeedOnly]);
+  }, [fetchTelemetry]);
 
   const handleExportCSV = () => {
     if (!telemetry) return;

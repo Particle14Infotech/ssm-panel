@@ -32,6 +32,9 @@ export class FavoritesController {
     @CurrentUser() user: CurrentUserData,
     @Body() body: any
   ) {
+    if (body.config) {
+      return this.favoritesService.createFavoriteWithConfig(user.id, body);
+    }
     const parseRes = CreateFavoriteInputSchema.safeParse(body);
     if (!parseRes.success) {
       const err = parseRes.error.errors[0]?.message || "Invalid input";

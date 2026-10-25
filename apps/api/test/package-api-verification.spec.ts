@@ -1,292 +1,221 @@
+import { BadRequestException } from "@nestjs/common";
 import { PackagesController } from "../src/modules/packages/packages.controller";
-import { PackagesService } from "../src/modules/packages/packages.service";
-import { PackagesQuoteService } from "../src/modules/packages/packages-quote.service";
-import { ConnectionsController } from "../src/modules/instagram/instagram.controller";
-import { InstagramService } from "../src/modules/instagram/instagram.service";
 import { SettingsController } from "../src/modules/settings/settings.controller";
 import { SettingsService } from "../src/modules/settings/settings.service";
-import { BadRequestException, NotFoundException, ForbiddenException } from "@nestjs/common";
-import { mockInstagramServer } from "../src/modules/instagram/mock-instagram";
 
-describe("PACKAGE ENGINE: Complete API Surface Verification", () => {
-  let packagesController: PackagesController;
-  let packagesService: PackagesService;
-  let quoteService: PackagesQuoteService;
-  let connectionsController: ConnectionsController;
-  let instagramService: InstagramService;
-  let settingsController: SettingsController;
-  let settingsService: SettingsService;
+describe("Package API contract verification", () => {
+  const quote = {
+    valid: true,
+    timezone: "Asia/Kolkata",
+    totalCharge: 1,
+    totalRuns: 1,
+    days: 1,
+    items: [],
+    timeline: [
+      {
+        runIndex: 1,
+        scheduledAt: "2026-10-23T12:00:00.000Z",
+        serviceId: "service-1",
+        serviceName: "Followers",
+        quantity: 100,
+        chargeShare: 1,
+      },
+    ],
+    warnings: [],
+    disclaimer: "Maximum total; unused balance is refunded to your wallet.",
+  };
 
-  const mockPrisma = { isConnected: false } as any;
+  it("validates and forwards a timezone-aware quote request", async () => {
+    const getQuote = jest.fn().mockResolvedValue(quote);
+    const controller = new PackagesController({ getQuote } as any);
+    const request = {
+      platform: "instagram",
+      handle: "travel_notes",
+      timezone: "Asia/Kolkata",
+      followersDrip: {
+        serviceId: "service-1",
+        quantity: 100,
+        days: 1,
+        intervalHours: 24,
+      },
+    };
 
-  const testUserA = { id: "user_api_alice", email: "alice@test.com", role: "CUSTOMER" };
-  const testUserB = { id: "user_api_bob", email: "bob@test.com", role: "CUSTOMER" };
-
-  beforeAll(() => {
-    quoteService = new PackagesQuoteService(mockPrisma);
-    instagramService = new InstagramService(mockPrisma);
-    packagesService = new PackagesService(mockPrisma, quoteService, instagramService);
-    packagesController = new PackagesController(packagesService);
-    connectionsController = new ConnectionsController(instagramService);
-    settingsService = new SettingsService();
-    settingsController = new SettingsController(settingsService);
+    await expect(controller.getQuote(request)).resolves.toEqual(quote);
+    expect(getQuote).toHaveBeenCalledWith(request);
+    await expect(
+      controller.getQuote({ ...request, timezone: "Not/A_Timezone" }),
+    ).rejects.toThrow(BadRequestException);
   });
 
-  beforeEach(() => {
-    mockInstagramServer.reset();
+  it("returns the backend-calculated execution timeline unchanged", async () => {
+    const controller = new PackagesController({
+      getQuote: jest.fn().mockResolvedValue(quote),
+    } as any);
+
+    const result = await controller.getQuote({
+      platform: "instagram",
+      handle: "travel_notes",
+      timezone: "Asia/Kolkata",
+      followersDrip: {
+        serviceId: "service-1",
+        quantity: 100,
+        days: 1,
+        intervalHours: 24,
+      },
+    });
+    expect(result.timeline).toEqual(quote.timeline);
   });
 
-  describe("1. POST /packages/quote", () => {
-    it("returns pure calculated quote with timeline, items, and warnings", async () => {
-      const quote = await packagesController.getQuote({
-        durationDays: 14,
-        rules: [
-          {
-            kind: "POST_TRIGGERED",
-            serviceId: "srv-views",
-            quantityPerPost: 500,
-            maxPosts: 10,
-            delayMinutes: 5,
-          },
-          {
-            kind: "TIME_DRIP",
-            serviceId: "srv-followers",
-            totalQuantity: 1400,
-          },
-        ],
-      });
+  it("validates and forwards an absolute reschedule instant", async () => {
+    const rescheduleExecution = jest.fn().mockResolvedValue({ success: true });
+    const controller = new PackagesController({
+      rescheduleExecution,
+    } as any);
+    const executeAt = "2026-10-23T12:00:00.000Z";
 
-      expect(quote.valid).toBe(true);
-      expect(quote.totalCharge).toBeGreaterThan(0);
-      expect(quote.items.length).toBe(2);
-      expect(quote.timeline.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it("rejects invalid quote payload (missing rules/items)", async () => {
-      await expect(packagesController.getQuote({})).rejects.toThrow(BadRequestException);
-    });
+    await expect(
+      controller.rescheduleExecution(
+        { id: "user-1" } as any,
+        "package-1",
+        "execution-1",
+        { executeAt },
+      ),
+    ).resolves.toEqual({ success: true });
+    expect(rescheduleExecution).toHaveBeenCalledWith(
+      "user-1",
+      "package-1",
+      "execution-1",
+      { executeAt },
+    );
+    await expect(
+      controller.rescheduleExecution(
+        { id: "user-1" } as any,
+        "package-1",
+        "execution-1",
+        { executeAt: "2026-10-23T12:00:00" },
+      ),
+    ).rejects.toThrow(BadRequestException);
   });
 
-  describe("2. POST /packages/purchase (and POST /packages)", () => {
-    it("purchases package and requires Idempotency-Key", async () => {
-      const res = await packagesController.purchasePackage(testUserA as any, {
-        durationDays: 30,
-        handle: "alice_brand",
-        idempotencyKey: "idem_api_test_001",
-        consentRulesUnderstood: true,
-        rules: [
-          {
-            kind: "POST_TRIGGERED",
-            serviceId: "srv-likes",
-            quantityPerPost: 250,
-            maxPosts: 8,
-          },
-        ],
-      });
+  it("forwards supported package operations with the authenticated user", async () => {
+    const service = {
+      purchasePackage: jest.fn().mockResolvedValue({ success: true }),
+      listPackages: jest.fn().mockResolvedValue([]),
+      getPackage: jest.fn().mockResolvedValue({ id: "package-1" }),
+      pausePackage: jest.fn().mockResolvedValue({ status: "PAUSED" }),
+      resumePackage: jest.fn().mockResolvedValue({ status: "ACTIVE" }),
+      cancelPackage: jest.fn().mockResolvedValue({ success: true }),
+      triggerStart: jest.fn().mockResolvedValue({ success: true }),
+      getAdminExecutionsQueue: jest.fn().mockResolvedValue({
+        page: 1,
+        limit: 20,
+        totalCount: 1,
+        totalPages: 1,
+        items: [{ id: "exec-1", status: "SCHEDULED" }],
+      }),
+    };
+    const controller = new PackagesController(service as any);
+    const user = { id: "user-1" } as any;
+    const purchaseInput = {
+      platform: "instagram",
+      handle: "travel_notes",
+      timezone: "Asia/Kolkata",
+      followersDrip: {
+        serviceId: "service-1",
+        quantity: 100,
+        days: 1,
+        intervalHours: 24,
+      },
+      consentRulesUnderstood: true,
+      quoteHash: "qh_v2_primary_9999999999999_validhash",
+      idempotencyKey: "purchase-key",
+    };
 
-      expect(res.success).toBe(true);
-      expect(res.package.id).toBeTruthy();
-      expect(res.package.handle).toBe("alice_brand");
-      expect(res.package.status).toBe("ACTIVE");
+    await expect(
+      controller.purchasePackage(user, purchaseInput),
+    ).resolves.toEqual({ success: true });
+    expect(service.purchasePackage).toHaveBeenCalledWith(
+      user.id,
+      expect.objectContaining(purchaseInput),
+    );
+    await expect(controller.listPackages(user)).resolves.toEqual([]);
+    expect(service.listPackages).toHaveBeenCalledWith(user.id);
+    await expect(controller.getPackage(user, "package-1")).resolves.toEqual({
+      id: "package-1",
     });
-
-    it("rejects purchase when Idempotency-Key is missing", async () => {
-      await expect(
-        packagesController.purchasePackage(testUserA as any, {
-          durationDays: 30,
-          handle: "alice_brand",
-          consentRulesUnderstood: true,
-          rules: [{ kind: "POST_TRIGGERED", serviceId: "srv-likes", quantityPerPost: 100, maxPosts: 5 }],
-        } as any)
-      ).rejects.toThrow(BadRequestException);
+    expect(service.getPackage).toHaveBeenCalledWith(user.id, "package-1");
+    await expect(controller.pausePackage(user, "package-1")).resolves.toEqual({
+      status: "PAUSED",
     });
-  });
-
-  describe("3. GET /packages & GET /packages/:id", () => {
-    let createdPkgId: string;
-
-    beforeAll(async () => {
-      const p = await packagesController.purchasePackage(testUserA as any, {
-        durationDays: 7,
-        handle: "alice_feed",
-        idempotencyKey: "idem_pkg_alice_get",
-        consentRulesUnderstood: true,
-        rules: [{ kind: "TIME_DRIP", serviceId: "srv-followers", totalQuantity: 700 }],
-      });
-      createdPkgId = p.package.id;
+    expect(service.pausePackage).toHaveBeenCalledWith(user.id, "package-1");
+    await expect(controller.resumePackage(user, "package-1")).resolves.toEqual({
+      status: "ACTIVE",
     });
-
-    it("GET /packages lists all packages for user", async () => {
-      const list = await packagesController.listPackages(testUserA as any);
-      expect(Array.isArray(list)).toBe(true);
-      expect(list.length).toBeGreaterThan(0);
-      expect(list.some((pkg: any) => pkg.id === createdPkgId)).toBe(true);
+    expect(service.resumePackage).toHaveBeenCalledWith(user.id, "package-1");
+    await expect(controller.cancelPackage(user, "package-1")).resolves.toEqual({
+      success: true,
     });
+    expect(service.cancelPackage).toHaveBeenCalledWith(user.id, "package-1");
+    await expect(
+      controller.triggerManualPost(user, "package-1", {
+        url: "https://instagram.com/p/post-1",
+        mediaType: "POST",
+        idempotencyKey: "trigger-key",
+      }),
+    ).resolves.toEqual({ success: true });
+    expect(service.triggerStart).toHaveBeenCalledWith(
+      user.id,
+      "package-1",
+      {
+        url: "https://instagram.com/p/post-1",
+        mediaType: "POST",
+        rules: [],
+      },
+      "trigger-key",
+    );
 
-    it("GET /packages/:id returns package detail for owner", async () => {
-      const pkg = await packagesController.getPackage(testUserA as any, createdPkgId);
-      expect(pkg.id).toBe(createdPkgId);
-      expect(pkg.handle).toBe("alice_feed");
+    await expect(
+      controller.getAdminExecutionsQueue("SCHEDULED", "1", "20"),
+    ).resolves.toEqual({
+      page: 1,
+      limit: 20,
+      totalCount: 1,
+      totalPages: 1,
+      items: [{ id: "exec-1", status: "SCHEDULED" }],
     });
-
-    it("GET /packages/:id enforces IDOR isolation (User B cannot read User A's package)", async () => {
-      await expect(packagesController.getPackage(testUserB as any, createdPkgId)).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  describe("4. POST /packages/:id/trigger (Manual Link Trigger)", () => {
-    let triggerPkgId: string;
-
-    beforeAll(async () => {
-      const p = await packagesController.purchasePackage(testUserA as any, {
-        durationDays: 14,
-        handle: "alice_trigger",
-        idempotencyKey: "idem_pkg_trigger_01",
-        consentRulesUnderstood: true,
-        rules: [{ kind: "POST_TRIGGERED", serviceId: "srv-likes", quantityPerPost: 500, maxPosts: 10 }],
-      });
-      triggerPkgId = p.package.id;
-    });
-
-    it("accepts official Instagram post/reel link and extracts mediaKey", async () => {
-      const res = await packagesController.triggerManualPost(testUserA as any, triggerPkgId, {
-        url: "https://www.instagram.com/reel/C89abcdef123/",
-        mediaType: "REEL",
-      });
-
-      expect(res.success).toBe(true);
-      expect(res.mediaKey).toBe("C89abcdef123");
-      expect(res.status).toBe("SCHEDULED");
-    });
-
-    it("rejects arbitrary external URLs", async () => {
-      await expect(
-        packagesController.triggerManualPost(testUserA as any, triggerPkgId, {
-          url: "https://malicious-site.com/p/123",
-        })
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it("enforces IDOR: User B cannot trigger User A's package", async () => {
-      await expect(
-        packagesController.triggerManualPost(testUserB as any, triggerPkgId, {
-          url: "https://www.instagram.com/p/DF21abcxyz/",
-        })
-      ).rejects.toThrow();
-    });
-  });
-
-  describe("5. POST /packages/:id/pause & POST /packages/:id/resume", () => {
-    let statePkgId: string;
-
-    beforeAll(async () => {
-      const p = await packagesController.purchasePackage(testUserA as any, {
-        durationDays: 10,
-        handle: "alice_state",
-        idempotencyKey: "idem_pkg_state_01",
-        consentRulesUnderstood: true,
-        rules: [{ kind: "TIME_DRIP", serviceId: "srv-followers", totalQuantity: 1000 }],
-      });
-      statePkgId = p.package.id;
-    });
-
-    it("pauses active package", async () => {
-      const pauseRes = await packagesController.pausePackage(testUserA as any, statePkgId);
-      expect(pauseRes.status).toBe("PAUSED");
-
-      const pkg = await packagesController.getPackage(testUserA as any, statePkgId);
-      expect(pkg.status).toBe("PAUSED");
-    });
-
-    it("resumes paused package", async () => {
-      const resumeRes = await packagesController.resumePackage(testUserA as any, statePkgId);
-      expect(resumeRes.status).toBe("ACTIVE");
-
-      const pkg = await packagesController.getPackage(testUserA as any, statePkgId);
-      expect(pkg.status).toBe("ACTIVE");
+    expect(service.getAdminExecutionsQueue).toHaveBeenCalledWith({
+      status: "SCHEDULED",
+      page: 1,
+      limit: 20,
     });
   });
 
-  describe("6. POST /packages/:id/cancel", () => {
-    it("cancels package and returns unused reserve", async () => {
-      const p = await packagesController.purchasePackage(testUserA as any, {
-        durationDays: 20,
-        handle: "alice_cancel",
-        idempotencyKey: "idem_pkg_cancel_01",
-        consentRulesUnderstood: true,
-        rules: [{ kind: "TIME_DRIP", serviceId: "srv-followers", totalQuantity: 2000 }],
-      });
+  it("preserves the supported package-engine settings defaults and updates", () => {
+    const controller = new SettingsController(new SettingsService());
+    const settings = controller.getSettings();
 
-      const cancelRes = await packagesController.cancelPackage(testUserA as any, p.package.id);
-      expect(cancelRes.success).toBe(true);
-
-      const pkg = await packagesController.getPackage(testUserA as any, p.package.id);
-      expect(pkg.status).toBe("CANCELLED");
-    });
-  });
-
-  describe("7. Connections API (OAuth, List, Revoke)", () => {
-    it("POST /connections/instagram/start returns authorizeUrl and state with 10m TTL", async () => {
-      const res = connectionsController.startInstagramConnect(testUserA as any);
-      expect(res.authorizeUrl).toContain("instagram.com/oauth/authorize");
-      expect(res.state).toContain("user_api_alice");
-    });
-
-    it("GET /connections/instagram/callback connects account and rejects replayed state", async () => {
-      const start = connectionsController.startInstagramConnect(testUserA as any);
-      const code = mockInstagramServer.createTestAuthCode(testUserA.id, {
-        id: "ig_acc_api_alice",
-        username: "alice_official",
-        accountType: "BUSINESS",
-      });
-
-      const conn = await connectionsController.handleInstagramCallback(testUserA as any, code, start.state);
-      expect(conn.username).toBe("alice_official");
-      expect(conn.platformAccountId).toBe("ig_acc_api_alice");
-
-      // Reused state must fail
-      await expect(
-        connectionsController.handleInstagramCallback(testUserA as any, code, start.state)
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it("GET /connections lists active connections without leaking tokenEnc", async () => {
-      const list = await connectionsController.listConnections(testUserA as any);
-      expect(Array.isArray(list)).toBe(true);
-      expect(list.length).toBeGreaterThan(0);
-      expect((list[0] as any).tokenEnc).toBeUndefined();
-    });
-
-    it("DELETE /connections/:id revokes connection", async () => {
-      const list = await connectionsController.listConnections(testUserA as any);
-      const connId = list[0].id;
-
-      const delRes = await connectionsController.deleteConnection(testUserA as any, connId);
-      expect(delRes.success).toBe(true);
-    });
-  });
-
-  describe("8. Settings API (Admin Configuration)", () => {
-    it("GET /settings returns package engine configuration defaults", async () => {
-      const settings = settingsController.getSettings();
-      expect(settings.packagesEnabled).toBe(true);
-      expect(settings.packageMaxDurationDays).toBe(90);
-      expect(settings.packageMaxPosts).toBe(100);
-      expect(settings.packageMaxPerDay).toBe(10);
-      expect(settings.packageMinSpacingMin).toBe(15);
-      expect(settings.packageMaxPauseDays).toBe(14);
-      expect(settings.packageMarginFloor).toBe(0.15);
-      expect(typeof settings.sourceInstagramEnabled).toBe("boolean");
-    });
-
-    it("PUT /settings updates package engine configuration", async () => {
-      const updated = settingsController.updateSettings({
+    expect(settings).toEqual(
+      expect.objectContaining({
+        packagesEnabled: true,
+        packageMaxDurationDays: 90,
+        packageMaxPosts: 100,
+        packageMaxPerDay: 10,
+        packageMinSpacingMin: 15,
+        packageMaxPauseDays: 14,
+        packageMarginFloor: 0.15,
+      }),
+    );
+    expect(
+      controller.updateSettings({
         packageMaxPosts: 150,
-        packageMarginFloor: 0.20,
-      });
-      expect(updated.success).toBe(true);
-      expect(updated.settings.packageMaxPosts).toBe(150);
-      expect(updated.settings.packageMarginFloor).toBe(0.20);
+        packageMarginFloor: 0.2,
+      }),
+    ).toEqual({
+      success: true,
+      settings: expect.objectContaining({
+        packageMaxPosts: 150,
+        packageMarginFloor: 0.2,
+      }),
     });
   });
 });

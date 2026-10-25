@@ -54,8 +54,8 @@ graph TD
 | `PASSWORD_PEPPER` | *(Generated random 32-byte secret)* | Argon2id pepper |
 | `PROVIDER_KEY_SECRET` | *(Generated random 32-byte secret)* | Provider API encryption key |
 | `PROVIDER_KEY_ENCRYPTION_KEY` | *(Alias for PROVIDER_KEY_SECRET)* | 32-byte hex AES encryption key |
-| `PAYMENT_PROVIDER` | `simulated` \| `razorpay` | Payment provider engine (default: simulated) |
-| `ALLOW_SIMULATED_PAYMENTS`| `true` \| `false` | Required in production if PAYMENT_PROVIDER=simulated |
+| `PAYMENT_PROVIDER` | `razorpay` | Production must select a real provider explicitly; simulated payments are rejected |
+| `ALLOW_SIMULATED_PAYMENTS`| `true` \| `false` | Legacy setting; it never enables simulated payments in production |
 | `ADMIN_EMAIL` | `admin@smmpanel.internal` | Bootstrap admin account email |
 | `ADMIN_PASSWORD` | *(Secure admin password)* | Bootstrap admin account password |
 
@@ -83,30 +83,29 @@ Railway is linked to the GitHub repository `vaibhavkumar955584-hub/smm` with aut
 
 Because this is a pnpm monorepo, build and startup orchestration is driven by dynamic dispatcher scripts:
 - **Build Dispatcher:** `scripts/build-service.js` (detects `RAILWAY_SERVICE_NAME` and builds targeted package: `@smm/api`, `@smm/worker`, or `@smm/web`).
-- **Start Dispatcher:** `scripts/start-service.js` (detects `RAILWAY_SERVICE_NAME`, runs migrations/seeds on the API, and boots the container).
+- **Start Dispatcher:** `scripts/start-service.js` (detects `RAILWAY_SERVICE_NAME`, checks migration status without changing the database, and boots the container).
 
 ### Deployment Order:
-1. **Databases:** Ensure `Postgres` and `Redis` plugins are online.
-2. **Backend API (`smm`):** Deploys first; runs `prisma db push` and `scripts/seed.js` to ensure tables and baseline seed data exist.
-3. **Background Worker (`worker`):** Deploys second; connects to PostgreSQL and Redis; begins processing outbox queue.
-4. **Frontend (`web`):** Deploys third; compiles static pages with `NEXT_PUBLIC_API_URL` pointed to the online API.
+1. **Backup:** Take and verify a protected `pg_dump` backup before any production schema change. Keep the dump outside the repository and restrict access to it.
+2. **Migrations:** Review committed Prisma migrations and apply them through the approved release process with `pnpm exec prisma migrate deploy`. Do not use `prisma db push` or `prisma migrate reset` in production.
+3. **Backend API (`smm`):** Deploy after migrations. Startup runs the read-only `prisma migrate status` check and refuses to proceed if migration status is not clean.
+4. **Background Worker (`worker`):** Deploy after the API; startup performs the same read-only migration status check before processing jobs.
+5. **Frontend (`web`):** Deploy after API and worker readiness, with `NEXT_PUBLIC_API_URL` pointed to the API.
 
----
 
-## 5. Database Schema Synchronization & Seeding
+## 5. Database Migration Status & Seeding
 
-Database migrations are managed via Prisma:
-- **Container Boot Schema Sync:** `scripts/start-service.js` executes:
+Database changes are managed exclusively by reviewed, committed Prisma migrations:
+- **Container Boot Check:** `scripts/start-service.js` executes the read-only command:
   ```bash
-  pnpm exec prisma db push --skip-generate
-  node scripts/seed.js
+  pnpm exec prisma migrate status
   ```
-- **Manual Schema Synchronization (from developer machine):**
-  If running directly against Railway:
+- **Approved migration deployment:** after a verified production backup and release approval, apply migrations with:
   ```bash
-  npx --yes @railway/cli run pnpm exec prisma db push
+  pnpm exec prisma migrate deploy
   ```
-- **Idempotent Seeding:** `scripts/seed.js` uses `prisma.*.upsert()` for all categories, baseline services (`1042`, `2015`), and demo users, preventing duplicate key collisions across re-deployments.
+- `prisma db push` and `prisma migrate reset` are not production deployment methods.
+- `scripts/seed.js` is not run automatically during API or worker startup. Seeding, when needed, is a separate controlled operation against the explicitly selected environment.
 
 ---
 

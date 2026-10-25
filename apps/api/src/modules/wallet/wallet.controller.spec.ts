@@ -7,8 +7,13 @@ import { Decimal } from "decimal.js";
 describe("WalletController Unit & Security Invariant Tests", () => {
   let controller: WalletController;
   let mockWalletService: Partial<WalletService>;
+  let originalEnvironment: Record<string, string | undefined>;
+  const environmentKeys = ["NODE_ENV", "ALLOW_SIMULATED_PAYMENTS", "PAYMENTS_MODE"];
 
   beforeEach(async () => {
+    originalEnvironment = Object.fromEntries(
+      environmentKeys.map((key) => [key, process.env[key]])
+    );
     mockWalletService = {
       getBalance: jest.fn().mockResolvedValue({
         balance: 1500.0,
@@ -48,12 +53,21 @@ describe("WalletController Unit & Security Invariant Tests", () => {
   });
 
   afterEach(() => {
-    delete process.env.NODE_ENV;
+    for (const key of environmentKeys) {
+      const value = originalEnvironment[key];
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
   });
 
   describe("Security Invariant: POST /wallet/deposit Restrictions", () => {
     it("CRITICAL: throws NotFoundException (HTTP 404) when NODE_ENV is production", () => {
       process.env.NODE_ENV = "production";
+      process.env.ALLOW_SIMULATED_PAYMENTS = "true";
+      process.env.PAYMENTS_MODE = "sandbox";
 
       expect(() => {
         controller.deposit({ amount: 1000, method: "UPI" });

@@ -1,0 +1,37 @@
+﻿Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-24T22:49:05.8599895+05:30
+Status: RUNNING
+---
+
+pnpm.exe : PASS test/package-gate-m8.spec.ts
+At C:\Users\vaibh\AppData\Roaming\npm\pnpm.ps1:14 char:3
++   & "$basedir/node_modules/pnpm/pnpm.exe"   $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS test/package-gate-m8.spec.ts:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Milestone M8: Final Comprehensive Gate (14 Invariant & Verification Scenarios)
+    √ (1) handle validation per platform (47 ms)
+    √ (2) link normalization and mediaKey per platform with real sample links, rejecting wrong host, wrong platform 
+and short links (5 ms)
+    √ (3) 50 parallel Start calls on one link create one trigger and one set of executions (294 ms)
+    √ (4) quota never exceeds maxPosts under parallel Starts (216 ms)
+    √ (5) chosen quantity above maxQtyPerPost is rejected (48 ms)
+    √ (6) interval drip math: sum(quantity)=q, sum(allocatedCharge)=charge, every run within min/max, spacing >= 
+minGap (2 ms)
+    √ (7) followers drip math, including the too-small-quantity warning (2 ms)
+    √ (8) purchased = consumed + refunded + remaining after randomized sequences (2 ms)
+    √ (9) cancel vs Start vs dispatch race: nothing dispatches after cancel, refund exactly once (77 ms)
+    √ (10) settlement refunds the unused reserve once (39 ms)
+    √ (11) prepaid child partial refund is never 0 (1 ms)
+    √ (12) IDOR: user A cannot preview, start or cancel user B's package (42 ms)
+    √ (13) no wallet credit path except verified payment, admin adjustment with reason, refund, bonus (1 ms)
+    √ (14) grep proves no OAuth or Instagram-connect code remains and no forbidden words appear in UI strings (66 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        8.949 s
+Ran all test suites matching /test\\package-gate-m8.spec.ts/i.

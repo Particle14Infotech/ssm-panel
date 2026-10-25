@@ -4,12 +4,24 @@ import request from "supertest";
 import { AppModule } from "../../app.module";
 import { PrismaService } from "../../common/prisma.service";
 import { Decimal } from "decimal.js";
+import * as jwt from "jsonwebtoken";
 
-describe("Milestone 1 Core Correctness Integration Tests", () => {
+const JWT_SECRET =
+  process.env.JWT_ACCESS_SECRET ||
+  process.env.JWT_SECRET ||
+  "smm_panel_jwt_secret_dev_environment_key_32bytes";
+
+import { assertRealPostgresStartup } from "../../test-utils/pg-test-startup";
+
+jest.setTimeout(60000);
+
+describe("@pg Milestone 1 Core Correctness Integration Tests", () => {
   let app: INestApplication;
   let prisma: PrismaService;
 
   beforeAll(async () => {
+    await assertRealPostgresStartup();
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -19,11 +31,11 @@ describe("Milestone 1 Core Correctness Integration Tests", () => {
     await app.init();
 
     prisma = app.get<PrismaService>(PrismaService);
-  });
+  }, 60000);
 
   afterAll(async () => {
     await app.close();
-  });
+  }, 60000);
 
   describe("1. Pessimistic Balance Locking & Idempotency", () => {
     const testUserId = "usr_m1_test_user";
@@ -54,10 +66,18 @@ describe("Milestone 1 Core Correctness Integration Tests", () => {
         where: { userId: testUserId },
         data: { balance: new Decimal(100.0) },
       });
+      await prisma.service.update({
+        where: { id: testServiceId },
+        data: { cancellable: true },
+      });
     });
 
     it("verifies duplicate Idempotency-Key returns same order without double-debiting", async () => {
       const idempotencyKey = "idem_key_unique_" + Date.now();
+      const token = jwt.sign(
+        { sub: testUserId, email: "m1_test@smm-panel.io", role: "CUSTOMER", tier: "BRONZE" },
+        JWT_SECRET
+      );
       const payload = {
         userId: testUserId,
         serviceId: testServiceId,
@@ -69,12 +89,18 @@ describe("Milestone 1 Core Correctness Integration Tests", () => {
       // Call 1
       const res1 = await request(app.getHttpServer())
         .post("/api/v1/orders/create")
+        .set("Authorization", `Bearer ${token}`)
         .send(payload)
-        .expect(201);
+        .expect((response) => {
+          if (response.status !== 201) {
+            throw new Error(JSON.stringify(response.body));
+          }
+        });
 
       // Call 2 with identical key
       const res2 = await request(app.getHttpServer())
         .post("/api/v1/orders/create")
+        .set("Authorization", `Bearer ${token}`)
         .send(payload)
         .expect(201);
 
@@ -89,9 +115,14 @@ describe("Milestone 1 Core Correctness Integration Tests", () => {
 
     it("verifies 10 concurrent orders never overdraw wallet balance below zero", async () => {
       // Balance is 100. Each order costs 18. Maximum 5 orders can succeed (5 * 18 = 90).
+      const token = jwt.sign(
+        { sub: testUserId, email: "m1_test@smm-panel.io", role: "CUSTOMER", tier: "BRONZE" },
+        JWT_SECRET
+      );
       const orderPromises = Array.from({ length: 10 }).map((_, idx) => {
         return request(app.getHttpServer())
           .post("/api/v1/orders/create")
+          .set("Authorization", `Bearer ${token}`)
           .send({
             userId: testUserId,
             serviceId: testServiceId,
@@ -102,10 +133,18 @@ describe("Milestone 1 Core Correctness Integration Tests", () => {
 
       const responses = await Promise.all(orderPromises);
       const successful = responses.filter((r) => r.status === 201);
-      const failed = responses.filter((r) => r.status === 400);
+      const insufficientBalance = responses.filter(
+        (response) =>
+          response.status === 400 &&
+          response.body?.message === "Insufficient wallet balance."
+      );
 
+      expect(successful.length).toBeGreaterThan(0);
       expect(successful.length).toBeLessThanOrEqual(5);
-      expect(failed.length).toBeGreaterThanOrEqual(5);
+      expect(insufficientBalance.length).toBeGreaterThanOrEqual(5);
+      expect(successful.length + insufficientBalance.length).toBe(
+        responses.length
+      );
 
       const wallet = await prisma.wallet.findUnique({
         where: { userId: testUserId },
@@ -114,8 +153,13 @@ describe("Milestone 1 Core Correctness Integration Tests", () => {
     });
 
     it("enforces single refund per order at DB constraint level", async () => {
+      const token = jwt.sign(
+        { sub: testUserId, email: "m1_test@smm-panel.io", role: "CUSTOMER", tier: "BRONZE" },
+        JWT_SECRET
+      );
       const createRes = await request(app.getHttpServer())
         .post("/api/v1/orders/create")
+        .set("Authorization", `Bearer ${token}`)
         .send({
           userId: testUserId,
           serviceId: testServiceId,
@@ -129,12 +173,14 @@ describe("Milestone 1 Core Correctness Integration Tests", () => {
       // Cancel and refund 1st time
       const cancel1 = await request(app.getHttpServer())
         .post(`/api/v1/orders/${orderId}/cancel`)
+        .set("Authorization", `Bearer ${token}`)
         .expect(201);
       expect(cancel1.body.success).toBe(true);
 
       // Second attempt must fail with Conflict (409)
       await request(app.getHttpServer())
         .post(`/api/v1/orders/${orderId}/cancel`)
+        .set("Authorization", `Bearer ${token}`)
         .expect(409);
 
       // Check ledger entries for this order - exactly 1 REFUND entry

@@ -192,6 +192,7 @@ describe("PHASE P1 & P2: Package Engine Money Model, Manual Trigger & Scheduler 
             maxQty: 100000,
             status: "ACTIVE",
             costINR: new Decimal("30.00"),
+            packageEligible: true,
           },
           {
             id: "srv-followers-1",
@@ -202,6 +203,7 @@ describe("PHASE P1 & P2: Package Engine Money Model, Manual Trigger & Scheduler 
             maxQty: 50000,
             status: "ACTIVE",
             costINR: new Decimal("80.00"),
+            packageEligible: true,
           },
         ],
       },

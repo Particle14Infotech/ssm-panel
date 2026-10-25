@@ -137,9 +137,10 @@ cp .env.example .env
 
 ### Step 3: Run Database Migrations & Seeds
 ```bash
-npx prisma migrate dev --name init
-npx prisma db seed
+pnpm exec prisma migrate dev
+pnpm exec prisma db seed
 ```
+The migration history includes the initial schema baseline; do not create a separate `init` migration. For an already-created database in deployment or CI, apply committed migrations with `pnpm exec prisma migrate deploy`.
 
 ### Step 4: Run Services (No Docker Required)
 You can start services concurrently via Turborepo or in separate terminals:

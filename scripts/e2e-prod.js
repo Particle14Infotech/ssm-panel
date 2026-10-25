@@ -121,6 +121,9 @@ async function run() {
       quantity: orderQty
     })
   });
+  if (createOrderRes.status !== 201) {
+    console.error('Order creation failed response:', createOrderRes.status, createOrderRes.data);
+  }
   assert(createOrderRes.status === 201, `Order successfully created (201 Created), Order ID: ${createOrderRes.data?.id}`);
   const orderId = createOrderRes.data.id;
   const initialCharge = Number(createOrderRes.data.charge);

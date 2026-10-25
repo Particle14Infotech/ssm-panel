@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException, ServiceUnavailableException } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import * as argon2 from "argon2";
 
@@ -12,26 +12,7 @@ export class UsersService {
     }
 
     if (!this.prisma.isConnected) {
-      if (userId === "usr_bholu_customer") {
-        return {
-          id: "usr_bholu_customer",
-          email: "bholu@gmail.com",
-          name: "Bholu",
-          role: "CUSTOMER",
-          tier: "PRO_SCALE",
-          balance: 1068.61,
-          twoFactorEnabled: false,
-        };
-      }
-      return {
-        id: userId,
-        email: "customer@demo.local",
-        name: "Demo Customer",
-        role: "CUSTOMER",
-        tier: "PRO_SCALE",
-        balance: 2450.0,
-        twoFactorEnabled: false,
-      };
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
     }
 
     let user = await this.prisma.user.findUnique({
@@ -70,7 +51,6 @@ export class UsersService {
         where: { id: userId },
         data: {
           name: body.name ? body.name.trim() : undefined,
-          tier: body.tier || undefined,
         },
       });
       return { success: true, user };

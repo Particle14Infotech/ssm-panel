@@ -562,23 +562,29 @@ describe("Milestone M8: Final Comprehensive Gate (14 Invariant & Verification Sc
     db.public.none(`INSERT INTO "User" (id, email, name) VALUES ('u-par', 'par@test.com', 'Parallel User')`);
     db.public.none(`INSERT INTO "Wallet" (id, "userId", balance) VALUES ('w-par', 'u-par', 50000.00)`);
 
-    const pkg = await packagesService.purchasePackage("u-par", {
-      platform: "instagram",
+    const qParInput = {
+      platform: "instagram" as const,
       handle: "creator_par",
       days: 30,
       consentRulesUnderstood: true,
-      idempotencyKey: "idem_par_setup",
       items: [
         {
           serviceId: "srv-ig-likes",
           target: "https://instagram.com/creator_par",
-          targetType: "POST_OR_REEL",
+          targetType: "POST_OR_REEL" as const,
           quantity: 2000,
           quantityPerPost: 500,
           maxPosts: 4,
           deliveryWindowMin: 60,
         },
       ],
+    };
+    const qPar = await quoteService.calculateQuote(qParInput);
+
+    const pkg = await packagesService.purchasePackage("u-par", {
+      ...qParInput,
+      idempotencyKey: "idem_par_setup",
+      quoteHash: qPar.quoteHash,
     });
 
     const postUrl = "https://www.instagram.com/p/UNIQUE_PAR_TEST_001/";
@@ -611,23 +617,29 @@ describe("Milestone M8: Final Comprehensive Gate (14 Invariant & Verification Sc
     db.public.none(`INSERT INTO "User" (id, email, name) VALUES ('u-quota', 'quota@test.com', 'Quota User')`);
     db.public.none(`INSERT INTO "Wallet" (id, "userId", balance) VALUES ('w-quota', 'u-quota', 50000.00)`);
 
-    const pkg = await packagesService.purchasePackage("u-quota", {
-      platform: "instagram",
+    const qQuotaInput = {
+      platform: "instagram" as const,
       handle: "creator_quota",
       days: 30,
       consentRulesUnderstood: true,
-      idempotencyKey: "idem_quota_setup",
       items: [
         {
           serviceId: "srv-ig-likes",
           target: "https://instagram.com/creator_quota",
-          targetType: "POST_OR_REEL",
+          targetType: "POST_OR_REEL" as const,
           quantity: 1500,
           quantityPerPost: 500,
           maxPosts: 3, // exactly 3 posts max
           deliveryWindowMin: 60,
         },
       ],
+    };
+    const qQuota = await quoteService.calculateQuote(qQuotaInput);
+
+    const pkg = await packagesService.purchasePackage("u-quota", {
+      ...qQuotaInput,
+      idempotencyKey: "idem_quota_setup",
+      quoteHash: qQuota.quoteHash,
     });
 
     // 15 parallel Start calls with 15 DIFFERENT links
@@ -660,22 +672,28 @@ describe("Milestone M8: Final Comprehensive Gate (14 Invariant & Verification Sc
     db.public.none(`INSERT INTO "User" (id, email, name) VALUES ('u-qty', 'qty@test.com', 'Qty User')`);
     db.public.none(`INSERT INTO "Wallet" (id, "userId", balance) VALUES ('w-qty', 'u-qty', 10000.00)`);
 
-    const pkg = await packagesService.purchasePackage("u-qty", {
-      platform: "instagram",
+    const qQtyInput = {
+      platform: "instagram" as const,
       handle: "creator_qty",
       days: 30,
       consentRulesUnderstood: true,
-      idempotencyKey: "idem_qty_setup",
       items: [
         {
           serviceId: "srv-ig-likes",
           target: "https://instagram.com/creator_qty",
-          targetType: "POST_OR_REEL",
+          targetType: "POST_OR_REEL" as const,
           quantity: 2000,
           quantityPerPost: 500, // max 500
           maxPosts: 4,
         },
       ],
+    };
+    const qQty = await quoteService.calculateQuote(qQtyInput);
+
+    const pkg = await packagesService.purchasePackage("u-qty", {
+      ...qQtyInput,
+      idempotencyKey: "idem_qty_setup",
+      quoteHash: qQty.quoteHash,
     });
 
     const rule = (await mockPrisma.packageRule.findMany({ where: { packageId: pkg.package.id } }))[0];
@@ -802,22 +820,28 @@ describe("Milestone M8: Final Comprehensive Gate (14 Invariant & Verification Sc
     db.public.none(`INSERT INTO "User" (id, email, name) VALUES ('u-race', 'race@test.com', 'Race User')`);
     db.public.none(`INSERT INTO "Wallet" (id, "userId", balance) VALUES ('w-race', 'u-race', 50000.00)`);
 
-    const pkg = await packagesService.purchasePackage("u-race", {
-      platform: "instagram",
+    const qRaceInput = {
+      platform: "instagram" as const,
       handle: "creator_race",
       days: 30,
       consentRulesUnderstood: true,
-      idempotencyKey: "idem_race_setup",
       items: [
         {
           serviceId: "srv-ig-likes",
           target: "https://instagram.com/creator_race",
-          targetType: "POST_OR_REEL",
+          targetType: "POST_OR_REEL" as const,
           quantity: 2000,
           quantityPerPost: 500,
           maxPosts: 4,
         },
       ],
+    };
+    const qRace = await quoteService.calculateQuote(qRaceInput);
+
+    const pkg = await packagesService.purchasePackage("u-race", {
+      ...qRaceInput,
+      idempotencyKey: "idem_race_setup",
+      quoteHash: qRace.quoteHash,
     });
 
     // Start 1 post to generate scheduled executions
@@ -859,22 +883,28 @@ describe("Milestone M8: Final Comprehensive Gate (14 Invariant & Verification Sc
     db.public.none(`INSERT INTO "User" (id, email, name) VALUES ('u-settle', 'settle@test.com', 'Settle User')`);
     db.public.none(`INSERT INTO "Wallet" (id, "userId", balance) VALUES ('w-settle', 'u-settle', 50000.00)`);
 
-    const pkg = await packagesService.purchasePackage("u-settle", {
-      platform: "instagram",
+    const qSettleInput = {
+      platform: "instagram" as const,
       handle: "creator_settle",
       days: 30,
       consentRulesUnderstood: true,
-      idempotencyKey: "idem_settle_setup",
       items: [
         {
           serviceId: "srv-ig-likes",
           target: "https://instagram.com/creator_settle",
-          targetType: "POST_OR_REEL",
+          targetType: "POST_OR_REEL" as const,
           quantity: 1000,
           quantityPerPost: 500,
           maxPosts: 2,
         },
       ],
+    };
+    const qSettle = await quoteService.calculateQuote(qSettleInput);
+
+    const pkg = await packagesService.purchasePackage("u-settle", {
+      ...qSettleInput,
+      idempotencyKey: "idem_settle_setup",
+      quoteHash: qSettle.quoteHash,
     });
 
     // Settle package at expiry
@@ -916,22 +946,28 @@ describe("Milestone M8: Final Comprehensive Gate (14 Invariant & Verification Sc
     db.public.none(`INSERT INTO "Wallet" (id, "userId", balance) VALUES ('w-a', 'u-a', 10000.00)`);
     db.public.none(`INSERT INTO "Wallet" (id, "userId", balance) VALUES ('w-b', 'u-b', 10000.00)`);
 
-    const pkgA = await packagesService.purchasePackage("u-a", {
-      platform: "instagram",
+    const qAInput = {
+      platform: "instagram" as const,
       handle: "creator_a",
       days: 15,
       consentRulesUnderstood: true,
-      idempotencyKey: "idem_idor_setup",
       items: [
         {
           serviceId: "srv-ig-likes",
           target: "https://instagram.com/creator_a",
-          targetType: "POST_OR_REEL",
+          targetType: "POST_OR_REEL" as const,
           quantity: 1000,
           quantityPerPost: 500,
           maxPosts: 2,
         },
       ],
+    };
+    const qA = await quoteService.calculateQuote(qAInput);
+
+    const pkgA = await packagesService.purchasePackage("u-a", {
+      ...qAInput,
+      idempotencyKey: "idem_idor_setup",
+      quoteHash: qA.quoteHash,
     });
 
     // User B tries to preview User A's package -> 404 / NotFound

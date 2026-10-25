@@ -1,17 +1,57 @@
-import { Injectable, BadRequestException, NotFoundException, ConflictException, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+  ServiceUnavailableException,
+  Logger,
+} from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { WalletService } from "../wallet/wallet.service";
 import { SettingsService } from "../settings/settings.service";
 import { PricingService } from "../pricing/pricing.service";
-import { OrderStatus, OutboxStatus } from "@prisma/client";
+import {
+  OrderStatus,
+  OutboxStatus,
+  PackageExecutionStatus,
+} from "@prisma/client";
 import {
   calculateOrderFinancialSnapshot,
   calculateCustomerCharge,
   DEFAULT_PRICING_SETTINGS,
   splitChargeShare,
   generateRunSchedule,
+  PACKAGE_PROVIDER_STATUS_STALLED_REASON,
 } from "@smm/contracts";
 import { Decimal } from "decimal.js";
+import { z } from "zod";
+
+export const PackageProviderReconciliationInputSchema = z.discriminatedUnion(
+  "outcome",
+  [
+    z.object({
+      outcome: z.literal("ACCEPTED"),
+      providerId: z.string().trim().min(1),
+      providerOrderId: z.string().trim().min(1).max(255),
+      evidence: z.string().trim().min(1).max(2000),
+    }),
+    z.object({
+      outcome: z.literal("REJECTED"),
+      providerId: z.string().trim().min(1),
+      confirmedNoAcceptance: z.literal(true),
+      evidence: z.string().trim().min(1).max(2000),
+    }),
+    z.object({
+      outcome: z.literal("UNRESOLVED"),
+      evidence: z.string().trim().min(1).max(2000),
+    }),
+  ]
+);
+
+export type PackageProviderReconciliationInput = z.infer<
+  typeof PackageProviderReconciliationInputSchema
+>;
 
 export interface CreateOrderDto {
   userId?: string;
@@ -38,119 +78,15 @@ export interface OrderFilterDto {
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
-  private sandboxOrders = new Map<string, any>();
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly walletService: WalletService,
     private readonly settingsService?: SettingsService,
     private readonly pricingService?: PricingService
-  ) {
-    this.seedSandboxOrders();
-  }
+  ) {}
 
-  private seedSandboxOrders() {
-    const bholuOrders = [
-      {
-        id: "ord_bholu_001",
-        userId: "usr_bholu_customer",
-        serviceId: "1042",
-        target: "https://instagram.com/bholu_official",
-        quantity: 1400,
-        charge: "252.00",
-        startCount: 4200,
-        remains: 0,
-        status: "COMPLETED",
-        isDripFeed: false,
-        totalQuantity: 1400,
-        createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-        updatedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-        service: {
-          id: "1042",
-          name: "Instagram High-Retention Followers [Real Active • 0% Drop • 30D Refill]",
-          platform: "INSTAGRAM",
-          refillable: true,
-          cancellable: false,
-        },
-      },
-      {
-        id: "ord_bholu_002",
-        userId: "usr_bholu_customer",
-        serviceId: "1043",
-        target: "https://instagram.com/p/DA_bholu_post1",
-        quantity: 3500,
-        charge: "69.96",
-        startCount: 150,
-        remains: 0,
-        status: "COMPLETED",
-        isDripFeed: false,
-        totalQuantity: 3500,
-        createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-        updatedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
-        service: {
-          id: "1043",
-          name: "Instagram Likes [Speed 50k/D • High Quality • Instant]",
-          platform: "INSTAGRAM",
-          refillable: false,
-          cancellable: false,
-        },
-      },
-      {
-        id: "ord_bholu_003",
-        userId: "usr_bholu_customer",
-        serviceId: "1044",
-        target: "https://instagram.com/stories/highlights/180293",
-        quantity: 7000,
-        charge: "1056.79",
-        startCount: 890,
-        remains: 2100,
-        status: "PROCESSING",
-        isDripFeed: true,
-        runs: 7,
-        intervalMinutes: 1440,
-        quantityPerRun: 1000,
-        totalQuantity: 7000,
-        createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        service: {
-          id: "1044",
-          name: "Instagram Highlights Views [Instant Delivery • Ultra Fast]",
-          platform: "INSTAGRAM",
-          refillable: false,
-          cancellable: true,
-        },
-      },
-      {
-        id: "ord_bholu_004",
-        userId: "usr_bholu_customer",
-        serviceId: "1045",
-        target: "https://instagram.com/bholu_official",
-        quantity: 10500,
-        charge: "4492.02",
-        startCount: 0,
-        remains: 10500,
-        status: "IN_PROGRESS",
-        isDripFeed: true,
-        runs: 21,
-        intervalMinutes: 480,
-        quantityPerRun: 500,
-        totalQuantity: 10500,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        service: {
-          id: "1045",
-          name: "Threads Organic Followers & Likes Growth Package",
-          platform: "INSTAGRAM",
-          refillable: true,
-          cancellable: true,
-        },
-      },
-    ];
 
-    for (const ord of bholuOrders) {
-      this.sandboxOrders.set(ord.id, ord);
-    }
-  }
 
   private sanitizeOrderForRole(order: any, role?: string) {
     if (role === "ADMIN") return order;
@@ -172,14 +108,31 @@ export class OrdersService {
       const { providerCostPer1k, costINR, marginPercentOverride, fixedSellingRateOverride, ...safeService } = safeOrder.service;
       safeOrder.service = safeService;
     }
+    if (safeOrder.packageExecution && !safeOrder.packageRun) {
+      const pe = safeOrder.packageExecution;
+      const pkg = pe.package;
+      safeOrder.packageRun = {
+        id: pe.id,
+        runIndex: pe.seq,
+        packageId: pe.packageId,
+        package: pkg
+          ? {
+              id: pkg.id,
+              name: `${pkg.platform} @${pkg.handle}`,
+              status: pkg.status,
+              totalRuns:
+                pkg.rules?.reduce((acc: number, r: any) => acc + (r.maxPosts || 1), 0) || pe.seq,
+              completedRuns: pe.seq,
+            }
+          : undefined,
+      };
+    }
     return safeOrder;
   }
 
   async findAll(userId?: string, requesterRole?: string, filters?: OrderFilterDto) {
     if (!this.prisma.isConnected) {
-      const orders = Array.from(this.sandboxOrders.values());
-      if (userId) return orders.filter((o) => o.userId === userId);
-      return requesterRole === "ADMIN" ? orders : [];
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
     }
 
     try {
@@ -231,20 +184,31 @@ export class OrdersService {
         runsList: {
           orderBy: { runIndex: "asc" },
         },
-        packageRun: {
+        packageExecution: {
           select: {
             id: true,
-            runIndex: true,
+            seq: true,
             packageId: true,
+            status: true,
+            quantity: true,
+            remainingQuantity: true,
+            allocatedCharge: true,
+            executeAt: true,
             package: {
               select: {
                 id: true,
-                name: true,
+                platform: true,
+                handle: true,
                 status: true,
-                totalRuns: true,
-                completedRuns: true,
-                failedRuns: true,
-                cancelledRuns: true,
+                rules: {
+                  select: {
+                    id: true,
+                    kind: true,
+                    maxPosts: true,
+                    usedCount: true,
+                    service: { select: { id: true, name: true } },
+                  },
+                },
               },
             },
           },
@@ -262,9 +226,6 @@ export class OrdersService {
         include,
         orderBy: { createdAt: "desc" },
       });
-      if (orders.length === 0 && (userId === "usr_bholu_customer" || userId === "bholu@gmail.com")) {
-        return Array.from(this.sandboxOrders.values()).filter((o) => o.userId === "usr_bholu_customer");
-      }
       return orders.map((order) => this.sanitizeOrderForRole(order, requesterRole));
     } catch (err: any) {
       this.logger.error(`Error querying orders: ${err.message}`);
@@ -274,14 +235,7 @@ export class OrdersService {
 
   async findOne(id: string, requesterUserId?: string, requesterRole?: string) {
     if (!this.prisma.isConnected) {
-      const sandboxOrder = this.sandboxOrders.get(id);
-      if (sandboxOrder) {
-        if (requesterRole !== "ADMIN" && requesterUserId && sandboxOrder.userId !== requesterUserId) {
-          throw new NotFoundException(`Order #${id} not found.`);
-        }
-        return this.sanitizeOrderForRole(sandboxOrder, requesterRole);
-      }
-      throw new NotFoundException(`Order #${id} not found.`);
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
     }
 
     const include: any = {
@@ -293,20 +247,31 @@ export class OrdersService {
       runsList: {
         orderBy: { runIndex: "asc" },
       },
-      packageRun: {
+      packageExecution: {
         select: {
           id: true,
-          runIndex: true,
+          seq: true,
           packageId: true,
+          status: true,
+          quantity: true,
+          remainingQuantity: true,
+          allocatedCharge: true,
+          executeAt: true,
           package: {
             select: {
               id: true,
-              name: true,
+              platform: true,
+              handle: true,
               status: true,
-              totalRuns: true,
-              completedRuns: true,
-              failedRuns: true,
-              cancelledRuns: true,
+              rules: {
+                select: {
+                  id: true,
+                  kind: true,
+                  maxPosts: true,
+                  usedCount: true,
+                  service: { select: { id: true, name: true } },
+                },
+              },
             },
           },
         },
@@ -328,8 +293,10 @@ export class OrdersService {
       throw new NotFoundException(`Order #${id} not found.`);
     }
 
-    if (requesterRole !== "ADMIN" && requesterUserId && order.userId !== requesterUserId) {
-      throw new NotFoundException(`Order #${id} not found.`);
+    if (requesterRole !== "ADMIN") {
+      if (!requesterUserId || order.userId !== requesterUserId) {
+        throw new NotFoundException(`Order #${id} not found.`);
+      }
     }
 
     return this.sanitizeOrderForRole(order, requesterRole);
@@ -339,6 +306,10 @@ export class OrdersService {
    * Dispatches a new order with atomic balance deduction and idempotency check.
    */
   async create(input: CreateOrderDto) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
+    }
+
     // 1. Strict Input Validation
     if (!input.serviceId || typeof input.serviceId !== "string" || !input.target || !input.quantity) {
       throw new BadRequestException("serviceId, target URL, and quantity are required.");
@@ -430,8 +401,8 @@ export class OrdersService {
     let dripMode: "NONE" | "NATIVE" | "MANAGED" = "NONE";
 
     if (isDripFeed) {
-      if (settings.dripFeedEnabled === false) {
-        throw new BadRequestException("Drip-feed ordering is currently disabled.");
+      if (process.env.DRIPFEED_ENABLED === "false" || settings.dripFeedEnabled === false) {
+        throw new BadRequestException("Standalone drip-feed is deprecated and disabled. Please use Packages.");
       }
 
       if (service.dripFeedSupported) {
@@ -569,75 +540,7 @@ export class OrdersService {
 
     // 6. Atomic Execution: Debit wallet + Insert Order + Record History + Write Ledger + Enqueue Outbox
     if (!this.prisma.isConnected) {
-      const orderId = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
-      await this.walletService.debitForOrder(
-        userId,
-        orderId,
-        charge,
-        input.idempotencyKey,
-        `Order Charge #${orderId} for ${service.displayName || service.name}${isDripFeed ? ` (Drip-feed: ${runs}x${input.quantity})` : ""}`
-      );
-      const order = {
-        id: orderId,
-        userId,
-        serviceId: service.id,
-        target: input.target,
-        quantity: input.quantity,
-        isDripFeed,
-        dripMode,
-        runs: isDripFeed ? runs : null,
-        intervalMinutes: isDripFeed ? intervalMinutes : null,
-        quantityPerRun: input.quantity,
-        totalQuantity,
-        charge: typeof charge === "object" && "toNumber" in charge ? (charge as any).toNumber() : Number(charge),
-        sellRatePer1k: snapshot.sellRatePer1k,
-        costRatePer1k: snapshot.costRatePer1k,
-        fxRateUsed: snapshot.fxRateUsed,
-        providerCurrency: snapshot.providerCurrency,
-        dripSurchargePercent: snapshot.dripSurchargePercent,
-        estimatedProviderCost: snapshot.estimatedProviderCost,
-        estimatedGrossProfit: snapshot.estimatedGrossProfit,
-        paymentFeeEstimate: snapshot.paymentFeeEstimate,
-        estimatedNetProfit: snapshot.estimatedNetProfit,
-        costUnknown: !service.costINR && !service.providerCostPer1k,
-        status: OrderStatus.PENDING,
-        startCount: 0,
-        remains: totalQuantity,
-        idempotencyKey: input.idempotencyKey || null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        service,
-        runsList: isDripFeed && dripMode === "MANAGED"
-          ? generateRunSchedule(new Date(), runs, intervalMinutes || 30).map((s, idx) => ({
-              id: `run_${idx}`,
-              orderId,
-              runIndex: s.runIndex,
-              quantity: input.quantity,
-              scheduledAt: s.scheduledAt.toISOString(),
-              status: "SCHEDULED",
-              chargeShare: splitChargeShare(charge, runs)[idx],
-              attempts: 0,
-              delivered: 0,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            }))
-          : [],
-        history: [
-          {
-            id: `hist_${Date.now()}`,
-            orderId,
-            status: OrderStatus.PENDING,
-            startCount: 0,
-            remains: totalQuantity,
-            notes: isDripFeed
-              ? `Drip-feed order placed (${dripMode}): ${runs} runs of ${input.quantity} every ${intervalMinutes}m (${totalQuantity} total). Queued for provider dispatch.`
-              : "Order placed and queued for provider dispatch",
-            createdAt: new Date(),
-          },
-        ],
-      };
-      this.sandboxOrders.set(orderId, order);
-      return this.sanitizeOrderForRole(order, input.requesterRole);
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -993,7 +896,21 @@ export class OrdersService {
   }
 
   async updateStatus(id: string, status: OrderStatus, details?: string) {
-    if (!this.prisma.isConnected) return { success: true };
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
+    }
+
+    if (status === OrderStatus.COMPLETED) {
+      const order = await this.prisma.order.findUnique({
+        where: { id },
+        select: { packageExecutionId: true },
+      });
+      if (order?.packageExecutionId) {
+        throw new ConflictException(
+          "Package execution orders must be completed through provider status verification."
+        );
+      }
+    }
 
     const updated = await this.prisma.order.update({
       where: { id },
@@ -1072,8 +989,86 @@ export class OrdersService {
     return { success: true, message: `Refund processed for #${id}`, newBalance: result.newBalance, order: result.updated };
   }
 
-  async retry(id: string) {
-    if (!this.prisma.isConnected) return { success: true };
+  async retry(id: string, adminUserId: string) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
+    }
+
+    const existingOrder = await this.prisma.order.findUnique({
+      where: { id },
+      select: {
+        status: true,
+        packageExecutionId: true,
+        providerOrderId: true,
+        packageExecution: {
+          select: { id: true, status: true, skipReason: true },
+        },
+      },
+    });
+    if (existingOrder?.packageExecutionId && existingOrder.providerOrderId) {
+      const packageExecution = existingOrder.packageExecution;
+      if (
+        existingOrder.status !== OrderStatus.PROCESSING &&
+        existingOrder.status !== OrderStatus.IN_PROGRESS
+      ) {
+        throw new ConflictException(
+          "The package provider order is no longer active and cannot resume status polling."
+        );
+      }
+      if (
+        !packageExecution ||
+        packageExecution.status !== PackageExecutionStatus.DISPATCHED ||
+        packageExecution.skipReason !== PACKAGE_PROVIDER_STATUS_STALLED_REASON
+      ) {
+        throw new ConflictException(
+          "The provider already accepted this package order. It cannot be resubmitted; only a stalled status poll can be resumed."
+        );
+      }
+
+      return this.prisma.$transaction(async (tx) => {
+        const resumed = await tx.packageExecution.updateMany({
+          where: {
+            id: packageExecution.id,
+            orderId: id,
+            status: PackageExecutionStatus.DISPATCHED,
+            skipReason: PACKAGE_PROVIDER_STATUS_STALLED_REASON,
+          },
+          data: { skipReason: null },
+        });
+        if (resumed.count !== 1) {
+          throw new ConflictException(
+            "Package provider status polling is no longer stalled."
+          );
+        }
+
+        await tx.auditLog.create({
+          data: {
+            userId: adminUserId,
+            action: "PACKAGE_PROVIDER_STATUS_POLLING_RESUMED",
+            resource: id,
+            payload: {
+              packageExecutionId: packageExecution.id,
+            },
+          },
+        });
+
+        return {
+          success: true,
+          message:
+            "Provider status polling resumed. The accepted child order will not be resubmitted.",
+        };
+      });
+    }
+
+    if (
+      existingOrder?.packageExecutionId &&
+      existingOrder.status === OrderStatus.PROCESSING &&
+      !existingOrder.providerOrderId
+    ) {
+      throw new ConflictException(
+        "Package provider outcome is uncertain. Reconcile it with an administrator before retrying."
+      );
+    }
 
     const updated = await this.prisma.order.update({
       where: { id },
@@ -1100,8 +1095,155 @@ export class OrdersService {
     return { success: true, message: `Order #${id} queued for retry dispatch.`, order: updated };
   }
 
+  async reconcilePackageProviderOutcome(
+    orderId: string,
+    adminUserId: string,
+    input: PackageProviderReconciliationInput
+  ) {
+    if (!this.prisma.isConnected) {
+      throw new BadRequestException(
+        "Provider reconciliation requires the connected database."
+      );
+    }
+
+    const parsed = PackageProviderReconciliationInputSchema.safeParse(input);
+    if (!parsed.success) {
+      throw new BadRequestException(
+        parsed.error.errors[0]?.message || "Invalid reconciliation details."
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const [order] = await tx.$queryRawUnsafe<
+        Array<{
+          id: string;
+          status: OrderStatus;
+          packageExecutionId: string | null;
+          providerId: string | null;
+          providerOrderId: string | null;
+        }>
+      >(
+        `SELECT id, status, "packageExecutionId", "providerId", "providerOrderId"
+         FROM "Order"
+         WHERE id = $1
+         FOR UPDATE`,
+        orderId
+      );
+
+      if (!order) throw new NotFoundException("Order not found.");
+      if (!order.packageExecutionId) {
+        throw new BadRequestException(
+          "Provider reconciliation is only supported for package execution orders."
+        );
+      }
+      if (
+        order.status !== OrderStatus.PROCESSING ||
+        order.providerOrderId
+      ) {
+        throw new ConflictException(
+          "Order is no longer awaiting uncertain provider reconciliation."
+        );
+      }
+
+      const { outcome, evidence } = parsed.data;
+      const providerId =
+        outcome === "UNRESOLVED" ? order.providerId : parsed.data.providerId;
+      if (outcome !== "UNRESOLVED") {
+        if (!providerId) {
+          throw new BadRequestException("A provider is required for reconciliation.");
+        }
+        const provider = await tx.provider.findUnique({
+          where: { id: providerId },
+          select: { id: true, active: true },
+        });
+        if (!provider) throw new NotFoundException("Provider not found.");
+        if (outcome === "REJECTED" && !provider.active) {
+          throw new BadRequestException(
+            "The rejected provider is inactive and cannot receive the approved retry."
+          );
+        }
+      }
+
+      if (outcome === "UNRESOLVED") {
+        await tx.orderStatusHistory.create({
+          data: {
+            orderId,
+            status: OrderStatus.PROCESSING,
+            notes: `Admin review did not resolve the provider outcome. No retry was queued. Evidence: ${evidence}`,
+          },
+        });
+      } else if (outcome === "ACCEPTED") {
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            providerId,
+            providerOrderId: parsed.data.providerOrderId,
+            status: OrderStatus.PROCESSING,
+          },
+        });
+        await tx.orderStatusHistory.create({
+          data: {
+            orderId,
+            status: OrderStatus.PROCESSING,
+            notes: `Admin confirmed provider acceptance and attached reference ${parsed.data.providerOrderId}. Evidence: ${evidence}`,
+          },
+        });
+      } else {
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            providerId,
+            providerOrderId: null,
+            status: OrderStatus.PENDING,
+          },
+        });
+        await tx.orderStatusHistory.create({
+          data: {
+            orderId,
+            status: OrderStatus.PENDING,
+            notes: `Admin confirmed provider rejection; retry is permitted. Evidence: ${evidence}`,
+          },
+        });
+        await tx.outboxEvent.create({
+          data: {
+            aggregate: "ORDER",
+            eventType: "ORDER_CREATED",
+            payload: { orderId },
+            status: OutboxStatus.PENDING,
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          userId: adminUserId,
+          action: `PACKAGE_PROVIDER_OUTCOME_${outcome}`,
+          resource: orderId,
+          payload: {
+            packageExecutionId: order.packageExecutionId,
+            previousProviderId: order.providerId,
+            providerId,
+            providerOrderId:
+              outcome === "ACCEPTED" ? parsed.data.providerOrderId : null,
+            evidence,
+            retryQueued: outcome === "REJECTED",
+          },
+        },
+      });
+
+      return {
+        success: true,
+        orderId,
+        outcome,
+        retryQueued: outcome === "REJECTED",
+      };
+    });
+  }
+
   async changeProvider(id: string, providerId: string) {
-    if (!this.prisma.isConnected) return { success: true };
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
+    }
 
     const updated = await this.prisma.order.update({
       where: { id },
@@ -1130,5 +1272,64 @@ export class OrdersService {
       });
     }
     return { success: true, orderId: id, notes, message: "Administrative audit note updated." };
+  }
+
+  async reportProblem(userId: string, orderId: string, input?: { issueType?: string; notes?: string }) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
+    }
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+    if (!order) {
+      throw new NotFoundException("Order not found.");
+    }
+    if (order.userId !== userId) {
+      throw new ForbiddenException("Cannot report problem on another user's order.");
+    }
+
+    if (typeof (this.prisma as any).stalledReport?.findFirst === "function") {
+      const existingOpenReport = await (this.prisma as any).stalledReport.findFirst({
+        where: { orderId, status: "OPEN" },
+      });
+      if (existingOpenReport) {
+        throw new ConflictException("An open problem report already exists for this order.");
+      }
+    }
+
+    let reportId = `rep_${Date.now()}`;
+    if (typeof (this.prisma as any).stalledReport?.create === "function") {
+      const report = await (this.prisma as any).stalledReport.create({
+        data: {
+          orderId,
+          userId,
+          status: "OPEN",
+          issueType: input?.issueType || "GENERAL",
+          notes: input?.notes || "",
+        },
+      });
+      reportId = report.id;
+    }
+
+    let ticketId = `tkt_${Date.now()}`;
+    if (typeof this.prisma.ticket?.create === "function") {
+      const ticket = await this.prisma.ticket.create({
+        data: {
+          userId,
+          subject: `Problem Report: Order #${orderId}`,
+          priority: "HIGH",
+          status: "OPEN",
+        },
+      });
+      ticketId = ticket.id;
+    }
+
+    return {
+      success: true,
+      reportId,
+      ticketId,
+      message: "Problem report logged; support ticket created.",
+    };
   }
 }

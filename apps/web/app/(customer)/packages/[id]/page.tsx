@@ -24,8 +24,16 @@ import {
   Layers,
   Send,
   Check,
+  FastForward,
+  Link2,
+  Repeat,
+  Zap,
 } from "lucide-react";
 import { formatIndianNumber } from "@/lib/numberFormat";
+import {
+  formatInstantForDateTimeLocal,
+  localDateTimeToInstant,
+} from "@smm/contracts";
 
 function getApiBase(): string {
   const envUrl = process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
@@ -68,6 +76,31 @@ export default function PackageDetailPage() {
   const [cancelling, setCancelling] = useState(false);
   const [actionInProgress, setActionInProgress] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [reschedulingExecutionId, setReschedulingExecutionId] = useState<string | null>(null);
+  const [savingRescheduleExecutionId, setSavingRescheduleExecutionId] = useState<string | null>(null);
+  const [rescheduleDrafts, setRescheduleDrafts] = useState<Record<string, string>>({});
+
+  // Speed-Up Schedule State
+  const [speedUpModalOpen, setSpeedUpModalOpen] = useState(false);
+  const [speedFactor, setSpeedFactor] = useState(1.25);
+  const [submittingSpeedUp, setSubmittingSpeedUp] = useState(false);
+
+  // Link Swap State
+  const [swapModalOpen, setSwapModalOpen] = useState(false);
+  const [selectedTriggerForSwap, setSelectedTriggerForSwap] = useState<any | null>(null);
+  const [swapNewUrl, setSwapNewUrl] = useState("");
+  const [submittingSwap, setSubmittingSwap] = useState(false);
+
+  // Monthly Retainer Auto-Renew & Manual Renew State
+  const [togglingAutoRenew, setTogglingAutoRenew] = useState(false);
+  const [renewModalOpen, setRenewModalOpen] = useState(false);
+  const [submittingRenew, setSubmittingRenew] = useState(false);
+
+  // Problem Report State
+  const [problemModalOpen, setProblemModalOpen] = useState(false);
+  const [problemIssue, setProblemIssue] = useState("Execution delayed or missed");
+  const [problemDesc, setProblemDesc] = useState("");
+  const [submittingProblem, setSubmittingProblem] = useState(false);
 
   const fetchPackage = useCallback(async () => {
     if (typeof window === "undefined" || !packageId) return;
@@ -284,6 +317,226 @@ export default function PackageDetailPage() {
     setActionInProgress(false);
   };
 
+  const handleSpeedUp = async () => {
+    setSubmittingSpeedUp(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch(`${getApiBase()}/packages/${packageId}/speed-up`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ speedFactor }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNotification({
+          type: "success",
+          message: `Delivery schedule accelerated (${speedFactor}x)! Upcoming runs recalculated with safe platform bounds.`,
+        });
+        setSpeedUpModalOpen(false);
+        await fetchPackage();
+      } else {
+        setNotification({
+          type: "error",
+          message: data.message || "Failed to accelerate schedule.",
+        });
+      }
+    } catch {
+      setNotification({ type: "error", message: "Network error speeding up schedule." });
+    } finally {
+      setSubmittingSpeedUp(false);
+    }
+  };
+
+  const handleSwapLink = async () => {
+    if (!selectedTriggerForSwap || !swapNewUrl.trim()) return;
+    setSubmittingSwap(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch(
+        `${getApiBase()}/packages/${packageId}/triggers/${selectedTriggerForSwap.id}/swap-link`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ newTargetUrl: swapNewUrl.trim() }),
+        }
+      );
+      const data = await res.json();
+      if (res.ok) {
+        setNotification({
+          type: "success",
+          message: `Target link swapped! ${data.swappedExecutionsCount || 0} scheduled execution(s) updated.`,
+        });
+        setSwapModalOpen(false);
+        setSelectedTriggerForSwap(null);
+        setSwapNewUrl("");
+        await fetchPackage();
+      } else {
+        setNotification({
+          type: "error",
+          message: data.message || "Failed to swap link.",
+        });
+      }
+    } catch {
+      setNotification({ type: "error", message: "Network error while swapping link." });
+    } finally {
+      setSubmittingSwap(false);
+    }
+  };
+
+  const handleToggleAutoRenew = async (newVal: boolean) => {
+    setTogglingAutoRenew(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch(`${getApiBase()}/packages/${packageId}/auto-renew`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ enabled: newVal }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNotification({
+          type: "success",
+          message: newVal ? "Auto-renew enabled for monthly retainer." : "Auto-renew disabled.",
+        });
+        await fetchPackage();
+      } else {
+        setNotification({
+          type: "error",
+          message: data.message || "Failed to update auto-renew setting.",
+        });
+      }
+    } catch {
+      setNotification({ type: "error", message: "Network error updating auto-renew setting." });
+    } finally {
+      setTogglingAutoRenew(false);
+    }
+  };
+
+  const handleManualRenew = async () => {
+    setSubmittingRenew(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch(`${getApiBase()}/packages/${packageId}/renew`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ explicitConsent: true }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setNotification({
+          type: "success",
+          message: `Package renewed! New package created: #${data.newPackageId?.slice(0, 8)}.`,
+        });
+        setRenewModalOpen(false);
+        if (data.newPackageId) {
+          router.push(`/packages/${data.newPackageId}`);
+        } else {
+          await fetchPackage();
+        }
+      } else {
+        setNotification({
+          type: "error",
+          message: data.message || data.reason || "Failed to renew package.",
+        });
+      }
+    } catch {
+      setNotification({ type: "error", message: "Network error renewing package." });
+    } finally {
+      setSubmittingRenew(false);
+    }
+  };
+
+  const handleRescheduleExecution = async (executionId: string) => {
+    const draft = rescheduleDrafts[executionId];
+    let executeAt: string;
+    try {
+      executeAt = localDateTimeToInstant(draft, pkg?.timezone || "UTC");
+    } catch (error) {
+      setNotification({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Choose a valid time in the package timezone.",
+      });
+      return;
+    }
+    if (new Date(executeAt).getTime() <= Date.now()) {
+      setNotification({ type: "error", message: "Choose a valid future execution time." });
+      return;
+    }
+
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      setNotification({ type: "error", message: "Please log in to reschedule an execution." });
+      return;
+    }
+
+    setSavingRescheduleExecutionId(executionId);
+    try {
+      const res = await fetch(`${getApiBase()}/packages/${packageId}/executions/${executionId}/reschedule`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ executeAt }),
+      });
+      let data: unknown;
+      try {
+        data = await res.json();
+      } catch {
+        setNotification({
+          type: "error",
+          message: "The reschedule response could not be confirmed. Refresh the package before retrying.",
+        });
+        await fetchPackage();
+        return;
+      }
+
+      if (!res.ok) {
+        setNotification({
+          type: "error",
+          message:
+            typeof data === "object" &&
+            data !== null &&
+            "message" in data &&
+            typeof data.message === "string"
+              ? data.message
+              : "Failed to reschedule execution.",
+        });
+        return;
+      }
+
+      if (
+        typeof data !== "object" ||
+        data === null ||
+        !("success" in data) ||
+        data.success !== true
+      ) {
+        setNotification({
+          type: "error",
+          message: "The reschedule could not be confirmed. Refresh the package before retrying.",
+        });
+        await fetchPackage();
+        return;
+      }
+
+      setRescheduleDrafts((previous) => {
+        const next = { ...previous };
+        delete next[executionId];
+        return next;
+      });
+      setReschedulingExecutionId(null);
+      setNotification({ type: "success", message: "Execution rescheduled." });
+      await fetchPackage();
+    } catch {
+      setNotification({ type: "error", message: "Network error while rescheduling execution." });
+    } finally {
+      setSavingRescheduleExecutionId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="py-24 text-center text-slate-400 font-mono text-sm">
@@ -390,12 +643,33 @@ export default function PackageDetailPage() {
               {new Date(pkg.endAt || pkg.endDate).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
             </div>
             <div className="text-[11px] text-slate-500">
-              Platform: <span className="capitalize text-slate-300">{pkg.platform}</span> · We do not verify account ownership.
+              Platform: <span className="capitalize text-slate-300">{pkg.platform}</span> · Schedule timezone:{" "}
+              <span className="text-slate-300">{pkg.timezone || "UTC"}</span> · We do not verify account ownership.
             </div>
           </div>
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
+            <button
+              type="button"
+              onClick={() => setProblemModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-semibold text-xs border border-white/10 transition-all"
+            >
+              <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+              <span>Report a Problem</span>
+            </button>
+
+            {pkg.status === "ACTIVE" && (
+              <button
+                type="button"
+                onClick={() => setSpeedUpModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#D8EC8D]/10 hover:bg-[#D8EC8D]/20 text-[#D8EC8D] font-semibold text-xs border border-[#D8EC8D]/30 transition-all"
+              >
+                <FastForward className="w-3.5 h-3.5" />
+                <span>Speed Up</span>
+              </button>
+            )}
+
             {(pkg.status === "ACTIVE" || pkg.status === "PAUSED") && (
               <button
                 type="button"
@@ -427,6 +701,56 @@ export default function PackageDetailPage() {
                 <span>Cancel Remaining</span>
               </button>
             )}
+          </div>
+        </div>
+
+        {/* Retainer & Auto-Renew Management Bar */}
+        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[#D8EC8D]/10 text-[#D8EC8D] flex items-center justify-center shrink-0">
+              <Repeat className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-white">Monthly Retainer & Auto-Renew</span>
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium ${
+                    pkg.autoRenew
+                      ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20"
+                      : "bg-white/5 text-slate-400 border border-white/10"
+                  }`}
+                >
+                  {pkg.autoRenew ? "Auto-Renew Active" : "Manual Renewal"}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {pkg.autoRenew
+                  ? "Your retainer will automatically reserve next month's cycle from wallet balance when current quota concludes."
+                  : "Auto-renewal is paused. You can renew manually or toggle auto-renew at any time."}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-300">
+              <input
+                type="checkbox"
+                disabled={togglingAutoRenew}
+                checked={Boolean(pkg.autoRenew)}
+                onChange={(e) => handleToggleAutoRenew(e.target.checked)}
+                className="w-4 h-4 rounded text-[#D8EC8D] focus:ring-0 bg-black/40 border-white/20"
+              />
+              <span>Auto-Renew</span>
+            </label>
+
+            <button
+              type="button"
+              onClick={() => setRenewModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs border border-white/10 transition-all flex items-center gap-1.5"
+            >
+              <Repeat className="w-3.5 h-3.5 text-[#D8EC8D]" />
+              <span>Renew Retainer</span>
+            </button>
           </div>
         </div>
 
@@ -840,15 +1164,31 @@ export default function PackageDetailPage() {
                           })}
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <a
-                            href={trig.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-[#D8EC8D] hover:underline inline-flex items-center gap-1"
-                          >
-                            <span>Open</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
+                          <div className="flex items-center justify-end gap-2">
+                            {pkg.status === "ACTIVE" && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedTriggerForSwap(trig);
+                                  setSwapNewUrl(trig.url);
+                                  setSwapModalOpen(true);
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[11px] inline-flex items-center gap-1 border border-white/5 transition-all"
+                              >
+                                <Link2 className="w-3 h-3 text-[#D8EC8D]" />
+                                <span>Swap Link</span>
+                              </button>
+                            )}
+                            <a
+                              href={trig.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[#D8EC8D] hover:underline inline-flex items-center gap-1"
+                            >
+                              <span>Open</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -899,7 +1239,14 @@ export default function PackageDetailPage() {
                         <td className="py-3 px-4 text-slate-400 max-w-[160px] truncate" title={e.targetUrl}>
                           {e.targetUrl}
                         </td>
-                        <td className="py-3 px-4 text-white font-bold">{formatIndianNumber(e.quantity)}</td>
+                        <td className="py-3 px-4 text-white font-bold">
+                          {formatIndianNumber(e.quantity)}
+                          {e.order?.remains !== undefined && e.order?.remains !== null && (
+                            <div className="mt-1 text-[10px] font-normal text-slate-400">
+                              Remaining: {formatIndianNumber(e.order.remains)}
+                            </div>
+                          )}
+                        </td>
                         <td className="py-3 px-4 text-[#D8EC8D]">₹{Number(e.allocatedCharge).toFixed(2)}</td>
                         <td className="py-3 px-4 text-slate-300">
                           {new Date(e.executeAt).toLocaleString([], {
@@ -907,15 +1254,79 @@ export default function PackageDetailPage() {
                             day: "numeric",
                             hour: "2-digit",
                             minute: "2-digit",
+                            timeZone: pkg.timezone || "UTC",
                           })}
+                          {e.status === "SCHEDULED" && pkg.status === "ACTIVE" && (
+                            <div className="mt-2 space-y-2 font-sans">
+                              {reschedulingExecutionId === e.id ? (
+                                <>
+                                  <p className="max-w-64 text-[10px] text-slate-500">
+                                    Enter the schedule time in {pkg.timezone || "UTC"}. Nonexistent or repeated local times during daylight-saving changes are rejected.
+                                  </p>
+                                  <input
+                                    type="datetime-local"
+                                    aria-label={`New execution time for ${e.id}`}
+                                    value={rescheduleDrafts[e.id] || ""}
+                                    onChange={(event) => setRescheduleDrafts((previous) => ({
+                                      ...previous,
+                                      [e.id]: event.target.value,
+                                    }))}
+                                    className="w-full rounded-lg border border-white/10 bg-black/30 px-2 py-1.5 text-[11px] text-white"
+                                  />
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      disabled={!rescheduleDrafts[e.id] || savingRescheduleExecutionId === e.id}
+                                      onClick={() => handleRescheduleExecution(e.id)}
+                                      className="rounded-lg bg-[#D8EC8D]/15 px-2.5 py-1 text-[10px] font-semibold text-[#D8EC8D] disabled:opacity-40"
+                                    >
+                                      {savingRescheduleExecutionId === e.id ? "Saving..." : "Save"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={savingRescheduleExecutionId === e.id}
+                                      onClick={() => {
+                                        setReschedulingExecutionId(null);
+                                        setRescheduleDrafts((previous) => {
+                                          const next = { ...previous };
+                                          delete next[e.id];
+                                          return next;
+                                        });
+                                      }}
+                                      className="rounded-lg bg-white/5 px-2.5 py-1 text-[10px] text-slate-300"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const localInputValue = formatInstantForDateTimeLocal(
+                                      e.executeAt,
+                                      pkg.timezone || "UTC"
+                                    );
+                                    setRescheduleDrafts((previous) => ({ ...previous, [e.id]: localInputValue }));
+                                    setReschedulingExecutionId(e.id);
+                                  }}
+                                  className="text-[10px] text-[#D8EC8D] hover:underline"
+                                >
+                                  Reschedule
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 px-4">
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] ${
                               e.status === "COMPLETED"
                                 ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
-                                : e.status === "PROCESSING"
+                                : e.status === "DISPATCHED" || e.status === "PROCESSING"
                                 ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
+                                : e.status === "PARTIAL"
+                                ? "bg-blue-500/15 text-blue-400 border border-blue-500/20"
                                 : e.status === "FAILED"
                                 ? "bg-rose-500/15 text-rose-400 border border-rose-500/20"
                                 : e.status === "CANCELLED"
@@ -925,6 +1336,11 @@ export default function PackageDetailPage() {
                           >
                             {e.status}
                           </span>
+                          {e.skipReason && (
+                            <div className="mt-1 max-w-56 font-sans text-[10px] text-amber-300">
+                              {e.skipReason}
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 px-4 text-right">
                           {e.childOrderId ? (
@@ -988,6 +1404,300 @@ export default function PackageDetailPage() {
                 className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-all shadow-md"
               >
                 {cancelling ? "Refunding..." : "Confirm & Refund"}
+              </button>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* Problem Report Modal */}
+      {problemModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-white/10 space-y-5 bg-[#171717] shadow-2xl">
+            <div className="flex items-center gap-3 text-amber-400">
+              <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-bold text-white">Report a Problem</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-mono text-slate-400 block mb-1.5">Issue Category</label>
+                <select
+                  value={problemIssue}
+                  onChange={(e) => setProblemIssue(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-[#D8EC8D]"
+                >
+                  <option value="Execution delayed or missed" className="bg-[#1c1c1c] text-white">Execution delayed or missed</option>
+                  <option value="Quantity drop or discrepancy" className="bg-[#1c1c1c] text-white">Quantity drop or discrepancy</option>
+                  <option value="Post URL was not detected" className="bg-[#1c1c1c] text-white">Post URL was not detected</option>
+                  <option value="Other delivery issue" className="bg-[#1c1c1c] text-white">Other delivery issue</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-mono text-slate-400 block mb-1.5">Description & Details</label>
+                <textarea
+                  rows={4}
+                  value={problemDesc}
+                  onChange={(e) => setProblemDesc(e.target.value)}
+                  placeholder="Provide any details about the discrepancy..."
+                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-[#D8EC8D]"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setProblemModalOpen(false)}
+                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={submittingProblem || !problemDesc.trim()}
+                onClick={async () => {
+                  setSubmittingProblem(true);
+                  try {
+                    const token = localStorage.getItem("authToken");
+                    const res = await fetch(`${getApiBase()}/packages/${packageId}/report-problem`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                      body: JSON.stringify({ issue: problemIssue, description: problemDesc }),
+                    });
+                    if (res.ok) {
+                      setNotification({ message: "Problem reported successfully. High-priority ticket created.", type: "success" });
+                      setProblemModalOpen(false);
+                      setProblemDesc("");
+                    } else {
+                      const data = await res.json();
+                      setNotification({ message: data.message || "Failed to submit report", type: "error" });
+                    }
+                  } catch {
+                    setNotification({ message: "Network error submitting report", type: "error" });
+                  } finally {
+                    setSubmittingProblem(false);
+                  }
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-[#D8EC8D] text-black font-semibold text-xs hover:brightness-105 transition-all shadow-md disabled:opacity-50"
+              >
+                {submittingProblem ? "Submitting..." : "Submit Ticket"}
+              </button>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* Speed-Up Schedule Modal */}
+      {speedUpModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-white/10 space-y-5 bg-[#171717] shadow-2xl">
+            <div className="flex items-center gap-3 text-[#D8EC8D]">
+              <div className="p-2 rounded-xl bg-[#D8EC8D]/15 border border-[#D8EC8D]/30">
+                <FastForward className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Accelerate Delivery Schedule</h3>
+                <p className="text-xs text-slate-400">Safely compresses remaining run intervals.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-2 text-xs">
+                <div className="text-slate-300 font-medium">Select Compression Factor:</div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { factor: 1.25, label: "1.25x (Safe)" },
+                    { factor: 1.5, label: "1.50x (Moderate)" },
+                    { factor: 2.0, label: "2.00x (Maximum)" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.factor}
+                      type="button"
+                      onClick={() => setSpeedFactor(opt.factor)}
+                      className={`p-2.5 rounded-xl border text-center transition-all ${
+                        speedFactor === opt.factor
+                          ? "bg-[#D8EC8D]/15 border-[#D8EC8D] text-[#D8EC8D] font-bold"
+                          : "bg-white/5 border-white/10 text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      <div className="text-xs">{opt.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-400 leading-relaxed bg-black/30 p-3 rounded-xl border border-white/5">
+                Remaining scheduled executions will be shifted forward by {speedFactor}x compression. Minimum 15-minute intervals between runs are automatically enforced to stay strictly within platform delivery limits.
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setSpeedUpModalOpen(false)}
+                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={submittingSpeedUp}
+                onClick={handleSpeedUp}
+                className="flex-1 py-2.5 rounded-xl bg-[#D8EC8D] text-black font-semibold text-xs hover:brightness-105 transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {submittingSpeedUp ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Compressing...</span>
+                  </>
+                ) : (
+                  <>
+                    <FastForward className="w-3.5 h-3.5" />
+                    <span>Confirm Speed Up</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* Link Swap Modal */}
+      {swapModalOpen && selectedTriggerForSwap && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-white/10 space-y-5 bg-[#171717] shadow-2xl">
+            <div className="flex items-center gap-3 text-white">
+              <div className="p-2 rounded-xl bg-white/10 border border-white/20 text-[#D8EC8D]">
+                <Link2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">Swap Target Post Link</h3>
+                <p className="text-xs text-slate-400">Media Key: {selectedTriggerForSwap.mediaKey}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-mono text-slate-400 block mb-1">Current URL</label>
+                <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 text-xs font-mono text-slate-400 truncate">
+                  {selectedTriggerForSwap.url}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-mono text-slate-400 block mb-1">New Target Post URL</label>
+                <input
+                  type="url"
+                  required
+                  placeholder={`https://${pkg.platform}.com/...`}
+                  value={swapNewUrl}
+                  onChange={(e) => setSwapNewUrl(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-[#D8EC8D]"
+                />
+              </div>
+
+              <div className="text-[11px] text-slate-400 leading-relaxed bg-black/30 p-3 rounded-xl border border-white/5">
+                Swapping updates all undispatched, scheduled runs for this trigger to the new link. Already completed or dispatched orders are kept as-is.
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSwapModalOpen(false);
+                  setSelectedTriggerForSwap(null);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={submittingSwap || !swapNewUrl.trim() || swapNewUrl.trim() === selectedTriggerForSwap.url}
+                onClick={handleSwapLink}
+                className="flex-1 py-2.5 rounded-xl bg-[#D8EC8D] text-black font-semibold text-xs hover:brightness-105 transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {submittingSwap ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Swapping...</span>
+                  </>
+                ) : (
+                  <span>Swap Link</span>
+                )}
+              </button>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* Manual Retainer Renewal Modal */}
+      {renewModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-white/10 space-y-5 bg-[#171717] shadow-2xl">
+            <div className="flex items-center gap-3 text-white">
+              <div className="p-2 rounded-xl bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 text-[#D8EC8D]">
+                <Repeat className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">Renew Package Retainer</h3>
+                <p className="text-xs text-slate-400">Extend growth package for another monthly cycle.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-2 text-xs">
+                <div className="flex items-center justify-between text-slate-400">
+                  <span>Target Handle:</span>
+                  <span className="font-mono text-white font-bold">@{pkg.handle}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-400">
+                  <span>Cycle Duration:</span>
+                  <span className="font-mono text-white font-bold">30 Days</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-400 pt-1 border-t border-white/5">
+                  <span>Wallet Charge / Reserve:</span>
+                  <span className="font-mono text-[#D8EC8D] font-bold text-sm">
+                    ₹{Number(pkg.reserveTotal || pkg.totalCharge).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-400 leading-relaxed bg-black/30 p-3 rounded-xl border border-white/5">
+                Confirming renewal will deduct ₹{Number(pkg.reserveTotal || pkg.totalCharge).toFixed(2)} from your wallet and provision an active package cycle with all current rule quotas restored.
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setRenewModalOpen(false)}
+                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={submittingRenew}
+                onClick={handleManualRenew}
+                className="flex-1 py-2.5 rounded-xl bg-[#D8EC8D] text-black font-semibold text-xs hover:brightness-105 transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {submittingRenew ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Repeat className="w-3.5 h-3.5" />
+                    <span>Confirm & Renew</span>
+                  </>
+                )}
               </button>
             </div>
           </GlassCard>

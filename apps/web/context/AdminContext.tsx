@@ -118,6 +118,8 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
             remains: o.remains ?? 0,
             status: o.status,
             providerOrderId: o.providerOrderId || null,
+            providerId: o.providerId || null,
+            packageExecutionId: o.packageExecutionId || null,
             providerName: o.provider?.name || null,
             createdAt: o.createdAt,
             updatedAt: o.updatedAt,
@@ -212,6 +214,9 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
               currency: p.currency || "INR",
               status: p.active !== false ? "CONNECTED" : "ERROR",
               serviceCount: p.serviceCount || 0,
+              healthStatus: p.healthStatus || "UNKNOWN",
+              consecutiveStatusFailures: Number(p.consecutiveStatusFailures || 0),
+              lastStatusCheckAt: p.lastStatusCheckAt || null,
               lastSyncAt: p.updatedAt || p.lastSyncAt || new Date().toISOString(),
             }))
           );

@@ -1,0 +1,28 @@
+﻿Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-24T23:42:34.7865912+05:30
+Status: RUNNING
+---
+
+pnpm.exe : PASS test/package-fail-closed-s5.spec.ts
+At C:\Users\vaibh\AppData\Roaming\npm\pnpm.ps1:14 char:3
++   & "$basedir/node_modules/pnpm/pnpm.exe"   $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS test/package-fail-closed-s5.spec.ts:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  S5: GAP-5 Fail-Closed Architecture
+    1. Fail-Closed On Database Disconnection (503 Service Unavailable)
+      √ PackagesService.purchasePackage throws 503 ServiceUnavailableException when DB is disconnected (26 ms)
+      √ WalletService write operations throw 503 ServiceUnavailableException when DB is disconnected (4 ms)
+      √ OrdersService.create throws 503 ServiceUnavailableException when DB is disconnected (9 ms)
+      √ PlatformsService, TicketsService, UsersService fail closed when DB is disconnected (9 ms)
+    2. Static Source Gate: Zero In-Memory Sandbox Fallback Maps in Production Source
+      √ proves no sandboxPackages or in-memory fallback maps exist in production service files (2 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        1.244 s, estimated 3 s
+Ran all test suites matching /test\\package-fail-closed-s5.spec.ts/i.

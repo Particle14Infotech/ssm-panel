@@ -1,0 +1,128 @@
+﻿Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-24T22:32:12.5213014+05:30
+Status: S1 RED (proving flaws before fix)
+---
+
+pnpm.exe : FAIL test/package-quote-integrity-s1.spec.ts
+At C:\Users\vaibh\AppData\Roaming\npm\pnpm.ps1:14 char:3
++   & "$basedir/node_modules/pnpm/pnpm.exe"   $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL test/packa...rity-s1.spec.ts:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  S1 Quote Integrity Regression Suite (@security)
+    S1 Quote Integrity Rules
+      × rule 1: missing quoteHash must be rejected with 400 Bad Request (49 ms)
+      × rule 2: tampered field in quote payload must be rejected with 409 QUOTE_CHANGED (11 ms)
+      × rule 3: quote generated for another user must be rejected with 409 QUOTE_CHANGED (3 ms)
+      × rule 4: expired quote hash (>10 minutes) must be rejected with 409 QUOTE_CHANGED (1 ms)
+      × rule 5: rate change between quote and purchase must be rejected with 409 QUOTE_CHANGED (6 ms)
+      √ rule 6: stale or unrecognized kid must be rejected (1 ms)
+
+  ● S1 Quote Integrity Regression Suite (@security) › S1 Quote Integrity Rules › rule 1: missing quoteHash must be 
+rejected with 400 Bad Request
+
+    expect(received).rejects.toThrow(expected)
+
+    Expected constructor: BadRequestException
+    Received constructor: TypeError
+
+    Received message: "this.prisma.package.findUnique is not a function"
+
+        [0m [90m 87 |[39m     [90m// 1. Check existing idempotent purchase[39m
+         [90m 88 |[39m     [36mif[39m ([36mthis[39m[33m.[39mprisma[33m.[39misConnected) {
+        [31m[1m>[22m[39m[90m 89 |[39m       [36mconst[39m existing [33m=[39m [36mawait[39m 
+[36mthis[39m[33m.[39mprisma[33m.[39m[36mpackage[39m[33m.[39mfindUnique({
+         [90m    |[39m                                                  [31m[1m^[22m[39m
+         [90m 90 |[39m         where[33m:[39m {
+         [90m 91 |[39m           unique_package_idempotency_per_user[33m:[39m {
+         [90m 92 |[39m             userId[33m,[39m[0m
+
+      at PackagesService.purchasePackage (src/modules/packages/packages.service.ts:89:50)
+      at Object.<anonymous> (test/package-quote-integrity-s1.spec.ts:327:7)
+      at Object.toThrow (../../node_modules/expect/build/index.js:218:22)
+      at Object.<anonymous> (test/package-quote-integrity-s1.spec.ts:329:17)
+
+  ● S1 Quote Integrity Regression Suite (@security) › S1 Quote Integrity Rules › rule 2: tampered field in quote 
+payload must be rejected with 409 QUOTE_CHANGED
+
+    expect(received).toBeInstanceOf(expected)
+
+    Expected constructor: ConflictException
+    Received constructor: TypeError
+
+    [0m [90m 352 |[39m       }
+     [90m 353 |[39m
+    [31m[1m>[22m[39m[90m 354 |[39m       
+expect(thrownErr)[33m.[39mtoBeInstanceOf([33mConflictException[39m)[33m;[39m
+     [90m     |[39m                         [31m[1m^[22m[39m
+     [90m 355 |[39m       [36mconst[39m resp [33m=[39m thrownErr[33m.[39mgetResponse()[33m;[39m
+     [90m 356 |[39m       [90m// Must contain code: QUOTE_CHANGED and fresh quote in body[39m
+     [90m 357 |[39m       expect(resp)[33m.[39mtoMatchObject({[0m
+
+      at Object.<anonymous> (test/package-quote-integrity-s1.spec.ts:354:25)
+
+  ● S1 Quote Integrity Regression Suite (@security) › S1 Quote Integrity Rules › rule 3: quote generated for another 
+user must be rejected with 409 QUOTE_CHANGED
+
+    expect(received).toBeInstanceOf(expected)
+
+    Expected constructor: ConflictException
+    Received constructor: TypeError
+
+    [0m [90m 383 |[39m       }
+     [90m 384 |[39m
+    [31m[1m>[22m[39m[90m 385 |[39m       
+expect(thrownErr)[33m.[39mtoBeInstanceOf([33mConflictException[39m)[33m;[39m
+     [90m     |[39m                         [31m[1m^[22m[39m
+     [90m 386 |[39m       [36mconst[39m resp [33m=[39m thrownErr[33m.[39mgetResponse()[33m;[39m
+     [90m 387 |[39m       expect(resp)[33m.[39mtoMatchObject({
+     [90m 388 |[39m         code[33m:[39m [32m"QUOTE_CHANGED"[39m[33m,[39m[0m
+
+      at Object.<anonymous> (test/package-quote-integrity-s1.spec.ts:385:25)
+
+  ● S1 Quote Integrity Regression Suite (@security) › S1 Quote Integrity Rules › rule 4: expired quote hash (>10 
+minutes) must be rejected with 409 QUOTE_CHANGED
+
+    expect(received).toBeInstanceOf(expected)
+
+    Expected constructor: ConflictException
+    Received constructor: TypeError
+
+    [0m [90m 421 |[39m       }
+     [90m 422 |[39m
+    [31m[1m>[22m[39m[90m 423 |[39m       
+expect(thrownErr)[33m.[39mtoBeInstanceOf([33mConflictException[39m)[33m;[39m
+     [90m     |[39m                         [31m[1m^[22m[39m
+     [90m 424 |[39m       [36mconst[39m resp [33m=[39m thrownErr[33m.[39mgetResponse()[33m;[39m
+     [90m 425 |[39m       expect(resp)[33m.[39mtoMatchObject({
+     [90m 426 |[39m         code[33m:[39m [32m"QUOTE_CHANGED"[39m[33m,[39m[0m
+
+      at Object.<anonymous> (test/package-quote-integrity-s1.spec.ts:423:25)
+
+  ● S1 Quote Integrity Regression Suite (@security) › S1 Quote Integrity Rules › rule 5: rate change between quote and 
+purchase must be rejected with 409 QUOTE_CHANGED
+
+    expect(received).toBeInstanceOf(expected)
+
+    Expected constructor: ConflictException
+    Received constructor: TypeError
+
+    [0m [90m 455 |[39m       }
+     [90m 456 |[39m
+    [31m[1m>[22m[39m[90m 457 |[39m       
+expect(thrownErr)[33m.[39mtoBeInstanceOf([33mConflictException[39m)[33m;[39m
+     [90m     |[39m                         [31m[1m^[22m[39m
+     [90m 458 |[39m       [36mconst[39m resp [33m=[39m thrownErr[33m.[39mgetResponse()[33m;[39m
+     [90m 459 |[39m       expect(resp)[33m.[39mtoMatchObject({
+     [90m 460 |[39m         code[33m:[39m [32m"QUOTE_CHANGED"[39m[33m,[39m[0m
+
+      at Object.<anonymous> (test/package-quote-integrity-s1.spec.ts:457:25)
+
+Test Suites: 1 failed, 1 total
+Tests:       5 failed, 1 passed, 6 total
+Snapshots:   0 total
+Time:        1.332 s
+Ran all test suites matching /test\\package-quote-integrity-s1.spec.ts/i.

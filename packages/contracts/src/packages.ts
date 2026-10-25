@@ -1,5 +1,151 @@
 import { z } from "zod";
 
+export const PACKAGE_PROVIDER_STATUS_STALLED_REASON =
+  "Provider status polling paused 24 hours after child-order creation without a terminal result. An admin can resume status checks; the child order will not be resubmitted.";
+
+export function isValidIanaTimezone(value: string): boolean {
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export const IanaTimezoneSchema = z
+  .string()
+  .trim()
+  .min(1, "Timezone is required")
+  .refine(isValidIanaTimezone, "Timezone must be a valid IANA timezone");
+
+type LocalDateTimeParts = {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+};
+
+function getZonedDateTimeParts(date: Date, timezone: string): LocalDateTimeParts {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+    hour: Number(values.hour),
+    minute: Number(values.minute),
+  };
+}
+
+function sameLocalDateTime(
+  left: LocalDateTimeParts,
+  right: LocalDateTimeParts
+): boolean {
+  return (
+    left.year === right.year &&
+    left.month === right.month &&
+    left.day === right.day &&
+    left.hour === right.hour &&
+    left.minute === right.minute
+  );
+}
+
+export function formatInstantForDateTimeLocal(
+  instant: string | Date,
+  timezone: string
+): string {
+  const date = instant instanceof Date ? instant : new Date(instant);
+  if (!Number.isFinite(date.getTime()) || !isValidIanaTimezone(timezone)) {
+    throw new RangeError("A valid instant and IANA timezone are required.");
+  }
+
+  const parts = getZonedDateTimeParts(date, timezone);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}T${pad(parts.hour)}:${pad(parts.minute)}`;
+}
+
+export function localDateTimeToInstant(
+  value: string,
+  timezone: string
+): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  if (!match || !isValidIanaTimezone(timezone)) {
+    throw new RangeError("A valid local date/time and IANA timezone are required.");
+  }
+
+  const desired: LocalDateTimeParts = {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+    hour: Number(match[4]),
+    minute: Number(match[5]),
+  };
+  const wallTimeAsUtc = Date.UTC(
+    desired.year,
+    desired.month - 1,
+    desired.day,
+    desired.hour,
+    desired.minute
+  );
+  if (
+    !sameLocalDateTime(
+      {
+        year: new Date(wallTimeAsUtc).getUTCFullYear(),
+        month: new Date(wallTimeAsUtc).getUTCMonth() + 1,
+        day: new Date(wallTimeAsUtc).getUTCDate(),
+        hour: new Date(wallTimeAsUtc).getUTCHours(),
+        minute: new Date(wallTimeAsUtc).getUTCMinutes(),
+      },
+      desired
+    )
+  ) {
+    throw new RangeError("The local date/time is invalid.");
+  }
+
+  const offsets = new Set<number>();
+  for (let hours = -36; hours <= 36; hours += 6) {
+    const sample = new Date(wallTimeAsUtc + hours * 60 * 60 * 1000);
+    const localParts = getZonedDateTimeParts(sample, timezone);
+    const localAsUtc = Date.UTC(
+      localParts.year,
+      localParts.month - 1,
+      localParts.day,
+      localParts.hour,
+      localParts.minute
+    );
+    offsets.add(localAsUtc - sample.getTime());
+  }
+
+  const candidates = [...offsets]
+    .map((offset) => new Date(wallTimeAsUtc - offset))
+    .filter((candidate) =>
+      sameLocalDateTime(getZonedDateTimeParts(candidate, timezone), desired)
+    );
+
+  if (candidates.length === 0) {
+    throw new RangeError(
+      "This local time does not exist in the selected timezone because of a daylight-saving transition."
+    );
+  }
+  if (candidates.length > 1) {
+    throw new RangeError(
+      "This local time occurs twice in the selected timezone because of a daylight-saving transition."
+    );
+  }
+
+  return candidates[0].toISOString();
+}
+
 export const PackageTargetTypeSchema = z.enum(["PROFILE", "POST_OR_REEL"]);
 export type PackageTargetType = z.infer<typeof PackageTargetTypeSchema>;
 
@@ -25,7 +171,7 @@ export const PackageItemInputSchema = z.object({
       endHour: z.number().int().min(0).max(23).optional(),
     })
     .optional(),
-  timezone: z.string().optional(),
+  timezone: IanaTimezoneSchema.optional(),
   retryPolicy: z.object({ maxRetries: z.number().int().min(0).max(5).optional() }).optional(),
   failurePolicy: z.enum(["CONTINUE", "PAUSE"]).optional(),
 });
@@ -93,8 +239,10 @@ export const PackageQuoteItemSchema = z.object({
 export type PackageQuoteItem = z.infer<typeof PackageQuoteItemSchema>;
 
 export const PackageQuoteInputSchema = z.object({
+  userId: z.string().optional(),
   platform: SupportedPlatformSchema.default("instagram"),
   handle: z.string().min(1, "Handle is required"),
+  timezone: IanaTimezoneSchema.default("UTC"),
   followersDrip: z
     .object({
       serviceId: z.string(),
@@ -123,7 +271,7 @@ export type PackageQuoteInput = z.infer<typeof PackageQuoteInputSchema>;
 
 export const PackageRunPreviewSchema = z.object({
   runIndex: z.number().int(),
-  scheduledAt: z.string(),
+  scheduledAt: z.string().datetime({ offset: true }),
   serviceId: z.string(),
   serviceName: z.string(),
   target: z.string().optional(),
@@ -134,6 +282,7 @@ export type PackageRunPreview = z.infer<typeof PackageRunPreviewSchema>;
 
 export const PackageQuoteResponseSchema = z.object({
   valid: z.boolean(),
+  timezone: IanaTimezoneSchema,
   totalCharge: z.number(),
   totalRuns: z.number(),
   days: z.number(),
@@ -157,12 +306,15 @@ export const PackageQuoteResponseSchema = z.object({
   ),
   timeline: z.array(PackageRunPreviewSchema),
   warnings: z.array(z.string()),
-  disclaimer: z.string().default("Maximum total; unused is refunded at the end"),
+  disclaimer: z.string().default("Maximum total; unused balance is automatically refunded to your wallet upon package completion or cancellation."),
+  quoteHash: z.string().optional(),
+  expiresAt: z.string().optional(),
 });
 export type PackageQuoteResponse = z.infer<typeof PackageQuoteResponseSchema>;
 
 export const PackagePurchaseInputSchema = PackageQuoteInputSchema.extend({
   idempotencyKey: z.string().optional(),
+  quoteHash: z.string().min(1, "quoteHash is required to purchase a package."),
 });
 export type PackagePurchaseInput = z.infer<typeof PackagePurchaseInputSchema>;
 
@@ -215,3 +367,8 @@ export const TriggerExecutionInputSchema = z.object({
     .optional(),
 });
 export type TriggerExecutionInput = z.infer<typeof TriggerExecutionInputSchema>;
+
+export const RescheduleExecutionInputSchema = z.object({
+  executeAt: z.string().datetime({ offset: true, message: "executeAt must be an ISO-8601 timestamp with an offset" }),
+});
+export type RescheduleExecutionInput = z.infer<typeof RescheduleExecutionInputSchema>;

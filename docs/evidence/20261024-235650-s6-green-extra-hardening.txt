@@ -1,0 +1,28 @@
+Commit: 631d7c74606998e452a736f3471e24a32cd5d6ae
+Branch: feature/package-engine
+Test DB: postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test
+Date: 2026-10-24T23:56:50.000Z
+Status: PASS (S6 EXTRA HARDENING GREEN)
+---
+
+PASS test/package-extra-hardening-s6.spec.ts
+  S6: Extra Hardening (URL, Raw SQL, CHECK Constraint, Admin Guards)
+    1. WHATWG URL Validation Hardening
+      √ rejects URLs exceeding 2048 characters (15 ms)
+      √ strictly rejects non-https schemes (http, javascript, data, ftp) (5 ms)
+      √ strictly rejects URLs containing userinfo (credentials)
+      √ strictly rejects URLs containing non-default ports (1 ms)
+      √ strictly rejects IDN / Punycode lookalike domains and non-ASCII hostnames (2 ms)
+      √ strictly rejects lookalike domain suffixes (evil-instagram.com, instagram.com.evil.com) (1 ms)
+      √ survives ReDoS fuzz testing of 10,000 hostile strings under 100ms (99 ms)
+    2. Database CHECK Constraint Verification
+      √ verifies migration files define check_used_count constraint on PackageRule (13 ms)
+    3. Admin Endpoints Hardening (Reason >= 10 chars, Fail-Closed, Audit)
+      √ rejects admin resolve execution with missing or short reason (< 10 chars) (17 ms)
+      √ fails closed (503 ServiceUnavailableException) when DB is disconnected in adminResolveExecution (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        7.002 s
+Ran all test suites matching /package-extra-hardening-s6.spec.ts/i.

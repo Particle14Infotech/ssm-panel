@@ -90,7 +90,7 @@ export class PaymentsController {
   @Post("sandbox-complete")
   @ApiOperation({ summary: "Simulate Payment Completion" })
   async sandboxComplete(@Body() body: { gatewayOrderId: string }) {
-    if (process.env.NODE_ENV === "production" && process.env.ALLOW_SIMULATED_PAYMENTS !== "true") {
+    if (process.env.NODE_ENV === "production") {
       throw new NotFoundException("Sandbox completion endpoint is disabled in production.");
     }
     return await this.paymentsService.sandboxComplete(body.gatewayOrderId);

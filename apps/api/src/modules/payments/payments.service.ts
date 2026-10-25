@@ -34,7 +34,17 @@ export class PaymentsService {
     if (configured === "razorpay") {
       return this.razorpayProvider;
     }
-    return this.simulatedProvider;
+    if (process.env.NODE_ENV === "production") {
+      throw new ForbiddenException(
+        "Simulated payment processing is disabled in production."
+      );
+    }
+    if (!configured || configured === "simulated") {
+      return this.simulatedProvider;
+    }
+    throw new ForbiddenException(
+      `Unsupported payment provider: ${configured}.`
+    );
   }
 
   /**
@@ -376,6 +386,10 @@ export class PaymentsService {
 
   // Backward compatibility alias for sandboxComplete
   async sandboxComplete(gatewayOrderId: string) {
+    if (process.env.NODE_ENV === "production") {
+      throw new NotFoundException("Sandbox completion is disabled in production.");
+    }
+
     const payment = this.prisma.isConnected
       ? await this.prisma.payment.findUnique({ where: { gatewayOrderId } })
       : this.sandboxPayments.get(gatewayOrderId);
