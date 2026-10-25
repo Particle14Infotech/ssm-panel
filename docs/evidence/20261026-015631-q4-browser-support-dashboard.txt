@@ -1,0 +1,98 @@
+﻿Git Commit: f4f8723cee5f9804a3262d5aa33f7fcf617b0759
+Git Branch: main
+Database Name: smm_db_sandbox
+Timestamp: 2026-10-25T20:26:31Z
+============================================================
+
+Running 3 tests using 1 worker
+
+  x  1 [chromium] › e2e\q4-browser-support-dashboard.spec.ts:32:7 › Q4: Support Tickets, Notifications & Dashboard (SUP-01, NOT-01, DSH-01) › 1. Support Ticket Lifecycle: Create ticket, inspect thread, post reply (SUP-01) (52.8s)
+  x  2 [chromium] › e2e\q4-browser-support-dashboard.spec.ts:83:7 › Q4: Support Tickets, Notifications & Dashboard (SUP-01, NOT-01, DSH-01) › 2. Header Notifications Panel Interaction (NOT-01) (39.9s)
+  x  3 [chromium] › e2e\q4-browser-support-dashboard.spec.ts:109:7 › Q4: Support Tickets, Notifications & Dashboard (SUP-01, NOT-01, DSH-01) › 3. Customer Dashboard KPI Metrics & Clean Zero State (DSH-01) (36.7s)
+
+
+  1) [chromium] › e2e\q4-browser-support-dashboard.spec.ts:32:7 › Q4: Support Tickets, Notifications & Dashboard (SUP-01, NOT-01, DSH-01) › 1. Support Ticket Lifecycle: Create ticket, inspect thread, post reply (SUP-01) 
+
+    TimeoutError: page.waitForURL: Timeout 25000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation until "load"
+    ============================================================
+
+      26 |         await submitBtn.click();
+      27 |       }
+    > 28 |       await page.waitForURL((url) => url.pathname.includes("/app/dashboard"), { timeout: 25000 });
+         |                  ^
+      29 |     }
+      30 |   }
+      31 |
+        at registerUser (D:\projects\internship projects\SMM\e2e\q4-browser-support-dashboard.spec.ts:28:18)
+        at D:\projects\internship projects\SMM\e2e\q4-browser-support-dashboard.spec.ts:42:5
+
+    Error Context: test-results\q4-browser-support-dashboa-bd54a-t-thread-post-reply-SUP-01--chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q4-browser-support-dashboa-bd54a-t-thread-post-reply-SUP-01--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q4-browser-support-dashboa-bd54a-t-thread-post-reply-SUP-01--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › e2e\q4-browser-support-dashboard.spec.ts:83:7 › Q4: Support Tickets, Notifications & Dashboard (SUP-01, NOT-01, DSH-01) › 2. Header Notifications Panel Interaction (NOT-01) 
+
+    TimeoutError: page.waitForURL: Timeout 25000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation until "load"
+    ============================================================
+
+      26 |         await submitBtn.click();
+      27 |       }
+    > 28 |       await page.waitForURL((url) => url.pathname.includes("/app/dashboard"), { timeout: 25000 });
+         |                  ^
+      29 |     }
+      30 |   }
+      31 |
+        at registerUser (D:\projects\internship projects\SMM\e2e\q4-browser-support-dashboard.spec.ts:28:18)
+        at D:\projects\internship projects\SMM\e2e\q4-browser-support-dashboard.spec.ts:93:5
+
+    Error Context: test-results\q4-browser-support-dashboa-edebd-s-Panel-Interaction-NOT-01--chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q4-browser-support-dashboa-edebd-s-Panel-Interaction-NOT-01--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q4-browser-support-dashboa-edebd-s-Panel-Interaction-NOT-01--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › e2e\q4-browser-support-dashboard.spec.ts:109:7 › Q4: Support Tickets, Notifications & Dashboard (SUP-01, NOT-01, DSH-01) › 3. Customer Dashboard KPI Metrics & Clean Zero State (DSH-01) 
+
+    TimeoutError: page.waitForURL: Timeout 25000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation until "load"
+    ============================================================
+
+      26 |         await submitBtn.click();
+      27 |       }
+    > 28 |       await page.waitForURL((url) => url.pathname.includes("/app/dashboard"), { timeout: 25000 });
+         |                  ^
+      29 |     }
+      30 |   }
+      31 |
+        at registerUser (D:\projects\internship projects\SMM\e2e\q4-browser-support-dashboard.spec.ts:28:18)
+        at D:\projects\internship projects\SMM\e2e\q4-browser-support-dashboard.spec.ts:119:5
+
+    Error Context: test-results\q4-browser-support-dashboa-66886-cs-Clean-Zero-State-DSH-01--chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q4-browser-support-dashboa-66886-cs-Clean-Zero-State-DSH-01--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q4-browser-support-dashboa-66886-cs-Clean-Zero-State-DSH-01--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    [chromium] › e2e\q4-browser-support-dashboard.spec.ts:32:7 › Q4: Support Tickets, Notifications & Dashboard (SUP-01, NOT-01, DSH-01) › 1. Support Ticket Lifecycle: Create ticket, inspect thread, post reply (SUP-01) 
+    [chromium] › e2e\q4-browser-support-dashboard.spec.ts:83:7 › Q4: Support Tickets, Notifications & Dashboard (SUP-01, NOT-01, DSH-01) › 2. Header Notifications Panel Interaction (NOT-01) 
+    [chromium] › e2e\q4-browser-support-dashboard.spec.ts:109:7 › Q4: Support Tickets, Notifications & Dashboard (SUP-01, NOT-01, DSH-01) › 3. Customer Dashboard KPI Metrics & Clean Zero State (DSH-01) 

@@ -1,0 +1,42 @@
+﻿Git Commit: f4f8723cee5f9804a3262d5aa33f7fcf617b0759
+Git Branch: main
+Database Name: smm_db_sandbox
+Timestamp: 2026-10-25T20:21:26Z
+============================================================
+============================================================
+Q4 API Verification: Support Tickets, Notifications & Dashboard
+============================================================
+
+[PASS] 1. User A successfully registered
+[PASS] 2. User B successfully registered
+[PASS] 3. GET /users/me returned HTTP 200
+[PASS] 4. Profile email matches registered user
+[PASS] 5. Initial balance is 0.00 zero-state
+[PASS] 6. User A opens support ticket successfully
+node.exe : [FAIL] 7. Created ticket contains valid ID
+At D:\projects\internship projects\SMM\scripts\run-q4-support.ps1:19 char:1
++ & node scripts/qa-q4-support-dashboard.js 2>&1 | Out-File -FilePath $ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([FAIL] 7. Creat...ntains valid ID:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[FAIL] 8. Ticket subject recorded correctly
+[FAIL] 9. Initial ticket status is OPEN/PENDING
+[PASS] 10. GET /tickets returned HTTP 200
+[FAIL] 11. Created ticket appears in User A tickets list
+[FAIL] 12. GET /tickets/:id returned HTTP 200
+[PASS] 13. Ticket detail ID matches
+[FAIL] 14. User A successfully posts reply to ticket
+[PASS] 15. Cross-Tenant Isolation: User B forbidden from viewing User A's ticket (Status: 404)
+[PASS] 16. Cross-Tenant Isolation: User B forbidden from replying to User A's ticket (Status: 404)
+[FAIL] 17. User A closes support ticket
+[FAIL] 18. Ticket status updated to CLOSED (Observed: undefined)
+[PASS] 19. Role Guard: Non-admin customer blocked from /tickets/admin/all (HTTP 403 Forbidden)
+[PASS] 20. GET /notifications returned HTTP 200
+[PASS] 21. Notifications response is valid array
+[PASS] 22. GET /orders returned HTTP 200 for dashboard feed
+[PASS] 23. Zero-state dashboard orders count is exactly 0
+
+============================================================
+Q4 API Verification Summary: 15 PASSED, 8 FAILED
+============================================================

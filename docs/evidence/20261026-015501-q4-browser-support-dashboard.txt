@@ -1,0 +1,43 @@
+﻿Git Commit: f4f8723cee5f9804a3262d5aa33f7fcf617b0759
+Git Branch: main
+Database Name: smm_db_sandbox
+Timestamp: 2026-10-25T20:25:01Z
+============================================================
+
+Running 3 tests using 1 worker
+
+  x  1 [chromium] › e2e\q4-browser-support-dashboard.spec.ts:22:7 › Q4: Support Tickets, Notifications & Dashboard (SUP-01, NOT-01, DSH-01) › 1. Support Ticket Lifecycle: Create ticket, inspect thread, post reply (SUP-01) (36.1s)
+  ok 2 [chromium] › e2e\q4-browser-support-dashboard.spec.ts:73:7 › Q4: Support Tickets, Notifications & Dashboard (SUP-01, NOT-01, DSH-01) › 2. Header Notifications Panel Interaction (NOT-01) (7.6s)
+  ok 3 [chromium] › e2e\q4-browser-support-dashboard.spec.ts:99:7 › Q4: Support Tickets, Notifications & Dashboard (SUP-01, NOT-01, DSH-01) › 3. Customer Dashboard KPI Metrics & Clean Zero State (DSH-01) (6.5s)
+
+
+  1) [chromium] › e2e\q4-browser-support-dashboard.spec.ts:22:7 › Q4: Support Tickets, Notifications & Dashboard (SUP-01, NOT-01, DSH-01) › 1. Support Ticket Lifecycle: Create ticket, inspect thread, post reply (SUP-01) 
+
+    TimeoutError: page.waitForURL: Timeout 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation until "load"
+    ============================================================
+
+      17 |     await page.locator("input[name='termsAccepted']").check();
+      18 |     await page.getByRole("button", { name: /Complete Registration/i }).click();
+    > 19 |     await page.waitForURL((url) => url.pathname.includes("/app/dashboard"), { timeout: 30000 });
+         |                ^
+      20 |   }
+      21 |
+      22 |   test("1. Support Ticket Lifecycle: Create ticket, inspect thread, post reply (SUP-01)", async ({ page }) => {
+        at registerUser (D:\projects\internship projects\SMM\e2e\q4-browser-support-dashboard.spec.ts:19:16)
+        at D:\projects\internship projects\SMM\e2e\q4-browser-support-dashboard.spec.ts:32:5
+
+    Error Context: test-results\q4-browser-support-dashboa-bd54a-t-thread-post-reply-SUP-01--chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q4-browser-support-dashboa-bd54a-t-thread-post-reply-SUP-01--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q4-browser-support-dashboa-bd54a-t-thread-post-reply-SUP-01--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › e2e\q4-browser-support-dashboard.spec.ts:22:7 › Q4: Support Tickets, Notifications & Dashboard (SUP-01, NOT-01, DSH-01) › 1. Support Ticket Lifecycle: Create ticket, inspect thread, post reply (SUP-01) 
+  2 passed (54.9s)
