@@ -1,0 +1,89 @@
+﻿Git Commit: d5c7584e6551c66b70b5e4fe9fe753cec68870dd
+Git Branch: main
+Database Name: smm_db_sandbox
+Timestamp: 2026-10-25T19:24:05Z
+============================================================
+
+Running 3 tests using 1 worker
+
+  ok 1 [chromium] › e2e\q3-browser-orders.spec.ts:43:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 1. Insufficient Balance Guardrail: New user with ₹0 balance sees shortfall & disabled submit (22.9s)
+  x  2 [chromium] › e2e\q3-browser-orders.spec.ts:73:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 2. Place Order Flow: Deposit funds, submit order, view in order list & details (13.8s)
+  x  3 [chromium] › e2e\q3-browser-orders.spec.ts:125:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 3. Order Cancellation & Wallet Refund in UI (24.4s)
+
+
+  1) [chromium] › e2e\q3-browser-orders.spec.ts:73:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 2. Place Order Flow: Deposit funds, submit order, view in order list & details 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('body')
+    Expected substring: "525"
+    Received string:    "Skip to main contentSMM PanelPlatformDashboardNew OrderPackagesFavoritesServicesOrdersFinancialsAdd FundsTransactionsAccount & SupportSupport TicketsAPI & ProfileReseller APIQ3 OrderUser 1792956271431_bm9p₹1,100.00Bal:₹1,100.00Add fundsQAdd Funds & BillingAdd spendable liquidity, unlock tier bonus credits, and view payment receipts.Deposit Credited Successfully!Payment pay_BTEPXESA for ₹1000.00 has been credited and added to your balance.DismissChoose Deposit Amount & MethodAutomated balance crediting with zero gateway processing surcharge.0% FeeUPIUPIFastUPIDirect (0–5s) • 0% FeeSecureCredit / Debit CardVisa, Mastercard, RuPayNetbankingDirectNetbankingIMPS, NEFT & All BanksDeposit Amount (INR)₹₹100₹500₹1,000₹5,00010% Tier Bonus Applied!You receive ₹1100.00 total spendable credit.+₹100.00Pay Securely ₹1,000.00Current BalanceINR WALLETAvailable Spending Liquidity₹1,100.00INRTotal Spent₹0Total Orders0 OrdersSettlement SLADirect ClearanceGST InvoiceAutomated DownloadSecurity256-bit SSL EncryptedRecent Transaction StatementsDownloadable tax receipts and ledger verification audit trail.Transaction IDDateMethodAmount DepositedStatusReceipt#TXN-LDGSBX1726 Oct 2026, 12:54 amUPIUPIUPI₹1,100.00SuccessView Receipt"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" locator('body') with timeout 5000ms
+      - waiting for locator('body')
+        13 × locator resolved to <body class="bg-[#131313] text-[#e5e2e1] font-sans antialiased min-h-screen selection:bg-[#d8ec8d] selection:text-[#171e00]">…</body>
+           - unexpected value "Skip to main contentSMM PanelPlatformDashboardNew OrderPackagesFavoritesServicesOrdersFinancialsAdd FundsTransactionsAccount & SupportSupport TicketsAPI & ProfileReseller APIQ3 OrderUser 1792956271431_bm9p₹1,100.00Bal:₹1,100.00Add fundsQAdd Funds & BillingAdd spendable liquidity, unlock tier bonus credits, and view payment receipts.Deposit Credited Successfully!Payment pay_BTEPXESA for ₹1000.00 has been credited and added to your balance.DismissChoose Deposit Amount & MethodAutomated balance crediting with zero gateway processing surcharge.0% FeeUPIUPIFastUPIDirect (0–5s) • 0% FeeSecureCredit / Debit CardVisa, Mastercard, RuPayNetbankingDirectNetbankingIMPS, NEFT & All BanksDeposit Amount (INR)₹₹100₹500₹1,000₹5,00010% Tier Bonus Applied!You receive ₹1100.00 total spendable credit.+₹100.00Pay Securely ₹1,000.00Current BalanceINR WALLETAvailable Spending Liquidity₹1,100.00INRTotal Spent₹0Total Orders0 OrdersSettlement SLADirect ClearanceGST InvoiceAutomated DownloadSecurity256-bit SSL EncryptedRecent Transaction StatementsDownloadable tax receipts and ledger verification audit trail.Transaction IDDateMethodAmount DepositedStatusReceipt#TXN-LDGSBX1726 Oct 2026, 12:54 amUPIUPIUPI₹1,100.00SuccessView Receipt"
+
+
+      38 |
+      39 |     // Verify wallet balance reflects credited funds
+    > 40 |     await expect(page.locator("body")).toContainText("525");
+         |                                        ^
+      41 |   }
+      42 |
+      43 |   test("1. Insufficient Balance Guardrail: New user with ₹0 balance sees shortfall & disabled submit", async ({ page }) => {
+        at fundWallet (D:\projects\internship projects\SMM\e2e\q3-browser-orders.spec.ts:40:40)
+        at D:\projects\internship projects\SMM\e2e\q3-browser-orders.spec.ts:86:5
+
+    Error Context: test-results\q3-browser-orders-Q3-Order-88572--view-in-order-list-details-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q3-browser-orders-Q3-Order-88572--view-in-order-list-details-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q3-browser-orders-Q3-Order-88572--view-in-order-list-details-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › e2e\q3-browser-orders.spec.ts:125:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 3. Order Cancellation & Wallet Refund in UI 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('body')
+    Expected substring: "525"
+    Received string:    "Skip to main contentSMM PanelPlatformDashboardNew OrderPackagesFavoritesServicesOrdersFinancialsAdd FundsTransactionsAccount & SupportSupport TicketsAPI & ProfileReseller APIQ3 CancelUser 1792956286666_0ng6₹1,100.00Bal:₹1,100.00Add fundsQAdd Funds & BillingAdd spendable liquidity, unlock tier bonus credits, and view payment receipts.Deposit Credited Successfully!Payment pay_04EBGTFS for ₹1000.00 has been credited and added to your balance.DismissChoose Deposit Amount & MethodAutomated balance crediting with zero gateway processing surcharge.0% FeeUPIUPIFastUPIDirect (0–5s) • 0% FeeSecureCredit / Debit CardVisa, Mastercard, RuPayNetbankingDirectNetbankingIMPS, NEFT & All BanksDeposit Amount (INR)₹₹100₹500₹1,000₹5,00010% Tier Bonus Applied!You receive ₹1100.00 total spendable credit.+₹100.00Pay Securely ₹1,000.00Current BalanceINR WALLETAvailable Spending Liquidity₹1,100.00INRTotal Spent₹0Total Orders0 OrdersSettlement SLADirect ClearanceGST InvoiceAutomated DownloadSecurity256-bit SSL EncryptedRecent Transaction StatementsDownloadable tax receipts and ledger verification audit trail.Transaction IDDateMethodAmount DepositedStatusReceipt#TXN-LDGSBX1726 Oct 2026, 12:55 amUPIUPIUPI₹1,100.00SuccessView Receipt"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" locator('body') with timeout 5000ms
+      - waiting for locator('body')
+        14 × locator resolved to <body class="bg-[#131313] text-[#e5e2e1] font-sans antialiased min-h-screen selection:bg-[#d8ec8d] selection:text-[#171e00]">…</body>
+           - unexpected value "Skip to main contentSMM PanelPlatformDashboardNew OrderPackagesFavoritesServicesOrdersFinancialsAdd FundsTransactionsAccount & SupportSupport TicketsAPI & ProfileReseller APIQ3 CancelUser 1792956286666_0ng6₹1,100.00Bal:₹1,100.00Add fundsQAdd Funds & BillingAdd spendable liquidity, unlock tier bonus credits, and view payment receipts.Deposit Credited Successfully!Payment pay_04EBGTFS for ₹1000.00 has been credited and added to your balance.DismissChoose Deposit Amount & MethodAutomated balance crediting with zero gateway processing surcharge.0% FeeUPIUPIFastUPIDirect (0–5s) • 0% FeeSecureCredit / Debit CardVisa, Mastercard, RuPayNetbankingDirectNetbankingIMPS, NEFT & All BanksDeposit Amount (INR)₹₹100₹500₹1,000₹5,00010% Tier Bonus Applied!You receive ₹1100.00 total spendable credit.+₹100.00Pay Securely ₹1,000.00Current BalanceINR WALLETAvailable Spending Liquidity₹1,100.00INRTotal Spent₹0Total Orders0 OrdersSettlement SLADirect ClearanceGST InvoiceAutomated DownloadSecurity256-bit SSL EncryptedRecent Transaction StatementsDownloadable tax receipts and ledger verification audit trail.Transaction IDDateMethodAmount DepositedStatusReceipt#TXN-LDGSBX1726 Oct 2026, 12:55 amUPIUPIUPI₹1,100.00SuccessView Receipt"
+
+
+      38 |
+      39 |     // Verify wallet balance reflects credited funds
+    > 40 |     await expect(page.locator("body")).toContainText("525");
+         |                                        ^
+      41 |   }
+      42 |
+      43 |   test("1. Insufficient Balance Guardrail: New user with ₹0 balance sees shortfall & disabled submit", async ({ page }) => {
+        at fundWallet (D:\projects\internship projects\SMM\e2e\q3-browser-orders.spec.ts:40:40)
+        at D:\projects\internship projects\SMM\e2e\q3-browser-orders.spec.ts:138:5
+
+    Error Context: test-results\q3-browser-orders-Q3-Order-20f95-llation-Wallet-Refund-in-UI-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q3-browser-orders-Q3-Order-20f95-llation-Wallet-Refund-in-UI-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q3-browser-orders-Q3-Order-20f95-llation-Wallet-Refund-in-UI-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    [chromium] › e2e\q3-browser-orders.spec.ts:73:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 2. Place Order Flow: Deposit funds, submit order, view in order list & details 
+    [chromium] › e2e\q3-browser-orders.spec.ts:125:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 3. Order Cancellation & Wallet Refund in UI 
+  1 passed (1.1m)

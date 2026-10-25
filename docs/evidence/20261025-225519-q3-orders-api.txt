@@ -1,0 +1,74 @@
+﻿Git Commit: e6b2965194b1e62f3d08f420450fea2dd4c2bb21
+Git Branch: main
+Database Name: smm_db_sandbox
+Timestamp: 2026-10-25T17:25:19Z
+============================================================
+================================================================================
+▶ STARTING Q3: ORDER, TRACK & REFUND VERIFICATION SUITE
+API Base: http://127.0.0.1:4000/api/v1
+================================================================================
+
+--- 1. Insufficient Funds Safeguard (ORD-02) ---
+✅ [PASS] Registered zero-balance test user (status 201)
+✅ [PASS] Received JWT token for zero-balance customer
+✅ [PASS] Unfunded order rejected with HTTP 402 Payment Required (got: 402)
+✅ [PASS] Error response indicates insufficient wallet balance: "Insufficient wallet balance. Please add funds to your wallet to place this order."
+✅ [PASS] Zero-balance user wallet remains untouched at ₹0.00 (got: ₹0)
+
+--- 2. Funded User Setup & Deposit ---
+✅ [PASS] Registered funded test user (status 201)
+✅ [PASS] Created payment order for ₹1000: "order_HZNMLPXU"
+✅ [PASS] Completed sandbox payment deposit
+✅ [PASS] Funded user starting balance verified (got: ₹1100)
+
+--- 3. Order Placement & Idempotency (ORD-01, ORD-03) ---
+✅ [PASS] Order placed successfully (status 201)
+✅ [PASS] Created order ID: ord_sbx_1792949120244_wd21
+✅ [PASS] Order charge calculated correctly at ₹180 for 1000 units (got: ₹180)
+✅ [PASS] Initial order status is PENDING (got: PENDING)
+✅ [PASS] Initial remaining count equals quantity (got: 1000)
+✅ [PASS] Wallet atomically debited by ₹180 (expected ₹920, got ₹920)
+✅ [PASS] Idempotent replay succeeds (status 201)
+✅ [PASS] Replay returned identical order ID (ord_sbx_1792949120244_wd21)
+✅ [PASS] Idempotent replay caused no double debit (balance remains ₹920)
+✅ [PASS] Reused idempotency key with different params rejected with 409 Conflict (got: 409)
+
+--- 4. Order Tracking & Details (ORD-04, ORD-08) ---
+✅ [PASS] GET /orders returns 200 OK (got 200)
+✅ [PASS] GET /orders returns an array
+✅ [PASS] Created order found in user order list
+✅ [PASS] GET /orders/:id returns 200 OK (got 200)
+✅ [PASS] Order ID matches requested ID
+✅ [PASS] Order response includes service name: "Instagram High-Retention Followers [Real Active • 0% Drop • 30D Refill]"
+✅ [PASS] Order response includes status history timeline
+✅ [PASS] Order data isolation preserved: cross-user read rejected with status 403
+
+--- 5. Order Cancellation & Full Refund (ORD-07) ---
+✅ [PASS] Placed order to be cancelled: ord_sbx_1792949120271_j0xe (charge: ₹65)
+✅ [PASS] Cancel response confirmed success: "Order #ord_sbx_1792949120271_j0xe cancelled and refunded."
+node.exe : ❌ [FAIL] POST /orders/:id/cancel returns 200 OK (got 201)
+At D:\projects\internship projects\SMM\scripts\run-q3-orders.ps1:19 char:1
++ & node scripts/qa-q3-orders.js 2>&1 | Out-File -FilePath $evidenceFil ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (❌ [FAIL] POST /...00 OK (got 201):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+✅ [PASS] Full charge ₹65 credited back to wallet on cancellation (expected ₹920, got ₹920)
+❌ [FAIL] Order status updated to CANCELLED
+❌ [FAIL] Re-cancellation of already cancelled order rejected (status 201)
+
+--- 6. Mock Provider Failure Drill & Auto-Refund (ORD-05) ---
+✅ [PASS] Failure drill order placed
+✅ [PASS] Provider failure drill correctly transitions order to FAILED
+✅ [PASS] Wallet balance restored after auto-refund (balance: ₹985)
+
+--- 7. Financial Invariant Audit (ORD-09) ---
+✅ [PASS] GET /wallet/ledger returns 200 OK
+✅ [PASS] Ledger contains entries (count: 7)
+Live Wallet Balance: ₹985.00
+Sum of Ledger Entries: ₹985.00
+✅ [PASS] Financial Invariant Preserved: Live Balance (₹985) === Sum(Ledger) (₹985)
+
+================================================================================
+Q3 VERIFICATION COMPLETE: 36 Passed, 3 Failed
+================================================================================

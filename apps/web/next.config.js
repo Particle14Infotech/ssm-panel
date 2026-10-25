@@ -6,7 +6,7 @@ const nextConfig = {
   compress: true,
   swcMinify: true,
   output: "standalone",
-  transpilePackages: ["@smm/contracts", "@smm/config", "three"],
+  transpilePackages: ["@smm/contracts", "@smm/config", "three", "framer-motion"],
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [

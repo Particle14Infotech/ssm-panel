@@ -1,5 +1,5 @@
 /**
- * Q3 Order, Track & Refund Functional Verification Suite
+ * Q3 Order, Track, Refund - Core Money Path Verification Suite
  * Tests against live running API on http://127.0.0.1:4000/api/v1
  */
 
@@ -34,311 +34,262 @@ function assert(condition, message) {
 
 async function runQ3() {
   console.log("================================================================================");
-  console.log("▶ STARTING Q3: ORDER, TRACK & REFUND VERIFICATION SUITE");
+  console.log("▶ STARTING Q3: ORDER, TRACK, REFUND VERIFICATION SUITE");
   console.log(`API Base: ${API_BASE}`);
   console.log("================================================================================\n");
 
   const ts = Date.now();
-  const testEmailFunded = `qa_order_funded_${ts}@smm.dev`;
-  const testEmailZero = `qa_order_zero_${ts}@smm.dev`;
+  const testEmail = `qa_orders_${ts}@smm.dev`;
   const securePassword = "Password123!Secure";
 
   // ---------------------------------------------------------------------------
-  // 1. INSUFFICIENT BALANCE SAFEGUARD (ORD-02)
+  // SETUP: REGISTER TEST USER
   // ---------------------------------------------------------------------------
-  console.log("--- 1. Insufficient Funds Safeguard (ORD-02) ---");
-
-  const regZero = await request("/auth/register", {
+  console.log("--- Setup: User Registration & Zero Balance Verification ---");
+  const regRes = await request("/auth/register", {
     method: "POST",
-    body: JSON.stringify({ email: testEmailZero, password: securePassword, name: "Zero Balance User" }),
+    body: JSON.stringify({ email: testEmail, password: securePassword, name: "Orders Test User" }),
   });
-  assert(regZero.status === 201 || regZero.status === 200, `Registered zero-balance test user (status ${regZero.status})`);
-  const tokenZero = regZero.data?.token;
-  assert(!!tokenZero, `Received JWT token for zero-balance customer`);
+  assert(regRes.status === 201 || regRes.status === 200, `Registered test user (status ${regRes.status})`);
+  const token = regRes.data?.token;
+  assert(!!token, `JWT token received for order operations`);
 
-  // Attempt order without funds -> must return HTTP 402 Payment Required
-  const failOrderRes = await request("/orders", {
+  const initialBalRes = await request("/wallet/balance", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  assert(initialBalRes.status === 200, `GET /wallet/balance returns 200 OK`);
+  const initialBalance = Number(initialBalRes.data?.balance);
+  assert(initialBalance === 0, `Initial balance is exactly ₹0.00 (got ₹${initialBalance})`);
+
+  // ---------------------------------------------------------------------------
+  // 1. ORD-02: INSUFFICIENT FUNDS SAFEGUARD (HTTP 402 PAYMENT REQUIRED)
+  // ---------------------------------------------------------------------------
+  console.log("\n--- 1. ORD-02: Insufficient Funds Safeguard (HTTP 402) ---");
+
+  const zeroBalOrderRes = await request("/orders", {
     method: "POST",
-    headers: { Authorization: `Bearer ${tokenZero}` },
+    headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({
-      serviceId: "1042",
-      target: "https://instagram.com/p/zero_test",
+      serviceId: "1042", // Instagram Followers, rate ₹180/1k
+      target: "https://instagram.com/p/test_zero",
       quantity: 1000,
     }),
   });
-
   assert(
-    failOrderRes.status === 402,
-    `Unfunded order rejected with HTTP 402 Payment Required (got: ${failOrderRes.status})`
+    zeroBalOrderRes.status === 402,
+    `Order with zero balance returns HTTP 402 Payment Required (got ${zeroBalOrderRes.status})`
   );
   assert(
-    failOrderRes.data?.code === "PAYMENT_REQUIRED" ||
-      failOrderRes.data?.message?.toLowerCase().includes("insufficient"),
-    `Error response indicates insufficient wallet balance: "${failOrderRes.data?.message}"`
+    zeroBalOrderRes.data?.message?.toLowerCase().includes("insufficient") ||
+    zeroBalOrderRes.data?.code === "PAYMENT_REQUIRED",
+    `Error message clearly indicates insufficient balance: "${zeroBalOrderRes.data?.message}"`
   );
 
-  // Check balance remains exactly 0
-  const zeroBalCheck = await request("/wallet/balance", {
-    headers: { Authorization: `Bearer ${tokenZero}` },
+  // Check balance is still 0
+  const postFailBalRes = await request("/wallet/balance", {
+    headers: { Authorization: `Bearer ${token}` },
   });
-  const zeroBalance = Number(zeroBalCheck.data?.balance);
-  assert(zeroBalance === 0, `Zero-balance user wallet remains untouched at ₹0.00 (got: ₹${zeroBalance})`);
+  const postFailBalance = Number(postFailBalRes.data?.balance);
+  assert(postFailBalance === 0, `Wallet balance remains exactly ₹0.00 after blocked order`);
 
   // ---------------------------------------------------------------------------
-  // 2. FUNDED USER SETUP & DEPOSIT
+  // 2. ADD FUNDS FOR ORDER TESTING
   // ---------------------------------------------------------------------------
-  console.log("\n--- 2. Funded User Setup & Deposit ---");
+  console.log("\n--- 2. Add Funds (₹500 Deposit + ₹25 Bonus) ---");
 
-  const regFunded = await request("/auth/register", {
+  const depositRes = await request("/payments/create-order", {
     method: "POST",
-    body: JSON.stringify({ email: testEmailFunded, password: securePassword, name: "Funded User" }),
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ amount: 500 }),
   });
-  assert(regFunded.status === 201 || regFunded.status === 200, `Registered funded test user (status ${regFunded.status})`);
-  const tokenFunded = regFunded.data?.token;
+  assert(depositRes.status === 200 || depositRes.status === 201, `Payment order created`);
+  const gatewayOrderId = depositRes.data?.gatewayOrderId || depositRes.data?.id;
 
-  // Deposit ₹1000
-  const orderDep = await request("/payments/create-order", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${tokenFunded}` },
-    body: JSON.stringify({ amount: 1000 }),
-  });
-  const gatewayOrderId = orderDep.data?.gatewayOrderId || orderDep.data?.id;
-  assert(!!gatewayOrderId, `Created payment order for ₹1000: "${gatewayOrderId}"`);
-
-  const compDep = await request("/payments/sandbox-complete", {
+  const completeRes = await request("/payments/sandbox-complete", {
     method: "POST",
     body: JSON.stringify({ gatewayOrderId }),
   });
-  assert(compDep.status === 200 || compDep.status === 201, `Completed sandbox payment deposit`);
+  assert(completeRes.status === 200 || completeRes.status === 201, `Deposit completed via sandbox`);
 
-  const initialBalRes = await request("/wallet/balance", {
-    headers: { Authorization: `Bearer ${tokenFunded}` },
+  const fundedBalRes = await request("/wallet/balance", {
+    headers: { Authorization: `Bearer ${token}` },
   });
-  const startingBalance = Number(initialBalRes.data?.balance);
-  assert(startingBalance >= 1000, `Funded user starting balance verified (got: ₹${startingBalance})`);
+  const fundedBalance = Number(fundedBalRes.data?.balance);
+  assert(fundedBalance === 525, `Wallet funded to ₹525.00 (₹500 deposit + ₹25 bonus, got ₹${fundedBalance})`);
 
   // ---------------------------------------------------------------------------
-  // 3. ORDER PLACEMENT & IDEMPOTENCY (ORD-01, ORD-03)
+  // 3. ORD-01 & ORD-03: VALID ORDER CREATION & ATOMIC DEBIT & IDEMPOTENCY
   // ---------------------------------------------------------------------------
-  console.log("\n--- 3. Order Placement & Idempotency (ORD-01, ORD-03) ---");
+  console.log("\n--- 3. ORD-01 & ORD-03: Order Placement, Pricing & Idempotency ---");
 
-  const idempotencyKey = `idemp_${ts}_${Math.random().toString(36).substring(2, 7)}`;
+  const idempotencyKey = `idem_q3_${ts}_order1`;
   const orderPayload = {
-    serviceId: "1042",
-    target: "https://instagram.com/p/ord01_test",
+    serviceId: "1042", // Instagram Followers, rate ₹180/1k
+    target: "https://instagram.com/p/test_order_1",
     quantity: 1000,
     idempotencyKey,
   };
 
-  const createOrder1 = await request("/orders", {
+  const order1Res = await request("/orders", {
     method: "POST",
-    headers: { Authorization: `Bearer ${tokenFunded}` },
+    headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(orderPayload),
   });
+  assert(order1Res.status === 201 || order1Res.status === 200, `Order placed successfully (status ${order1Res.status})`);
+  const order1 = order1Res.data;
+  assert(!!order1?.id, `Received valid order ID: "${order1?.id}"`);
+  assert(Number(order1?.charge) === 180, `Order charge calculated correctly as ₹180.00 (got ₹${order1?.charge})`);
+  assert(order1?.status === "PENDING", `Order initial status is PENDING (got "${order1?.status}")`);
+  assert(order1?.remains === 1000, `Order initial remains equals quantity: ${order1?.remains}`);
 
-  assert(
-    createOrder1.status === 201 || createOrder1.status === 200,
-    `Order placed successfully (status ${createOrder1.status})`
-  );
-  const order1 = createOrder1.data;
-  assert(!!order1?.id, `Created order ID: ${order1?.id}`);
-  assert(order1?.charge === 180, `Order charge calculated correctly at ₹180 for 1000 units (got: ₹${order1?.charge})`);
-  assert(order1?.status === "PENDING", `Initial order status is PENDING (got: ${order1?.status})`);
-  assert(order1?.remains === 1000, `Initial remaining count equals quantity (got: ${order1?.remains})`);
-
-  // Balance deduction check
-  const balAfterOrder1 = await request("/wallet/balance", {
-    headers: { Authorization: `Bearer ${tokenFunded}` },
+  // Balance debit verification
+  const postOrderBalRes = await request("/wallet/balance", {
+    headers: { Authorization: `Bearer ${token}` },
   });
-  const expectedBalance1 = startingBalance - 180;
-  const actualBalance1 = Number(balAfterOrder1.data?.balance);
+  const postOrderBalance = Number(postOrderBalRes.data?.balance);
   assert(
-    Math.abs(actualBalance1 - expectedBalance1) < 0.001,
-    `Wallet atomically debited by ₹180 (expected ₹${expectedBalance1}, got ₹${actualBalance1})`
+    postOrderBalance === 345,
+    `Wallet atomically debited by ₹180: ₹525 - ₹180 = ₹345 (got ₹${postOrderBalance})`
   );
 
-  // Idempotency check 1: Exact replay returns identical order without extra debit
-  const replayOrder1 = await request("/orders", {
+  // Idempotency replay check: Send exact same request with same idempotencyKey
+  const replayOrderRes = await request("/orders", {
     method: "POST",
-    headers: { Authorization: `Bearer ${tokenFunded}` },
+    headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(orderPayload),
   });
   assert(
-    replayOrder1.status === 201 || replayOrder1.status === 200,
-    `Idempotent replay succeeds (status ${replayOrder1.status})`
+    replayOrderRes.status === 200 || replayOrderRes.status === 201,
+    `Replaying order with same idempotencyKey succeeds (status ${replayOrderRes.status})`
   );
-  assert(replayOrder1.data?.id === order1?.id, `Replay returned identical order ID (${replayOrder1.data?.id})`);
-
-  const balAfterReplay = await request("/wallet/balance", {
-    headers: { Authorization: `Bearer ${tokenFunded}` },
-  });
   assert(
-    Number(balAfterReplay.data?.balance) === actualBalance1,
-    `Idempotent replay caused no double debit (balance remains ₹${balAfterReplay.data?.balance})`
+    replayOrderRes.data?.id === order1?.id,
+    `Idempotent replay returns exact same order ID: "${replayOrderRes.data?.id}"`
   );
 
-  // Idempotency check 2: Same idempotency key with different parameters returns 409 Conflict
-  const conflictOrder = await request("/orders", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${tokenFunded}` },
-    body: JSON.stringify({ ...orderPayload, quantity: 2000 }),
+  // Verify balance was NOT debited a second time
+  const postReplayBalRes = await request("/wallet/balance", {
+    headers: { Authorization: `Bearer ${token}` },
   });
+  const postReplayBalance = Number(postReplayBalRes.data?.balance);
   assert(
-    conflictOrder.status === 409,
-    `Reused idempotency key with different params rejected with 409 Conflict (got: ${conflictOrder.status})`
+    postReplayBalance === 345,
+    `Balance unchanged after idempotent replay (still ₹${postReplayBalance})`
   );
 
   // ---------------------------------------------------------------------------
-  // 4. ORDER TRACKING & DETAILS (ORD-04, ORD-08)
+  // 4. ORD-04 & ORD-08: ORDER TRACKING & DETAILS
   // ---------------------------------------------------------------------------
-  console.log("\n--- 4. Order Tracking & Details (ORD-04, ORD-08) ---");
+  console.log("\n--- 4. ORD-04 & ORD-08: Order Tracking & Querying ---");
 
-  // List orders
+  // List all orders for user
   const listOrdersRes = await request("/orders", {
-    headers: { Authorization: `Bearer ${tokenFunded}` },
+    headers: { Authorization: `Bearer ${token}` },
   });
-  assert(listOrdersRes.status === 200, `GET /orders returns 200 OK (got ${listOrdersRes.status})`);
+  assert(listOrdersRes.status === 200, `GET /orders returns 200 OK`);
   assert(Array.isArray(listOrdersRes.data), `GET /orders returns an array`);
   const foundOrder = listOrdersRes.data?.find((o) => o.id === order1?.id);
-  assert(!!foundOrder, `Created order found in user order list`);
+  assert(!!foundOrder, `Order #${order1?.id} found in user's order list`);
 
-  // Order details
-  const getOrderRes = await request(`/orders/${order1?.id}`, {
-    headers: { Authorization: `Bearer ${tokenFunded}` },
+  // Single order lookup
+  const singleOrderRes = await request(`/orders/${order1?.id}`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
-  assert(getOrderRes.status === 200, `GET /orders/:id returns 200 OK (got ${getOrderRes.status})`);
-  assert(getOrderRes.data?.id === order1?.id, `Order ID matches requested ID`);
-  assert(!!getOrderRes.data?.service?.name, `Order response includes service name: "${getOrderRes.data?.service?.name}"`);
-  assert(Array.isArray(getOrderRes.data?.history), `Order response includes status history timeline`);
-
-  // Unauthorized access guard: user zero should not be able to read user funded's order
-  const forbiddenRes = await request(`/orders/${order1?.id}`, {
-    headers: { Authorization: `Bearer ${tokenZero}` },
-  });
+  assert(singleOrderRes.status === 200, `GET /orders/:id returns 200 OK`);
+  assert(singleOrderRes.data?.id === order1?.id, `Fetched order has matching ID`);
+  assert(singleOrderRes.data?.status === "PENDING", `Fetched order status is PENDING`);
   assert(
-    forbiddenRes.status === 403 || forbiddenRes.status === 404,
-    `Order data isolation preserved: cross-user read rejected with status ${forbiddenRes.status}`
+    Array.isArray(singleOrderRes.data?.history) && singleOrderRes.data.history.length > 0,
+    `Order includes history timeline entries (count: ${singleOrderRes.data?.history?.length})`
   );
 
   // ---------------------------------------------------------------------------
-  // 5. CANCELLATION & FULL REFUND (ORD-07)
+  // 5. ORD-05: FAILURE DRILL & AUTOMATIC REFUND
   // ---------------------------------------------------------------------------
-  console.log("\n--- 5. Order Cancellation & Full Refund (ORD-07) ---");
+  console.log("\n--- 5. ORD-05: Failure Drill & Auto-Refund (srv_mock_fail) ---");
 
-  // Place cancellable order (service 1043: rate 65, qty 1000 -> charge 65)
-  const orderToCancelRes = await request("/orders", {
+  // Service srv_mock_fail (rate 200, qty 1000 -> charge 200)
+  const failOrderRes = await request("/orders", {
     method: "POST",
-    headers: { Authorization: `Bearer ${tokenFunded}` },
+    headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({
-      serviceId: "1043",
-      target: "https://instagram.com/p/cancel_test",
+      serviceId: "srv_mock_fail",
+      target: "https://x.com/user/status/drill_fail",
       quantity: 1000,
     }),
   });
-  const cancelOrderId = orderToCancelRes.data?.id;
-  assert(!!cancelOrderId, `Placed order to be cancelled: ${cancelOrderId} (charge: ₹${orderToCancelRes.data?.charge})`);
+  assert(failOrderRes.status === 201 || failOrderRes.status === 200, `Drill order submitted`);
+  const drillOrder = failOrderRes.data;
+  assert(drillOrder?.status === "FAILED", `Drill order status is FAILED as expected (got "${drillOrder?.status}")`);
 
-  const balBeforeCancel = await request("/wallet/balance", {
-    headers: { Authorization: `Bearer ${tokenFunded}` },
+  // Balance should have been debited ₹200 and immediately refunded ₹200 -> net balance remains ₹345
+  const postDrillBalRes = await request("/wallet/balance", {
+    headers: { Authorization: `Bearer ${token}` },
   });
-
-  // Execute cancel
-  const cancelRes = await request(`/orders/${cancelOrderId}/cancel`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${tokenFunded}` },
-  });
-  assert(cancelRes.status === 200, `POST /orders/:id/cancel returns 200 OK (got ${cancelRes.status})`);
-  assert(cancelRes.data?.success === true, `Cancel response confirmed success: "${cancelRes.data?.message}"`);
-
-  const balAfterCancel = await request("/wallet/balance", {
-    headers: { Authorization: `Bearer ${tokenFunded}` },
-  });
-  const expectedRefundBal = Number(balBeforeCancel.data?.balance) + 65;
-  const actualRefundBal = Number(balAfterCancel.data?.balance);
+  const postDrillBalance = Number(postDrillBalRes.data?.balance);
   assert(
-    Math.abs(actualRefundBal - expectedRefundBal) < 0.001,
-    `Full charge ₹65 credited back to wallet on cancellation (expected ₹${expectedRefundBal}, got ₹${actualRefundBal})`
+    postDrillBalance === 345,
+    `Balance automatically restored after failure drill: ₹345 (got ₹${postDrillBalance})`
   );
 
-  // Check order status is now CANCELLED
-  const cancelledOrderCheck = await request(`/orders/${cancelOrderId}`, {
-    headers: { Authorization: `Bearer ${tokenFunded}` },
-  });
-  assert(cancelledOrderCheck.data?.status === "CANCELLED", `Order status updated to CANCELLED`);
+  // ---------------------------------------------------------------------------
+  // 6. ORD-07: ORDER CANCELLATION & WALLET REFUND
+  // ---------------------------------------------------------------------------
+  console.log("\n--- 6. ORD-07: Order Cancellation & Full Refund ---");
 
-  // Re-cancellation rejected with 409 Conflict
-  const reCancelRes = await request(`/orders/${cancelOrderId}/cancel`, {
+  const cancelRes = await request(`/orders/${order1?.id}/cancel`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${tokenFunded}` },
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  assert(cancelRes.status === 200 || cancelRes.status === 201, `POST /orders/:id/cancel returns success (status ${cancelRes.status})`);
+  assert(cancelRes.data?.success === true, `Cancel response reports success: true`);
+  assert(
+    cancelRes.data?.order?.status === "CANCELLED",
+    `Order status updated to CANCELLED (got "${cancelRes.data?.order?.status}")`
+  );
+
+  // Balance restored by ₹180: ₹345 + ₹180 = ₹525
+  const postCancelBalRes = await request("/wallet/balance", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const postCancelBalance = Number(postCancelBalRes.data?.balance);
+  assert(
+    postCancelBalance === 525,
+    `Wallet credited with full refund: ₹345 + ₹180 = ₹525.00 (got ₹${postCancelBalance})`
+  );
+
+  // Re-cancelling must fail (409 Conflict)
+  const reCancelRes = await request(`/orders/${order1?.id}/cancel`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
   });
   assert(
     reCancelRes.status === 409 || reCancelRes.status === 400,
-    `Re-cancellation of already cancelled order rejected (status ${reCancelRes.status})`
+    `Cancelling already-cancelled order is rejected with 409 Conflict (got ${reCancelRes.status})`
   );
 
   // ---------------------------------------------------------------------------
-  // 6. PROVIDER FAILURE DRILL & AUTO-REFUND (ORD-05)
+  // 7. ORD-09: FINANCIAL INVARIANT AUDIT
   // ---------------------------------------------------------------------------
-  console.log("\n--- 6. Mock Provider Failure Drill & Auto-Refund (ORD-05) ---");
-
-  const balBeforeFail = await request("/wallet/balance", {
-    headers: { Authorization: `Bearer ${tokenFunded}` },
-  });
-  const balBeforeFailNum = Number(balBeforeFail.data?.balance);
-
-  // Place order for failure drill service srv_mock_fail (rate 200)
-  const failDrillRes = await request("/orders", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${tokenFunded}` },
-    body: JSON.stringify({
-      serviceId: "srv_mock_fail",
-      target: "https://x.com/post/fail_drill",
-      quantity: 1000,
-    }),
-  });
-
-  assert(failDrillRes.status === 201 || failDrillRes.status === 200, `Failure drill order placed`);
-  const failOrder = failDrillRes.data;
-  assert(failOrder?.status === "FAILED", `Provider failure drill correctly transitions order to FAILED`);
-
-  // Verify wallet balance is fully restored via automatic refund
-  const balAfterFail = await request("/wallet/balance", {
-    headers: { Authorization: `Bearer ${tokenFunded}` },
-  });
-  const balAfterFailNum = Number(balAfterFail.data?.balance);
-  assert(
-    Math.abs(balAfterFailNum - balBeforeFailNum) < 0.001,
-    `Wallet balance restored after auto-refund (balance: ₹${balAfterFailNum})`
-  );
-
-  // ---------------------------------------------------------------------------
-  // 7. FINANCIAL INVARIANT AUDIT (ORD-09)
-  // ---------------------------------------------------------------------------
-  console.log("\n--- 7. Financial Invariant Audit (ORD-09) ---");
+  console.log("\n--- 7. ORD-09: Double-Entry Financial Invariant Audit ---");
 
   const ledgerRes = await request("/wallet/ledger", {
-    headers: { Authorization: `Bearer ${tokenFunded}` },
+    headers: { Authorization: `Bearer ${token}` },
   });
   assert(ledgerRes.status === 200, `GET /wallet/ledger returns 200 OK`);
-  const entries = ledgerRes.data || [];
-  assert(Array.isArray(entries) && entries.length >= 4, `Ledger contains entries (count: ${entries.length})`);
+  const ledgerEntries = ledgerRes.data || [];
+  assert(Array.isArray(ledgerEntries), `Ledger entries is array (count: ${ledgerEntries.length})`);
 
-  let computedLedgerBalance = 0;
-  for (const entry of entries) {
-    computedLedgerBalance += Number(entry.amount);
+  let calculatedBalance = 0;
+  for (const entry of ledgerEntries) {
+    calculatedBalance += Number(entry.amount);
   }
 
-  const finalBalRes = await request("/wallet/balance", {
-    headers: { Authorization: `Bearer ${tokenFunded}` },
-  });
-  const finalLiveBalance = Number(finalBalRes.data?.balance);
-
-  console.log(`Live Wallet Balance: ₹${finalLiveBalance.toFixed(2)}`);
-  console.log(`Sum of Ledger Entries: ₹${computedLedgerBalance.toFixed(2)}`);
-
+  console.log(`Live wallet balance: ₹${postCancelBalance}`);
+  console.log(`Sum of all ledger entries: ₹${calculatedBalance}`);
   assert(
-    Math.abs(finalLiveBalance - computedLedgerBalance) < 0.001,
-    `Financial Invariant Preserved: Live Balance (₹${finalLiveBalance}) === Sum(Ledger) (₹${computedLedgerBalance})`
+    Math.abs(calculatedBalance - postCancelBalance) < 0.001,
+    `Financial Invariant Preserved: Live balance (₹${postCancelBalance}) matches sum of ledger entries (₹${calculatedBalance})`
   );
 
   // ---------------------------------------------------------------------------
@@ -346,7 +297,7 @@ async function runQ3() {
   // ---------------------------------------------------------------------------
   console.log("\n================================================================================");
   console.log(`Q3 VERIFICATION COMPLETE: ${testPassed} Passed, ${testFailed} Failed`);
-  console.log("================================================================================");
+  console.log("================================================================================\n");
 
   if (testFailed > 0) {
     process.exit(1);

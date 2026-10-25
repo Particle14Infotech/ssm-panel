@@ -1,0 +1,52 @@
+﻿Git Commit: d5c7584e6551c66b70b5e4fe9fe753cec68870dd
+Git Branch: main
+Database Name: smm_db_sandbox
+Timestamp: 2026-10-25T19:25:48Z
+============================================================
+
+Running 3 tests using 1 worker
+
+  x  1 [chromium] › e2e\q3-browser-orders.spec.ts:43:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 1. Insufficient Balance Guardrail: New user with ₹0 balance sees shortfall & disabled submit (34.8s)
+  x  2 [chromium] › e2e\q3-browser-orders.spec.ts:73:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 2. Place Order Flow: Deposit funds, submit order, view in order list & details (10.2s)
+  ok 3 [chromium] › e2e\q3-browser-orders.spec.ts:125:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 3. Order Cancellation & Wallet Refund in UI (22.2s)
+
+
+  1) [chromium] › e2e\q3-browser-orders.spec.ts:43:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 1. Insufficient Balance Guardrail: New user with ₹0 balance sees shortfall & disabled submit 
+
+    TimeoutError: page.waitForURL: Timeout 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation until "load"
+    ============================================================
+
+      12 |     await page.locator("input[name='termsAccepted']").check();
+      13 |     await page.getByRole("button", { name: /Complete Registration/i }).click();
+    > 14 |     await page.waitForURL((url) => url.pathname.includes("/app/dashboard"), { timeout: 30000 });
+         |                ^
+      15 |   }
+      16 |
+      17 |   async function fundWallet(page: Page) {
+        at registerUser (D:\projects\internship projects\SMM\e2e\q3-browser-orders.spec.ts:14:16)
+        at D:\projects\internship projects\SMM\e2e\q3-browser-orders.spec.ts:53:5
+
+    Error Context: test-results\q3-browser-orders-Q3-Order-033e4-s-shortfall-disabled-submit-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q3-browser-orders-Q3-Order-033e4-s-shortfall-disabled-submit-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q3-browser-orders-Q3-Order-033e4-s-shortfall-disabled-submit-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › e2e\q3-browser-orders.spec.ts:73:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 2. Place Order Flow: Deposit funds, submit order, view in order list & details 
+
+    Error: apiRequestContext._wrapApiCall: ENOENT: no such file or directory, copyfile 'D:\projects\internship projects\SMM\test-results\.playwright-artifacts-1\traces\b9bb7035d2dc4ae2a9ba-7396b0a89b24ab2b1095-recording1.network' -> 'D:\projects\internship projects\SMM\test-results\.playwright-artifacts-1\traces\b9bb7035d2dc4ae2a9ba-7396b0a89b24ab2b1095-recording1-pwnetcopy-1.network'
+
+    Error: browserContext._wrapApiCall: ENOENT: no such file or directory, open 'D:\projects\internship projects\SMM\test-results\.playwright-artifacts-1\traces\b9bb7035d2dc4ae2a9ba-7396b0a89b24ab2b1095.trace'
+
+    Error: ENOENT: no such file or directory, open 'D:\projects\internship projects\SMM\test-results\.playwright-artifacts-1\95fe28400485cc93cfabc13e2cc7e3b0.zip'
+
+  2 failed
+    [chromium] › e2e\q3-browser-orders.spec.ts:43:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 1. Insufficient Balance Guardrail: New user with ₹0 balance sees shortfall & disabled submit 
+    [chromium] › e2e\q3-browser-orders.spec.ts:73:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 2. Place Order Flow: Deposit funds, submit order, view in order list & details 
+  1 passed (1.3m)

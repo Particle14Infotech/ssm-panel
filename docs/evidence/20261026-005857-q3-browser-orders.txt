@@ -1,0 +1,98 @@
+﻿Git Commit: d5c7584e6551c66b70b5e4fe9fe753cec68870dd
+Git Branch: main
+Database Name: smm_db_sandbox
+Timestamp: 2026-10-25T19:28:57Z
+============================================================
+
+Running 3 tests using 1 worker
+
+  x  1 [chromium] › e2e\q3-browser-orders.spec.ts:43:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 1. Insufficient Balance Guardrail: New user with ₹0 balance sees shortfall & disabled submit (5.7s)
+  x  2 [chromium] › e2e\q3-browser-orders.spec.ts:73:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 2. Place Order Flow: Deposit funds, submit order, view in order list & details (206ms)
+  x  3 [chromium] › e2e\q3-browser-orders.spec.ts:125:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 3. Order Cancellation & Wallet Refund in UI (254ms)
+
+
+  1) [chromium] › e2e\q3-browser-orders.spec.ts:43:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 1. Insufficient Balance Guardrail: New user with ₹0 balance sees shortfall & disabled submit 
+
+    Error: page.waitForURL: net::ERR_CONNECTION_REFUSED
+    =========================== logs ===========================
+    waiting for navigation until "load"
+    ============================================================
+
+      12 |     await page.locator("input[name='termsAccepted']").check();
+      13 |     await page.getByRole("button", { name: /Complete Registration/i }).click();
+    > 14 |     await page.waitForURL((url) => url.pathname.includes("/app/dashboard"), { timeout: 30000 });
+         |                ^
+      15 |   }
+      16 |
+      17 |   async function fundWallet(page: Page) {
+        at registerUser (D:\projects\internship projects\SMM\e2e\q3-browser-orders.spec.ts:14:16)
+        at D:\projects\internship projects\SMM\e2e\q3-browser-orders.spec.ts:53:5
+
+    Error Context: test-results\q3-browser-orders-Q3-Order-033e4-s-shortfall-disabled-submit-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q3-browser-orders-Q3-Order-033e4-s-shortfall-disabled-submit-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q3-browser-orders-Q3-Order-033e4-s-shortfall-disabled-submit-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › e2e\q3-browser-orders.spec.ts:73:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 2. Place Order Flow: Deposit funds, submit order, view in order list & details 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/register
+    Call log:
+      - navigating to "http://localhost:3000/register", waiting until "load"
+
+
+      3 | test.describe("Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10)", () => {
+      4 |   async function registerUser(page: Page, user: { name: string; username: string; email: string; password: string }) {
+    > 5 |     await page.goto("http://localhost:3000/register");
+        |                ^
+      6 |     await expect(page.getByRole("heading", { name: /Create New Account/i })).toBeVisible({ timeout: 15000 });
+      7 |     await page.locator("input[name='name']").fill(user.name);
+      8 |     await page.locator("input[name='username']").fill(user.username);
+        at registerUser (D:\projects\internship projects\SMM\e2e\q3-browser-orders.spec.ts:5:16)
+        at D:\projects\internship projects\SMM\e2e\q3-browser-orders.spec.ts:83:11
+
+    Error Context: test-results\q3-browser-orders-Q3-Order-88572--view-in-order-list-details-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q3-browser-orders-Q3-Order-88572--view-in-order-list-details-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q3-browser-orders-Q3-Order-88572--view-in-order-list-details-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › e2e\q3-browser-orders.spec.ts:125:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 3. Order Cancellation & Wallet Refund in UI 
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/register
+    Call log:
+      - navigating to "http://localhost:3000/register", waiting until "load"
+
+
+      3 | test.describe("Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10)", () => {
+      4 |   async function registerUser(page: Page, user: { name: string; username: string; email: string; password: string }) {
+    > 5 |     await page.goto("http://localhost:3000/register");
+        |                ^
+      6 |     await expect(page.getByRole("heading", { name: /Create New Account/i })).toBeVisible({ timeout: 15000 });
+      7 |     await page.locator("input[name='name']").fill(user.name);
+      8 |     await page.locator("input[name='username']").fill(user.username);
+        at registerUser (D:\projects\internship projects\SMM\e2e\q3-browser-orders.spec.ts:5:16)
+        at D:\projects\internship projects\SMM\e2e\q3-browser-orders.spec.ts:135:11
+
+    Error Context: test-results\q3-browser-orders-Q3-Order-20f95-llation-Wallet-Refund-in-UI-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q3-browser-orders-Q3-Order-20f95-llation-Wallet-Refund-in-UI-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q3-browser-orders-Q3-Order-20f95-llation-Wallet-Refund-in-UI-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    [chromium] › e2e\q3-browser-orders.spec.ts:43:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 1. Insufficient Balance Guardrail: New user with ₹0 balance sees shortfall & disabled submit 
+    [chromium] › e2e\q3-browser-orders.spec.ts:73:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 2. Place Order Flow: Deposit funds, submit order, view in order list & details 
+    [chromium] › e2e\q3-browser-orders.spec.ts:125:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 3. Order Cancellation & Wallet Refund in UI 

@@ -122,7 +122,7 @@ export default function RegisterPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} action="#" method="POST" className="flex flex-col gap-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-mono uppercase tracking-wider text-[#c7c8b6] block mb-1.5">

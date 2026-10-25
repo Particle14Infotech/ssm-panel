@@ -60,6 +60,12 @@ export class RateLimiterMiddleware implements NestMiddleware {
     const ip = req.ip || req.socket.remoteAddress || "127.0.0.1";
     const apiKey = req.headers["x-api-key"] as string | undefined;
 
+    // In local development or testing environments, bypass rate limiter for localhost
+    const isLocalhost = ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1";
+    if (process.env.NODE_ENV !== "production" && isLocalhost) {
+      return next();
+    }
+
     // Determine limit tier
     let tier = "public";
     let config: RateLimitConfig = { points: 60, duration: 60 }; // 60 req/min for general API

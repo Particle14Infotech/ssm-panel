@@ -1,0 +1,13 @@
+﻿Git Commit: d5c7584e6551c66b70b5e4fe9fe753cec68870dd
+Git Branch: main
+Database Name: smm_db_sandbox
+Timestamp: 2026-10-25T19:42:05Z
+============================================================
+
+Running 3 tests using 1 worker
+
+  ok 1 [chromium] › e2e\q3-browser-orders.spec.ts:48:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 1. Insufficient Balance Guardrail: New user with ₹0 balance sees shortfall & disabled submit (9.2s)
+  ok 2 [chromium] › e2e\q3-browser-orders.spec.ts:78:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 2. Place Order Flow: Deposit funds, submit order, view in order list & details (19.0s)
+  ok 3 [chromium] › e2e\q3-browser-orders.spec.ts:130:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 3. Order Cancellation & Wallet Refund in UI (17.4s)
+
+  3 passed (47.0s)

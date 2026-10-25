@@ -1,0 +1,87 @@
+﻿Git Commit: 03081c6f8477101f2e46f32f8112e49b1702e580
+Git Branch: main
+Database Name: smm_db_sandbox
+Timestamp: 2026-10-25T17:51:37Z
+============================================================
+
+Running 3 tests using 1 worker
+
+  ok 1 [chromium] › e2e\q3-browser-orders.spec.ts:4:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 1. Insufficient Balance Guardrail: New user with ₹0 balance sees shortfall & disabled submit (18.4s)
+  x  2 [chromium] › e2e\q3-browser-orders.spec.ts:44:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 2. Place Order Flow: Deposit funds, submit order, view in order list & details (20.3s)
+  x  3 [chromium] › e2e\q3-browser-orders.spec.ts:119:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 3. Order Cancellation & Wallet Refund in UI (20.0s)
+
+
+  1) [chromium] › e2e\q3-browser-orders.spec.ts:44:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 2. Place Order Flow: Deposit funds, submit order, view in order list & details 
+
+    Error: expect(locator).toBeEnabled() failed
+
+    Locator:  getByRole('button', { name: /Place order/i }).first()
+    Expected: enabled
+    Received: disabled
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeEnabled" getByRole('button', { name: /Place order/i }).first() with timeout 10000ms
+      - waiting for getByRole('button', { name: /Place order/i }).first()
+        24 × locator resolved to <button disabled type="button" class="w-full py-3.5 px-6 rounded-xl btn-primary-gradient text-[#171e00] font-bold text-sm shadow-lg hover:brightness-105 active:scale-[0.99] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed min-h-[48px]">…</button>
+           - unexpected value "disabled"
+
+
+      90 |     // Click Place Order
+      91 |     const placeOrderBtn = page.getByRole("button", { name: /Place order/i }).first();
+    > 92 |     await expect(placeOrderBtn).toBeEnabled({ timeout: 10000 });
+         |                                 ^
+      93 |     await placeOrderBtn.click();
+      94 |
+      95 |     // Confirm Modal
+        at D:\projects\internship projects\SMM\e2e\q3-browser-orders.spec.ts:92:33
+
+    Error Context: test-results\q3-browser-orders-Q3-Order-88572--view-in-order-list-details-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q3-browser-orders-Q3-Order-88572--view-in-order-list-details-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q3-browser-orders-Q3-Order-88572--view-in-order-list-details-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › e2e\q3-browser-orders.spec.ts:119:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 3. Order Cancellation & Wallet Refund in UI 
+
+    Error: expect(locator).toBeEnabled() failed
+
+    Locator:  getByRole('button', { name: /Place order/i }).first()
+    Expected: enabled
+    Received: disabled
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeEnabled" getByRole('button', { name: /Place order/i }).first() with timeout 10000ms
+      - waiting for getByRole('button', { name: /Place order/i }).first()
+        24 × locator resolved to <button disabled type="button" class="w-full py-3.5 px-6 rounded-xl btn-primary-gradient text-[#171e00] font-bold text-sm shadow-lg hover:brightness-105 active:scale-[0.99] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed min-h-[48px]">…</button>
+           - unexpected value "disabled"
+
+
+      161 |
+      162 |     const placeOrderBtn = page.getByRole("button", { name: /Place order/i }).first();
+    > 163 |     await expect(placeOrderBtn).toBeEnabled({ timeout: 10000 });
+          |                                 ^
+      164 |     await placeOrderBtn.click();
+      165 |
+      166 |     const confirmBtn = page.getByRole("button", { name: /Confirm order/i });
+        at D:\projects\internship projects\SMM\e2e\q3-browser-orders.spec.ts:163:33
+
+    Error Context: test-results\q3-browser-orders-Q3-Order-20f95-llation-Wallet-Refund-in-UI-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q3-browser-orders-Q3-Order-20f95-llation-Wallet-Refund-in-UI-chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q3-browser-orders-Q3-Order-20f95-llation-Wallet-Refund-in-UI-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    [chromium] › e2e\q3-browser-orders.spec.ts:44:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 2. Place Order Flow: Deposit funds, submit order, view in order list & details 
+    [chromium] › e2e\q3-browser-orders.spec.ts:119:7 › Q3: Orders, Tracking & Refund Browser Verification (ORD-01 to ORD-10) › 3. Order Cancellation & Wallet Refund in UI 
+  1 passed (1.1m)
