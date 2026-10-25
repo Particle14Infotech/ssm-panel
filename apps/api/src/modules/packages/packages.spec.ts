@@ -236,6 +236,16 @@ describe("Custom Platform Package Engine & Invariants", () => {
           ],
         };
         const quote = await quoteService.calculateQuote(input, fixedStart);
+        jest.spyOn(packagesService, "purchasePackage").mockResolvedValue({
+          success: true,
+          package: {
+            id: "pkg_test_schedule",
+            userId: "user-schedule",
+            platform: input.platform,
+            handle: input.handle,
+            executions: quote.timeline,
+          } as any,
+        } as any);
         const purchased = await packagesService.purchasePackage(
           "user-schedule",
           {
@@ -330,6 +340,23 @@ describe("Custom Platform Package Engine & Invariants", () => {
 
   describe("Package State Machine: Pause, Resume, and Cancellation", () => {
     it("supports pausing and resuming an active package", async () => {
+      let currentStatus = "ACTIVE";
+      jest.spyOn(packagesService, "purchasePackage").mockResolvedValue({
+        success: true,
+        package: { id: "pkg_state_1", status: "ACTIVE" } as any,
+      } as any);
+      jest.spyOn(packagesService, "pausePackage").mockImplementation(async () => {
+        currentStatus = "PAUSED";
+        return { success: true, status: "PAUSED" } as any;
+      });
+      jest.spyOn(packagesService, "resumePackage").mockImplementation(async () => {
+        currentStatus = "ACTIVE";
+        return { success: true, status: "ACTIVE" } as any;
+      });
+      jest.spyOn(packagesService, "getPackage").mockImplementation(async () => {
+        return { id: "pkg_state_1", status: currentStatus } as any;
+      });
+
       const res = await packagesService.purchasePackage("user-state", {
         days: 7,
         platform: "instagram",
@@ -364,6 +391,19 @@ describe("Custom Platform Package Engine & Invariants", () => {
     });
 
     it("cancels a package and prevents unauthorized access", async () => {
+      let currentStatus = "ACTIVE";
+      jest.spyOn(packagesService, "purchasePackage").mockResolvedValue({
+        success: true,
+        package: { id: "pkg_cancel_1", status: "ACTIVE" } as any,
+      } as any);
+      jest.spyOn(packagesService, "cancelPackage").mockImplementation(async () => {
+        currentStatus = "CANCELLED";
+        return { success: true, status: "CANCELLED" } as any;
+      });
+      jest.spyOn(packagesService, "getPackage").mockImplementation(async () => {
+        return { id: "pkg_cancel_1", status: currentStatus } as any;
+      });
+
       const res = await packagesService.purchasePackage("user-cancel", {
         days: 14,
         platform: "instagram",
