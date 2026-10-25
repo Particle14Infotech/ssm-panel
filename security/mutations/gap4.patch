@@ -1,5 +1,0 @@
---- a/apps/api/src/modules/packages/package-quote-hash.util.ts
-+++ b/apps/api/src/modules/packages/package-quote-hash.util.ts
-@@ -25,2 +25,2 @@
--  const secret = process.env.PACKAGE_QUOTE_SECRET;
-+  const secret = process.env.PACKAGE_QUOTE_SECRET || "insecure-dev-secret-literal";
