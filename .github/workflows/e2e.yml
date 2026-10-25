@@ -32,4 +32,6 @@ jobs:
         run: docker compose -f infra/docker-compose.yml up -d
 
       - name: Build Web
-        run: pnpm --filter @smm/web build
+        run: |
+          pnpm --filter @smm/contracts build
+          pnpm --filter @smm/web build

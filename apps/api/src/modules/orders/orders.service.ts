@@ -908,6 +908,18 @@ export class OrdersService {
     }
 
     if (!this.prisma.isConnected) {
+      const rawOrder = this.sandboxOrders.get(id);
+      if (rawOrder) {
+        rawOrder.status = OrderStatus.CANCELLED;
+        rawOrder.updatedAt = new Date();
+        if (Array.isArray(rawOrder.history)) {
+          rawOrder.history.push({
+            status: OrderStatus.CANCELLED,
+            notes: "Customer cancelled order. Full refund issued.",
+            createdAt: new Date(),
+          });
+        }
+      }
       order.status = OrderStatus.CANCELLED;
       const refundCharge = new Decimal(order.charge.toString());
       const creditRes = await this.walletService.refundOrder(
@@ -916,7 +928,7 @@ export class OrdersService {
         refundCharge,
         `Full Refund for Cancelled Order #${order.id}`
       );
-      return { success: true, message: `Order #${id} cancelled and refunded.`, newBalance: creditRes.newBalance, order };
+      return { success: true, message: `Order #${id} cancelled and refunded.`, newBalance: creditRes.newBalance, order: this.sanitizeOrderForRole(rawOrder || order, requesterRole) };
     }
 
     const refundCharge = new Decimal(order.charge.toString());
