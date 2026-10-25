@@ -8,7 +8,7 @@
  * Drill 5: Duplicate Webhook Storm Drill (50 concurrent identical callbacks -> credited exactly ONCE via idempotency)
  */
 
-import { assertValidTransition, canTransition } from "@smm/contracts";
+import { assertValidTransition, canTransition } from "../../packages/contracts/src/orders";
 
 interface DrillResult {
   drill: string;
