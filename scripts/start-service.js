@@ -82,8 +82,12 @@ if (service === "web") {
   // smm / api:
   // Fallbacks for secrets if aliases or standard names are used
   const baseSeed = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || process.env.DATABASE_URL || "smm_production_secure_salt_key_32bytes";
-  if (!process.env.JWT_ACCESS_SECRET && process.env.JWT_SECRET) {
-    process.env.JWT_ACCESS_SECRET = process.env.JWT_SECRET;
+  if (!process.env.JWT_ACCESS_SECRET) {
+    if (process.env.JWT_SECRET) {
+      process.env.JWT_ACCESS_SECRET = process.env.JWT_SECRET;
+    } else {
+      process.env.JWT_ACCESS_SECRET = crypto.createHmac("sha256", baseSeed).update("jwt_access_salt").digest("hex");
+    }
   }
   if (!process.env.JWT_REFRESH_SECRET) {
     process.env.JWT_REFRESH_SECRET = crypto.createHmac("sha256", baseSeed).update("jwt_refresh_salt").digest("hex");
