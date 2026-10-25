@@ -1,0 +1,43 @@
+﻿Git Commit: 2bcbcd04b859522861e74db946d815e77ec889f9
+Git Branch: main
+Database Name: neondb (Neon PostgreSQL)
+Timestamp: 2026-10-25T20:42:53Z
+============================================================
+============================================================
+Q5 API Verification: Packages Architecture & Execution (PKG-01)
+============================================================
+
+[PASS] 1. User A successfully registered
+[PASS] 2. User B successfully registered
+[PASS] 3. Bundle templates available (2 templates returned)
+[PASS] 4. Quote generation succeeded with status 201
+[PASS] 5. Server cryptographic quote signature returned: qh_v2_primary_1792961577...
+[PASS] 6. Quote computed totalCharge: ₹158.5 across 8 runs
+[PASS] 7. Purchase without quoteHash rejected with HTTP 400 (got 400)
+[PASS] 8. Purchase with tampered quoteHash rejected with HTTP 409
+[PASS] 9. Purchase with insufficient balance rejected with HTTP 400
+[PASS] 10. Sandbox funds deposit completed (₹6000, order: order_BGQJR7GC)
+[PASS] 11. Wallet balance verified before purchase: ₹6900.00
+[PASS] 12. Package purchase succeeded with HTTP 201
+[PASS] 13. Package #98607f1e created in ACTIVE state
+[PASS] 14. Wallet decremented atomically: ₹6741.50 (Expected: ₹6741.50)
+[PASS] 15. PACKAGE_PURCHASE ledger record verified (Amount: -158.5)
+[PASS] 16. Purchase replay returned existing package without double debit
+[PASS] 17. Wallet balance completely unchanged after idempotent replay
+[PASS] 18. Package visible in user's packages list (1 packages total)
+[PASS] 19. Package details retrieved successfully (Status: ACTIVE)
+[PASS] 20. Tenant isolation enforced: User B blocked from accessing User A package (HTTP 404)
+[PASS] 21. Package paused successfully (Status: PAUSED)
+[PASS] 22. Package resumed successfully (Status: ACTIVE)
+[PASS] 23. Post trigger execution dispatched (HTTP 201)
+[PASS] 24. Triggers list fetched successfully (1 recorded)
+[PASS] 25. Package cancelled successfully (HTTP 201)
+[PASS] 26. Package status confirmed CANCELLED in database
+[PASS] 27. Automated refund credited to wallet: ₹158.50
+[PASS] 28. PACKAGE_REFUND ledger record confirmed (Amount: ₹158.5)
+[PASS] 29. Preset bundle purchase succeeded (HTTP 201)
+[PASS] 30. Bundle package created: #23c00f6b
+
+============================================================
+Q5 Verification Complete: 30 passed, 0 failed
+============================================================
