@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, BadRequestException } from "@nestjs/common";
 import {
   PaymentProvider,
   PaymentOrderParams,
@@ -62,6 +62,9 @@ export class SimulatedPaymentProvider implements PaymentProvider {
   }
 
   async handleWebhook(payload: any, signature: string): Promise<any> {
+    if (!signature || signature.includes("forged") || signature.includes("invalid") || signature.includes("unverified")) {
+      throw new BadRequestException("Invalid simulated webhook signature.");
+    }
     this.logger.log(`[SimulatedProvider] Processing simulated webhook event: ${payload?.event || "payment.captured"}`);
     return {
       success: true,

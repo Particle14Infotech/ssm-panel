@@ -1,0 +1,205 @@
+﻿Git Commit: 90dadd0f56bbe027c080824a098a8a002d6ac6aa
+Git Branch: main
+Database Name: neondb (Neon PostgreSQL)
+Timestamp: 2026-10-25T21:06:39Z
+============================================================
+
+Running 7 tests using 1 worker
+
+  ok 1 [chromium] › e2e\q6-browser-admin.spec.ts:17:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 1. Unauthenticated & Customer Role Guard Protection (ADM-01) (957ms)
+  x  2 [chromium] › e2e\q6-browser-admin.spec.ts:29:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 2. Admin Command Dashboard Telemetry & KPI Cards (ADM-01) (414ms)
+  x  3 [chromium] › e2e\q6-browser-admin.spec.ts:41:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 3. Admin User Directory & Search Filtering (ADM-02) (486ms)
+  x  4 [chromium] › e2e\q6-browser-admin.spec.ts:59:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 4. Admin Services & Categories Management (ADM-03) (576ms)
+  x  5 [chromium] › e2e\q6-browser-admin.spec.ts:77:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 5. Upstream Provider Telemetry & Masked Keys (ADM-04) (477ms)
+  x  6 [chromium] › e2e\q6-browser-admin.spec.ts:91:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 6. Admin Orders Supervision & History (ADM-05) (404ms)
+  x  7 [chromium] › e2e\q6-browser-admin.spec.ts:106:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 7. Admin Health Telemetry Matrix & Audit Logs (ADM-06) (371ms)
+
+
+  1) [chromium] › e2e\q6-browser-admin.spec.ts:29:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 2. Admin Command Dashboard Telemetry & KPI Cards (ADM-01) 
+
+    Error: locator.click: Error: strict mode violation: getByRole('button', { name: /Sign In|Login/i }) resolved to 2 elements:
+        1) <button type="submit" class="w-full py-3.5 rounded-full btn-primary-gradient text-[#171e00] font-bold text-sm shadow-[0_0_25px_rgba(216,236,141,0.25)] hover:scale-[1.01] transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50 cursor-pointer">…</button> aka getByRole('button', { name: 'Sign In to Account' })
+        2) <button type="button" class="text-[#D8EC8D] font-mono hover:underline font-semibold cursor-pointer">Demo Admin Login →</button> aka getByRole('button', { name: 'Demo Admin Login →' })
+
+    Call log:
+      - waiting for getByRole('button', { name: /Sign In|Login/i })
+
+
+      11 |     await page.locator("input[name='usernameOrEmail']").fill("vaibhavrishabh40@gmail.com");
+      12 |     await page.locator("input[name='password']").fill("Admin123!Secure");
+    > 13 |     await page.getByRole("button", { name: /Sign In|Login/i }).click();
+         |                                                                ^
+      14 |     await page.waitForURL((url: URL) => url.pathname.includes("/admin/dashboard"), { timeout: 15000 });
+      15 |   }
+      16 |
+        at loginAsAdmin (D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:13:64)
+        at D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:30:5
+
+    Error Context: test-results\q6-browser-admin-Q6-Admin--019ea-Telemetry-KPI-Cards-ADM-01--chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q6-browser-admin-Q6-Admin--019ea-Telemetry-KPI-Cards-ADM-01--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q6-browser-admin-Q6-Admin--019ea-Telemetry-KPI-Cards-ADM-01--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › e2e\q6-browser-admin.spec.ts:41:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 3. Admin User Directory & Search Filtering (ADM-02) 
+
+    Error: locator.click: Error: strict mode violation: getByRole('button', { name: /Sign In|Login/i }) resolved to 2 elements:
+        1) <button type="submit" class="w-full py-3.5 rounded-full btn-primary-gradient text-[#171e00] font-bold text-sm shadow-[0_0_25px_rgba(216,236,141,0.25)] hover:scale-[1.01] transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50 cursor-pointer">…</button> aka getByRole('button', { name: 'Sign In to Account' })
+        2) <button type="button" class="text-[#D8EC8D] font-mono hover:underline font-semibold cursor-pointer">Demo Admin Login →</button> aka getByRole('button', { name: 'Demo Admin Login →' })
+
+    Call log:
+      - waiting for getByRole('button', { name: /Sign In|Login/i })
+
+
+      11 |     await page.locator("input[name='usernameOrEmail']").fill("vaibhavrishabh40@gmail.com");
+      12 |     await page.locator("input[name='password']").fill("Admin123!Secure");
+    > 13 |     await page.getByRole("button", { name: /Sign In|Login/i }).click();
+         |                                                                ^
+      14 |     await page.waitForURL((url: URL) => url.pathname.includes("/admin/dashboard"), { timeout: 15000 });
+      15 |   }
+      16 |
+        at loginAsAdmin (D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:13:64)
+        at D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:42:5
+
+    Error Context: test-results\q6-browser-admin-Q6-Admin--d6798-ry-Search-Filtering-ADM-02--chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q6-browser-admin-Q6-Admin--d6798-ry-Search-Filtering-ADM-02--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q6-browser-admin-Q6-Admin--d6798-ry-Search-Filtering-ADM-02--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › e2e\q6-browser-admin.spec.ts:59:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 4. Admin Services & Categories Management (ADM-03) 
+
+    Error: locator.click: Error: strict mode violation: getByRole('button', { name: /Sign In|Login/i }) resolved to 2 elements:
+        1) <button type="submit" class="w-full py-3.5 rounded-full btn-primary-gradient text-[#171e00] font-bold text-sm shadow-[0_0_25px_rgba(216,236,141,0.25)] hover:scale-[1.01] transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50 cursor-pointer">…</button> aka getByRole('button', { name: 'Sign In to Account' })
+        2) <button type="button" class="text-[#D8EC8D] font-mono hover:underline font-semibold cursor-pointer">Demo Admin Login →</button> aka getByRole('button', { name: 'Demo Admin Login →' })
+
+    Call log:
+      - waiting for getByRole('button', { name: /Sign In|Login/i })
+
+
+      11 |     await page.locator("input[name='usernameOrEmail']").fill("vaibhavrishabh40@gmail.com");
+      12 |     await page.locator("input[name='password']").fill("Admin123!Secure");
+    > 13 |     await page.getByRole("button", { name: /Sign In|Login/i }).click();
+         |                                                                ^
+      14 |     await page.waitForURL((url: URL) => url.pathname.includes("/admin/dashboard"), { timeout: 15000 });
+      15 |   }
+      16 |
+        at loginAsAdmin (D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:13:64)
+        at D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:60:5
+
+    Error Context: test-results\q6-browser-admin-Q6-Admin--967ad-tegories-Management-ADM-03--chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q6-browser-admin-Q6-Admin--967ad-tegories-Management-ADM-03--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q6-browser-admin-Q6-Admin--967ad-tegories-Management-ADM-03--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [chromium] › e2e\q6-browser-admin.spec.ts:77:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 5. Upstream Provider Telemetry & Masked Keys (ADM-04) 
+
+    Error: locator.click: Error: strict mode violation: getByRole('button', { name: /Sign In|Login/i }) resolved to 2 elements:
+        1) <button type="submit" class="w-full py-3.5 rounded-full btn-primary-gradient text-[#171e00] font-bold text-sm shadow-[0_0_25px_rgba(216,236,141,0.25)] hover:scale-[1.01] transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50 cursor-pointer">…</button> aka getByRole('button', { name: 'Sign In to Account' })
+        2) <button type="button" class="text-[#D8EC8D] font-mono hover:underline font-semibold cursor-pointer">Demo Admin Login →</button> aka getByRole('button', { name: 'Demo Admin Login →' })
+
+    Call log:
+      - waiting for getByRole('button', { name: /Sign In|Login/i })
+
+
+      11 |     await page.locator("input[name='usernameOrEmail']").fill("vaibhavrishabh40@gmail.com");
+      12 |     await page.locator("input[name='password']").fill("Admin123!Secure");
+    > 13 |     await page.getByRole("button", { name: /Sign In|Login/i }).click();
+         |                                                                ^
+      14 |     await page.waitForURL((url: URL) => url.pathname.includes("/admin/dashboard"), { timeout: 15000 });
+      15 |   }
+      16 |
+        at loginAsAdmin (D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:13:64)
+        at D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:78:5
+
+    Error Context: test-results\q6-browser-admin-Q6-Admin--a7e85-lemetry-Masked-Keys-ADM-04--chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q6-browser-admin-Q6-Admin--a7e85-lemetry-Masked-Keys-ADM-04--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q6-browser-admin-Q6-Admin--a7e85-lemetry-Masked-Keys-ADM-04--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [chromium] › e2e\q6-browser-admin.spec.ts:91:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 6. Admin Orders Supervision & History (ADM-05) 
+
+    Error: locator.click: Error: strict mode violation: getByRole('button', { name: /Sign In|Login/i }) resolved to 2 elements:
+        1) <button type="submit" class="w-full py-3.5 rounded-full btn-primary-gradient text-[#171e00] font-bold text-sm shadow-[0_0_25px_rgba(216,236,141,0.25)] hover:scale-[1.01] transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50 cursor-pointer">…</button> aka getByRole('button', { name: 'Sign In to Account' })
+        2) <button type="button" class="text-[#D8EC8D] font-mono hover:underline font-semibold cursor-pointer">Demo Admin Login →</button> aka getByRole('button', { name: 'Demo Admin Login →' })
+
+    Call log:
+      - waiting for getByRole('button', { name: /Sign In|Login/i })
+
+
+      11 |     await page.locator("input[name='usernameOrEmail']").fill("vaibhavrishabh40@gmail.com");
+      12 |     await page.locator("input[name='password']").fill("Admin123!Secure");
+    > 13 |     await page.getByRole("button", { name: /Sign In|Login/i }).click();
+         |                                                                ^
+      14 |     await page.waitForURL((url: URL) => url.pathname.includes("/admin/dashboard"), { timeout: 15000 });
+      15 |   }
+      16 |
+        at loginAsAdmin (D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:13:64)
+        at D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:92:5
+
+    Error Context: test-results\q6-browser-admin-Q6-Admin--1ceed-Supervision-History-ADM-05--chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q6-browser-admin-Q6-Admin--1ceed-Supervision-History-ADM-05--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q6-browser-admin-Q6-Admin--1ceed-Supervision-History-ADM-05--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [chromium] › e2e\q6-browser-admin.spec.ts:106:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 7. Admin Health Telemetry Matrix & Audit Logs (ADM-06) 
+
+    Error: locator.click: Error: strict mode violation: getByRole('button', { name: /Sign In|Login/i }) resolved to 2 elements:
+        1) <button type="submit" class="w-full py-3.5 rounded-full btn-primary-gradient text-[#171e00] font-bold text-sm shadow-[0_0_25px_rgba(216,236,141,0.25)] hover:scale-[1.01] transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50 cursor-pointer">…</button> aka getByRole('button', { name: 'Sign In to Account' })
+        2) <button type="button" class="text-[#D8EC8D] font-mono hover:underline font-semibold cursor-pointer">Demo Admin Login →</button> aka getByRole('button', { name: 'Demo Admin Login →' })
+
+    Call log:
+      - waiting for getByRole('button', { name: /Sign In|Login/i })
+
+
+      11 |     await page.locator("input[name='usernameOrEmail']").fill("vaibhavrishabh40@gmail.com");
+      12 |     await page.locator("input[name='password']").fill("Admin123!Secure");
+    > 13 |     await page.getByRole("button", { name: /Sign In|Login/i }).click();
+         |                                                                ^
+      14 |     await page.waitForURL((url: URL) => url.pathname.includes("/admin/dashboard"), { timeout: 15000 });
+      15 |   }
+      16 |
+        at loginAsAdmin (D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:13:64)
+        at D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:107:5
+
+    Error Context: test-results\q6-browser-admin-Q6-Admin--e6620-y-Matrix-Audit-Logs-ADM-06--chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q6-browser-admin-Q6-Admin--e6620-y-Matrix-Audit-Logs-ADM-06--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q6-browser-admin-Q6-Admin--e6620-y-Matrix-Audit-Logs-ADM-06--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6 failed
+    [chromium] › e2e\q6-browser-admin.spec.ts:29:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 2. Admin Command Dashboard Telemetry & KPI Cards (ADM-01) 
+    [chromium] › e2e\q6-browser-admin.spec.ts:41:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 3. Admin User Directory & Search Filtering (ADM-02) 
+    [chromium] › e2e\q6-browser-admin.spec.ts:59:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 4. Admin Services & Categories Management (ADM-03) 
+    [chromium] › e2e\q6-browser-admin.spec.ts:77:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 5. Upstream Provider Telemetry & Masked Keys (ADM-04) 
+    [chromium] › e2e\q6-browser-admin.spec.ts:91:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 6. Admin Orders Supervision & History (ADM-05) 
+    [chromium] › e2e\q6-browser-admin.spec.ts:106:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 7. Admin Health Telemetry Matrix & Audit Logs (ADM-06) 
+  1 passed (12.7s)

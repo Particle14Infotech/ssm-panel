@@ -1,0 +1,35 @@
+﻿Git Commit: 90dadd0f56bbe027c080824a098a8a002d6ac6aa
+Git Branch: main
+Database Name: neondb (Neon PostgreSQL)
+Timestamp: 2026-10-25T21:15:03Z
+============================================================
+
+Running 5 tests using 1 worker
+
+  x  1 [chromium] › e2e\q6-browser-admin.spec.ts:24:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 1. Admin Command Dashboard & Navigation (ADM-01) (8.0s)
+  ok 2 [chromium] › e2e\q6-browser-admin.spec.ts:39:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 2. Provider Node Registration & Key Masking (ADM-04) (15.1s)
+  ok 3 [chromium] › e2e\q6-browser-admin.spec.ts:69:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 3. Admin User Directory & Management (ADM-02) (10.2s)
+  ok 4 [chromium] › e2e\q6-browser-admin.spec.ts:83:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 4. Services Catalog Management & Pricing Markups (ADM-03) (11.1s)
+  x  5 [chromium] › e2e\q6-browser-admin.spec.ts:94:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 5. System Health Telemetry Matrix (ADM-06) (5.9s)
+
+
+  1) [chromium] › e2e\q6-browser-admin.spec.ts:24:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 1. Admin Command Dashboard & Navigation (ADM-01) 
+
+    Error: browserContext.close: ENOENT: no such file or directory, open 'D:\projects\internship projects\SMM\test-results\.playwright-artifacts-0\traces\f0041e3c2833f67990e5-153a07aab63a36c29fb0.network'
+
+    Error: ENOENT: no such file or directory, open 'D:\projects\internship projects\SMM\test-results\.playwright-artifacts-0\58d37fde404fcd8d596392d90c9676d6.zip'
+
+    Error Context: test-results\q6-browser-admin-Q6-Admin--c4efe-ashboard-Navigation-ADM-01--chromium\error-context.md
+
+  2) [chromium] › e2e\q6-browser-admin.spec.ts:94:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 5. System Health Telemetry Matrix (ADM-06) 
+
+    Error: browserContext.close: ENOENT: no such file or directory, open 'D:\projects\internship projects\SMM\test-results\.playwright-artifacts-1\traces\f0041e3c2833f67990e5-e14b4a8d17b155c5cb86-recording6.trace'
+
+    Error: ENOENT: no such file or directory, open 'D:\projects\internship projects\SMM\test-results\.playwright-artifacts-1\0e46e5f5b8ff841d46a686b553deb6ef.zip'
+
+    Error Context: test-results\q6-browser-admin-Q6-Admin--a80af-th-Telemetry-Matrix-ADM-06--chromium\error-context.md
+
+  2 failed
+    [chromium] › e2e\q6-browser-admin.spec.ts:24:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 1. Admin Command Dashboard & Navigation (ADM-01) 
+    [chromium] › e2e\q6-browser-admin.spec.ts:94:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 5. System Health Telemetry Matrix (ADM-06) 
+  3 passed (1.1m)

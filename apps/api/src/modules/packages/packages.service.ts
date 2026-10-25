@@ -44,7 +44,6 @@ const INSTAGRAM_URL_REGEX = /^https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|tv)
 export class PackagesService {
   private readonly logger = new Logger(PackagesService.name);
   private readonly cache = new SMMCacheService();
-  private readonly sandboxPackages = new Map<string, any>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -139,6 +138,10 @@ export class PackagesService {
    *    - TIME_DRIP executions precomputed with source SCHEDULE.
    */
   async purchasePackage(userId: string, input: PackagePurchaseInput) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
+    }
+
     const idempotencyKey = input.idempotencyKey;
     if (!idempotencyKey || idempotencyKey.trim() === "") {
       throw new BadRequestException("Idempotency-Key is required for package purchase.");
@@ -155,37 +158,7 @@ export class PackagesService {
     const config = await this.platformsService.getPlatformConfig(platform);
     const handle = validateHandle(input.handle || (input as any).accountUsername || "", config);
 
-    if (!this.prisma.isConnected) {
-      const existing = Array.from(this.sandboxPackages.values()).find(
-        (p) => p.userId === userId && p.idempotencyKey === idempotencyKey
-      );
-      if (existing) {
-        return { success: true, package: existing, isReplay: true };
-      }
-      const quote = await this.quoteService.calculateQuote({ ...input, userId });
-      const reserveTotal = new Decimal(quote.totalCharge);
-      const durationDays = quote.days || input.durationDays || input.days || 30;
-      const startAt = new Date();
-      const endAt = new Date(startAt.getTime() + durationDays * 24 * 3600 * 1000);
-      const packageId = `pkg_sbx_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
-      const pkg = {
-        id: packageId,
-        userId,
-        platform,
-        handle,
-        status: PackageStatus.ACTIVE,
-        startAt: startAt.toISOString(),
-        endAt: endAt.toISOString(),
-        pausedDays: 0,
-        reserveTotal: reserveTotal.toNumber(),
-        idempotencyKey,
-        rules: quote.items,
-        executions: quote.timeline,
-        createdAt: new Date().toISOString(),
-      };
-      this.sandboxPackages.set(packageId, pkg);
-      return { success: true, package: pkg, reserveTotal: reserveTotal.toNumber() };
-    }
+
 
     // 1. Check existing idempotent purchase
     const existing = await this.prisma.package.findUnique({
@@ -808,11 +781,7 @@ export class PackagesService {
    */
   async cancelPackage(userId: string, packageId: string) {
     if (!this.prisma.isConnected) {
-      const pkg = this.sandboxPackages.get(packageId);
-      if (!pkg || (userId && pkg.userId && pkg.userId !== userId)) throw new NotFoundException("Package not found or access denied.");
-      pkg.status = PackageStatus.CANCELLED;
-      const refundedAmount = pkg.reserveTotal || 100;
-      return { success: true, status: "CANCELLED", refundedAmount, package: pkg };
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
     }
 
     return await this.prisma.$transaction(async (tx) => {
@@ -1051,11 +1020,7 @@ export class PackagesService {
    */
   async pausePackage(userId: string, packageId: string) {
     if (!this.prisma.isConnected) {
-      const pkg = this.sandboxPackages.get(packageId);
-      if (!pkg || (userId && pkg.userId && pkg.userId !== userId)) throw new NotFoundException("Package not found.");
-      pkg.status = PackageStatus.PAUSED;
-      pkg.pausedDays = (pkg.pausedDays || 0) + 1;
-      return { success: true, status: "PAUSED", newStatus: PackageStatus.PAUSED, package: pkg };
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
     }
 
     const pkg =
@@ -1112,10 +1077,7 @@ export class PackagesService {
    */
   async resumePackage(userId: string, packageId: string) {
     if (!this.prisma.isConnected) {
-      const pkg = this.sandboxPackages.get(packageId);
-      if (!pkg || (userId && pkg.userId && pkg.userId !== userId)) throw new NotFoundException("Package not found.");
-      pkg.status = PackageStatus.ACTIVE;
-      return { success: true, status: "ACTIVE", newStatus: PackageStatus.ACTIVE, package: pkg };
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
     }
 
     const pkg =
@@ -1939,7 +1901,7 @@ export class PackagesService {
    */
   async listPackages(userId: string) {
     if (!this.prisma.isConnected) {
-      return Array.from(this.sandboxPackages.values()).filter((p) => p.userId === userId);
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
     }
 
     return this.prisma.package.findMany({
@@ -1963,11 +1925,7 @@ export class PackagesService {
    */
   async getPackage(userId: string, packageId: string) {
     if (!this.prisma.isConnected) {
-      const pkg = this.sandboxPackages.get(packageId);
-      if (!pkg || (userId && pkg.userId && pkg.userId !== userId)) {
-        throw new NotFoundException("Package not found.");
-      }
-      return pkg;
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
     }
 
     const pkg = await this.prisma.package.findFirst({

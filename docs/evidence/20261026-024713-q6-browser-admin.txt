@@ -1,0 +1,15 @@
+﻿Git Commit: 90dadd0f56bbe027c080824a098a8a002d6ac6aa
+Git Branch: main
+Database Name: neondb (Neon PostgreSQL)
+Timestamp: 2026-10-25T21:17:13Z
+============================================================
+
+Running 5 tests using 1 worker
+
+  ok 1 [chromium] › e2e\q6-browser-admin.spec.ts:24:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 1. Admin Command Dashboard & Navigation (ADM-01) (3.5s)
+  ok 2 [chromium] › e2e\q6-browser-admin.spec.ts:39:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 2. Provider Node Registration & Key Masking (ADM-04) (2.3s)
+  ok 3 [chromium] › e2e\q6-browser-admin.spec.ts:69:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 3. Admin User Directory & Management (ADM-02) (2.5s)
+  ok 4 [chromium] › e2e\q6-browser-admin.spec.ts:83:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 4. Services Catalog Management & Pricing Markups (ADM-03) (1.7s)
+  ok 5 [chromium] › e2e\q6-browser-admin.spec.ts:94:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 5. System Health Telemetry Matrix (ADM-06) (1.6s)
+
+  5 passed (13.0s)

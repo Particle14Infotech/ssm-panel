@@ -13,29 +13,7 @@ export class UsersService {
     }
 
     if (!this.prisma.isConnected) {
-      const sbx =
-        SANDBOX_AUTH_USERS.get(userId) ||
-        Array.from(SANDBOX_AUTH_USERS.values()).find(
-          (u: any) => u.id === userId || u.email === userId
-        );
-      if (sbx) {
-        return {
-          id: sbx.id,
-          email: sbx.email,
-          name: sbx.name || "Customer",
-          role: sbx.role || "CUSTOMER",
-          tier: sbx.tier || "STANDARD",
-          twoFactorEnabled: false,
-        };
-      }
-      return {
-        id: userId,
-        email: `${userId}@smm.dev`,
-        name: "Customer",
-        role: "CUSTOMER",
-        tier: "STANDARD",
-        twoFactorEnabled: false,
-      };
+      throw new ServiceUnavailableException("Database is disconnected. User service unavailable.");
     }
 
     let user = await this.prisma.user.findUnique({

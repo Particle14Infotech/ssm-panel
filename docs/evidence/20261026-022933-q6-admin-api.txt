@@ -1,0 +1,100 @@
+﻿Git Commit: 90dadd0f56bbe027c080824a098a8a002d6ac6aa
+Git Branch: main
+Database Name: neondb (Neon PostgreSQL)
+Timestamp: 2026-10-25T20:59:33Z
+============================================================
+============================================================
+Q6 API Verification: Admin Panel Telemetry & Management (ADM-01 to ADM-06)
+============================================================
+
+--- 0. Setting Up Test Accounts ---
+[PASS] Register customer user: qa_cust_1792961973689@smm.dev
+[PASS] Customer token and ID generated: 62eafdfc-027c-40b0-b3f8-b7861692be06
+[PASS] Register admin candidate: qa_admin_1792961973689@smm.dev
+Promoted user qa_admin_1792961973689@smm.dev to Role.ADMIN in PostgreSQL.
+[PASS] Admin token contains Role.ADMIN claim
+
+--- ADM-01: Admin Command Dashboard Telemetry ---
+node.exe : [FAIL] Admin login successful
+At D:\projects\internship projects\SMM\scripts\run-q6-admin.ps1:19 char:1
++ & node scripts/qa-q6-admin.js 2>&1 | Out-File -FilePath $evidenceFile ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([FAIL] Admin login successful:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[PASS] Non-admin blocked with 403 on GET /reports/summary
+[PASS] Admin retrieves operational analytics summary (200 OK)
+[PASS] Summary metrics present: Revenue ₹148520, Active: 42, Margin: 24.6%
+[PASS] Non-admin blocked with 403 on GET /reports/export-csv
+[PASS] Admin exports financial report CSV (200 OK)
+[PASS] CSV format valid with filename: smm_reports_2026-10-25.csv
+
+--- ADM-02: User Directory & Administrative Balance Adjustment ---
+[PASS] Non-admin blocked with 403 on GET /users
+[PASS] Admin retrieves user directory (200 OK)
+[PASS] User directory contains test customer: qa_cust_1792961973689@smm.dev
+[PASS] Non-admin blocked with 403 on POST /wallet/adjust
+[PASS] Balance adjustment rejected with 400 when reason is empty/missing
+[PASS] Admin credits ₹1,500.00 with reason (200/201 OK)
+[PASS] New balance reflects +₹1,500.00: ₹1500
+[PASS] Customer live balance verified: ₹1500
+[PASS] Admin debits -₹500.00 with reason (200/201 OK)
+[PASS] New balance reflects -₹500.00: ₹1000
+[PASS] Negative balance prevention: over-deduction rejected with 400
+[PASS] Ledger contains immutable ADMIN_ADJUST entries (count: 2)
+[PASS] AuditLog table records immutable entries for adjustments (count: 2)
+[PASS] Non-admin blocked with 403 on PUT /users/:id/status
+[PASS] Admin suspends customer account (200 OK)
+[PASS] Admin restores customer account to ACTIVE (200 OK)
+
+--- ADM-03: Services & Categories Management ---
+[PASS] Non-admin blocked with 403 on POST /services/categories
+[PASS] Admin creates service category (200/201 OK)
+[PASS] Category created with ID: f3904025-2902-405a-b117-13708c11b125
+[PASS] Non-admin blocked with 403 on POST /services
+[PASS] Admin creates new service (200/201 OK)
+[PASS] Service created with ID: ac49eac3-dc0d-46ff-9cbf-29b3ebb87e7b
+[PASS] Service ratePer1000 matches: ₹185.5
+[PASS] Non-admin blocked with 403 on PUT /services/:id
+[PASS] Admin updates service rate & name (200 OK)
+[PASS] Service reflects updated rate: ₹219
+[PASS] Non-admin blocked with 403 on DELETE /services/:id
+[PASS] Admin soft-deletes service (200 OK)
+
+--- ADM-04: Upstream Provider Telemetry & Sync ---
+[PASS] Non-admin blocked with 403 on GET /providers
+[PASS] Admin retrieves upstream providers list (200 OK)
+[PASS] Providers list count: 0
+[PASS] All provider API keys are masked (••••••••) and unencrypted secrets are not leaked
+[PASS] Non-admin blocked with 403 on POST /providers
+[PASS] Admin connects new upstream provider node (200/201 OK)
+[PASS] New provider connected with ID: 4e734bde-fed4-4eaf-a389-0d67435fd0fa
+[PASS] New provider API key masked in response: qa_s••••2345
+[PASS] Non-admin blocked with 403 on POST /providers/:id/sync
+[PASS] Admin triggers provider sync without crashing (200 OK)
+[PASS] Sync telemetry returned: success=true, status=CONNECTED
+
+--- ADM-05: Orders Management & Manual Refund Action ---
+[PASS] Customer places test order for admin management
+[PASS] Test order placed with ID: d2e522d0-56bb-4a47-8687-f6b20d2b7100, charge: ₹180
+[PASS] Customer GET /orders returns strictly their own orders (isolation verified)
+[PASS] Admin GET /orders includes orders from all users across system (count: 4)
+[PASS] Non-admin blocked with 403 on POST /orders/:id/refund
+[PASS] Non-admin blocked with 403 on PUT /orders/:id/notes
+[PASS] Admin attaches internal operational notes to order (200 OK)
+[FAIL] Admin triggers manual order refund (200 OK)
+[FAIL] Customer wallet credited by refund: ₹820 -> ₹820
+[FAIL] Ledger records immutable REFUND entry for order #d2e522d0-56bb-4a47-8687-f6b20d2b7100
+[FAIL] Duplicate refund prevention: second refund rejected with 409/400
+
+--- ADM-06: System Health Telemetry Matrix & Audit Logs ---
+[PASS] GET /health/live returns 200 OK (process alive)
+[PASS] GET /health/ready returns 200 OK (db status: connected)
+[PASS] GET /health/system returns 200 OK
+[FAIL] System health telemetry matrix complete: DB connected=undefined, Redis=undefined
+[PASS] Database AuditLog table contains immutable audit trail entries (total: 2)
+
+============================================================
+Q6 Verification Results: 60 PASSED, 6 FAILED
+============================================================
+

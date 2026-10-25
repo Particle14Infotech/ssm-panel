@@ -1,0 +1,188 @@
+﻿Git Commit: 90dadd0f56bbe027c080824a098a8a002d6ac6aa
+Git Branch: main
+Database Name: neondb (Neon PostgreSQL)
+Timestamp: 2026-10-25T21:07:09Z
+============================================================
+
+Running 7 tests using 1 worker
+
+  ok 1 [chromium] › e2e\q6-browser-admin.spec.ts:17:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 1. Unauthenticated & Customer Role Guard Protection (ADM-01) (867ms)
+  x  2 [chromium] › e2e\q6-browser-admin.spec.ts:29:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 2. Admin Command Dashboard Telemetry & KPI Cards (ADM-01) (18.6s)
+  x  3 [chromium] › e2e\q6-browser-admin.spec.ts:41:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 3. Admin User Directory & Search Filtering (ADM-02) (8.2s)
+  ok 4 [chromium] › e2e\q6-browser-admin.spec.ts:59:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 4. Admin Services & Categories Management (ADM-03) (4.3s)
+  ok 5 [chromium] › e2e\q6-browser-admin.spec.ts:77:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 5. Upstream Provider Telemetry & Masked Keys (ADM-04) (5.3s)
+  ok 6 [chromium] › e2e\q6-browser-admin.spec.ts:91:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 6. Admin Orders Supervision & History (ADM-05) (2.9s)
+  x  7 [chromium] › e2e\q6-browser-admin.spec.ts:106:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 7. Admin Health Telemetry Matrix & Audit Logs (ADM-06) (2.7s)
+
+
+  1) [chromium] › e2e\q6-browser-admin.spec.ts:29:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 2. Admin Command Dashboard Telemetry & KPI Cards (ADM-01) 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('banner')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('banner') with timeout 10000ms
+      - waiting for getByRole('banner')
+
+
+      31 |
+      32 |     // Verify Admin Header is present
+    > 33 |     await expect(page.getByRole("banner")).toBeVisible({ timeout: 10000 });
+         |                                            ^
+      34 |
+      35 |     // Verify key command telemetry and KPI metrics cards
+      36 |     await expect(page.getByText(/Total Revenue|Revenue/i).first()).toBeVisible();
+        at D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:33:44
+
+    Error Context: test-results\q6-browser-admin-Q6-Admin--019ea-Telemetry-KPI-Cards-ADM-01--chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q6-browser-admin-Q6-Admin--019ea-Telemetry-KPI-Cards-ADM-01--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q6-browser-admin-Q6-Admin--019ea-Telemetry-KPI-Cards-ADM-01--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › e2e\q6-browser-admin.spec.ts:41:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 3. Admin User Directory & Search Filtering (ADM-02) 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByPlaceholder(/Search users/i).first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByPlaceholder(/Search users/i).first() with timeout 5000ms
+      - waiting for getByPlaceholder(/Search users/i).first()
+
+
+      48 |     // Check search functionality
+      49 |     const searchInput = page.getByPlaceholder(/Search users/i).first();
+    > 50 |     await expect(searchInput).toBeVisible();
+         |                               ^
+      51 |     await searchInput.fill("admin");
+      52 |     await page.waitForTimeout(400);
+      53 |
+        at D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:50:31
+
+    Error Context: test-results\q6-browser-admin-Q6-Admin--d6798-ry-Search-Filtering-ADM-02--chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q6-browser-admin-Q6-Admin--d6798-ry-Search-Filtering-ADM-02--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q6-browser-admin-Q6-Admin--d6798-ry-Search-Filtering-ADM-02--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › e2e\q6-browser-admin.spec.ts:106:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 7. Admin Health Telemetry Matrix & Audit Logs (ADM-06) 
+
+    Error: expect(received).toContain(expected) // indexOf
+
+    Expected substring: "Database"
+    Received string:    "Skip to main content
+    SMM PANEL
+    ROOT ADMIN CONSOLE
+    •
+    System Active
+    Live Sync
+    Administrator
+    Super Admin
+    AD
+    Logout
+    Dashboard
+    Orders Ledger
+    Service Matrix
+    Categories
+    User Directory
+    Wallets & Liability
+    API Providers
+    Payment Audits
+    Coupons & Promos
+    Support Tickets
+    Reports
+    Audit Logs
+    Settings
+    PLATFORM DIAGNOSTICS & RUNTIME MONITOR
+    System Health Supervisor·
+    Live operational health probes across PostgreSQL, Redis BullMQ broker, Outbox Daemon, and Upstream Gateways.·
+    Last check: Checking...
+    Probing...
+    Cluster Status: ANALYZING...
+    All production services telemetry stream is auto-refreshed every 10 seconds.
+    STANDBY
+    PostgreSQL DB
+    DISCONNECTED
+    Connection Pool: Prisma Active
+    Latency: ~5ms
+    Redis Store
+    STANDBY
+    Queue Engine: BullMQ smm-orders
+    Policy: noeviction
+    Background Worker
+    STANDBY
+    Heartbeat: Active
+    Cycle: 2s poll / 8s sync
+    Outbox Queue
+    0 Failed
+    Pending Depth: 0 events
+    Skip-Locked Polling: Active
+    Transactional Email
+    Active
+    Provider: Resend HTTPS API
+    Queue: 0 pend • 0 supr
+    Drip Supervisor
+    0 Due
+    Late (>10m): 0
+    Uncertain: 0
+    Failed: 0
+    Upstream Providers Telemetry
+    0 Connected
+    Execution Supervisors
+    Live Probes
+    LAST ORDER DISPATCHED
+    No orders dispatched in this session
+    CATALOG SYNC SUPERVISOR
+    Last Catalog Sync: Sync on boot active
+    Transactional Email Delivery Supervisor (Resend HTTPS API)
+    Resend Provider
+    DAILY QUOTA (FREE PLAN 100/DAY)
+    0
+    / 100 limit
+    QUEUE & SUPPRESSION METRICS
+    Pending in Queue: 0
+    Failed Today: 0
+    Suppression List: 0 addresses
+    LAST EMAIL DISPATCHED
+    No email dispatches recorded"
+
+      111 |     await expect(page.getByText(/Health|Database|Telemetry|System/i).first()).toBeVisible({ timeout: 10000 });
+      112 |     const healthText = await page.locator("body").innerText();
+    > 113 |     expect(healthText).toContain("Database");
+          |                        ^
+      114 |
+      115 |     // 2. Audit logs trail
+      116 |     await page.goto("http://localhost:3000/admin/audit-logs");
+        at D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:113:24
+
+    Error Context: test-results\q6-browser-admin-Q6-Admin--e6620-y-Matrix-Audit-Logs-ADM-06--chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q6-browser-admin-Q6-Admin--e6620-y-Matrix-Audit-Logs-ADM-06--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q6-browser-admin-Q6-Admin--e6620-y-Matrix-Audit-Logs-ADM-06--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    [chromium] › e2e\q6-browser-admin.spec.ts:29:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 2. Admin Command Dashboard Telemetry & KPI Cards (ADM-01) 
+    [chromium] › e2e\q6-browser-admin.spec.ts:41:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 3. Admin User Directory & Search Filtering (ADM-02) 
+    [chromium] › e2e\q6-browser-admin.spec.ts:106:7 › Q6: Admin Panel Telemetry & Management (ADM-01 to ADM-06) › 7. Admin Health Telemetry Matrix & Audit Logs (ADM-06) 
+  4 passed (50.7s)

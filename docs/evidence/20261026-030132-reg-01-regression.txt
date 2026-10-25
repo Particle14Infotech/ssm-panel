@@ -1,0 +1,1075 @@
+﻿Git Commit: e592612469c016aec9e501534efc8259ea1977ff
+Git Branch: main
+Database Name: neondb (Neon PostgreSQL)
+Timestamp: 2026-10-25T21:31:32Z
+============================================================
+REG-01: COMPREHENSIVE END-TO-END REGRESSION & SMOKE GATE
+============================================================
+
+>>> STEP 1: External Services Registry Check
+
+=======================================================
+       SMM PANEL EXTERNAL INTEGRATIONS REGISTRY       
+       Runtime Mode: DEVELOPMENT / SANDBOX        
+=======================================================
+
+INTEGRATION                 REQUIRED      MODE                MISSING / PLACEHOLDERS
+------------------------------------------------------------------------------------
+PostgreSQL Database         mvp-live      [32m[LIVE][0m             None (All Set)
+Redis Cache & BullMQ        mvp-live      [32m[LIVE][0m             None (All Set)
+Razorpay Payment Gateway    mvp-live      [33m[SANDBOX / MOCK][0m   RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET
+SMTP Email Server           mvp-live      [33m[SANDBOX / MOCK][0m   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
+S3-Compatible Storage       optional      [33m[SANDBOX / MOCK][0m   S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY
+Sentry API Error Tracking   optional      [33m[SANDBOX / MOCK][0m   SENTRY_DSN
+Sentry Web Error Tracking   optional      [33m[SANDBOX / MOCK][0m   NEXT_PUBLIC_SENTRY_DSN
+Snyk Security Scanner       optional      [33m[SANDBOX / MOCK][0m   SNYK_TOKEN
+Offsite Backup Storage      optional      [33m[SANDBOX / MOCK][0m   BACKUP_S3_BUCKET, BACKUP_ENCRYPTION_KEY
+------------------------------------------------------------------------------------
+
+ℹ️  Development/Test Mode: Sandboxes and Mocks active where keys are placeholders.
+
+
+>>> STEP 2: OpenAPI Contract Diff & Drift Verification
+Updated D:\projects\internship projects\SMM\docs\CONTRACT_DIFF.md
+
+--- CONTRACT DIFF REPORT ---
+┌─────────┬───────────────────────────────────┬─────────────────────────────────────────────┬────────┐
+│ (index) │ call                              │ source                                      │ exists │
+├─────────┼───────────────────────────────────┼─────────────────────────────────────────────┼────────┤
+│ 0       │ 'GET /api/v1/health/live'         │ 'apps/web/monitoring & probes'              │ 'YES'  │
+│ 1       │ 'GET /api/v1/health/ready'        │ 'apps/web/monitoring & probes'              │ 'YES'  │
+│ 2       │ 'POST /api/v1/auth/login'         │ 'apps/web/app/(auth)/login'                 │ 'YES'  │
+│ 3       │ 'POST /api/v1/auth/register'      │ 'apps/web/app/(auth)/register'              │ 'YES'  │
+│ 4       │ 'POST /api/v1/auth/refresh'       │ 'apps/web/lib/auth-session'                 │ 'YES'  │
+│ 5       │ 'GET /api/v1/auth/verify-key'     │ 'packages/contracts/src/auth.ts'            │ 'YES'  │
+│ 6       │ 'GET /api/v1/services'            │ 'apps/web/app/app/api & catalog'            │ 'YES'  │
+│ 7       │ 'GET /api/v1/services/:id'        │ 'apps/web/services-catalog'                 │ 'YES'  │
+│ 8       │ 'GET /api/v1/orders'              │ 'apps/web/app/(customer)/orders'            │ 'YES'  │
+│ 9       │ 'GET /api/v1/orders/:id'          │ 'apps/web/app/app/api & orders'             │ 'YES'  │
+│ 10      │ 'POST /api/v1/orders'             │ 'apps/web/orders (Canonical REST)'          │ 'YES'  │
+│ 11      │ 'POST /api/v1/orders/create'      │ 'apps/web/app/app/api & CustomerContext'    │ 'YES'  │
+│ 12      │ 'POST /api/v1/orders/:id/refill'  │ 'apps/web/orders refill'                    │ 'YES'  │
+│ 13      │ 'POST /api/v1/orders/:id/cancel'  │ 'apps/web/orders cancel'                    │ 'YES'  │
+│ 14      │ 'GET /api/v1/wallet/balance'      │ 'apps/web/app/app/api & wallet'             │ 'YES'  │
+│ 15      │ 'POST /api/v1/wallet/deposit'     │ 'apps/web/app/(customer)/wallet'            │ 'YES'  │
+│ 16      │ 'GET /api/v1/providers'           │ 'apps/web/admin/providers'                  │ 'YES'  │
+│ 17      │ 'POST /api/v1/providers'          │ 'apps/web/admin/providers (Canonical REST)' │ 'YES'  │
+│ 18      │ 'POST /api/v1/providers/create'   │ 'apps/web/context/AdminContext.tsx:214'     │ 'YES'  │
+│ 19      │ 'POST /api/v1/providers/:id/sync' │ 'apps/web/context/AdminContext.tsx:244'     │ 'YES'  │
+│ 20      │ 'GET /api/v1/users/me'            │ 'apps/web/app/(customer)/profile'           │ 'YES'  │
+│ 21      │ 'PUT /api/v1/users/me'            │ 'apps/web/app/(customer)/profile'           │ 'YES'  │
+│ 22      │ 'GET /api/v1/tickets'             │ 'apps/web/app/(customer)/support'           │ 'YES'  │
+│ 23      │ 'POST /api/v1/tickets'            │ 'apps/web/support tickets (Canonical REST)' │ 'YES'  │
+│ 24      │ 'POST /api/v1/tickets/create'     │ 'apps/web/support tickets'                  │ 'YES'  │
+└─────────┴───────────────────────────────────┴─────────────────────────────────────────────┴────────┘
+
+✅ Contract verification passed: All web and contract endpoints exist in OpenAPI.
+
+>>> STEP 3: Automated Security Gate & Mutation Invariant Guards
+================================================================
+🛡️  SMM SECURITY GATE: AUTOMATED VERIFICATION & INVARIANT GUARDS
+================================================================
+
+[CHECK 1] No hardcoded fallback literals on cryptographic secrets in production source... ✅ PASSED
+[CHECK 2] Zero in-memory sandbox storage maps (sandboxPackages, sandboxOrders, sandboxBalances) in src/... ✅ PASSED
+[CHECK 3] No eval() or new Function() calls in production source... ✅ PASSED
+[CHECK 4] PackageRule table enforces CHECK constraint (usedCount <= maxPosts) in migrations... ✅ PASSED
+[CHECK 5] WHATWG URL validation has max-length, strict https, port, userinfo, and IDN guards... ✅ PASSED
+[CHECK 6] PackagesService enforces mandatory quoteHash and rejects tampering... ✅ PASSED
+[CHECK 7] Refunds enforce Two-Man Rule (> 500 INR), Decimal arithmetic, and Provider cross-check... ✅ PASSED
+[CHECK 8] Mutation patches gap1.patch through gap5.patch exist in security/mutations/... ✅ PASSED
+node.exe : PASS test/package-fail-closed-s5.spec.ts
+At D:\projects\internship projects\SMM\scripts\run-reg-01.ps1:29 char:1
++ & node scripts/security-gate.js 2>&1 | Out-File -FilePath $evidenceFi ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS test/package-fail-closed-s5.spec.ts:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+PASS test/package-quote-dos-s2.spec.ts
+PASS test/package-security-gaps-reproduce.spec.ts
+PASS test/package-refund-correctness-s3.spec.ts
+PASS test/package-quote-integrity-s1.spec.ts
+FAIL test/package-extra-hardening-s6.spec.ts
+  ● S6: Extra Hardening (URL, Raw SQL, CHECK Constraint, Admin Guards) › 1. WHATWG URL Validation Hardening › survives 
+ReDoS fuzz testing of 10,000 hostile strings under 100ms
+
+    expect(received).toBeLessThan(expected)
+
+    Expected: < 100
+    Received:   186
+
+    [0m [90m 89 |[39m       }
+     [90m 90 |[39m       [36mconst[39m duration [33m=[39m [33mDate[39m[33m.[39mnow() [33m-[39m 
+start[33m;[39m
+    [31m[1m>[22m[39m[90m 91 |[39m       expect(duration)[33m.[39mtoBeLessThan([35m100[39m)[33m;[39m
+     [90m    |[39m                        [31m[1m^[22m[39m
+     [90m 92 |[39m     })[33m;[39m
+     [90m 93 |[39m   })[33m;[39m
+     [90m 94 |[39m[0m
+
+      at Object.<anonymous> (test/package-extra-hardening-s6.spec.ts:91:24)
+
+PASS test/package-secrets-hardening-s4.spec.ts
+  ● Console
+
+    console.error
+      
+      =======================================================
+
+    [0m [90m 162 |[39m
+     [90m 163 |[39m     [36mif[39m (violations[33m.[39mlength [33m>[39m [35m0[39m) {
+    [31m[1m>[22m[39m[90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:164:15)
+      at test/package-secrets-hardening-s4.spec.ts:37:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:37:53)
+
+    console.error
+      FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY VIOLATION
+
+    [0m [90m 163 |[39m     [36mif[39m (violations[33m.[39mlength [33m>[39m [35m0[39m) {
+     [90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS 
+POLICY VIOLATION"[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:165:15)
+      at test/package-secrets-hardening-s4.spec.ts:37:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:37:53)
+
+    console.error
+      =======================================================
+
+    [0m [90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+     [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:166:15)
+      at test/package-secrets-hardening-s4.spec.ts:37:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:37:53)
+
+    console.error
+        - Missing or placeholder required secret: QUOTE_SECRET
+
+    [0m [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m 
+console[33m.[39merror([32m`  - ${v}`[39m))[33m;[39m
+     [90m     |[39m                                         [31m[1m^[22m[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }[0m
+
+      at src/config/env.validation.ts:167:41
+          at Array.forEach (<anonymous>)
+      at validateEnvironment (src/config/env.validation.ts:167:18)
+      at test/package-secrets-hardening-s4.spec.ts:37:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:37:53)
+
+    console.error
+      
+      Configure valid, distinct, >=32-char production secrets.
+
+    [0m [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+    [31m[1m>[22m[39m[90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char 
+production secrets.\n"[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }
+     [90m 171 |[39m   }[0m
+
+      at validateEnvironment (src/config/env.validation.ts:168:15)
+      at test/package-secrets-hardening-s4.spec.ts:37:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:37:53)
+
+    console.error
+      
+      =======================================================
+
+    [0m [90m 162 |[39m
+     [90m 163 |[39m     [36mif[39m (violations[33m.[39mlength [33m>[39m [35m0[39m) {
+    [31m[1m>[22m[39m[90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:164:15)
+      at test/package-secrets-hardening-s4.spec.ts:40:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:40:57)
+
+    console.error
+      FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY VIOLATION
+
+    [0m [90m 163 |[39m     [36mif[39m (violations[33m.[39mlength [33m>[39m [35m0[39m) {
+     [90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS 
+POLICY VIOLATION"[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:165:15)
+      at test/package-secrets-hardening-s4.spec.ts:40:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:40:57)
+
+    console.error
+      =======================================================
+
+    [0m [90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+     [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:166:15)
+      at test/package-secrets-hardening-s4.spec.ts:40:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:40:57)
+
+    console.error
+        - Missing or placeholder required secret: QUOTE_SECRET
+
+    [0m [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m 
+console[33m.[39merror([32m`  - ${v}`[39m))[33m;[39m
+     [90m     |[39m                                         [31m[1m^[22m[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }[0m
+
+      at src/config/env.validation.ts:167:41
+          at Array.forEach (<anonymous>)
+      at validateEnvironment (src/config/env.validation.ts:167:18)
+      at test/package-secrets-hardening-s4.spec.ts:40:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:40:57)
+
+    console.error
+      
+      Configure valid, distinct, >=32-char production secrets.
+
+    [0m [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+    [31m[1m>[22m[39m[90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char 
+production secrets.\n"[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }
+     [90m 171 |[39m   }[0m
+
+      at validateEnvironment (src/config/env.validation.ts:168:15)
+      at test/package-secrets-hardening-s4.spec.ts:40:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:40:57)
+
+    console.error
+      
+      =======================================================
+
+    [0m [90m 162 |[39m
+     [90m 163 |[39m     [36mif[39m (violations[33m.[39mlength [33m>[39m [35m0[39m) {
+    [31m[1m>[22m[39m[90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:164:15)
+      at test/package-secrets-hardening-s4.spec.ts:51:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:51:50)
+
+    console.error
+      FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY VIOLATION
+
+    [0m [90m 163 |[39m     [36mif[39m (violations[33m.[39mlength [33m>[39m [35m0[39m) {
+     [90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS 
+POLICY VIOLATION"[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:165:15)
+      at test/package-secrets-hardening-s4.spec.ts:51:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:51:50)
+
+    console.error
+      =======================================================
+
+    [0m [90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+     [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:166:15)
+      at test/package-secrets-hardening-s4.spec.ts:51:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:51:50)
+
+    console.error
+        - Secret QUOTE_SECRET is too weak (length 16 < 32 characters)
+
+    [0m [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m 
+console[33m.[39merror([32m`  - ${v}`[39m))[33m;[39m
+     [90m     |[39m                                         [31m[1m^[22m[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }[0m
+
+      at src/config/env.validation.ts:167:41
+          at Array.forEach (<anonymous>)
+      at validateEnvironment (src/config/env.validation.ts:167:18)
+      at test/package-secrets-hardening-s4.spec.ts:51:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:51:50)
+
+    console.error
+        - Secret QUOTE_SECRET matches denylisted weak default
+
+    [0m [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m 
+console[33m.[39merror([32m`  - ${v}`[39m))[33m;[39m
+     [90m     |[39m                                         [31m[1m^[22m[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }[0m
+
+      at src/config/env.validation.ts:167:41
+          at Array.forEach (<anonymous>)
+      at validateEnvironment (src/config/env.validation.ts:167:18)
+      at test/package-secrets-hardening-s4.spec.ts:51:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:51:50)
+
+    console.error
+      
+      Configure valid, distinct, >=32-char production secrets.
+
+    [0m [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+    [31m[1m>[22m[39m[90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char 
+production secrets.\n"[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }
+     [90m 171 |[39m   }[0m
+
+      at validateEnvironment (src/config/env.validation.ts:168:15)
+      at test/package-secrets-hardening-s4.spec.ts:51:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:51:50)
+
+    console.error
+      
+      =======================================================
+
+    [0m [90m 162 |[39m
+     [90m 163 |[39m     [36mif[39m (violations[33m.[39mlength [33m>[39m [35m0[39m) {
+    [31m[1m>[22m[39m[90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:164:15)
+      at test/package-secrets-hardening-s4.spec.ts:54:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:54:50)
+
+    console.error
+      FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY VIOLATION
+
+    [0m [90m 163 |[39m     [36mif[39m (violations[33m.[39mlength [33m>[39m [35m0[39m) {
+     [90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS 
+POLICY VIOLATION"[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:165:15)
+      at test/package-secrets-hardening-s4.spec.ts:54:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:54:50)
+
+    console.error
+      =======================================================
+
+    [0m [90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+     [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:166:15)
+      at test/package-secrets-hardening-s4.spec.ts:54:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:54:50)
+
+    console.error
+        - Secret JWT_ACCESS_SECRET is too weak (length 16 < 32 characters)
+
+    [0m [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m 
+console[33m.[39merror([32m`  - ${v}`[39m))[33m;[39m
+     [90m     |[39m                                         [31m[1m^[22m[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }[0m
+
+      at src/config/env.validation.ts:167:41
+          at Array.forEach (<anonymous>)
+      at validateEnvironment (src/config/env.validation.ts:167:18)
+      at test/package-secrets-hardening-s4.spec.ts:54:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:54:50)
+
+    console.error
+        - Secret JWT_ACCESS_SECRET matches denylisted weak default
+
+    [0m [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m 
+console[33m.[39merror([32m`  - ${v}`[39m))[33m;[39m
+     [90m     |[39m                                         [31m[1m^[22m[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }[0m
+
+      at src/config/env.validation.ts:167:41
+          at Array.forEach (<anonymous>)
+      at validateEnvironment (src/config/env.validation.ts:167:18)
+      at test/package-secrets-hardening-s4.spec.ts:54:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:54:50)
+
+    console.error
+      
+      Configure valid, distinct, >=32-char production secrets.
+
+    [0m [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+    [31m[1m>[22m[39m[90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char 
+production secrets.\n"[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }
+     [90m 171 |[39m   }[0m
+
+      at validateEnvironment (src/config/env.validation.ts:168:15)
+      at test/package-secrets-hardening-s4.spec.ts:54:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:54:50)
+
+    console.error
+      
+      =======================================================
+
+    [0m [90m 162 |[39m
+     [90m 163 |[39m     [36mif[39m (violations[33m.[39mlength [33m>[39m [35m0[39m) {
+    [31m[1m>[22m[39m[90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:164:15)
+      at test/package-secrets-hardening-s4.spec.ts:68:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:68:56)
+
+    console.error
+      FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY VIOLATION
+
+    [0m [90m 163 |[39m     [36mif[39m (violations[33m.[39mlength [33m>[39m [35m0[39m) {
+     [90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS 
+POLICY VIOLATION"[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:165:15)
+      at test/package-secrets-hardening-s4.spec.ts:68:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:68:56)
+
+    console.error
+      =======================================================
+
+    [0m [90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+     [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:166:15)
+      at test/package-secrets-hardening-s4.spec.ts:68:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:68:56)
+
+    console.error
+        - Secret QUOTE_SECRET matches denylisted weak default
+
+    [0m [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m 
+console[33m.[39merror([32m`  - ${v}`[39m))[33m;[39m
+     [90m     |[39m                                         [31m[1m^[22m[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }[0m
+
+      at src/config/env.validation.ts:167:41
+          at Array.forEach (<anonymous>)
+      at validateEnvironment (src/config/env.validation.ts:167:18)
+      at test/package-secrets-hardening-s4.spec.ts:68:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:68:56)
+
+    console.error
+      
+      Configure valid, distinct, >=32-char production secrets.
+
+    [0m [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+    [31m[1m>[22m[39m[90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char 
+production secrets.\n"[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }
+     [90m 171 |[39m   }[0m
+
+      at validateEnvironment (src/config/env.validation.ts:168:15)
+      at test/package-secrets-hardening-s4.spec.ts:68:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:68:56)
+
+    console.error
+      
+      =======================================================
+
+    [0m [90m 162 |[39m
+     [90m 163 |[39m     [36mif[39m (violations[33m.[39mlength [33m>[39m [35m0[39m) {
+    [31m[1m>[22m[39m[90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:164:15)
+      at test/package-secrets-hardening-s4.spec.ts:74:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:74:54)
+
+    console.error
+      FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY VIOLATION
+
+    [0m [90m 163 |[39m     [36mif[39m (violations[33m.[39mlength [33m>[39m [35m0[39m) {
+     [90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS 
+POLICY VIOLATION"[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:165:15)
+      at test/package-secrets-hardening-s4.spec.ts:74:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:74:54)
+
+    console.error
+      =======================================================
+
+    [0m [90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+     [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:166:15)
+      at test/package-secrets-hardening-s4.spec.ts:74:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:74:54)
+
+    console.error
+        - Secret COOKIE_SECRET matches denylisted weak default
+
+    [0m [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m 
+console[33m.[39merror([32m`  - ${v}`[39m))[33m;[39m
+     [90m     |[39m                                         [31m[1m^[22m[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }[0m
+
+      at src/config/env.validation.ts:167:41
+          at Array.forEach (<anonymous>)
+      at validateEnvironment (src/config/env.validation.ts:167:18)
+      at test/package-secrets-hardening-s4.spec.ts:74:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:74:54)
+
+    console.error
+      
+      Configure valid, distinct, >=32-char production secrets.
+
+    [0m [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+    [31m[1m>[22m[39m[90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char 
+production secrets.\n"[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }
+     [90m 171 |[39m   }[0m
+
+      at validateEnvironment (src/config/env.validation.ts:168:15)
+      at test/package-secrets-hardening-s4.spec.ts:74:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:74:54)
+
+    console.error
+      
+      =======================================================
+
+    [0m [90m 162 |[39m
+     [90m 163 |[39m     [36mif[39m (violations[33m.[39mlength [33m>[39m [35m0[39m) {
+    [31m[1m>[22m[39m[90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:164:15)
+      at test/package-secrets-hardening-s4.spec.ts:88:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:88:55)
+
+    console.error
+      FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY VIOLATION
+
+    [0m [90m 163 |[39m     [36mif[39m (violations[33m.[39mlength [33m>[39m [35m0[39m) {
+     [90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS 
+POLICY VIOLATION"[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:165:15)
+      at test/package-secrets-hardening-s4.spec.ts:88:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:88:55)
+
+    console.error
+      =======================================================
+
+    [0m [90m 164 |[39m       
+console[33m.[39merror([32m"\n======================================================="[39m)[33m;[39m
+     [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:166:15)
+      at test/package-secrets-hardening-s4.spec.ts:88:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:88:55)
+
+    console.error
+        - Secrets JWT_ACCESS_SECRET and QUOTE_SECRET must be mutually distinct; identical values detected.
+
+    [0m [90m 165 |[39m       console[33m.[39merror([32m"FATAL: PRODUCTION BOOT REFUSED - SECRETS POLICY 
+VIOLATION"[39m)[33m;[39m
+     [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m 
+console[33m.[39merror([32m`  - ${v}`[39m))[33m;[39m
+     [90m     |[39m                                         [31m[1m^[22m[39m
+     [90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char production 
+secrets.\n"[39m)[33m;[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }[0m
+
+      at src/config/env.validation.ts:167:41
+          at Array.forEach (<anonymous>)
+[CHECK 9] All Security Test Suites pass green under Jest... ❌ FAILED
+
+================================================================
+SUMMARY: 8/9 checks passed, 1 failed.
+================================================================
+
+      at validateEnvironment (src/config/env.validation.ts:167:18)
+      at test/package-secrets-hardening-s4.spec.ts:88:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:88:55)
+
+    console.error
+      
+      Configure valid, distinct, >=32-char production secrets.
+
+    [0m [90m 166 |[39m       
+console[33m.[39merror([32m"======================================================="[39m)[33m;[39m
+     [90m 167 |[39m       violations[33m.[39mforEach((v) [33m=>[39m console[33m.[39merror([32m`  - 
+${v}`[39m))[33m;[39m
+    [31m[1m>[22m[39m[90m 168 |[39m       console[33m.[39merror([32m"\nConfigure valid, distinct, >=32-char 
+production secrets.\n"[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 169 |[39m       process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 170 |[39m     }
+     [90m 171 |[39m   }[0m
+
+      at validateEnvironment (src/config/env.validation.ts:168:15)
+      at test/package-secrets-hardening-s4.spec.ts:88:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:88:55)
+
+    console.error
+      FATAL: BOOT REFUSED - Invalid or missing NODE_ENV. Must be development | test | production
+
+    [0m [90m 48 |[39m   [36mconst[39m validNodeEnvs [33m=[39m [[32m"development"[39m[33m,[39m 
+[32m"test"[39m[33m,[39m [32m"production"[39m][33m;[39m
+     [90m 49 |[39m   [36mif[39m ([33m![39menv[33m.[39m[33mNODE_ENV[39m [33m||[39m 
+[33m![39mvalidNodeEnvs[33m.[39mincludes(env[33m.[39m[33mNODE_ENV[39m)) {
+    [31m[1m>[22m[39m[90m 50 |[39m     console[33m.[39merror([32m"FATAL: BOOT REFUSED - Invalid or missing 
+NODE_ENV. Must be development | test | production"[39m)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 51 |[39m     process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 52 |[39m   }
+     [90m 53 |[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:50:13)
+      at test/package-secrets-hardening-s4.spec.ts:98:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:98:90)
+
+    console.error
+      FATAL: BOOT REFUSED - Invalid or missing NODE_ENV. Must be development | test | production
+
+    [0m [90m 48 |[39m   [36mconst[39m validNodeEnvs [33m=[39m [[32m"development"[39m[33m,[39m 
+[32m"test"[39m[33m,[39m [32m"production"[39m][33m;[39m
+     [90m 49 |[39m   [36mif[39m ([33m![39menv[33m.[39m[33mNODE_ENV[39m [33m||[39m 
+[33m![39mvalidNodeEnvs[33m.[39mincludes(env[33m.[39m[33mNODE_ENV[39m)) {
+    [31m[1m>[22m[39m[90m 50 |[39m     console[33m.[39merror([32m"FATAL: BOOT REFUSED - Invalid or missing 
+NODE_ENV. Must be development | test | production"[39m)[33m;[39m
+     [90m    |[39m             [31m[1m^[22m[39m
+     [90m 51 |[39m     process[33m.[39mexit([35m1[39m)[33m;[39m
+     [90m 52 |[39m   }
+     [90m 53 |[39m[0m
+
+      at validateEnvironment (src/config/env.validation.ts:50:13)
+      at test/package-secrets-hardening-s4.spec.ts:99:39
+      at Object.<anonymous> (../../node_modules/expect/build/toThrowMatchers.js:74:11)
+      at Object.throwingMatcher [as toThrow] (../../node_modules/expect/build/index.js:320:21)
+      at Object.<anonymous> (test/package-secrets-hardening-s4.spec.ts:99:83)
+
+
+Test Suites: 1 failed, 6 passed, 7 total
+Tests:       1 failed, 46 passed, 47 total
+Snapshots:   0 total
+Time:        4.1 s
+Ran all test suites matching /package-security-gaps-reproduce.spec.ts|package-quote-integrity-s1.spec.ts|package-quote-
+dos-s2.spec.ts|package-refund-correctness-s3.spec.ts|package-secrets-hardening-s4.spec.ts|package-fail-closed-s5.spec.t
+s|package-extra-hardening-s6.spec.ts/i.
+
+   Error: One or more security regression test suites failed.
+
+>>> STEP 4: Monorepo End-To-End Invariant Smoke Run
+================================================================================
+🚀 SMM PANEL END-TO-END VERIFICATION SMOKE RUN (MVP SANDBOX)
+Commit Hash:    e592612469c016aec9e501534efc8259ea1977ff
+Timestamp:      2026-10-25T21:31:38.943Z
+Runtime:        Node.js v22.20.0 (win32)
+Database Target: smm_db (Isolated in-memory sandbox mode)
+================================================================================
+
+▶ Initializing NestJS Modular Monolith API on port 4001...
+✅ NestJS API online at http://127.0.0.1:4001/api/v1
+
+▶ STEP 1: Verifying Health Probes
+  [ATTEMPT 1/3] GET /api/v1/health/live ... ✅ OK (10ms)
+  [ATTEMPT 1/3] GET /api/v1/health/ready ... ✅ OK (288ms)
+
+▶ STEP 2: User Account Registration
+  [ATTEMPT 1/3] POST /api/v1/auth/register ... [Email:LogOnly] ========================================
+[Email:LogOnly] Type: VERIFY_EMAIL
+[Email:LogOnly] To: smoke_1792963911615@smm.dev
+[Email:LogOnly] Subject: Verify your email address
+[Email:LogOnly] Simulated ID: sim_msg_1792963914074_2473
+[Email:LogOnly] Body Excerpt: Hello Smoke Verification User,
+
+Thank you for registering. To verify your email address and activate your account, open the following link:
+https://we...
+[Email:LogOnly] ========================================
+✅ OK (2366ms)
+    User Registered: ID=de19f77a-6242-4402-ac92-c23a2bb05141 Email=smoke_1792963911615@smm.dev
+
+▶ STEP 3: User Authentication & Token Issuance
+  [ATTEMPT 1/3] POST /api/v1/auth/login ... ✅ OK (441ms)
+    Session Established: JWT Prefix=eyJhbGciOiJIUzI... Initial Balance=₹0
+
+▶ STEP 4: Add Funds (Gateway Initiate & Sandbox Complete)
+  [ATTEMPT 1/3] POST /api/v1/payments/initiate ... ✅ OK (180ms)
+    Payment Session: GatewayOrderId=order_EU557X4Z BaseAmount=₹2000 Bonus=₹200
+  [ATTEMPT 1/3] POST /api/v1/payments/sandbox-complete ... ✅ OK (1422ms)
+    Deposit Verified: Credited Amount=₹2200
+
+▶ STEP 5: Place Dispatch Order with Balance Deduction
+  [ATTEMPT 1/3] POST /api/v1/orders ... [Email:LogOnly] ========================================
+[Email:LogOnly] Type: PAYMENT_RECEIPT
+[Email:LogOnly] To: smoke_1792963911615@smm.dev
+[Email:LogOnly] Subject: Payment receipt: ₹2200.00 credited to your wallet
+[Email:LogOnly] Simulated ID: sim_msg_1792963917144_3309
+[Email:LogOnly] Body Excerpt: Hello Smoke Verification User,
+
+Your deposit of ₹2200.00 has been credited to your wallet ledger.
+Transaction Reference: pay_sim_1792963915067
+Updated...
+[Email:LogOnly] ========================================
+✅ OK (2354ms)
+    Order Dispatched: ID=88222fb0-c03b-4aa9-a16c-f37abae467a8 Charge=₹180 Target=https://instagram.com/p/smoke_demo_target
+
+▶ STEP 6: Polling Order Status to COMPLETED
+  [ATTEMPT 1/3] GET /api/v1/orders/88222fb0-c03b-4aa9-a16c-f37abae467a8 ... ✅ OK (1124ms)
+    Order Final Status: PENDING (Verified)
+
+▶ STEP 7: Financial Integrity & Ledger Invariant Audit
+================================================================================
+                        FINAL SMOKE AUDIT SUMMARY                               
+================================================================================
+User ID:               de19f77a-6242-4402-ac92-c23a2bb05141
+Order ID:              88222fb0-c03b-4aa9-a16c-f37abae467a8
+Order Status:          PENDING
+Final Liquid Balance:  ₹2020.00 INR
+Ledger Entry Count:    2
+Ledger Net Sum:        ₹2020.00 INR
+
+Ledger Trail:
+  [1] ID=0d9342cf-9c09-488f-80fb-7d998b92f08d Type=ORDER_CHARGE Amount=₹-180 Desc="Order Charge #88222fb0-c03b-4aa9-a16c-f37abae467a8 for Instagram High-Retention Followers [Real Active • 0% Drop • 30D Refill]"
+  [2] ID=90e6f290-0b82-41b3-9348-456ac3e96be7 Type=DEPOSIT Amount=₹2200 Desc="Deposit via SIMULATED (pay_sim_1792963915067)"
+================================================================================
+✅ SMOKE RUN PASSED: All 6 stages completed with verified invariant integrity.
+================================================================================
+
+>>> STEP 5: Test Accounts Neon DB Cleanup
+Found 2 test accounts to clean.
+Successfully deleted 2 test users.
+
+Remaining Production Users in Neon:
+┌─────────┬──────────────────────┬──────────────────────────────┬────────────┬─────────────────────────┐
+│ (index) │ id                   │ email                        │ role       │ name                    │
+├─────────┼──────────────────────┼──────────────────────────────┼────────────┼─────────────────────────┤
+│ 0       │ 'usr_bholu_customer' │ 'bholu@gmail.com'            │ 'CUSTOMER' │ 'Bholu'                 │
+│ 1       │ 'usr_admin_master'   │ 'vaibhavrishabh40@gmail.com' │ 'ADMIN'    │ 'Vaibhav Kumar (Admin)' │
+└─────────┴──────────────────────┴──────────────────────────────┴────────────┴─────────────────────────┘

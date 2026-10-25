@@ -1,0 +1,10 @@
+--- a/apps/api/src/modules/packages/packages.service.ts
++++ b/apps/api/src/modules/packages/packages.service.ts
+@@ -1519,6 +1519,2 @@
+-    if (refundAmount.greaterThan(500)) {
+-      if (!options.twoManRuleApproved || !options.secondApproverId) {
+-        throw new ForbiddenException("REFUND_REQUIRES_TWO_MAN_RULE");
+-      }
+-    }
++    // MUTATION: Bypass two man rule check
++    // no check for refundAmount > 500

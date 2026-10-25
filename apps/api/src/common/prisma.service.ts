@@ -24,10 +24,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   public isConnected = false;
 
   async onModuleInit() {
-    if (process.env.SANDBOX_MODE === "true" || process.env.BENCHMARK_MODE === "true") {
-      this.isConnected = false;
-      return;
-    }
     try {
       if (process.env.DATABASE_URL || process.env.DATABASE_URL_TEST) {
         await this.$connect();

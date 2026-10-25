@@ -224,7 +224,7 @@ export class AuthService {
     }
 
     if (!user) {
-      throw new UnauthorizedException("Invalid email or password.");
+      return recordFailedAttempt();
     }
 
     let isPasswordValid = false;
@@ -243,8 +243,10 @@ export class AuthService {
     }
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException("Invalid email or password.");
+      return recordFailedAttempt();
     }
+
+    this.loginAttempts.delete(cleanEmail);
 
     // Generate JWT access token
     const token = jwt.sign(

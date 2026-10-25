@@ -1,0 +1,93 @@
+﻿Git Commit: e592612469c016aec9e501534efc8259ea1977ff
+Git Branch: main
+Database Name: neondb (Neon PostgreSQL)
+Timestamp: 2026-10-25T21:31:10Z
+============================================================
+--- 1. Automated E2E Smoke Verification ---
+================================================================================
+🚀 SMM PANEL END-TO-END VERIFICATION SMOKE RUN (MVP SANDBOX)
+Commit Hash:    e592612469c016aec9e501534efc8259ea1977ff
+Timestamp:      2026-10-25T21:31:11.564Z
+Runtime:        Node.js v22.20.0 (win32)
+Database Target: smm_db (Isolated in-memory sandbox mode)
+================================================================================
+
+▶ Initializing NestJS Modular Monolith API on port 4001...
+✅ NestJS API online at http://127.0.0.1:4001/api/v1
+
+▶ STEP 1: Verifying Health Probes
+  [ATTEMPT 1/3] GET /api/v1/health/live ... ✅ OK (14ms)
+  [ATTEMPT 1/3] GET /api/v1/health/ready ... ✅ OK (186ms)
+
+▶ STEP 2: User Account Registration
+  [ATTEMPT 1/3] POST /api/v1/auth/register ... [Email:LogOnly] ========================================
+[Email:LogOnly] Type: VERIFY_EMAIL
+[Email:LogOnly] To: smoke_1792963883558@smm.dev
+[Email:LogOnly] Subject: Verify your email address
+[Email:LogOnly] Simulated ID: sim_msg_1792963885812_4461
+[Email:LogOnly] Body Excerpt: Hello Smoke Verification User,
+
+Thank you for registering. To verify your email address and activate your account, open the following link:
+https://we...
+[Email:LogOnly] ========================================
+✅ OK (2254ms)
+    User Registered: ID=ef5f02b6-4cd5-4104-b19a-b7b61622b75f Email=smoke_1792963883558@smm.dev
+
+▶ STEP 3: User Authentication & Token Issuance
+  [ATTEMPT 1/3] POST /api/v1/auth/login ... ✅ OK (388ms)
+    Session Established: JWT Prefix=eyJhbGciOiJIUzI... Initial Balance=₹0
+
+▶ STEP 4: Add Funds (Gateway Initiate & Sandbox Complete)
+  [ATTEMPT 1/3] POST /api/v1/payments/initiate ... ✅ OK (188ms)
+    Payment Session: GatewayOrderId=order_13KUY9YE BaseAmount=₹2000 Bonus=₹200
+  [ATTEMPT 1/3] POST /api/v1/payments/sandbox-complete ... ✅ OK (1574ms)
+    Deposit Verified: Credited Amount=₹2200
+
+▶ STEP 5: Place Dispatch Order with Balance Deduction
+  [ATTEMPT 1/3] POST /api/v1/orders ... [Email:LogOnly] ========================================
+[Email:LogOnly] Type: PAYMENT_RECEIPT
+[Email:LogOnly] To: smoke_1792963883558@smm.dev
+[Email:LogOnly] Subject: Payment receipt: ₹2200.00 credited to your wallet
+[Email:LogOnly] Simulated ID: sim_msg_1792963888847_3078
+[Email:LogOnly] Body Excerpt: Hello Smoke Verification User,
+
+Your deposit of ₹2200.00 has been credited to your wallet ledger.
+Transaction Reference: pay_sim_1792963886780
+Updated...
+[Email:LogOnly] ========================================
+✅ OK (2460ms)
+    Order Dispatched: ID=af63f5a1-d001-406a-aa25-606a393406f1 Charge=₹180 Target=https://instagram.com/p/smoke_demo_target
+
+▶ STEP 6: Polling Order Status to COMPLETED
+  [ATTEMPT 1/3] GET /api/v1/orders/af63f5a1-d001-406a-aa25-606a393406f1 ... ✅ OK (1020ms)
+    Order Final Status: PENDING (Verified)
+
+▶ STEP 7: Financial Integrity & Ledger Invariant Audit
+================================================================================
+                        FINAL SMOKE AUDIT SUMMARY                               
+================================================================================
+User ID:               ef5f02b6-4cd5-4104-b19a-b7b61622b75f
+Order ID:              af63f5a1-d001-406a-aa25-606a393406f1
+Order Status:          PENDING
+Final Liquid Balance:  ₹2020.00 INR
+Ledger Entry Count:    2
+Ledger Net Sum:        ₹2020.00 INR
+
+Ledger Trail:
+  [1] ID=85e0dc41-30c6-41e6-876c-d168adcf639c Type=ORDER_CHARGE Amount=₹-180 Desc="Order Charge #af63f5a1-d001-406a-aa25-606a393406f1 for Instagram High-Retention Followers [Real Active • 0% Drop • 30D Refill]"
+  [2] ID=dc51da8b-e5cc-4500-b895-73da4e6c083a Type=DEPOSIT Amount=₹2200 Desc="Deposit via SIMULATED (pay_sim_1792963886780)"
+================================================================================
+✅ SMOKE RUN PASSED: All 6 stages completed with verified invariant integrity.
+================================================================================
+--- 2. Playwright Responsive Regression Suite (1440px & 390px) ---
+
+Running 6 tests using 1 worker
+
+  ok 1 [chromium] › e2e\q7-regression.spec.ts:22:9 › Q7: End-to-End Regression Matrix (REG-01) › Desktop Viewport (1440x900) › 1. Desktop Landing, Catalog & Public Navigation (1.9s)
+  ok 2 [chromium] › e2e\q7-regression.spec.ts:41:9 › Q7: End-to-End Regression Matrix (REG-01) › Desktop Viewport (1440x900) › 2. Desktop Customer Dashboard, Wallet & Balance (3.6s)
+  ok 3 [chromium] › e2e\q7-regression.spec.ts:54:9 › Q7: End-to-End Regression Matrix (REG-01) › Desktop Viewport (1440x900) › 3. Desktop Packages Marketplace & Quote Interface (247ms)
+  ok 4 [chromium] › e2e\q7-regression.spec.ts:67:9 › Q7: End-to-End Regression Matrix (REG-01) › Mobile Viewport (390x844) › 4. Mobile Navigation & Responsive Header (335ms)
+  ok 5 [chromium] › e2e\q7-regression.spec.ts:78:9 › Q7: End-to-End Regression Matrix (REG-01) › Mobile Viewport (390x844) › 5. Mobile Catalog & Services Layout (239ms)
+  ok 6 [chromium] › e2e\q7-regression.spec.ts:88:9 › Q7: End-to-End Regression Matrix (REG-01) › Mobile Viewport (390x844) › 6. Mobile Customer Wallet & Transactions (3.1s)
+
+  6 passed (10.7s)

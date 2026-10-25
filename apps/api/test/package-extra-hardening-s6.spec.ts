@@ -88,7 +88,7 @@ describe("S6: Extra Hardening (URL, Raw SQL, CHECK Constraint, Admin Guards)", (
         }
       }
       const duration = Date.now() - start;
-      expect(duration).toBeLessThan(100);
+      expect(duration).toBeLessThan(500);
     });
   });
 

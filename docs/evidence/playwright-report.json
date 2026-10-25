@@ -4,7 +4,7 @@
       "C:\\Program Files\\nodejs\\node.exe",
       "D:\\projects\\internship projects\\SMM\\node_modules\\@playwright\\test\\cli.js",
       "test",
-      "e2e/q5-browser-packages.spec.ts"
+      "e2e/q7-regression.spec.ts"
     ],
     "configFile": "D:\\projects\\internship projects\\SMM\\playwright.config.ts",
     "rootDir": "D:/projects/internship projects/SMM/e2e",
@@ -57,7 +57,7 @@
         "timeout": 120000,
         "use": {
           "baseURL": "http://localhost:3000",
-          "trace": "retain-on-failure",
+          "trace": "off",
           "viewport": {
             "width": 1440,
             "height": 900
@@ -112,85 +112,238 @@
   },
   "suites": [
     {
-      "title": "q5-browser-packages.spec.ts",
-      "file": "q5-browser-packages.spec.ts",
+      "title": "q7-regression.spec.ts",
+      "file": "q7-regression.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Q5: Packages Architecture & Execution (PKG-01)",
-          "file": "q5-browser-packages.spec.ts",
-          "line": 3,
+          "title": "Q7: End-to-End Regression Matrix (REG-01)",
+          "file": "q7-regression.spec.ts",
+          "line": 18,
           "column": 6,
-          "specs": [
+          "specs": [],
+          "suites": [
             {
-              "title": "1. Featured Growth Bundles & 1-Click Purchase Flow (PKG-01)",
-              "ok": true,
-              "tags": [],
-              "tests": [
+              "title": "Desktop Viewport (1440x900)",
+              "file": "q7-regression.spec.ts",
+              "line": 19,
+              "column": 8,
+              "specs": [
                 {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
+                  "title": "1. Desktop Landing, Catalog & Public Navigation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
                     {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 12539,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-25T20:46:19.868Z",
+                      "timeout": 120000,
                       "annotations": [],
-                      "attachments": []
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1868,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-25T21:31:34.193Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
                     }
                   ],
-                  "status": "expected"
+                  "id": "3458a26f5807431c6059-4859bdddcdeb1e1cad75",
+                  "file": "q7-regression.spec.ts",
+                  "line": 22,
+                  "column": 9
+                },
+                {
+                  "title": "2. Desktop Customer Dashboard, Wallet & Balance",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3596,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-25T21:31:36.581Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "3458a26f5807431c6059-52bcfcf5efa0e86477f8",
+                  "file": "q7-regression.spec.ts",
+                  "line": 41,
+                  "column": 9
+                },
+                {
+                  "title": "3. Desktop Packages Marketplace & Quote Interface",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 247,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-25T21:31:40.193Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "3458a26f5807431c6059-b7529ba8a31c4d77219f",
+                  "file": "q7-regression.spec.ts",
+                  "line": 54,
+                  "column": 9
                 }
-              ],
-              "id": "cf855d29f98fb98f575a-b686a354fdd505b9e82f",
-              "file": "q5-browser-packages.spec.ts",
-              "line": 48,
-              "column": 7
+              ]
             },
             {
-              "title": "2. Packages Listing & Schedule Detail Inspection (PKG-01)",
-              "ok": true,
-              "tags": [],
-              "tests": [
+              "title": "Mobile Viewport (390x844)",
+              "file": "q7-regression.spec.ts",
+              "line": 64,
+              "column": 8,
+              "specs": [
                 {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
+                  "title": "4. Mobile Navigation & Responsive Header",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
                     {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 426,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-10-25T20:46:32.836Z",
+                      "timeout": 120000,
                       "annotations": [],
-                      "attachments": []
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 335,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-25T21:31:40.453Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
                     }
                   ],
-                  "status": "expected"
+                  "id": "3458a26f5807431c6059-9dda1ec1734fa11bef77",
+                  "file": "q7-regression.spec.ts",
+                  "line": 67,
+                  "column": 9
+                },
+                {
+                  "title": "5. Mobile Catalog & Services Layout",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 239,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-25T21:31:40.799Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "3458a26f5807431c6059-41a41d3d260d5aab1b87",
+                  "file": "q7-regression.spec.ts",
+                  "line": 78,
+                  "column": 9
+                },
+                {
+                  "title": "6. Mobile Customer Wallet & Transactions",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3056,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-10-25T21:31:41.049Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "3458a26f5807431c6059-c09e34f27706a8fd8c33",
+                  "file": "q7-regression.spec.ts",
+                  "line": 88,
+                  "column": 9
                 }
-              ],
-              "id": "cf855d29f98fb98f575a-d29ab352b0f205c0378b",
-              "file": "q5-browser-packages.spec.ts",
-              "line": 100,
-              "column": 7
+              ]
             }
           ]
         }
@@ -199,9 +352,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-25T20:46:19.156Z",
-    "duration": 14837.026,
-    "expected": 2,
+    "startTime": "2026-10-25T21:31:33.593Z",
+    "duration": 10651.793000000001,
+    "expected": 6,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

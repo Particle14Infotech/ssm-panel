@@ -1,0 +1,62 @@
+﻿Git Commit: 90dadd0f56bbe027c080824a098a8a002d6ac6aa
+Git Branch: main
+Database Name: neondb (Neon PostgreSQL)
+Timestamp: 2026-10-25T21:09:16Z
+============================================================
+============================================================
+Q6 API Verification: Admin Command Operations (ADM-01 to ADM-06)
+API Base: http://127.0.0.1:4000/api/v1
+============================================================
+
+--- 1. Master Admin Authentication ---
+[PASS] 1. Master admin successfully authenticated with ADMIN role
+[PASS] 2. Authenticated user has ADMIN role: ADMIN
+
+--- 2. Customer User Registration for Isolation Tests ---
+[PASS] 3. Customer user registered for admin testing
+
+--- 3. Role Guard: Customer Forbidden from Admin Endpoints ---
+[PASS] 4. Customer blocked from GET /reports/summary (HTTP 403 Forbidden)
+[PASS] 5. Customer blocked from GET /users (HTTP 403 Forbidden)
+[PASS] 6. Customer blocked from POST /wallet/adjust (HTTP 403 Forbidden)
+[PASS] 7. Customer blocked from GET /providers (HTTP 403 Forbidden)
+
+--- 4. ADM-01: Admin Command Analytics Summary ---
+[PASS] 8. Admin accessed GET /reports/summary (HTTP 200)
+[PASS] 9. Analytics summary contains expected KPI metrics (Revenue: ₹148520)
+[PASS] 10. CSV Report export generated successfully
+
+--- 5. ADM-02: User Directory & Balance Adjustment ---
+[PASS] 11. Admin listed user directory (9 users returned)
+[PASS] 12. Newly registered customer found in admin user directory (#f5fd5894)
+[PASS] 13. Balance adjustment without reason rejected with HTTP 400 (got 400)
+[PASS] 14. Admin balance adjustment executed (+₹250)
+[PASS] 15. Customer balance reflects exact adjustment: ₹250.00
+[PASS] 16. Immutable ledger entry created with audit justification message
+
+--- 6. ADM-03: Services & Categories Management ---
+[PASS] 17. Category created successfully: "Premium Growth #1792962557075_1qgu" (HTTP 201)
+[PASS] 18. New service created with cost INR and selling rate (HTTP 201)
+[PASS] 19. Service markup updated to ₹280.00 / 1k (HTTP 200)
+
+--- 7. ADM-04: Provider Node Management ---
+[PASS] 20. Provider connected successfully: "Wholesaler Gateway Node #1792962557075_1qgu"
+[PASS] 21. Created provider returned in providers list (#c0e90e10)
+[PASS] 22. Provider API secret key is securely masked in admin telemetry
+[PASS] 23. Provider live balance sync completed (HTTP 201)
+
+--- 8. ADM-05: Orders Management & Refund Action ---
+[PASS] 24. Order created by customer for admin management (#563611c1)
+[PASS] 25. Admin listed all system orders (8 total)
+[PASS] 26. Admin updated operational notes on order #563611c1
+[PASS] 27. Admin executed manual refund on order #563611c1
+[PASS] 28. Customer wallet credited following admin manual refund: ₹250.00
+
+--- 9. ADM-06: System Health Matrix ---
+[PASS] 29. Admin retrieved system health telemetry (HTTP 200)
+[PASS] 30. System telemetry confirms database status is CONNECTED
+
+============================================================
+Q6 API Verification Complete: 30 Passed, 0 Failed
+============================================================
+

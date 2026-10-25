@@ -1,0 +1,75 @@
+﻿Git Commit: f4f8723cee5f9804a3262d5aa33f7fcf617b0759
+Git Branch: main
+Database Name: smm_db_sandbox
+Timestamp: 2026-10-25T20:25:22Z
+============================================================
+================================================================================
+▶ STARTING Q3: ORDER, TRACK, REFUND VERIFICATION SUITE
+API Base: http://127.0.0.1:4000/api/v1
+================================================================================
+
+--- Setup: User Registration & Zero Balance Verification ---
+✅ [PASS] Registered test user (status 201)
+✅ [PASS] JWT token received for order operations
+✅ [PASS] GET /wallet/balance returns 200 OK
+✅ [PASS] Initial balance is exactly ₹0.00 (got ₹0)
+
+--- 1. ORD-02: Insufficient Funds Safeguard (HTTP 402) ---
+✅ [PASS] Error message clearly indicates insufficient balance: "Insufficient wallet balance."
+node.exe : ❌ [FAIL] Order with zero balance returns HTTP 402 Payment Required (got 400)
+At D:\projects\internship projects\SMM\scripts\run-q3-orders.ps1:19 char:1
++ & node scripts/qa-q3-orders.js 2>&1 | Out-File -FilePath $evidenceFil ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (❌ [FAIL] Order ...uired (got 400):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+✅ [PASS] Wallet balance remains exactly ₹0.00 after blocked order
+
+--- 2. Add Funds (₹500 Deposit + ₹25 Bonus) ---
+✅ [PASS] Payment order created
+✅ [PASS] Deposit completed via sandbox
+✅ [PASS] Wallet funded to ₹525.00 (₹500 deposit + ₹25 bonus, got ₹525)
+
+--- 3. ORD-01 & ORD-03: Order Placement, Pricing & Idempotency ---
+✅ [PASS] Order placed successfully (status 201)
+✅ [PASS] Received valid order ID: "f6334cd9-b218-4201-b809-e841d4185385"
+✅ [PASS] Order charge calculated correctly as ₹180.00 (got ₹180)
+✅ [PASS] Order initial status is PENDING (got "PENDING")
+✅ [PASS] Order initial remains equals quantity: 1000
+✅ [PASS] Wallet atomically debited by ₹180: ₹525 - ₹180 = ₹345 (got ₹345)
+✅ [PASS] Replaying order with same idempotencyKey succeeds (status 201)
+✅ [PASS] Idempotent replay returns exact same order ID: "f6334cd9-b218-4201-b809-e841d4185385"
+✅ [PASS] Balance unchanged after idempotent replay (still ₹345)
+
+--- 4. ORD-04 & ORD-08: Order Tracking & Querying ---
+✅ [PASS] GET /orders returns 200 OK
+✅ [PASS] GET /orders returns an array
+✅ [PASS] Order #f6334cd9-b218-4201-b809-e841d4185385 found in user's order list
+✅ [PASS] GET /orders/:id returns 200 OK
+✅ [PASS] Fetched order has matching ID
+✅ [PASS] Fetched order status is PENDING
+✅ [PASS] Order includes history timeline entries (count: 1)
+
+--- 5. ORD-05: Failure Drill & Auto-Refund (srv_mock_fail) ---
+❌ [FAIL] Drill order submitted
+❌ [FAIL] Drill order status is FAILED as expected (got "undefined")
+✅ [PASS] Balance automatically restored after failure drill: ₹345 (got ₹345)
+
+--- 6. ORD-07: Order Cancellation & Full Refund ---
+✅ [PASS] POST /orders/:id/cancel returns success (status 201)
+✅ [PASS] Cancel response reports success: true
+✅ [PASS] Order status updated to CANCELLED (got "CANCELLED")
+✅ [PASS] Wallet credited with full refund: ₹345 + ₹180 = ₹525.00 (got ₹525)
+✅ [PASS] Cancelling already-cancelled order is rejected with 409 Conflict (got 409)
+
+--- 7. ORD-09: Double-Entry Financial Invariant Audit ---
+✅ [PASS] GET /wallet/ledger returns 200 OK
+✅ [PASS] Ledger entries is array (count: 3)
+Live wallet balance: ₹525
+Sum of all ledger entries: ₹525
+✅ [PASS] Financial Invariant Preserved: Live balance (₹525) matches sum of ledger entries (₹525)
+
+================================================================================
+Q3 VERIFICATION COMPLETE: 34 Passed, 3 Failed
+================================================================================
+

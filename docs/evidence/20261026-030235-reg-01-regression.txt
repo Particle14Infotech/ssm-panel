@@ -1,0 +1,179 @@
+﻿Git Commit: e592612469c016aec9e501534efc8259ea1977ff
+Git Branch: main
+Database Name: neondb (Neon PostgreSQL)
+Timestamp: 2026-10-25T21:32:35Z
+============================================================
+REG-01: COMPREHENSIVE END-TO-END REGRESSION & SMOKE GATE
+============================================================
+
+>>> STEP 1: External Services Registry Check
+
+=======================================================
+       SMM PANEL EXTERNAL INTEGRATIONS REGISTRY       
+       Runtime Mode: DEVELOPMENT / SANDBOX        
+=======================================================
+
+INTEGRATION                 REQUIRED      MODE                MISSING / PLACEHOLDERS
+------------------------------------------------------------------------------------
+PostgreSQL Database         mvp-live      [32m[LIVE][0m             None (All Set)
+Redis Cache & BullMQ        mvp-live      [32m[LIVE][0m             None (All Set)
+Razorpay Payment Gateway    mvp-live      [33m[SANDBOX / MOCK][0m   RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET
+SMTP Email Server           mvp-live      [33m[SANDBOX / MOCK][0m   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
+S3-Compatible Storage       optional      [33m[SANDBOX / MOCK][0m   S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY
+Sentry API Error Tracking   optional      [33m[SANDBOX / MOCK][0m   SENTRY_DSN
+Sentry Web Error Tracking   optional      [33m[SANDBOX / MOCK][0m   NEXT_PUBLIC_SENTRY_DSN
+Snyk Security Scanner       optional      [33m[SANDBOX / MOCK][0m   SNYK_TOKEN
+Offsite Backup Storage      optional      [33m[SANDBOX / MOCK][0m   BACKUP_S3_BUCKET, BACKUP_ENCRYPTION_KEY
+------------------------------------------------------------------------------------
+
+ℹ️  Development/Test Mode: Sandboxes and Mocks active where keys are placeholders.
+
+
+>>> STEP 2: OpenAPI Contract Diff & Drift Verification
+Updated D:\projects\internship projects\SMM\docs\CONTRACT_DIFF.md
+
+--- CONTRACT DIFF REPORT ---
+┌─────────┬───────────────────────────────────┬─────────────────────────────────────────────┬────────┐
+│ (index) │ call                              │ source                                      │ exists │
+├─────────┼───────────────────────────────────┼─────────────────────────────────────────────┼────────┤
+│ 0       │ 'GET /api/v1/health/live'         │ 'apps/web/monitoring & probes'              │ 'YES'  │
+│ 1       │ 'GET /api/v1/health/ready'        │ 'apps/web/monitoring & probes'              │ 'YES'  │
+│ 2       │ 'POST /api/v1/auth/login'         │ 'apps/web/app/(auth)/login'                 │ 'YES'  │
+│ 3       │ 'POST /api/v1/auth/register'      │ 'apps/web/app/(auth)/register'              │ 'YES'  │
+│ 4       │ 'POST /api/v1/auth/refresh'       │ 'apps/web/lib/auth-session'                 │ 'YES'  │
+│ 5       │ 'GET /api/v1/auth/verify-key'     │ 'packages/contracts/src/auth.ts'            │ 'YES'  │
+│ 6       │ 'GET /api/v1/services'            │ 'apps/web/app/app/api & catalog'            │ 'YES'  │
+│ 7       │ 'GET /api/v1/services/:id'        │ 'apps/web/services-catalog'                 │ 'YES'  │
+│ 8       │ 'GET /api/v1/orders'              │ 'apps/web/app/(customer)/orders'            │ 'YES'  │
+│ 9       │ 'GET /api/v1/orders/:id'          │ 'apps/web/app/app/api & orders'             │ 'YES'  │
+│ 10      │ 'POST /api/v1/orders'             │ 'apps/web/orders (Canonical REST)'          │ 'YES'  │
+│ 11      │ 'POST /api/v1/orders/create'      │ 'apps/web/app/app/api & CustomerContext'    │ 'YES'  │
+│ 12      │ 'POST /api/v1/orders/:id/refill'  │ 'apps/web/orders refill'                    │ 'YES'  │
+│ 13      │ 'POST /api/v1/orders/:id/cancel'  │ 'apps/web/orders cancel'                    │ 'YES'  │
+│ 14      │ 'GET /api/v1/wallet/balance'      │ 'apps/web/app/app/api & wallet'             │ 'YES'  │
+│ 15      │ 'POST /api/v1/wallet/deposit'     │ 'apps/web/app/(customer)/wallet'            │ 'YES'  │
+│ 16      │ 'GET /api/v1/providers'           │ 'apps/web/admin/providers'                  │ 'YES'  │
+│ 17      │ 'POST /api/v1/providers'          │ 'apps/web/admin/providers (Canonical REST)' │ 'YES'  │
+│ 18      │ 'POST /api/v1/providers/create'   │ 'apps/web/context/AdminContext.tsx:214'     │ 'YES'  │
+│ 19      │ 'POST /api/v1/providers/:id/sync' │ 'apps/web/context/AdminContext.tsx:244'     │ 'YES'  │
+│ 20      │ 'GET /api/v1/users/me'            │ 'apps/web/app/(customer)/profile'           │ 'YES'  │
+│ 21      │ 'PUT /api/v1/users/me'            │ 'apps/web/app/(customer)/profile'           │ 'YES'  │
+│ 22      │ 'GET /api/v1/tickets'             │ 'apps/web/app/(customer)/support'           │ 'YES'  │
+│ 23      │ 'POST /api/v1/tickets'            │ 'apps/web/support tickets (Canonical REST)' │ 'YES'  │
+│ 24      │ 'POST /api/v1/tickets/create'     │ 'apps/web/support tickets'                  │ 'YES'  │
+└─────────┴───────────────────────────────────┴─────────────────────────────────────────────┴────────┘
+
+✅ Contract verification passed: All web and contract endpoints exist in OpenAPI.
+
+>>> STEP 3: Automated Security Gate & Mutation Invariant Guards
+================================================================
+🛡️  SMM SECURITY GATE: AUTOMATED VERIFICATION & INVARIANT GUARDS
+================================================================
+
+[CHECK 1] No hardcoded fallback literals on cryptographic secrets in production source... ✅ PASSED
+[CHECK 2] Zero in-memory sandbox storage maps (sandboxPackages, sandboxOrders, sandboxBalances) in src/... ✅ PASSED
+[CHECK 3] No eval() or new Function() calls in production source... ✅ PASSED
+[CHECK 4] PackageRule table enforces CHECK constraint (usedCount <= maxPosts) in migrations... ✅ PASSED
+[CHECK 5] WHATWG URL validation has max-length, strict https, port, userinfo, and IDN guards... ✅ PASSED
+[CHECK 6] PackagesService enforces mandatory quoteHash and rejects tampering... ✅ PASSED
+[CHECK 7] Refunds enforce Two-Man Rule (> 500 INR), Decimal arithmetic, and Provider cross-check... ✅ PASSED
+[CHECK 8] Mutation patches gap1.patch through gap5.patch exist in security/mutations/... ✅ PASSED
+[CHECK 9] All Security Test Suites pass green under Jest... 
+
+✅ PASSED
+
+================================================================
+SUMMARY: 9/9 checks passed, 0 failed.
+================================================================
+
+🏆 ALL PERMANENT SECURITY GUARDS AND TEST SUITES VERIFIED GREEN.
+
+
+>>> STEP 4: Monorepo End-To-End Invariant Smoke Run
+================================================================================
+🚀 SMM PANEL END-TO-END VERIFICATION SMOKE RUN (MVP SANDBOX)
+Commit Hash:    e592612469c016aec9e501534efc8259ea1977ff
+Timestamp:      2026-10-25T21:32:40.005Z
+Runtime:        Node.js v22.20.0 (win32)
+Database Target: smm_db (Isolated in-memory sandbox mode)
+================================================================================
+
+▶ Initializing NestJS Modular Monolith API on port 4001...
+✅ NestJS API online at http://127.0.0.1:4001/api/v1
+
+▶ STEP 1: Verifying Health Probes
+  [ATTEMPT 1/3] GET /api/v1/health/live ... ✅ OK (10ms)
+  [ATTEMPT 1/3] GET /api/v1/health/ready ... ✅ OK (252ms)
+
+▶ STEP 2: User Account Registration
+  [ATTEMPT 1/3] POST /api/v1/auth/register ... [Email:LogOnly] ========================================
+[Email:LogOnly] Type: VERIFY_EMAIL
+[Email:LogOnly] To: smoke_1792963971665@smm.dev
+[Email:LogOnly] Subject: Verify your email address
+[Email:LogOnly] Simulated ID: sim_msg_1792963974079_9253
+[Email:LogOnly] Body Excerpt: Hello Smoke Verification User,
+
+Thank you for registering. To verify your email address and activate your account, open the following link:
+https://we...
+[Email:LogOnly] ========================================
+✅ OK (2318ms)
+    User Registered: ID=32545d14-2b63-4b83-9960-c9a004dfc806 Email=smoke_1792963971665@smm.dev
+
+▶ STEP 3: User Authentication & Token Issuance
+  [ATTEMPT 1/3] POST /api/v1/auth/login ... ✅ OK (453ms)
+    Session Established: JWT Prefix=eyJhbGciOiJIUzI... Initial Balance=₹0
+
+▶ STEP 4: Add Funds (Gateway Initiate & Sandbox Complete)
+  [ATTEMPT 1/3] POST /api/v1/payments/initiate ... ✅ OK (196ms)
+    Payment Session: GatewayOrderId=order_TQMSH263 BaseAmount=₹2000 Bonus=₹200
+  [ATTEMPT 1/3] POST /api/v1/payments/sandbox-complete ... ✅ OK (1358ms)
+    Deposit Verified: Credited Amount=₹2200
+
+▶ STEP 5: Place Dispatch Order with Balance Deduction
+  [ATTEMPT 1/3] POST /api/v1/orders ... [Email:LogOnly] ========================================
+[Email:LogOnly] Type: PAYMENT_RECEIPT
+[Email:LogOnly] To: smoke_1792963971665@smm.dev
+[Email:LogOnly] Subject: Payment receipt: ₹2200.00 credited to your wallet
+[Email:LogOnly] Simulated ID: sim_msg_1792963976840_7962
+[Email:LogOnly] Body Excerpt: Hello Smoke Verification User,
+
+Your deposit of ₹2200.00 has been credited to your wallet ledger.
+Transaction Reference: pay_sim_1792963975100
+Updated...
+[Email:LogOnly] ========================================
+✅ OK (2329ms)
+    Order Dispatched: ID=ab792c5b-740e-4dbd-802b-55175a1d72a0 Charge=₹180 Target=https://instagram.com/p/smoke_demo_target
+
+▶ STEP 6: Polling Order Status to COMPLETED
+  [ATTEMPT 1/3] GET /api/v1/orders/ab792c5b-740e-4dbd-802b-55175a1d72a0 ... ✅ OK (1126ms)
+    Order Final Status: PENDING (Verified)
+
+▶ STEP 7: Financial Integrity & Ledger Invariant Audit
+================================================================================
+                        FINAL SMOKE AUDIT SUMMARY                               
+================================================================================
+User ID:               32545d14-2b63-4b83-9960-c9a004dfc806
+Order ID:              ab792c5b-740e-4dbd-802b-55175a1d72a0
+Order Status:          PENDING
+Final Liquid Balance:  ₹2020.00 INR
+Ledger Entry Count:    2
+Ledger Net Sum:        ₹2020.00 INR
+
+Ledger Trail:
+  [1] ID=3d568598-2ddd-445f-8b99-88a7e7036c58 Type=ORDER_CHARGE Amount=₹-180 Desc="Order Charge #ab792c5b-740e-4dbd-802b-55175a1d72a0 for Instagram High-Retention Followers [Real Active • 0% Drop • 30D Refill]"
+  [2] ID=34af3ae5-c221-4520-b003-48fe39c640f9 Type=DEPOSIT Amount=₹2200 Desc="Deposit via SIMULATED (pay_sim_1792963975100)"
+================================================================================
+✅ SMOKE RUN PASSED: All 6 stages completed with verified invariant integrity.
+================================================================================
+
+>>> STEP 5: Test Accounts Neon DB Cleanup
+Found 1 test accounts to clean.
+Successfully deleted 1 test users.
+
+Remaining Production Users in Neon:
+┌─────────┬──────────────────────┬──────────────────────────────┬────────────┬─────────────────────────┐
+│ (index) │ id                   │ email                        │ role       │ name                    │
+├─────────┼──────────────────────┼──────────────────────────────┼────────────┼─────────────────────────┤
+│ 0       │ 'usr_bholu_customer' │ 'bholu@gmail.com'            │ 'CUSTOMER' │ 'Bholu'                 │
+│ 1       │ 'usr_admin_master'   │ 'vaibhavrishabh40@gmail.com' │ 'ADMIN'    │ 'Vaibhav Kumar (Admin)' │
+└─────────┴──────────────────────┴──────────────────────────────┴────────────┴─────────────────────────┘

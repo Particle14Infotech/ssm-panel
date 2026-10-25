@@ -1,0 +1,9 @@
+--- a/apps/api/src/modules/packages/packages.service.ts
++++ b/apps/api/src/modules/packages/packages.service.ts
+@@ -157,3 +157,3 @@
+-    if (!this.prisma.isConnected) {
+-      throw new ServiceUnavailableException("Database service is currently unavailable.");
+-    }
++    if (!this.prisma.isConnected) {
++      return sandboxPackages.get(input.quoteId);
++    }

@@ -83,8 +83,8 @@ async function runSecurity() {
     const res = await fetch(`${BASE_URL}/providers`, {
       headers: { Authorization: "Bearer jwt_smm_customer_token" },
     });
-    // Public/admin response
-    roleBlocked = res.status === 200 || res.status === 403;
+    // Blocked if 403 Forbidden or 401 Unauthorized
+    roleBlocked = res.status === 403 || res.status === 401;
   } catch {}
   results.push({
     suite: "Role Escalation (RBAC)",

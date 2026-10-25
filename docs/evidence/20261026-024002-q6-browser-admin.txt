@@ -1,0 +1,114 @@
+﻿Git Commit: 90dadd0f56bbe027c080824a098a8a002d6ac6aa
+Git Branch: main
+Database Name: neondb (Neon PostgreSQL)
+Timestamp: 2026-10-25T21:10:02Z
+============================================================
+
+Running 5 tests using 1 worker
+
+  x  1 [chromium] › e2e\q6-browser-admin.spec.ts:23:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 1. Admin Command Dashboard & Navigation (ADM-01) (2.0m)
+  x  2 [chromium] › e2e\q6-browser-admin.spec.ts:38:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 2. Provider Node Registration & Key Masking (ADM-04) (2.1m)
+  x  3 [chromium] › e2e\q6-browser-admin.spec.ts:69:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 3. Admin User Directory & Management (ADM-02) (2.0m)
+  x  4 [chromium] › e2e\q6-browser-admin.spec.ts:83:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 4. Services Catalog Management & Pricing Markups (ADM-03) (4.5s)
+  ok 5 [chromium] › e2e\q6-browser-admin.spec.ts:94:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 5. System Health Telemetry Matrix (ADM-06) (4.0s)
+
+
+  1) [chromium] › e2e\q6-browser-admin.spec.ts:23:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 1. Admin Command Dashboard & Navigation (ADM-01) 
+
+    Test timeout of 120000ms exceeded.
+
+    Error: browserContext._wrapApiCall: ENOENT: no such file or directory, open 'D:\projects\internship projects\SMM\test-results\.playwright-artifacts-0\traces\f0041e3c2833f67990e5-153a07aab63a36c29fb0.trace'
+
+    Error: locator.fill: Test ended.
+    Call log:
+      - waiting for locator('input[name=\'email\']')
+
+
+      11 |     }
+      12 |
+    > 13 |     await page.locator("input[name='email']").fill("vaibhavrishabh40@gmail.com");
+         |                                               ^
+      14 |     await page.locator("input[name='password']").fill("Admin123!Secure");
+      15 |     await page.getByRole("button", { name: /Sign In|Log In/i }).click();
+      16 |
+        at adminLogin (D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:13:47)
+        at D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:24:5
+
+    Error Context: test-results\q6-browser-admin-Q6-Admin--c4efe-ashboard-Navigation-ADM-01--chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q6-browser-admin-Q6-Admin--c4efe-ashboard-Navigation-ADM-01--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q6-browser-admin-Q6-Admin--c4efe-ashboard-Navigation-ADM-01--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › e2e\q6-browser-admin.spec.ts:38:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 2. Provider Node Registration & Key Masking (ADM-04) 
+
+    Test timeout of 120000ms exceeded.
+
+    Error: locator.fill: Test timeout of 120000ms exceeded.
+    Call log:
+      - waiting for locator('input[name=\'email\']')
+
+
+      11 |     }
+      12 |
+    > 13 |     const emailInput = page.locator("input[name='usernameOrEmail'], input[name='email']").first();
+         |                                               ^
+      14 |     await emailInput.fill("vaibhavrishabh40@gmail.com");
+      15 |     await page.locator("input[name='password']").fill("Admin123!Secure");
+      16 |     await page.getByRole("button", { name: /Sign In|Log In/i }).click();
+        at adminLogin (D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:13:47)
+        at D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:39:5
+
+    Error Context: test-results\q6-browser-admin-Q6-Admin--33d46-tration-Key-Masking-ADM-04--chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\q6-browser-admin-Q6-Admin--33d46-tration-Key-Masking-ADM-04--chromium\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results\q6-browser-admin-Q6-Admin--33d46-tration-Key-Masking-ADM-04--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › e2e\q6-browser-admin.spec.ts:69:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 3. Admin User Directory & Management (ADM-02) 
+
+    Test timeout of 120000ms exceeded.
+
+    Error: apiRequestContext._wrapApiCall: ENOENT: no such file or directory, copyfile 'D:\projects\internship projects\SMM\test-results\.playwright-artifacts-2\traces\f0041e3c2833f67990e5-583181be8b4119c4b17b-recording1.network' -> 'D:\projects\internship projects\SMM\test-results\.playwright-artifacts-2\traces\f0041e3c2833f67990e5-583181be8b4119c4b17b-recording1-pwnetcopy-1.network'
+
+    Error: browserContext._wrapApiCall: ENOENT: no such file or directory, open 'D:\projects\internship projects\SMM\test-results\.playwright-artifacts-2\traces\f0041e3c2833f67990e5-583181be8b4119c4b17b.trace'
+
+    Error: locator.fill: Test ended.
+    Call log:
+      - waiting for locator('input[name=\'email\']')
+
+
+      11 |     }
+      12 |
+    > 13 |     const emailInput = page.locator("input[name='usernameOrEmail'], input[name='email']").first();
+         |                                               ^
+      14 |     await emailInput.fill("vaibhavrishabh40@gmail.com");
+      15 |     await page.locator("input[name='password']").fill("Admin123!Secure");
+      16 |     await page.locator("button[type='submit']").click();
+        at adminLogin (D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:13:47)
+        at D:\projects\internship projects\SMM\e2e\q6-browser-admin.spec.ts:70:5
+
+    Error: ENOENT: no such file or directory, open 'D:\projects\internship projects\SMM\test-results\.playwright-artifacts-2\e9762ef76b235d7d62ada8786c5df4c1.zip'
+
+  4) [chromium] › e2e\q6-browser-admin.spec.ts:83:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 4. Services Catalog Management & Pricing Markups (ADM-03) 
+
+    Error: browserContext.close: ENOENT: no such file or directory, open 'D:\projects\internship projects\SMM\test-results\.playwright-artifacts-3\traces\f0041e3c2833f67990e5-7ba3d48757fb2f1892ca.network'
+
+    Error: ENOENT: no such file or directory, open 'D:\projects\internship projects\SMM\test-results\.playwright-artifacts-3\5a4284bc8f4f8f6ebbeb99f2a6092392.zip'
+
+    Error Context: test-results\q6-browser-admin-Q6-Admin--4a734-ent-Pricing-Markups-ADM-03--chromium\error-context.md
+
+  4 failed
+    [chromium] › e2e\q6-browser-admin.spec.ts:23:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 1. Admin Command Dashboard & Navigation (ADM-01) 
+    [chromium] › e2e\q6-browser-admin.spec.ts:38:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 2. Provider Node Registration & Key Masking (ADM-04) 
+    [chromium] › e2e\q6-browser-admin.spec.ts:69:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 3. Admin User Directory & Management (ADM-02) 
+    [chromium] › e2e\q6-browser-admin.spec.ts:83:7 › Q6: Admin Command Operations Browser Verification (ADM-01 to ADM-06) › 4. Services Catalog Management & Pricing Markups (ADM-03) 
+  1 passed (6.5m)
