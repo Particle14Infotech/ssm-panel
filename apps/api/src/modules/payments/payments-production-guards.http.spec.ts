@@ -18,6 +18,7 @@ describe("production payment guards over HTTP", () => {
     "PAYMENT_PROVIDER",
     "ALLOW_SIMULATED_PAYMENTS",
     "PAYMENTS_MODE",
+    "JWT_ACCESS_SECRET",
   ];
   const walletService = {
     creditFunds: jest.fn(),
@@ -30,11 +31,13 @@ describe("production payment guards over HTTP", () => {
     prisma as any,
     walletService as any
   );
+  const jwtSecret =
+    process.env.JWT_ACCESS_SECRET ||
+    process.env.JWT_SECRET ||
+    "smm_panel_jwt_secret_dev_environment_key_32bytes";
   const userToken = jwt.sign(
     { sub: "production-guard-user", role: "USER" },
-    process.env.JWT_ACCESS_SECRET ||
-      process.env.JWT_SECRET ||
-      "smm_panel_jwt_secret_dev_environment_key_32bytes",
+    jwtSecret,
     { expiresIn: "5m" }
   );
 
@@ -46,6 +49,7 @@ describe("production payment guards over HTTP", () => {
     process.env.PAYMENT_PROVIDER = "simulated";
     process.env.ALLOW_SIMULATED_PAYMENTS = "true";
     process.env.PAYMENTS_MODE = "sandbox";
+    process.env.JWT_ACCESS_SECRET = jwtSecret;
 
     const module = await Test.createTestingModule({
       controllers: [PaymentsController, WalletController],

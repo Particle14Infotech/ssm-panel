@@ -908,27 +908,22 @@ export class OrdersService {
     }
 
     if (!this.prisma.isConnected) {
-      const rawOrder = this.sandboxOrders.get(id);
-      if (rawOrder) {
-        rawOrder.status = OrderStatus.CANCELLED;
-        rawOrder.updatedAt = new Date();
-        if (Array.isArray(rawOrder.history)) {
-          rawOrder.history.push({
-            status: OrderStatus.CANCELLED,
-            notes: "Customer cancelled order. Full refund issued.",
-            createdAt: new Date(),
-          });
-        }
+      const sbxOrder = this.sandboxOrders.get(id);
+      if (!sbxOrder) {
+        throw new NotFoundException(`Order #${id} not found.`);
       }
-      order.status = OrderStatus.CANCELLED;
-      const refundCharge = new Decimal(order.charge.toString());
+      if (sbxOrder.status === OrderStatus.CANCELLED || sbxOrder.status === OrderStatus.REFUNDED) {
+        throw new ConflictException("Order is already cancelled or refunded.");
+      }
+      sbxOrder.status = OrderStatus.CANCELLED;
+      const refundCharge = new Decimal(sbxOrder.charge.toString());
       const creditRes = await this.walletService.refundOrder(
-        order.userId,
-        order.id,
+        sbxOrder.userId,
+        sbxOrder.id,
         refundCharge,
-        `Full Refund for Cancelled Order #${order.id}`
+        `Full Refund for Cancelled Order #${sbxOrder.id}`
       );
-      return { success: true, message: `Order #${id} cancelled and refunded.`, newBalance: creditRes.newBalance, order: this.sanitizeOrderForRole(rawOrder || order, requesterRole) };
+      return { success: true, message: `Order #${id} cancelled and refunded.`, newBalance: creditRes.newBalance, order: sbxOrder };
     }
 
     const refundCharge = new Decimal(order.charge.toString());

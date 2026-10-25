@@ -25,9 +25,11 @@ function getAuthJwtSecret(): string {
 const JWT_EXPIRES_IN = "15m";
 const REFRESH_EXPIRES_DAYS = 7;
 
+export const SANDBOX_AUTH_USERS = new Map<string, any>();
+
 @Injectable()
 export class AuthService {
-  private sandboxUsers = new Map<string, any>();
+  private sandboxUsers = SANDBOX_AUTH_USERS;
   private sandboxSessions = new Map<string, any>();
   private sandboxResetTokens = new Map<string, any>();
   private rateLimitMap = new Map<string, number[]>();
