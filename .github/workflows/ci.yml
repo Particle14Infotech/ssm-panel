@@ -6,6 +6,18 @@ on:
   pull_request:
     branches: [main, master]
 
+env:
+  DATABASE_URL: postgresql://smm_user:smm_password@localhost:5432/smm_test_db
+  DIRECT_URL: postgresql://smm_user:smm_password@localhost:5432/smm_test_db
+  REDIS_URL: redis://localhost:6379
+  JWT_ACCESS_SECRET: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+  JWT_REFRESH_SECRET: fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210
+  COOKIE_SECRET: 1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff
+  ENCRYPTION_KEY: aaaabbbbccccddddeeeeffff0000111122223333444455556666777788889999
+  QUOTE_SECRET: 9999888877776666555544443333222211110000fedcba9876543210fedcba98
+  ALLOW_SIMULATED_PAYMENTS: "true"
+  NODE_ENV: test
+
 jobs:
   security-audit:
     name: Security & Secret Audits
@@ -106,8 +118,10 @@ jobs:
           npx prisma migrate deploy
           npx prisma migrate status
           npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --exit-code
+          npx prisma generate
         env:
           DATABASE_URL: postgresql://smm_user:smm_password@localhost:5432/smm_test_db
+          DIRECT_URL: postgresql://smm_user:smm_password@localhost:5432/smm_test_db
 
       - name: Lint
         run: pnpm turbo run lint --continue
