@@ -48,8 +48,16 @@ test-results/
 # Turbo
 .turbo/
 
+# Binaries & CLI tools
+bin/
+
+# Test Artifacts & Local Evidence
+artifacts/
+docs/evidence/
+
 # Design references and test videos
 design-reference/
 *.webm
 crown-preview.png
 .claude/
+

@@ -96,7 +96,7 @@ export class AuthService {
 
     const cleanEmail = email.toLowerCase().trim();
     const adminEmail = (process.env.ADMIN_EMAIL || "admin@smmpanel.internal").toLowerCase().trim();
-    const adminPassword = process.env.ADMIN_PASSWORD || "ChangeThisAdminPasswordNow!";
+    const adminPassword = process.env.ADMIN_PASSWORD || (process.env.NODE_ENV === "production" ? undefined : "ChangeThisAdminPasswordNow!");
 
     let user = await this.prisma.user.findFirst({
       where: { email: cleanEmail, isDeleted: false },
@@ -104,7 +104,7 @@ export class AuthService {
     });
 
     // Auto-provision or promote admin when valid admin credentials are used
-    if ((!user || user.role !== "ADMIN") && cleanEmail === adminEmail && password === adminPassword) {
+    if (adminPassword && (!user || user.role !== "ADMIN") && cleanEmail === adminEmail && password === adminPassword) {
       user = await this.prisma.user.upsert({
         where: { email: cleanEmail },
         update: { role: "ADMIN" },

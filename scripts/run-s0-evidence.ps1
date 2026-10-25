@@ -2,7 +2,7 @@ $ErrorActionPreference = "Continue"
 $env:CI = "true"
 $commit = (git rev-parse HEAD).Trim()
 $branch = (git rev-parse --abbrev-ref HEAD).Trim()
-$testDb = "postgresql://***:***@ep-test-smm.ap-southeast-1.neon.tech/smm_test"
+$testDb = if ($env:TEST_DATABASE_URL) { $env:TEST_DATABASE_URL } else { "postgresql://user:password@localhost:5432/smm_test" }
 $ts = Get-Date -Format "yyyyMMdd-HHmmss"
 $evidenceDir = "docs/evidence"
 if (!(Test-Path $evidenceDir)) {
