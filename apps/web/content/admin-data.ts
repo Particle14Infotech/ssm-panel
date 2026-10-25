@@ -49,7 +49,7 @@ export const INITIAL_ADMIN_PROVIDERS: AdminProvider[] = [
     name: "cheapestsmmpanels",
     apiUrl: "https://cheapestsmmpanels.com/api/v2",
     apiKey: "e691••••64ff",
-    balance: 123.06,
+    balance: 76.38,
     currency: "INR",
     status: "CONNECTED",
     serviceCount: 2531,

@@ -201,26 +201,34 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
         }
       }
 
+      let rawProviders: any = null;
       if (providersRes && providersRes.ok) {
-        const rawProviders = await providersRes.json();
-        if (Array.isArray(rawProviders)) {
-          setProviders(
-            rawProviders.map((p: any) => ({
-              id: p.id,
-              name: p.name,
-              apiUrl: p.apiUrl,
-              apiKey: p.apiKeyMasked || "••••••••",
-              balance: Number(p.balance || 0),
-              currency: p.currency || "INR",
-              status: p.active !== false ? "CONNECTED" : "ERROR",
-              serviceCount: p.serviceCount || 0,
-              healthStatus: p.healthStatus || "UNKNOWN",
-              consecutiveStatusFailures: Number(p.consecutiveStatusFailures || 0),
-              lastStatusCheckAt: p.lastStatusCheckAt || null,
-              lastSyncAt: p.updatedAt || p.lastSyncAt || new Date().toISOString(),
-            }))
-          );
+        rawProviders = await providersRes.json().catch(() => null);
+      }
+      if (!Array.isArray(rawProviders)) {
+        const localProvidersRes = await fetch("/api/providers", { cache: "no-store" }).catch(() => null);
+        if (localProvidersRes && localProvidersRes.ok) {
+          rawProviders = await localProvidersRes.json().catch(() => null);
         }
+      }
+
+      if (Array.isArray(rawProviders)) {
+        setProviders(
+          rawProviders.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            apiUrl: p.apiUrl,
+            apiKey: p.apiKeyMasked || "••••••••",
+            balance: Number(p.balance || 0),
+            currency: p.currency || "INR",
+            status: p.active !== false ? "CONNECTED" : "ERROR",
+            serviceCount: p.serviceCount || 0,
+            healthStatus: p.healthStatus || "UNKNOWN",
+            consecutiveStatusFailures: Number(p.consecutiveStatusFailures || 0),
+            lastStatusCheckAt: p.lastStatusCheckAt || null,
+            lastSyncAt: p.updatedAt || p.lastSyncAt || new Date().toISOString(),
+          }))
+        );
       }
 
       if (ticketsRes && ticketsRes.ok) {
@@ -442,11 +450,19 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
     try {
-      const res = await fetch(`${API_BASE}/providers/${providerId}/sync`, {
+      let res = await fetch(`/api/providers/${providerId}/sync`, {
         method: "POST",
         headers,
-      });
-      if (res.ok) {
+      }).catch(() => null);
+
+      if (!res || !res.ok) {
+        res = await fetch(`${API_BASE}/providers/${providerId}/sync`, {
+          method: "POST",
+          headers,
+        }).catch(() => null);
+      }
+
+      if (res && res.ok) {
         const data = await res.json().catch(() => null);
         if (data && typeof data.balance === "number") {
           setProviders((prev) =>
