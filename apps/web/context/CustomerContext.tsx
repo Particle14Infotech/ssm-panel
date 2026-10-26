@@ -334,7 +334,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
             rawServices.map((s: any) => ({
               id: s.id,
               categoryId: s.categoryId || "general",
-              categoryName: s.category?.name || "General Services",
+              categoryName: s.categoryName || s.category?.name || "General Services",
               name: s.name,
               displayName: s.displayName,
               platform: s.platform,
@@ -360,6 +360,31 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         setServices((prev) => (prev.length > 0 ? prev : [
+          {
+            id: "1041",
+            categoryId: "instagram-growth",
+            categoryName: "Instagram Growth",
+            name: "Instagram Likes [High Quality • Instant]",
+            displayName: "Instagram Likes",
+            platform: "INSTAGRAM",
+            ratePer1000: 54.0,
+            minQty: 50,
+            maxQty: 100000,
+            packageEligible: true,
+            avgProcessingSpeed: "0 - 15 mins",
+            avgStartTime: "0 - 5 mins",
+            refillable: false,
+            cancellable: true,
+            description: "High quality Instagram likes for posts and reels.",
+            status: "ACTIVE",
+            serviceType: "LIKES",
+            dripFeedSupported: true,
+            allowManagedDrip: true,
+            dripFeedMinRuns: 2,
+            dripFeedMaxRuns: 100,
+            dripFeedMinInterval: 10,
+            dripFeedMaxInterval: 1440,
+          },
           {
             id: "1042",
             categoryId: "instagram-growth",

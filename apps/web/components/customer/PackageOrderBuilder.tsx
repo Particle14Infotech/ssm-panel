@@ -195,7 +195,8 @@ export function PackageOrderBuilder() {
     (service: (typeof services)[number]) =>
       service.serviceType === "LIKES" ||
       service.name.toLowerCase().includes("like") ||
-      (service.displayName || "").toLowerCase().includes("like"),
+      (service.displayName || "").toLowerCase().includes("like") ||
+      (service.categoryName || "").toLowerCase().includes("like"),
     [],
   );
   const isViewService = useCallback(
@@ -204,7 +205,9 @@ export function PackageOrderBuilder() {
       service.name.toLowerCase().includes("view") ||
       service.name.toLowerCase().includes("reel") ||
       (service.displayName || "").toLowerCase().includes("view") ||
-      (service.displayName || "").toLowerCase().includes("reel"),
+      (service.displayName || "").toLowerCase().includes("reel") ||
+      (service.categoryName || "").toLowerCase().includes("view") ||
+      (service.categoryName || "").toLowerCase().includes("reel"),
     [],
   );
   const isFollowerService = useCallback(
@@ -216,7 +219,10 @@ export function PackageOrderBuilder() {
       service.name.toLowerCase().includes("member") ||
       (service.displayName || "").toLowerCase().includes("follower") ||
       (service.displayName || "").toLowerCase().includes("subscriber") ||
-      (service.displayName || "").toLowerCase().includes("member"),
+      (service.displayName || "").toLowerCase().includes("member") ||
+      (service.categoryName || "").toLowerCase().includes("follower") ||
+      (service.categoryName || "").toLowerCase().includes("subscriber") ||
+      (service.categoryName || "").toLowerCase().includes("member"),
     [],
   );
 
