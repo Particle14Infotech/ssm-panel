@@ -13,7 +13,7 @@ import {
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { PackagesService } from "./packages.service";
 import { PackagesEnabledGuard } from "./packages-enabled.guard";
-import { JwtAuthGuard } from "../../common/jwt-auth.guard";
+import { JwtAuthGuard, OptionalJwtAuthGuard } from "../../common/jwt-auth.guard";
 import { RolesGuard, Roles } from "../../common/roles.guard";
 import { Role } from "@prisma/client";
 import { CurrentUser, CurrentUserData } from "../../common/current-user.decorator";
@@ -32,7 +32,7 @@ export class PackagesController {
   constructor(private readonly packagesService: PackagesService) {}
 
   @Post("quote")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: "Get Price Quote and Run Allocation Preview" })
   async getQuote(
     @Body() body: any,

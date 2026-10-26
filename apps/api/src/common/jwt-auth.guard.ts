@@ -44,3 +44,24 @@ export class JwtAuthGuard implements CanActivate {
     }
   }
 }
+
+@Injectable()
+export class OptionalJwtAuthGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const req = context.switchToHttp().getRequest();
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return true;
+    }
+
+    const token = authHeader.split(" ")[1];
+    try {
+      const decoded = jwt.verify(token, resolveJwtSecret()) as any;
+      req.user = decoded;
+    } catch {
+      // For optional auth, continue as unauthenticated without throwing
+    }
+    return true;
+  }
+}

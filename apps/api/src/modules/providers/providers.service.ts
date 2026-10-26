@@ -489,6 +489,7 @@ export class ProvidersService {
               description: item.description || existingService.description || "",
               active: true,
               isDeleted: false,
+              packageEligible: existingService.packageEligible !== false,
             },
           });
           updatedCount++;
@@ -514,6 +515,7 @@ export class ProvidersService {
               cancellable,
               dripFeedSupported,
               allowManagedDrip: true,
+              packageEligible: true,
               rawMeta: rawMeta as any,
               description: item.description || "",
               active: true,

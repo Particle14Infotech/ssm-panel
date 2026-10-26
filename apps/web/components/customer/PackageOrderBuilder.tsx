@@ -23,6 +23,7 @@ import {
 import { formatIndianNumber } from "@/lib/numberFormat";
 import { PackageQuoteResponseSchema, type PackageQuoteResponse } from "@smm/contracts";
 import { getApiBase } from "@/lib/api-base";
+import { getAuthToken } from "@/lib/auth-session";
 
 const SUPPORTED_PLATFORMS = [
   { id: "instagram", name: "Instagram", placeholder: "e.g. travel_chronicles" },
@@ -167,7 +168,7 @@ export function PackageOrderBuilder() {
       const isPlatform =
         servicePlatform === "all" ||
         servicePlatform.includes(selectedPlatform) ||
-        (selectedPlatform === "x" && servicePlatform.includes("twitter"));
+        (selectedPlatform === "x" && (servicePlatform.includes("twitter") || servicePlatform.includes("x")));
       if (!isPlatform) return false;
       if (s.status && s.status !== "ACTIVE") return false;
       if (s.packageEligible === false) return false;
@@ -324,12 +325,25 @@ export function PackageOrderBuilder() {
       };
     }
 
+    if (postRules.length === 0 && !payload.followersDrip) {
+      setQuote(null);
+      setErrorMessage("Please select at least one active service (likes, views, or followers) for your package.");
+      setErrorRequestId(null);
+      setCalculating(false);
+      return;
+    }
+
     let res: Response;
     try {
       const apiBase = getApiBase();
+      const token = getAuthToken();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
       res = await fetch(`${apiBase}/packages/quote`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       });
     } catch {

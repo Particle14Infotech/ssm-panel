@@ -301,7 +301,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
               ratePer1000: Number(s.ratePer1000),
               minQty: s.minQty,
               maxQty: s.maxQty,
-              packageEligible: s.packageEligible ?? false,
+              packageEligible: s.packageEligible !== false,
               avgProcessingSpeed: "15 - 30 mins",
               avgStartTime: "0 - 15 mins",
               refillable: s.refillable,
