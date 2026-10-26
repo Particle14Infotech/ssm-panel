@@ -252,13 +252,18 @@ function NewOrderContent() {
       { id: "more", name: "More" },
     ];
 
-    return canonicalOrder.filter((p) => {
-      if (p.id === "more") {
-        // Show More if there are platforms outside the top ones
-        return true;
+    const canonicalIds = new Set(canonicalOrder.map((c) => c.id));
+    const extraPlatforms: { id: string; name: string }[] = [];
+    platformCounts.forEach((count, key) => {
+      if (!canonicalIds.has(key) && count > 0) {
+        extraPlatforms.push({
+          id: key,
+          name: key.charAt(0).toUpperCase() + key.slice(1),
+        });
       }
-      return (platformCounts.get(p.id) || 0) > 0;
     });
+
+    return [...canonicalOrder, ...extraPlatforms];
   }, [platformCounts]);
 
   // Filter services for current platform
