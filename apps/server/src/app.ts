@@ -8,7 +8,9 @@ import { registerRateLimit } from "./rate-limit";
 import { registerHealthRoutes } from "./routes/health";
 import { registerCatalogRoutes } from "./routes/catalog";
 import { registerServicesRoutes } from "./routes/services";
+import { registerPlatformsRoutes } from "./routes/platforms";
 import { ServicesService } from "./services/services.service";
+import { PlatformsService } from "./services/platforms.service";
 import { ZodError } from "zod";
 
 export interface ServerDependencies {
@@ -71,6 +73,9 @@ export async function buildServer(dependencies: ServerDependencies = {}): Promis
   const servicesService = new ServicesService(prisma);
   registerCatalogRoutes(app, servicesService);
   registerServicesRoutes(app, servicesService);
+
+  const platformsService = new PlatformsService(prisma);
+  registerPlatformsRoutes(app, platformsService);
 
   app.get("/", async () => ({ status: "ok", service: "smm-server", uptime: process.uptime(), timestamp: new Date().toISOString() }));
 
