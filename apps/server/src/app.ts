@@ -11,10 +11,12 @@ import { registerServicesRoutes } from "./routes/services";
 import { registerPlatformsRoutes } from "./routes/platforms";
 import { registerUsersRoutes } from "./routes/users";
 import { registerSettingsRoutes } from "./routes/settings";
+import { registerNotificationsRoutes } from "./routes/notifications";
 import { ServicesService } from "./services/services.service";
 import { PlatformsService } from "./services/platforms.service";
 import { UsersService } from "./services/users.service";
 import { SettingsService } from "./services/settings.service";
+import { NotificationsService } from "./services/notifications.service";
 import { ZodError } from "zod";
 
 export interface ServerDependencies {
@@ -86,6 +88,9 @@ export async function buildServer(dependencies: ServerDependencies = {}): Promis
 
   const settingsService = new SettingsService();
   registerSettingsRoutes(app, settingsService);
+
+  const notificationsService = new NotificationsService();
+  registerNotificationsRoutes(app, notificationsService);
 
   app.get("/", async () => ({ status: "ok", service: "smm-server", uptime: process.uptime(), timestamp: new Date().toISOString() }));
 
