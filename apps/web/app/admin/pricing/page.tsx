@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { getAuthToken } from "@/lib/auth-session";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { useAdmin } from "@/context/AdminContext";
 import {
   DollarSign,
   TrendingUp,
@@ -23,9 +24,11 @@ import { getApiBase } from "@/lib/api-base";
 const API_BASE = getApiBase();
 
 export default function AdminPricingPage() {
+  const { refreshAdminData } = useAdmin();
   const [activeTab, setActiveTab] = useState<"settings" | "simulator" | "pending" | "bulk">("settings");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Settings State
@@ -228,8 +231,28 @@ export default function AdminPricingPage() {
       if (res.ok) {
         setMessage({ type: "success", text: "Bulk margin rules successfully applied to catalog services." });
         setBulkPreview(null);
+        await refreshAdminData();
       }
     } catch {}
+  };
+
+  const handleBackfillCosts = async () => {
+    const token = getAuthToken();
+    if (!token) return;
+    setBackfilling(true);
+    try {
+      const res = await fetch(`${API_BASE}/admin/pricing/backfill-costs`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMessage({ type: "success", text: `Successfully backfilled baseline cost for ${data.updatedCount ?? 0} services.` });
+        await refreshAdminData();
+      }
+    } catch {} finally {
+      setBackfilling(false);
+    }
   };
 
   return (
@@ -545,7 +568,18 @@ export default function AdminPricingPage() {
       {activeTab === "bulk" && (
         <div className="space-y-6 max-w-4xl">
           <GlassCard className="p-6 rounded-2xl border-white/10 space-y-4">
-            <h3 className="text-sm font-semibold text-white">Bulk Repricing Tool</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">Bulk Repricing Tool</h3>
+              <button
+                type="button"
+                onClick={handleBackfillCosts}
+                disabled={backfilling}
+                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-slate-300 hover:text-white transition-colors"
+                title="Calculate and set baseline costINR for any services missing cost data"
+              >
+                {backfilling ? "Backfilling..." : "Backfill Missing Cost Baselines"}
+              </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div>
                 <label className="text-slate-400 block mb-1">Target Platform</label>
@@ -602,16 +636,16 @@ export default function AdminPricingPage() {
                 <span className="text-[#D8EC8D] font-mono">Margin: +{bulkMarginPercent}%</span>
               </div>
               <div className="max-h-[300px] overflow-y-auto space-y-2">
-                {bulkPreview.items?.map((item: any) => (
+                {(bulkPreview.items || bulkPreview.diff)?.map((item: any) => (
                   <div
                     key={item.serviceId}
                     className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between text-xs font-mono"
                   >
-                    <span className="text-slate-300 truncate max-w-[200px]">{item.serviceName}</span>
+                    <span className="text-slate-300 truncate max-w-[200px]">{item.serviceName || item.displayName || item.name}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-500">₹{item.oldSellRate.toFixed(2)}</span>
+                      <span className="text-slate-500">₹{Number(item.oldSellRate).toFixed(2)}</span>
                       <ArrowRight className="w-3 h-3 text-slate-600" />
-                      <span className="text-[#D8EC8D] font-bold">₹{item.newSellRate.toFixed(2)}</span>
+                      <span className="text-[#D8EC8D] font-bold">₹{Number(item.newSellRate).toFixed(2)}</span>
                     </div>
                   </div>
                 ))}

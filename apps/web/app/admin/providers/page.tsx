@@ -14,17 +14,20 @@ import {
   Trash2,
   X,
   Check,
+  Percent,
 } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { AdminProvider } from "@/content/admin-data";
 
 export default function AdminProvidersPage() {
-  const { providers, addProvider, updateProvider, deleteProvider, syncProvider, importFromProvider } = useAdmin();
+  const { providers, addProvider, updateProvider, deleteProvider, syncProvider, importFromProvider, applyBulkMargin } = useAdmin();
   const [isAdding, setIsAdding] = useState(false);
   const [editingProvider, setEditingProvider] = useState<AdminProvider | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [importingId, setImportingId] = useState<string | null>(null);
+  const [applyingMargin, setApplyingMargin] = useState(false);
+  const [applyingProviderId, setApplyingProviderId] = useState<string | null>(null);
   const [importNotice, setImportNotice] = useState<string | null>(null);
 
   // New Provider Form
@@ -111,6 +114,32 @@ export default function AdminProvidersPage() {
       setImportNotice("Failed to import services from upstream provider.");
       setTimeout(() => setImportNotice(null), 5000);
     }
+  };
+
+  const handleApplyGlobalMargin = async () => {
+    setApplyingMargin(true);
+    setImportNotice(null);
+    const res = await applyBulkMargin({ marginPercent });
+    setApplyingMargin(false);
+    if (res.success) {
+      setImportNotice(res.message || `Applied +${marginPercent}% margin to all catalog services.`);
+    } else {
+      setImportNotice(res.message || "Failed to apply margin.");
+    }
+    setTimeout(() => setImportNotice(null), 5000);
+  };
+
+  const handleApplyProviderMargin = async (providerId: string) => {
+    setApplyingProviderId(providerId);
+    setImportNotice(null);
+    const res = await applyBulkMargin({ providerId, marginPercent });
+    setApplyingProviderId(null);
+    if (res.success) {
+      setImportNotice(res.message || `Applied +${marginPercent}% margin to mapped services.`);
+    } else {
+      setImportNotice(res.message || "Failed to apply margin to provider services.");
+    }
+    setTimeout(() => setImportNotice(null), 5000);
   };
 
   return (
@@ -358,21 +387,32 @@ export default function AdminProvidersPage() {
         )}
 
         {/* Margin setting bar */}
-        <div className="flex items-center justify-between p-4 rounded-2xl bg-[#131313] border border-white/10 text-xs">
+        <div className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl bg-[#131313] border border-white/10 text-xs gap-3">
           <div className="flex items-center gap-2 text-slate-300">
-            <span>Global Selling Rate Formula:</span>
+            <span>Selling Rate Formula:</span>
             <span className="font-mono text-[#D8EC8D] font-semibold">Selling Rate = Provider Cost + Margin %</span>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-slate-400 font-mono">Import Margin %:</label>
-            <input
-              type="number"
-              min={0}
-              max={500}
-              value={marginPercent}
-              onChange={(e) => setMarginPercent(Number(e.target.value))}
-              className="w-20 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-white font-mono text-xs"
-            />
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-slate-400 font-mono">Catalog Margin %:</label>
+              <input
+                type="number"
+                min={0}
+                max={500}
+                value={marginPercent}
+                onChange={(e) => setMarginPercent(Number(e.target.value))}
+                className="w-20 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-white font-mono text-xs"
+              />
+            </div>
+            <button
+              onClick={handleApplyGlobalMargin}
+              disabled={applyingMargin}
+              className="px-3.5 py-1.5 rounded-full btn-primary-gradient text-[#171e00] font-bold text-xs hover:brightness-105 transition-all inline-flex items-center gap-1.5 shadow-sm"
+              title="Apply this margin % to all services across all providers immediately"
+            >
+              <Percent className="w-3.5 h-3.5" />
+              <span>{applyingMargin ? "Applying..." : `Apply ${marginPercent}% to All Services`}</span>
+            </button>
           </div>
         </div>
 
@@ -488,20 +528,34 @@ export default function AdminProvidersPage() {
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs font-mono">
-                  <button
-                    onClick={() => handleImport(p.id)}
-                    disabled={importingId === p.id}
-                    className="px-3 py-1 rounded-full bg-[#D8EC8D]/15 hover:bg-[#D8EC8D] text-[#D8EC8D] hover:text-[#171e00] text-xs font-bold transition-all inline-flex items-center gap-1.5 border border-[#D8EC8D]/30"
-                  >
-                    <DownloadCloud className={`w-3.5 h-3.5 ${importingId === p.id ? "animate-bounce" : ""}`} />
-                    <span>{importingId === p.id ? "Importing..." : "Import Catalog"}</span>
-                  </button>
+                <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleImport(p.id)}
+                      disabled={importingId === p.id}
+                      className="px-3 py-1 rounded-full bg-[#D8EC8D]/15 hover:bg-[#D8EC8D] text-[#D8EC8D] hover:text-[#171e00] text-xs font-bold transition-all inline-flex items-center gap-1.5 border border-[#D8EC8D]/30"
+                      title="Fetch latest services from upstream API"
+                    >
+                      <DownloadCloud className={`w-3.5 h-3.5 ${importingId === p.id ? "animate-bounce" : ""}`} />
+                      <span>{importingId === p.id ? "Importing..." : "Import"}</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleApplyProviderMargin(p.id)}
+                      disabled={applyingProviderId === p.id}
+                      className="px-3 py-1 rounded-full bg-emerald-500/15 hover:bg-emerald-500 text-emerald-300 hover:text-black text-xs font-bold transition-all inline-flex items-center gap-1.5 border border-emerald-500/30"
+                      title={`Recalculate selling rates for this provider's services with +${marginPercent}% margin`}
+                    >
+                      <Percent className="w-3.5 h-3.5" />
+                      <span>{applyingProviderId === p.id ? "Applying..." : `Apply +${marginPercent}%`}</span>
+                    </button>
+                  </div>
 
                   <button
                     onClick={() => handleSync(p.id)}
                     disabled={syncingId === p.id}
                     className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-white text-xs font-semibold transition-all inline-flex items-center gap-1.5"
+                    title="Refresh live wallet balance"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${syncingId === p.id ? "animate-spin" : ""}`} />
                     <span>Sync Balance</span>

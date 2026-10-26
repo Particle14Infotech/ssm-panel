@@ -3,7 +3,7 @@ import { PrismaService } from "../../common/prisma.service";
 import { encryptProviderKey, decryptProviderKey } from "../../common/crypto.util";
 import { SmmProviderClient } from "./smm-provider.client";
 import { Decimal } from "decimal.js";
-import { coerceBoolean, calculateCostINR, DEFAULT_PRICING_SETTINGS } from "@smm/contracts";
+import { coerceBoolean, calculateCostINR, calculateSellingRate, DEFAULT_PRICING_SETTINGS, PricingSettingsConfig } from "@smm/contracts";
 
 export interface ProviderDto {
   id: string;
@@ -296,26 +296,29 @@ export class ProvidersService {
   }
 
   async sync(id: string) {
-    // 1. Refresh live provider balance
+    // 1. Refresh live provider balance only — do NOT re-import catalog
+    // Re-importing was resetting all services to hardcoded 20% margin,
+    // overwriting admin-configured margins on every sync button press.
     const balanceRes = await this.getBalance(id);
 
-    // 2. Perform catalog sync/import with default 20% margin
-    let importRes: any = { importedCount: 0, updatedCount: 0, errorsCount: 0 };
-    try {
-      importRes = await this.importServices(id, { marginPercent: 20 });
-    } catch (err: any) {
-      this.logger.error(`Catalog auto-sync during provider sync failed: ${err.message}`);
-    }
+    // 2. Count current service stats without modifying prices
+    const [totalActive, dripFeedCount, refillCount, cancelCount] = await Promise.all([
+      this.prisma.service.count({ where: { providerId: id, active: true, isDeleted: false } }).catch(() => 0),
+      this.prisma.service.count({ where: { providerId: id, dripFeedSupported: true, isDeleted: false } }).catch(() => 0),
+      this.prisma.service.count({ where: { providerId: id, refillable: true, isDeleted: false } }).catch(() => 0),
+      this.prisma.service.count({ where: { providerId: id, cancellable: true, isDeleted: false } }).catch(() => 0),
+    ]);
 
     return {
       success: true,
       ...balanceRes,
-      importedCount: importRes.importedCount || 0,
-      updatedCount: importRes.updatedCount || 0,
-      errorsCount: importRes.errorsCount || 0,
-      dripFeedCount: importRes.dripFeedCount || 0,
-      refillCount: importRes.refillCount || 0,
-      cancelCount: importRes.cancelCount || 0,
+      importedCount: 0,
+      updatedCount: 0,
+      errorsCount: 0,
+      dripFeedCount,
+      refillCount,
+      cancelCount,
+      totalActiveServices: totalActive,
       timestamp: new Date().toISOString(),
     };
   }
@@ -327,7 +330,8 @@ export class ProvidersService {
     const p = await this.prisma.provider.findUnique({ where: { id } });
     if (!p) throw new NotFoundException(`Provider #${id} not found.`);
 
-    const margin = typeof options.marginPercent === "number" ? options.marginPercent : 20; // default 20%
+    // If admin explicitly passed a margin %, use it. Otherwise null means "preserve existing".
+    const explicitMargin = typeof options.marginPercent === "number" ? options.marginPercent : null;
     let decryptedKey = "";
     try {
       decryptedKey = decryptProviderKey(p.apiKeyEncrypted);
@@ -354,14 +358,18 @@ export class ProvidersService {
     let refillCount = 0;
     let cancelCount = 0;
 
-    // Read configured USD/INR rate from settings if available
+    // Read full pricing settings from DB (margin tiers, FX rate, min profit etc.)
+    let pricingSettings: PricingSettingsConfig = { ...DEFAULT_PRICING_SETTINGS };
     let usdInrRate = DEFAULT_PRICING_SETTINGS.usdInrRate;
     try {
       const dbSettings = await this.prisma.systemSetting.findUnique({
         where: { key: "PRICING_CONFIG" },
       });
-      if (dbSettings?.value && (dbSettings.value as any).usdInrRate) {
-        usdInrRate = Number((dbSettings.value as any).usdInrRate);
+      if (dbSettings?.value) {
+        pricingSettings = { ...DEFAULT_PRICING_SETTINGS, ...(dbSettings.value as any) };
+        if ((dbSettings.value as any).usdInrRate) {
+          usdInrRate = Number((dbSettings.value as any).usdInrRate);
+        }
       }
     } catch {}
 
@@ -390,16 +398,6 @@ export class ProvidersService {
 
         // Apply FX conversion if provider currency is USD
         const costINRNum = calculateCostINR(providerCost, usdInrRate, p.currency || "INR").toNumber();
-
-        // Calculate dynamic selling rate with configured margin %
-        let sellingRate = Number((costINRNum * (1 + margin / 100)).toFixed(2));
-        if (isNaN(sellingRate) || sellingRate <= 0) {
-          sellingRate = 1.0;
-        }
-        // PostgreSQL Decimal(10, 2) max value is 99999999.99
-        if (sellingRate > 9999999.99) {
-          sellingRate = 9999999.99;
-        }
 
         // 3. Parse & clamp quantities to 32-bit integer limits (1 to 2,147,483,640)
         let minQty = parseInt(String(item.min || 10), 10);
@@ -444,6 +442,30 @@ export class ProvidersService {
           rawType: item.type,
         };
 
+        // Determine margin for this service:
+        // 1. If admin explicitly passed a margin -> use it
+        // 2. If existing service has a saved margin -> preserve it
+        // 3. Fallback: use tiered pricing engine (no override)
+        let serviceMargin: number | null = explicitMargin;
+        if (serviceMargin === null && existingService?.marginPercentOverride !== null && existingService?.marginPercentOverride !== undefined) {
+          serviceMargin = Number(existingService.marginPercentOverride);
+        }
+
+        // Use the proper pricing engine for accurate selling rate calculation
+        const pricing = calculateSellingRate(costINRNum, {
+          settings: pricingSettings,
+          marginPercentOverride: serviceMargin,
+        });
+        let sellingRate = pricing.sellingRate.toNumber();
+        if (isNaN(sellingRate) || sellingRate <= 0) {
+          sellingRate = 1.0;
+        }
+        // PostgreSQL Decimal(10, 2) max value is 99999999.99
+        if (sellingRate > 9999999.99) {
+          sellingRate = 9999999.99;
+        }
+        const appliedMargin = pricing.appliedMarginPercent;
+
         if (existingService) {
           await this.prisma.service.update({
             where: { id: existingService.id },
@@ -455,8 +477,8 @@ export class ProvidersService {
               providerCostPer1k: new Decimal(providerCost),
               providerCostCurrency: p.currency || "INR",
               costINR: new Decimal(costINRNum),
-              marginPercentOverride: new Decimal(margin),
-              priceBelowCost: false,
+              marginPercentOverride: serviceMargin !== null ? new Decimal(serviceMargin) : new Decimal(appliedMargin),
+              priceBelowCost: pricing.isBelowCost,
               minQty,
               maxQty,
               refillable,
@@ -471,6 +493,8 @@ export class ProvidersService {
           });
           updatedCount++;
         } else {
+          // New service: use explicit margin or tiered default
+          const newServiceMargin = explicitMargin !== null ? explicitMargin : appliedMargin;
           await this.prisma.service.create({
             data: {
               name: item.name.slice(0, 255),
@@ -480,8 +504,8 @@ export class ProvidersService {
               providerCostPer1k: new Decimal(providerCost),
               providerCostCurrency: p.currency || "INR",
               costINR: new Decimal(costINRNum),
-              marginPercentOverride: new Decimal(margin),
-              priceBelowCost: false,
+              marginPercentOverride: new Decimal(newServiceMargin),
+              priceBelowCost: pricing.isBelowCost,
               minQty,
               maxQty,
               providerId: p.id,
@@ -523,7 +547,7 @@ export class ProvidersService {
       refillCount,
       cancelCount,
       totalActiveServices: totalActive,
-      marginPercent: margin,
+      marginPercent: explicitMargin ?? "tiered",
     };
   }
 

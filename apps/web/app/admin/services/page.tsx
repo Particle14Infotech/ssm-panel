@@ -29,6 +29,7 @@ export default function AdminServicesPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isAdding, setIsAdding] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingMarginId, setEditingMarginId] = useState<string | null>(null);
 
   // Hybrid Routing Modal State
   const [routingService, setRoutingService] = useState<ServiceItem | null>(null);
@@ -521,12 +522,38 @@ export default function AdminServicesPage() {
                         )}
                       </td>
                       <td className="py-4 px-3 font-mono whitespace-nowrap">
-                        {service.marginPercent !== undefined && service.marginPercent !== null ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#D8EC8D]/15 text-[#D8EC8D] border border-[#D8EC8D]/30">
-                            +{service.marginPercent}%
-                          </span>
+                        {editingMarginId === service.id ? (
+                          <input
+                            type="number"
+                            step="1"
+                            min="0"
+                            max="500"
+                            defaultValue={service.marginPercent ?? 20}
+                            onBlur={(e) => {
+                              const val = parseFloat(e.target.value);
+                              if (!isNaN(val)) {
+                                updateService(service.id, { marginPercent: val });
+                              }
+                              setEditingMarginId(null);
+                            }}
+                            className="w-16 bg-black border border-[#D8EC8D] rounded px-1.5 py-0.5 text-xs text-white font-mono"
+                            autoFocus
+                          />
                         ) : (
-                          <span className="text-white/20 text-[10px] font-mono">Tiered</span>
+                          <button
+                            onClick={() => setEditingMarginId(service.id)}
+                            className="group/margin flex items-center gap-1 hover:brightness-125"
+                            title="Click to edit profit margin %"
+                          >
+                            {service.marginPercent !== undefined && service.marginPercent !== null ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#D8EC8D]/15 text-[#D8EC8D] border border-[#D8EC8D]/30 group-hover/margin:border-[#D8EC8D]">
+                                +{service.marginPercent}%
+                              </span>
+                            ) : (
+                              <span className="text-white/30 text-[10px] font-mono group-hover/margin:text-[#D8EC8D]">Tiered</span>
+                            )}
+                            <Edit className="w-2 h-2 opacity-0 group-hover/margin:opacity-60 text-[#D8EC8D]" />
+                          </button>
                         )}
                       </td>
                       <td className="py-4 px-3 font-mono font-bold text-[#D8EC8D] whitespace-nowrap">

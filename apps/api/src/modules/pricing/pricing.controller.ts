@@ -109,11 +109,18 @@ export class PricingController {
     body: {
       platform?: string;
       categoryId?: string;
+      providerId?: string;
       marginPercent: number;
       previewOnly?: boolean;
     }
   ) {
     return this.pricingService.previewOrApplyBulkMargin(body);
+  }
+
+  @Post("pricing/backfill-costs")
+  @ApiOperation({ summary: "Backfill costINR baseline for services without costs" })
+  async backfillCosts() {
+    return this.pricingService.backfillMissingCosts();
   }
 
   @Get("profit/summary")

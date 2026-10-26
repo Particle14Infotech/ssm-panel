@@ -43,6 +43,7 @@ interface AdminContextType {
   deleteProvider: (id: string) => Promise<boolean>;
   syncProvider: (providerId: string) => Promise<boolean>;
   importFromProvider: (providerId: string, marginPercent?: number) => Promise<{ success: boolean; importedCount?: number }>;
+  applyBulkMargin: (params: { platform?: string; categoryId?: string; providerId?: string; marginPercent: number }) => Promise<{ success: boolean; count?: number; message?: string }>;
   addCoupon: (coupon: AdminCoupon) => void;
   toggleCoupon: (couponId: string) => void;
   approvePayment: (txnId: string) => void;
@@ -504,6 +505,35 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
     }
   };
 
+  const applyBulkMargin = async (params: { platform?: string; categoryId?: string; providerId?: string; marginPercent: number }) => {
+    const token = getAuthToken();
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/pricing/bulk-margin`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          ...params,
+          previewOnly: false,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await refreshAdminData();
+        return {
+          success: true,
+          count: data.count || data.appliedCount,
+          message: `Successfully applied +${params.marginPercent}% margin to ${data.count || data.appliedCount || 0} services.`,
+        };
+      }
+      return { success: false, message: data.message || "Failed to apply bulk margin" };
+    } catch (err: any) {
+      return { success: false, message: err.message };
+    }
+  };
+
   const updateProvider = async (id: string, updates: { name?: string; apiUrl?: string; apiKey?: string; active?: boolean }) => {
     const token = getAuthToken();
     const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -706,6 +736,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
         deleteProvider,
         syncProvider,
         importFromProvider,
+        applyBulkMargin,
         addCoupon,
         toggleCoupon,
         approvePayment,

@@ -630,11 +630,51 @@ export class ServicesService {
       return { success: true, service: { id, ...input } };
     }
 
+    const current = await this.prisma.service.findUnique({ where: { id } });
+    if (!current) return null;
+
     const data: any = {};
     if (input.name) data.name = input.name;
     if (input.categoryId) data.categoryId = input.categoryId;
     if (input.platform) data.platform = input.platform.toUpperCase();
-    if (input.ratePer1000 !== undefined) data.ratePer1000 = new Decimal(Number(input.ratePer1000));
+
+    // 1. Determine costINR baseline
+    let currentCostINR = current.costINR ? Number(current.costINR) : null;
+    if (input.costINR !== undefined) {
+      currentCostINR = input.costINR !== null ? Number(input.costINR) : null;
+      data.costINR = currentCostINR !== null ? new Decimal(currentCostINR) : null;
+    } else if (!currentCostINR || currentCostINR <= 0) {
+      if (current.providerCostPer1k && Number(current.providerCostPer1k) > 0) {
+        currentCostINR = Number(current.providerCostPer1k);
+      } else {
+        const priorMargin = current.marginPercentOverride ? Number(current.marginPercentOverride) : 20;
+        currentCostINR = Number((Number(current.ratePer1000) / (1 + priorMargin / 100)).toFixed(2));
+      }
+      data.costINR = new Decimal(currentCostINR);
+    }
+
+    // 2. Handle margin and selling rate synchronization
+    const hasMarginInput = input.marginPercent !== undefined || input.marginPercentOverride !== undefined;
+    if (hasMarginInput) {
+      const marginVal = Number(input.marginPercent ?? input.marginPercentOverride);
+      data.marginPercentOverride = new Decimal(marginVal);
+      // Auto-recalculate selling rate if rate was not explicitly overridden
+      if (input.ratePer1000 === undefined && currentCostINR && currentCostINR > 0) {
+        const calculatedSellRate = Number((currentCostINR * (1 + marginVal / 100)).toFixed(2));
+        data.ratePer1000 = new Decimal(calculatedSellRate > 0 ? calculatedSellRate : 1.0);
+      }
+    }
+
+    if (input.ratePer1000 !== undefined) {
+      const newRate = Number(input.ratePer1000);
+      data.ratePer1000 = new Decimal(newRate);
+      // If margin was not explicitly passed, back-calculate margin % from the new selling rate
+      if (!hasMarginInput && currentCostINR && currentCostINR > 0) {
+        const autoMargin = Number((((newRate - currentCostINR) / currentCostINR) * 100).toFixed(2));
+        data.marginPercentOverride = new Decimal(autoMargin);
+      }
+    }
+
     if (input.minQty !== undefined) data.minQty = parseInt(String(input.minQty), 10);
     if (input.maxQty !== undefined) data.maxQty = parseInt(String(input.maxQty), 10);
     if (input.description !== undefined) data.description = input.description;
@@ -654,6 +694,7 @@ export class ServicesService {
     if (input.providerServiceId !== undefined) data.providerServiceId = input.providerServiceId;
     if (input.backupProviderId !== undefined) data.backupProviderId = input.backupProviderId;
     if (input.backupProviderServiceId !== undefined) data.backupProviderServiceId = input.backupProviderServiceId;
+    if (input.priceBelowCost !== undefined) data.priceBelowCost = Boolean(input.priceBelowCost);
 
     const updated = await this.prisma.service.update({
       where: { id },

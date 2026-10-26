@@ -320,19 +320,42 @@ export class PricingService {
   async previewOrApplyBulkMargin(input: {
     platform?: string;
     categoryId?: string;
+    providerId?: string;
     marginPercent: number;
     previewOnly?: boolean;
     changedBy?: string;
   }) {
     const where: any = { isDeleted: false };
-    if (input.platform && input.platform !== "ALL") where.platform = input.platform;
+    if (input.providerId && input.providerId !== "ALL") {
+      where.providerId = input.providerId;
+    }
+    if (input.platform && input.platform !== "ALL") {
+      const p = input.platform.toUpperCase();
+      if (p === "X" || p === "TWITTER" || p === "X_TWITTER") {
+        where.platform = { in: ["X", "TWITTER", "X_TWITTER"] };
+      } else {
+        where.platform = { equals: p, mode: "insensitive" };
+      }
+    }
     if (input.categoryId) where.categoryId = input.categoryId;
 
     const services = await this.prisma.service.findMany({ where });
     const settings = await this.getSettings();
 
     const previewDiff = services.map((s) => {
-      const costINR = s.costINR ? new Decimal(s.costINR.toString()) : new Decimal(s.ratePer1000.toString()).times(0.5);
+      let costINR: Decimal;
+      if (s.costINR && new Decimal(s.costINR.toString()).greaterThan(0)) {
+        costINR = new Decimal(s.costINR.toString());
+      } else if (s.providerCostPer1k && new Decimal(s.providerCostPer1k.toString()).greaterThan(0)) {
+        const fxRate = s.providerCostCurrency === "USD" ? settings.usdInrRate : 1.0;
+        costINR = new Decimal(s.providerCostPer1k.toString()).times(fxRate);
+      } else {
+        const priorMargin = s.marginPercentOverride ? Number(s.marginPercentOverride) : 20;
+        const divisor = 1 + priorMargin / 100;
+        costINR = new Decimal(s.ratePer1000.toString()).dividedBy(divisor);
+      }
+      costINR = new Decimal(costINR.toFixed(2));
+
       const oldSellRate = new Decimal(s.ratePer1000.toString());
 
       const pricing = calculateSellingRate(costINR, {
@@ -343,6 +366,7 @@ export class PricingService {
       return {
         serviceId: s.id,
         name: s.name,
+        serviceName: s.name,
         displayName: s.displayName || s.name,
         platform: s.platform,
         costINR: costINR.toNumber(),
@@ -354,17 +378,23 @@ export class PricingService {
     });
 
     if (input.previewOnly) {
-      return { preview: true, count: previewDiff.length, diff: previewDiff };
+      return {
+        preview: true,
+        count: previewDiff.length,
+        diff: previewDiff,
+        items: previewDiff,
+      };
     }
 
-    // Apply bulk updates atomically
+    // Apply bulk updates atomically and persist costINR
     await this.prisma.$transaction(
       previewDiff.map((item) =>
         this.prisma.service.update({
           where: { id: item.serviceId },
           data: {
-            ratePer1000: item.newSellRate,
-            marginPercentOverride: input.marginPercent,
+            ratePer1000: new Decimal(item.newSellRate),
+            costINR: new Decimal(item.costINR),
+            marginPercentOverride: new Decimal(input.marginPercent),
             priceBelowCost: item.isBelowCost,
           },
         })
@@ -384,7 +414,50 @@ export class PricingService {
       );
     }
 
-    return { preview: false, appliedCount: previewDiff.length, diff: previewDiff };
+    return {
+      preview: false,
+      appliedCount: previewDiff.length,
+      count: previewDiff.length,
+      diff: previewDiff,
+      items: previewDiff,
+    };
+  }
+
+  /**
+   * Backfills costINR for all services currently lacking a baseline cost.
+   */
+  async backfillMissingCosts() {
+    if (!this.prisma.isConnected) return { updatedCount: 0 };
+    const settings = await this.getSettings();
+    const services = await this.prisma.service.findMany({
+      where: {
+        isDeleted: false,
+        OR: [{ costINR: null }, { costINR: 0 }],
+      },
+    });
+
+    let updatedCount = 0;
+    for (const s of services) {
+      let costINRNum: number;
+      if (s.providerCostPer1k && Number(s.providerCostPer1k) > 0) {
+        const fxRate = s.providerCostCurrency === "USD" ? settings.usdInrRate : 1.0;
+        costINRNum = Number((Number(s.providerCostPer1k) * fxRate).toFixed(2));
+      } else {
+        const priorMargin = s.marginPercentOverride ? Number(s.marginPercentOverride) : 20;
+        costINRNum = Number((Number(s.ratePer1000) / (1 + priorMargin / 100)).toFixed(2));
+      }
+
+      await this.prisma.service.update({
+        where: { id: s.id },
+        data: {
+          costINR: new Decimal(costINRNum),
+          marginPercentOverride: s.marginPercentOverride || new Decimal(20),
+        },
+      });
+      updatedCount++;
+    }
+
+    return { success: true, updatedCount };
   }
 
   /**
