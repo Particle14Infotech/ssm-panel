@@ -19,6 +19,7 @@ import {
   PackagePurchaseInput,
 } from "@smm/contracts";
 import { getApiBase } from "@/lib/api-base";
+import { getAuthToken as getSessionAuthToken } from "@/lib/auth-session";
 
 export const EMPTY_USER: UserProfile = {
   id: "",
@@ -114,14 +115,14 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const getAuthToken = useCallback(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("authToken");
+    return getSessionAuthToken();
   }, []);
 
   const logout = useCallback(() => {
     if (typeof window !== "undefined") {
       localStorage.clear();
       document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       document.cookie = "userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     }
     setUser(EMPTY_USER);
@@ -134,6 +135,45 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshData = useCallback(async () => {
+    // 1. Always fetch public services catalog so new-order and packages work for any session
+    try {
+      const servicesRes = await fetch(`${API_BASE}/services`, { cache: "no-store" });
+      if (servicesRes.ok) {
+        const rawServices = await servicesRes.json();
+        if (Array.isArray(rawServices)) {
+          setServices(
+            rawServices.map((s: any) => ({
+              id: s.id,
+              categoryId: s.categoryId || "general",
+              categoryName: s.category?.name || "General Services",
+              name: s.name,
+              displayName: s.displayName,
+              platform: s.platform,
+              ratePer1000: Number(s.ratePer1000),
+              minQty: s.minQty,
+              maxQty: s.maxQty,
+              packageEligible: s.packageEligible !== false,
+              avgProcessingSpeed: "15 - 30 mins",
+              avgStartTime: "0 - 15 mins",
+              refillable: s.refillable,
+              cancellable: s.cancellable,
+              description: s.description || "",
+              status: s.status,
+              serviceType: s.serviceType || "DEFAULT",
+              dripFeedSupported: s.dripFeedSupported ?? false,
+              allowManagedDrip: s.allowManagedDrip ?? (s.serviceType !== "CUSTOM_COMMENTS" && !s.name?.toLowerCase().includes("comment")),
+              dripFeedMinRuns: s.dripFeedMinRuns ?? null,
+              dripFeedMaxRuns: s.dripFeedMaxRuns ?? null,
+              dripFeedMinInterval: s.dripFeedMinInterval ?? null,
+              dripFeedMaxInterval: s.dripFeedMaxInterval ?? null,
+            }))
+          );
+        }
+      }
+    } catch (err) {
+      console.warn("Public services fetch failed:", err);
+    }
+
     const token = getAuthToken();
     if (!token) {
       setUser(EMPTY_USER);
