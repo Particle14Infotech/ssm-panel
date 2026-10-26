@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginInputSchema, LoginInput } from "@smm/contracts";
-import { Zap, ArrowRight, Lock, User, AlertCircle, ShieldCheck, Sparkles, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Lock, User, AlertCircle, ShieldCheck } from "lucide-react";
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import dynamic from "next/dynamic";
 import { getApiBase } from "@/lib/api-base";
@@ -51,42 +51,6 @@ export default function LoginPage() {
         window.location.href = "/app/dashboard";
       }
     }
-  };
-
-  const handleQuickDemoLogin = (email: string) => {
-    if (email.includes("admin")) {
-      establishSession({
-        id: "usr_admin_001",
-        email: "admin@smm-panel.io",
-        name: "System Administrator",
-        role: "ADMIN",
-        tier: "ENTERPRISE",
-        balance: 100000.0,
-      });
-      return;
-    }
-
-    if (email.includes("bholu")) {
-      establishSession({
-        id: "usr_bholu_customer",
-        email: "bholu@gmail.com",
-        name: "Bholu",
-        role: "CUSTOMER",
-        tier: "PRO_SCALE",
-        balance: 1068.61,
-      });
-      return;
-    }
-
-    // Default Alex Vance
-    establishSession({
-      id: "usr_998124smm",
-      email: "alex.vance@smm-panel.io",
-      name: "Alex Vance",
-      role: "CUSTOMER",
-      tier: "PRO_SCALE",
-      balance: 2450.0,
-    });
   };
 
   const onSubmit = async (data: LoginInput) => {
@@ -174,43 +138,6 @@ export default function LoginPage() {
           </div>
 
           <div className="rounded-3xl p-6 sm:p-8 bg-[#1c1b1b]/90 border border-white/10 backdrop-blur-2xl shadow-[0_24px_50px_rgba(0,0,0,0.6)]">
-            
-            {/* 1-Click Fast Demo Login Selector */}
-            <div className="mb-5 p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2">
-              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-                <span className="flex items-center gap-1.5 text-[#D8EC8D] font-semibold">
-                  <Zap className="w-3.5 h-3.5 text-[#D8EC8D]" />
-                  <span>1-Click Demo Accounts</span>
-                </span>
-                <span className="text-[10px] text-white/50">Quick Access</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin("bholu@gmail.com")}
-                  className="p-2.5 rounded-xl bg-white/5 hover:bg-[#D8EC8D]/15 hover:border-[#D8EC8D]/40 border border-white/5 text-left transition-all cursor-pointer group"
-                >
-                  <div className="text-xs font-semibold text-white group-hover:text-[#D8EC8D] flex items-center justify-between">
-                    <span>Bholu</span>
-                    <span className="text-[9px] font-mono px-1 rounded bg-[#D8EC8D]/20 text-[#D8EC8D]">Customer</span>
-                  </div>
-                  <div className="text-[11px] text-[#D8EC8D] font-mono font-bold mt-0.5">₹1,068.61</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin("alex.vance@smm-panel.io")}
-                  className="p-2.5 rounded-xl bg-white/5 hover:bg-[#D8EC8D]/15 hover:border-[#D8EC8D]/40 border border-white/5 text-left transition-all cursor-pointer group"
-                >
-                  <div className="text-xs font-semibold text-white group-hover:text-[#D8EC8D] flex items-center justify-between">
-                    <span>Alex Vance</span>
-                    <span className="text-[9px] font-mono px-1 rounded bg-[#D8EC8D]/20 text-[#D8EC8D]">Customer</span>
-                  </div>
-                  <div className="text-[11px] text-[#D8EC8D] font-mono font-bold mt-0.5">₹2,450.00</div>
-                </button>
-              </div>
-            </div>
-
             {serverError && (
               <div className="mb-6 p-4 rounded-xl bg-[#ffb4ab]/10 border border-[#ffb4ab]/20 text-[#ffb4ab] text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -228,7 +155,7 @@ export default function LoginPage() {
                   <input
                     type="text"
                     {...register("usernameOrEmail")}
-                    placeholder="bholu@gmail.com or alex.vance@smm-panel.io"
+                    placeholder="name@example.com"
                     className="w-full bg-[#131313] text-white text-sm pl-10 pr-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-[#D8EC8D]/50"
                   />
                 </div>
@@ -293,15 +220,11 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div className="mt-6 pt-5 border-t border-white/10 flex items-center justify-between text-xs text-[#c7c8b6]">
-              <span>Need administrator access?</span>
-              <button
-                type="button"
-                onClick={() => handleQuickDemoLogin("admin@smm-panel.io")}
-                className="text-[#D8EC8D] font-mono hover:underline font-semibold cursor-pointer"
-              >
-                Demo Admin Login &rarr;
-              </button>
+            <div className="mt-8 pt-6 border-t border-white/10 text-center text-xs text-[#c7c8b6]">
+              Don&apos;t have an account?{" "}
+              <Link href="/register" className="text-[#D8EC8D] font-bold hover:underline">
+                Create Account
+              </Link>
             </div>
           </div>
         </div>
