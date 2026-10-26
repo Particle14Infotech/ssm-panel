@@ -58,7 +58,7 @@ export function registerAuth(app: FastifyInstance): void {
   app.decorate("authorize", (...roles) => async (request) => {
     const user = await app.authenticate(request);
     if (!user.role || !roles.includes(user.role)) {
-      throw new ApiError(403, "FORBIDDEN", "Forbidden resource.");
+      throw new ApiError(403, "FORBIDDEN", "Forbidden resource");
     }
   });
 }

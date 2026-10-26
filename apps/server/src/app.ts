@@ -6,6 +6,9 @@ import { ApiError, statusCodeToCode, zodDetails } from "./errors";
 import { PrismaConnection, PrismaLike } from "./prisma";
 import { registerRateLimit } from "./rate-limit";
 import { registerHealthRoutes } from "./routes/health";
+import { registerCatalogRoutes } from "./routes/catalog";
+import { registerServicesRoutes } from "./routes/services";
+import { ServicesService } from "./services/services.service";
 import { ZodError } from "zod";
 
 export interface ServerDependencies {
@@ -64,6 +67,11 @@ export async function buildServer(dependencies: ServerDependencies = {}): Promis
   registerAuth(app);
   registerRateLimit(app, cache);
   registerHealthRoutes(app, prisma, cache);
+
+  const servicesService = new ServicesService(prisma);
+  registerCatalogRoutes(app, servicesService);
+  registerServicesRoutes(app, servicesService);
+
   app.get("/", async () => ({ status: "ok", service: "smm-server", uptime: process.uptime(), timestamp: new Date().toISOString() }));
 
   app.addHook("onReady", async () => prisma.connect?.());

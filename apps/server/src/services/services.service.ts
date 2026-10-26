@@ -1,0 +1,715 @@
+import { ServiceItem, ServicePlatform } from "@smm/contracts";
+import { Decimal } from "decimal.js";
+import { PrismaLike } from "../prisma";
+
+export const SANDBOX_CATEGORIES = [
+  { id: "cat_ig", name: "Instagram Followers & Engagement", slug: "instagram-followers", sortOrder: 1, serviceCount: 2 },
+  { id: "cat_yt", name: "YouTube Growth & Watchtime", slug: "youtube-views", sortOrder: 2, serviceCount: 3 },
+  { id: "cat_x", name: "X (Twitter) Engagement", slug: "x-twitter", sortOrder: 3, serviceCount: 1 },
+];
+
+export const SANDBOX_SERVICES: any[] = [
+  {
+    id: "1042",
+    categoryId: "cat_ig",
+    categoryName: "Instagram Followers & Engagement",
+    name: "Instagram High-Retention Followers [Real Active • 0% Drop • 30D Refill]",
+    displayName: "Instagram High-Retention Followers",
+    description: "High retention followers delivered at controlled pacing.",
+    platform: "INSTAGRAM",
+    rate: 180.0,
+    ratePer1000: 180.0,
+    min: 100,
+    minQty: 100,
+    max: 500000,
+    maxQty: 500000,
+    refill: true,
+    refillable: true,
+    cancel: true,
+    cancellable: true,
+    status: "ACTIVE",
+    active: true,
+    avgTime: "0 - 15 mins",
+    serviceType: "DEFAULT",
+    packageEligible: true,
+  },
+  {
+    id: "1043",
+    categoryId: "cat_ig",
+    categoryName: "Instagram Followers & Engagement",
+    name: "Instagram High-Quality Likes [Fast Delivery • High Quality]",
+    displayName: "Instagram High-Quality Likes",
+    description: "Post likes delivered smoothly.",
+    platform: "INSTAGRAM",
+    rate: 65.0,
+    ratePer1000: 65.0,
+    min: 50,
+    minQty: 50,
+    max: 100000,
+    maxQty: 100000,
+    refill: false,
+    refillable: false,
+    cancel: true,
+    cancellable: true,
+    status: "ACTIVE",
+    active: true,
+    avgTime: "0 - 5 mins",
+    serviceType: "DEFAULT",
+    packageEligible: true,
+  },
+  {
+    id: "2015",
+    categoryId: "cat_yt",
+    categoryName: "YouTube Growth & Watchtime",
+    name: "YouTube High Retention Views [Suggested Videos & Search Traffic]",
+    displayName: "YouTube High Retention Views",
+    description: "Search and suggested videos algorithm routing.",
+    platform: "YOUTUBE",
+    rate: 160.0,
+    ratePer1000: 160.0,
+    min: 1000,
+    minQty: 1000,
+    max: 10000000,
+    maxQty: 10000000,
+    refill: true,
+    refillable: true,
+    cancel: true,
+    cancellable: true,
+    status: "ACTIVE",
+    active: true,
+    avgTime: "1 - 3 hours",
+    serviceType: "DEFAULT",
+    packageEligible: true,
+  },
+  {
+    id: "srv_mock_refill",
+    categoryId: "cat_yt",
+    categoryName: "YouTube Growth & Watchtime",
+    name: "Mock Service 101 - Refill Enabled",
+    displayName: "Mock Service 101 - Refill Enabled",
+    description: "QA mock provider refill service.",
+    platform: "YOUTUBE",
+    rate: 120.0,
+    ratePer1000: 120.0,
+    min: 100,
+    minQty: 100,
+    max: 500000,
+    maxQty: 500000,
+    refill: true,
+    refillable: true,
+    cancel: false,
+    cancellable: false,
+    status: "ACTIVE",
+    active: true,
+    providerId: "prov_mock",
+    providerServiceId: "101",
+    avgTime: "0 - 10 mins",
+    serviceType: "DEFAULT",
+    packageEligible: true,
+  },
+  {
+    id: "srv_mock_cancel",
+    categoryId: "cat_yt",
+    categoryName: "YouTube Growth & Watchtime",
+    name: "Mock Service 102 - Cancel Enabled",
+    displayName: "Mock Service 102 - Cancel Enabled",
+    description: "QA mock provider cancel service.",
+    platform: "YOUTUBE",
+    rate: 150.0,
+    ratePer1000: 150.0,
+    min: 100,
+    minQty: 100,
+    max: 100000,
+    maxQty: 100000,
+    refill: false,
+    refillable: false,
+    cancel: true,
+    cancellable: true,
+    status: "ACTIVE",
+    active: true,
+    providerId: "prov_mock",
+    providerServiceId: "102",
+    avgTime: "0 - 10 mins",
+    serviceType: "DEFAULT",
+    packageEligible: true,
+  },
+  {
+    id: "srv_mock_fail",
+    categoryId: "cat_x",
+    categoryName: "X (Twitter) Engagement",
+    name: "Mock Service 103 - Failure Drill Service",
+    displayName: "Mock Service 103 - Failure Drill Service",
+    description: "QA failure drill service for refund verification.",
+    platform: "X_TWITTER",
+    rate: 200.0,
+    ratePer1000: 200.0,
+    min: 100,
+    minQty: 100,
+    max: 100000,
+    maxQty: 100000,
+    refill: false,
+    refillable: false,
+    cancel: true,
+    cancellable: true,
+    status: "ACTIVE",
+    active: true,
+    providerId: "prov_mock",
+    providerServiceId: "103",
+    avgTime: "0 - 5 mins",
+    serviceType: "DEFAULT",
+    packageEligible: true,
+  },
+];
+
+export class ServicesService {
+  constructor(private readonly prisma: PrismaLike) {}
+
+  private get client(): any {
+    return this.prisma.client || this.prisma;
+  }
+
+  private get isConnected(): boolean {
+    return Boolean(this.prisma.isConnected);
+  }
+
+  async getPlatforms(): Promise<string[]> {
+    if (!this.isConnected) {
+      return ["INSTAGRAM", "YOUTUBE", "TIKTOK", "TELEGRAM", "X_TWITTER", "FACEBOOK", "SPOTIFY"];
+    }
+
+    try {
+      const distinctPlatforms = await this.client.service.findMany({
+        where: { isDeleted: false, active: true },
+        select: { platform: true },
+        distinct: ["platform"],
+      });
+      const platforms = distinctPlatforms.map((p: any) => p.platform);
+      return platforms.length > 0
+        ? platforms
+        : ["INSTAGRAM", "YOUTUBE", "TIKTOK", "TELEGRAM", "X_TWITTER", "FACEBOOK", "SPOTIFY"];
+    } catch {
+      return ["INSTAGRAM", "YOUTUBE", "TIKTOK", "TELEGRAM", "X_TWITTER", "FACEBOOK", "SPOTIFY"];
+    }
+  }
+
+  async getCategories() {
+    if (!this.isConnected) {
+      return SANDBOX_CATEGORIES;
+    }
+
+    try {
+      const categories = await this.client.category.findMany({
+        include: {
+          _count: {
+            select: { services: { where: { isDeleted: false, active: true } } },
+          },
+        },
+        orderBy: { sortOrder: "asc" },
+      });
+
+      return categories.map((cat: any) => ({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        sortOrder: cat.sortOrder,
+        serviceCount: cat._count.services,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  async getGroupedCatalog(platform?: string) {
+    if (!this.isConnected) {
+      const filtered = platform && platform !== "ALL"
+        ? SANDBOX_SERVICES.filter((s) => s.platform === platform || (platform === "X" && s.platform === "X_TWITTER"))
+        : SANDBOX_SERVICES;
+
+      const categories = SANDBOX_CATEGORIES.map((cat) => {
+        const catServices = filtered.filter((s) => s.categoryId === cat.id);
+        return {
+          id: cat.id,
+          name: cat.name,
+          slug: cat.slug,
+          sortOrder: cat.sortOrder,
+          serviceCount: catServices.length,
+          services: catServices,
+        };
+      }).filter((cat) => cat.serviceCount > 0);
+
+      return { categories };
+    }
+
+    try {
+      const serviceWhere: any = {
+        isDeleted: false,
+        active: true,
+      };
+
+      if (platform && platform !== "ALL") {
+        const p = platform.toUpperCase();
+        if (p === "X" || p === "TWITTER" || p === "X_TWITTER") {
+          serviceWhere.platform = { in: ["X", "TWITTER", "X_TWITTER"] };
+        } else {
+          serviceWhere.platform = { equals: p, mode: "insensitive" };
+        }
+      }
+
+      const categories = await this.client.category.findMany({
+        orderBy: { sortOrder: "asc" },
+        include: {
+          services: {
+            where: serviceWhere,
+            orderBy: { ratePer1000: "asc" },
+          },
+        },
+      });
+
+      const uncategorizedServices = await this.client.service.findMany({
+        where: {
+          ...serviceWhere,
+          OR: [{ categoryId: null }, { categoryId: "" }],
+        },
+        orderBy: { ratePer1000: "asc" },
+      });
+
+      const activeGroupedCategories = categories
+        .filter((cat: any) => cat.services && cat.services.length > 0)
+        .map((cat: any) => ({
+          id: cat.id,
+          name: cat.name,
+          slug: cat.slug,
+          sortOrder: cat.sortOrder,
+          serviceCount: cat.services.length,
+          services: cat.services.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            displayName: s.displayName || s.name,
+            description: s.description || "",
+            platform: s.platform,
+            ratePer1000: s.ratePer1000 ? s.ratePer1000.toString() : "0",
+            minQty: s.minQty,
+            maxQty: s.maxQty,
+            avgTime: s.avgTime || "Immediate",
+            refillable: Boolean(s.refillable),
+            cancellable: Boolean(s.cancellable),
+            dripFeedSupported: Boolean(s.dripFeedSupported),
+            serviceType: s.serviceType,
+          })),
+        }));
+
+      if (uncategorizedServices && uncategorizedServices.length > 0) {
+        activeGroupedCategories.push({
+          id: "uncategorized",
+          name: "Other",
+          slug: "other",
+          sortOrder: 9999,
+          serviceCount: uncategorizedServices.length,
+          services: uncategorizedServices.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            displayName: s.displayName || s.name,
+            description: s.description || "",
+            platform: s.platform,
+            ratePer1000: s.ratePer1000 ? s.ratePer1000.toString() : "0",
+            minQty: s.minQty,
+            maxQty: s.maxQty,
+            avgTime: s.avgTime || "Immediate",
+            refillable: Boolean(s.refillable),
+            cancellable: Boolean(s.cancellable),
+            dripFeedSupported: Boolean(s.dripFeedSupported),
+            serviceType: s.serviceType,
+          })),
+        });
+      }
+
+      return { categories: activeGroupedCategories };
+    } catch {
+      return { categories: [] };
+    }
+  }
+
+  async createCategory(input: { name: string; slug?: string; sortOrder?: number }) {
+    const slug = input.slug || input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    if (!this.isConnected) {
+      return { success: true, category: { id: `cat_${Date.now()}`, name: input.name, slug } };
+    }
+
+    const category = await this.client.category.upsert({
+      where: { slug },
+      update: { name: input.name, sortOrder: input.sortOrder || 0 },
+      create: { name: input.name, slug, sortOrder: input.sortOrder || 0 },
+    });
+
+    return { success: true, category };
+  }
+
+  async findAll(
+    platform?: string,
+    query?: string,
+    categoryId?: string,
+    sortBy?: string,
+    packageEligible?: boolean | string
+  ): Promise<ServiceItem[]> {
+    if (!this.isConnected) {
+      let filtered = [...SANDBOX_SERVICES];
+      if (platform && platform !== "ALL") {
+        const p = platform.toUpperCase();
+        filtered = filtered.filter((s) => s.platform === p || ((p === "X" || p === "TWITTER") && s.platform === "X_TWITTER"));
+      }
+      if (categoryId) {
+        filtered = filtered.filter((s) => s.categoryId === categoryId);
+      }
+      if (query) {
+        const q = query.toLowerCase();
+        filtered = filtered.filter((s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q));
+      }
+      return filtered as any[];
+    }
+
+    try {
+      const where: any = {
+        isDeleted: false,
+        active: true,
+      };
+
+      if (platform && platform !== "ALL") {
+        const p = platform.toUpperCase();
+        if (p === "X" || p === "TWITTER" || p === "X_TWITTER") {
+          where.platform = { in: ["X", "TWITTER", "X_TWITTER"] };
+        } else {
+          where.platform = { equals: p, mode: "insensitive" };
+        }
+      }
+
+      if (packageEligible !== undefined) {
+        where.packageEligible = packageEligible === true || packageEligible === "true";
+      }
+
+      if (categoryId) {
+        where.categoryId = categoryId;
+      }
+
+      if (query && query.trim()) {
+        const q = query.trim();
+        where.OR = [
+          { name: { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
+        ];
+      }
+
+      const orderBy: any = {};
+      if (sortBy === "price_asc") {
+        orderBy.ratePer1000 = "asc";
+      } else if (sortBy === "price_desc") {
+        orderBy.ratePer1000 = "desc";
+      } else {
+        orderBy.createdAt = "desc";
+      }
+
+      const [services, providers] = await Promise.all([
+        this.client.service.findMany({
+          where,
+          include: {
+            category: true,
+            provider: {
+              select: { id: true, name: true },
+            },
+          },
+          orderBy,
+        }),
+        this.client.provider.findMany({
+          select: { id: true, name: true },
+        }).catch(() => []),
+      ]);
+
+      const providerMap = new Map((providers || []).map((p: any) => [p.id, p.name]));
+
+      return services.map((s: any) => {
+        let linkType = s.linkType;
+        if (!linkType) {
+          const lower = (s.name || "").toLowerCase();
+          if (lower.includes("follower") || lower.includes("subscriber") || lower.includes("member")) {
+            linkType = s.platform === "YOUTUBE" ? "CHANNEL" : "PROFILE";
+          } else {
+            linkType = "POST_OR_REEL";
+          }
+        }
+
+        const costVal = s.costINR ? Number(s.costINR) : (s.providerCostPer1k ? Number(s.providerCostPer1k) : null);
+        let marginPct: number | undefined = undefined;
+        if (s.marginPercentOverride !== null && s.marginPercentOverride !== undefined) {
+          marginPct = Number(s.marginPercentOverride);
+        } else if (costVal && costVal > 0) {
+          marginPct = Number((((Number(s.ratePer1000) - costVal) / costVal) * 100).toFixed(1));
+        }
+
+        const providerName = s.providerId ? (providerMap.get(s.providerId) || s.provider?.name) : undefined;
+        const backupProviderName = s.backupProviderId ? providerMap.get(s.backupProviderId) : undefined;
+
+        return {
+          id: s.id,
+          name: s.name,
+          displayName: s.displayName || s.name,
+          categoryId: s.categoryId,
+          categoryName: s.category?.name || "General",
+          platform: s.platform as ServicePlatform,
+          ratePer1000: Number(s.ratePer1000),
+          providerCostPer1k: s.providerCostPer1k ? Number(s.providerCostPer1k) : undefined,
+          costINR: costVal ?? undefined,
+          marginPercent: marginPct,
+          priceBelowCost: s.priceBelowCost ?? false,
+          minQty: s.minQty,
+          maxQty: s.maxQty,
+          description: s.description || "",
+          refillable: s.refillable,
+          cancellable: s.cancellable,
+          dripFeedSupported: s.dripFeedSupported,
+          allowManagedDrip: s.allowManagedDrip !== null && s.allowManagedDrip !== undefined ? s.allowManagedDrip : (s.serviceType !== "CUSTOM_COMMENTS" && !s.name?.toLowerCase().includes("comment")),
+          packageEligible: s.packageEligible ?? false,
+          providerId: s.providerId || null,
+          providerServiceId: s.providerServiceId || null,
+          providerName,
+          routingMode: (s.routingMode as any) || "MANUAL",
+          backupProviderId: s.backupProviderId || null,
+          backupProviderServiceId: s.backupProviderServiceId || null,
+          backupProviderName,
+          rawMeta: (s.rawMeta as any) || undefined,
+          dripFeedMinRuns: s.dripFeedMinRuns,
+          dripFeedMaxRuns: s.dripFeedMaxRuns,
+          dripFeedMinInterval: s.dripFeedMinInterval,
+          dripFeedMaxInterval: s.dripFeedMaxInterval,
+          serviceType: s.serviceType || "DEFAULT",
+          linkType: linkType as any,
+          avgStartTime: s.avgTime || "15-30 min",
+          avgProcessingSpeed: "High Speed",
+          status: (s.status === "ACTIVE" ? "ACTIVE" : "DISABLED") as any,
+        };
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  async findOne(id: string): Promise<ServiceItem | null> {
+    if (!this.isConnected) {
+      return (SANDBOX_SERVICES.find((s) => s.id === id) as any) || null;
+    }
+
+    const s = await this.client.service.findUnique({
+      where: { id },
+      include: {
+        category: true,
+        provider: { select: { id: true, name: true } },
+      },
+    });
+
+    if (!s || s.isDeleted) {
+      return (SANDBOX_SERVICES.find((s) => s.id === id) as any) || null;
+    }
+
+    let linkType = s.linkType;
+    if (!linkType) {
+      const lower = (s.name || "").toLowerCase();
+      if (lower.includes("follower") || lower.includes("subscriber") || lower.includes("member")) {
+        linkType = s.platform === "YOUTUBE" ? "CHANNEL" : "PROFILE";
+      } else {
+        linkType = "POST_OR_REEL";
+      }
+    }
+
+    const costVal = s.costINR ? Number(s.costINR) : (s.providerCostPer1k ? Number(s.providerCostPer1k) : null);
+    let marginPct: number | undefined = undefined;
+    if (s.marginPercentOverride !== null && s.marginPercentOverride !== undefined) {
+      marginPct = Number(s.marginPercentOverride);
+    } else if (costVal && costVal > 0) {
+      marginPct = Number((((Number(s.ratePer1000) - costVal) / costVal) * 100).toFixed(1));
+    }
+
+    let backupProviderName: string | undefined = undefined;
+    if (s.backupProviderId) {
+      const bp = await this.client.provider.findUnique({
+        where: { id: s.backupProviderId },
+        select: { name: true },
+      }).catch(() => null);
+      backupProviderName = bp?.name;
+    }
+
+    return {
+      id: s.id,
+      name: s.name,
+      displayName: s.displayName || s.name,
+      categoryId: s.categoryId,
+      categoryName: s.category?.name || "General",
+      platform: s.platform as ServicePlatform,
+      ratePer1000: Number(s.ratePer1000),
+      providerCostPer1k: s.providerCostPer1k ? Number(s.providerCostPer1k) : undefined,
+      costINR: costVal ?? undefined,
+      marginPercent: marginPct,
+      priceBelowCost: s.priceBelowCost ?? false,
+      minQty: s.minQty,
+      maxQty: s.maxQty,
+      description: s.description || "",
+      refillable: s.refillable,
+      cancellable: s.cancellable,
+      dripFeedSupported: s.dripFeedSupported,
+      allowManagedDrip: s.allowManagedDrip !== null && s.allowManagedDrip !== undefined ? s.allowManagedDrip : (s.serviceType !== "CUSTOM_COMMENTS" && !s.name?.toLowerCase().includes("comment")),
+      providerId: s.providerId || null,
+      providerServiceId: s.providerServiceId || null,
+      providerName: s.provider?.name,
+      routingMode: (s.routingMode as any) || "MANUAL",
+      backupProviderId: s.backupProviderId || null,
+      backupProviderServiceId: s.backupProviderServiceId || null,
+      backupProviderName,
+      rawMeta: (s.rawMeta as any) || undefined,
+      dripFeedMinRuns: s.dripFeedMinRuns,
+      dripFeedMaxRuns: s.dripFeedMaxRuns,
+      dripFeedMinInterval: s.dripFeedMinInterval,
+      dripFeedMaxInterval: s.dripFeedMaxInterval,
+      serviceType: s.serviceType || "DEFAULT",
+      linkType: linkType as any,
+      avgStartTime: s.avgTime || "Instant",
+      avgProcessingSpeed: "High Speed",
+      status: (s.status === "ACTIVE" ? "ACTIVE" : "DISABLED") as any,
+    };
+  }
+
+  async create(input: any) {
+    if (!this.isConnected) {
+      return { success: true, service: { id: `srv_${Date.now()}`, ...input } };
+    }
+
+    let categoryId = input.categoryId;
+    if (!categoryId) {
+      const defaultCat = await this.client.category.upsert({
+        where: { slug: "general" },
+        update: {},
+        create: { name: "General", slug: "general" },
+      });
+      categoryId = defaultCat.id;
+    }
+
+    const created = await this.client.service.create({
+      data: {
+        name: input.name,
+        categoryId,
+        platform: (input.platform || "INSTAGRAM").toUpperCase(),
+        ratePer1000: new Decimal(Number(input.ratePer1000 || 100)),
+        minQty: parseInt(String(input.minQty || 10), 10),
+        maxQty: parseInt(String(input.maxQty || 100000), 10),
+        description: input.description || "",
+        avgTime: input.avgTime || input.avgStartTime || "Instant",
+        refillable: Boolean(input.refillable),
+        cancellable: Boolean(input.cancellable),
+        dripFeedSupported: Boolean(input.dripFeedSupported),
+        allowManagedDrip: input.allowManagedDrip !== undefined ? Boolean(input.allowManagedDrip) : true,
+        dripFeedMinRuns: input.dripFeedMinRuns ? parseInt(String(input.dripFeedMinRuns), 10) : null,
+        dripFeedMaxRuns: input.dripFeedMaxRuns ? parseInt(String(input.dripFeedMaxRuns), 10) : null,
+        dripFeedMinInterval: input.dripFeedMinInterval ? parseInt(String(input.dripFeedMinInterval), 10) : null,
+        dripFeedMaxInterval: input.dripFeedMaxInterval ? parseInt(String(input.dripFeedMaxInterval), 10) : null,
+        active: input.active !== false,
+        status: input.status || "ACTIVE",
+        routingMode: input.routingMode || "MANUAL",
+        providerId: input.providerId || null,
+        providerServiceId: input.providerServiceId || null,
+        backupProviderId: input.backupProviderId || null,
+        backupProviderServiceId: input.backupProviderServiceId || null,
+      },
+      include: { category: true },
+    });
+
+    return { success: true, service: created };
+  }
+
+  async update(id: string, input: any) {
+    if (!this.isConnected) {
+      return { success: true, service: { id, ...input } };
+    }
+
+    const current = await this.client.service.findUnique({ where: { id } });
+    if (!current) return null;
+
+    const data: any = {};
+    if (input.name) data.name = input.name;
+    if (input.categoryId) data.categoryId = input.categoryId;
+    if (input.platform) data.platform = input.platform.toUpperCase();
+
+    let currentCostINR = current.costINR ? Number(current.costINR) : null;
+    if (input.costINR !== undefined) {
+      currentCostINR = input.costINR !== null ? Number(input.costINR) : null;
+      data.costINR = currentCostINR !== null ? new Decimal(currentCostINR) : null;
+    } else if (!currentCostINR || currentCostINR <= 0) {
+      if (current.providerCostPer1k && Number(current.providerCostPer1k) > 0) {
+        currentCostINR = Number(current.providerCostPer1k);
+      } else {
+        const priorMargin = current.marginPercentOverride ? Number(current.marginPercentOverride) : 20;
+        currentCostINR = Number((Number(current.ratePer1000) / (1 + priorMargin / 100)).toFixed(2));
+      }
+      data.costINR = new Decimal(currentCostINR);
+    }
+
+    const hasMarginInput = input.marginPercent !== undefined || input.marginPercentOverride !== undefined;
+    if (hasMarginInput) {
+      const marginVal = Number(input.marginPercent ?? input.marginPercentOverride);
+      data.marginPercentOverride = new Decimal(marginVal);
+      if (input.ratePer1000 === undefined && currentCostINR && currentCostINR > 0) {
+        const calculatedSellRate = Number((currentCostINR * (1 + marginVal / 100)).toFixed(2));
+        data.ratePer1000 = new Decimal(calculatedSellRate > 0 ? calculatedSellRate : 1.0);
+      }
+    }
+
+    if (input.ratePer1000 !== undefined) {
+      const newRate = Number(input.ratePer1000);
+      data.ratePer1000 = new Decimal(newRate);
+      if (!hasMarginInput && currentCostINR && currentCostINR > 0) {
+        const autoMargin = Number((((newRate - currentCostINR) / currentCostINR) * 100).toFixed(2));
+        data.marginPercentOverride = new Decimal(autoMargin);
+      }
+    }
+
+    if (input.minQty !== undefined) data.minQty = parseInt(String(input.minQty), 10);
+    if (input.maxQty !== undefined) data.maxQty = parseInt(String(input.maxQty), 10);
+    if (input.description !== undefined) data.description = input.description;
+    if (input.avgTime !== undefined) data.avgTime = input.avgTime;
+    if (input.refillable !== undefined) data.refillable = Boolean(input.refillable);
+    if (input.cancellable !== undefined) data.cancellable = Boolean(input.cancellable);
+    if (input.dripFeedSupported !== undefined) data.dripFeedSupported = Boolean(input.dripFeedSupported);
+    if (input.allowManagedDrip !== undefined) data.allowManagedDrip = Boolean(input.allowManagedDrip);
+    if (input.dripFeedMinRuns !== undefined) data.dripFeedMinRuns = input.dripFeedMinRuns ? parseInt(String(input.dripFeedMinRuns), 10) : null;
+    if (input.dripFeedMaxRuns !== undefined) data.dripFeedMaxRuns = input.dripFeedMaxRuns ? parseInt(String(input.dripFeedMaxRuns), 10) : null;
+    if (input.dripFeedMinInterval !== undefined) data.dripFeedMinInterval = input.dripFeedMinInterval ? parseInt(String(input.dripFeedMinInterval), 10) : null;
+    if (input.dripFeedMaxInterval !== undefined) data.dripFeedMaxInterval = input.dripFeedMaxInterval ? parseInt(String(input.dripFeedMaxInterval), 10) : null;
+    if (input.active !== undefined) data.active = Boolean(input.active);
+    if (input.status !== undefined) data.status = input.status;
+    if (input.routingMode !== undefined) data.routingMode = input.routingMode;
+    if (input.providerId !== undefined) data.providerId = input.providerId;
+    if (input.providerServiceId !== undefined) data.providerServiceId = input.providerServiceId;
+    if (input.backupProviderId !== undefined) data.backupProviderId = input.backupProviderId;
+    if (input.backupProviderServiceId !== undefined) data.backupProviderServiceId = input.backupProviderServiceId;
+    if (input.priceBelowCost !== undefined) data.priceBelowCost = Boolean(input.priceBelowCost);
+
+    const updated = await this.client.service.update({
+      where: { id },
+      data,
+      include: { category: true },
+    });
+
+    return { success: true, service: updated };
+  }
+
+  async remove(id: string) {
+    if (!this.isConnected) {
+      return true;
+    }
+
+    try {
+      await this.client.service.update({
+        where: { id },
+        data: { isDeleted: true, deletedAt: new Date(), active: false },
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}

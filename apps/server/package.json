@@ -13,6 +13,7 @@
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "@smm/contracts": "workspace:*",
+    "decimal.js": "^10.5.0",
     "dotenv": "^16.4.7",
     "fastify": "^4.28.1",
     "ioredis": "^6.0.0",
@@ -30,15 +31,17 @@
     "@types/node": "^22.13.4",
     "eslint": "^8.57.1",
     "jest": "^29.7.0",
-    "ts-jest": "^29.2.5",
     "supertest": "^7.3.1",
+    "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   },
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "roots": ["<rootDir>/test"],
+    "roots": [
+      "<rootDir>/test"
+    ],
     "testRegex": ".*\\.test\\.ts$",
     "testTimeout": 30000,
     "transform": {
