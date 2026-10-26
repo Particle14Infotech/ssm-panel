@@ -18,6 +18,7 @@ import {
   PackageQuoteResponse,
   PackagePurchaseInput,
 } from "@smm/contracts";
+import { getApiBase } from "@/lib/api-base";
 
 export const EMPTY_USER: UserProfile = {
   id: "",
@@ -98,14 +99,6 @@ interface CustomerContextType {
 }
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
-
-function getApiBase(): string {
-  const envUrl = process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
-  if (!envUrl.endsWith("/api/v1")) {
-    return envUrl.replace(/\/+$/, "") + "/api/v1";
-  }
-  return envUrl;
-}
 
 const API_BASE = getApiBase();
 

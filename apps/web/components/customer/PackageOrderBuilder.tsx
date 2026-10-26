@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { formatIndianNumber } from "@/lib/numberFormat";
 import { PackageQuoteResponseSchema, type PackageQuoteResponse } from "@smm/contracts";
+import { getApiBase } from "@/lib/api-base";
 
 const SUPPORTED_PLATFORMS = [
   { id: "instagram", name: "Instagram", placeholder: "e.g. travel_chronicles" },
@@ -325,8 +326,7 @@ export function PackageOrderBuilder() {
 
     let res: Response;
     try {
-      const envUrl = process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
-      const apiBase = envUrl.endsWith("/api/v1") ? envUrl : envUrl.replace(/\/+$/, "") + "/api/v1";
+      const apiBase = getApiBase();
       res = await fetch(`${apiBase}/packages/quote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

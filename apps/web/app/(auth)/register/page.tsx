@@ -9,6 +9,7 @@ import { Zap, ArrowRight, Lock, User, Mail, AlertCircle, ShieldCheck } from "luc
 import { BrandLogo } from "@/components/shared/BrandLogo";
 
 import dynamic from "next/dynamic";
+import { getApiBase } from "@/lib/api-base";
 
 const DynamicAuthCrown = dynamic(
   () => import("@/components/three/AuthCrown3D").then((m) => m.AuthCrown3D),
@@ -37,8 +38,10 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterInput) => {
     setServerError(null);
     try {
-      const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-      const apiBase = rawUrl.endsWith("/api/v1") ? rawUrl : rawUrl.replace(/\/+$/, "") + "/api/v1";
+      const apiBase = getApiBase();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
       const res = await fetch(`${apiBase}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,7 +51,17 @@ export default function RegisterPage() {
           email: data.email,
           password: data.password,
         }),
+        signal: controller.signal,
+      }).catch((fetchErr) => {
+        console.error("Register fetch network error:", fetchErr);
+        return null;
       });
+
+      clearTimeout(timeoutId);
+
+      if (!res) {
+        throw new Error("Unable to reach authentication server. Please check your network connection.");
+      }
 
       if (!res.ok) {
         const errorJson = await res.json().catch(() => ({}));

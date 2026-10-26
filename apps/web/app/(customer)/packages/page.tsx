@@ -21,14 +21,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { formatIndianNumber } from "@/lib/numberFormat";
-
-function getApiBase(): string {
-  const envUrl = process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
-  if (!envUrl.endsWith("/api/v1")) {
-    return envUrl.replace(/\/+$/, "") + "/api/v1";
-  }
-  return envUrl;
-}
+import { getApiBase } from "@/lib/api-base";
 
 export default function PackagesListPage() {
   const router = useRouter();

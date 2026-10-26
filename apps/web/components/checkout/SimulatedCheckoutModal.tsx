@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { PaymentIcon } from "@/components/shared/PaymentIcon";
 import { BrandLogo } from "@/components/shared/BrandLogo";
+import { getApiBase } from "@/lib/api-base";
 
 export interface CheckoutModalProps {
   isOpen: boolean;
@@ -136,9 +137,8 @@ export function SimulatedCheckoutModal({
     // Simulate realistic gateway round-trip delay
     setTimeout(async () => {
       try {
-        const token = localStorage.getItem("authToken");
-        const rawUrl = process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
-        const apiBase = rawUrl.endsWith("/api/v1") ? rawUrl : rawUrl.replace(/\/+$/, "") + "/api/v1";
+        const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+        const apiBase = getApiBase();
 
         const paymentId = isFailureTrigger
           ? `pay_fail_${Date.now()}`

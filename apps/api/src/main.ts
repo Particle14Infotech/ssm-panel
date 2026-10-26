@@ -22,7 +22,19 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, {
     cors: {
-      origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
+      origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+        if (!origin) return callback(null, true);
+        if (
+          allowedOrigins.includes("*") ||
+          allowedOrigins.includes(origin) ||
+          origin.startsWith("http://localhost:") ||
+          origin.startsWith("http://127.0.0.1:")
+        ) {
+          return callback(null, true);
+        }
+        // In VPS deployments where users access via server IP or dynamic domain, allow origin
+        return callback(null, true);
+      },
       credentials: true,
     },
     logger: ["error", "warn", "log"],

@@ -33,14 +33,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { motion } from "framer-motion";
-
-function getApiBase(): string {
-  const envUrl = process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
-  if (!envUrl.endsWith("/api/v1")) {
-    return envUrl.replace(/\/+$/, "") + "/api/v1";
-  }
-  return envUrl;
-}
+import { getApiBase } from "@/lib/api-base";
 
 export default function OrdersPage() {
   const { orders, refillOrder, cancelOrder, addFavorite, user } = useCustomer();

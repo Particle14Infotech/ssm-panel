@@ -17,8 +17,9 @@ import {
   Clock,
   ShieldCheck,
 } from "lucide-react";
+import { getApiBase } from "@/lib/api-base";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+const API_BASE = getApiBase();
 
 export default function AdminProfitDashboardPage() {
   const [dateRange, setDateRange] = useState<"today" | "7d" | "30d" | "all">("7d");

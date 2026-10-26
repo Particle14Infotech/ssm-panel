@@ -18,6 +18,7 @@ import {
   Globe,
   Sliders,
 } from "lucide-react";
+import { getApiBase } from "@/lib/api-base";
 
 interface SystemSettingsData {
   platformName: string;
@@ -57,13 +58,7 @@ const DEFAULT_SETTINGS: SystemSettingsData = {
   dripFeedMaxInterval: 1440,
 };
 
-function getApiBase(): string {
-  const envUrl = process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
-  if (!envUrl.endsWith("/api/v1")) {
-    return envUrl.replace(/\/+$/, "") + "/api/v1";
-  }
-  return envUrl;
-}
+
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SystemSettingsData>(DEFAULT_SETTINGS);

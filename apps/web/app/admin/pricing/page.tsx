@@ -18,8 +18,9 @@ import {
   X,
   RotateCcw,
 } from "lucide-react";
+import { getApiBase } from "@/lib/api-base";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+const API_BASE = getApiBase();
 
 export default function AdminPricingPage() {
   const [activeTab, setActiveTab] = useState<"settings" | "simulator" | "pending" | "bulk">("settings");

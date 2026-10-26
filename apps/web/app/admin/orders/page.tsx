@@ -18,6 +18,7 @@ import {
   Edit,
   Save,
 } from "lucide-react";
+import { getApiBase } from "@/lib/api-base";
 
 export default function AdminOrdersPage() {
   const { orders, providers, updateOrderStatus, resendOrderToProvider, refreshAdminData } = useAdmin();
@@ -116,10 +117,7 @@ export default function AdminOrdersPage() {
       return;
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://smm-production-bca7.up.railway.app";
-    const apiBase = apiUrl.endsWith("/api/v1")
-      ? apiUrl
-      : `${apiUrl.replace(/\/+$/, "")}/api/v1`;
+    const apiBase = getApiBase();
     const body: Record<string, unknown> = {
       outcome: reconciliationOutcome,
       evidence,

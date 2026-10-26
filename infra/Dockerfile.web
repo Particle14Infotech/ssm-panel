@@ -6,6 +6,7 @@ RUN corepack enable
 FROM base AS builder
 WORKDIR /app
 COPY . .
+ENV NEXT_PUBLIC_API_URL="/api/v1"
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @smm/contracts build
 RUN pnpm --filter @smm/web build

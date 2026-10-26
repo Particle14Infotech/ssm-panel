@@ -46,7 +46,7 @@ Fill in the production secrets in `.env`:
 - `PROVIDER_KEY_SECRET` (`openssl rand -hex 32`)
 - `ADMIN_EMAIL` & `ADMIN_PASSWORD` (Your initial administrator credentials)
 - `FRONTEND_URL` (Your domain or `http://your-vps-ip:3000`)
-- `NEXT_PUBLIC_API_URL` (Your API domain or `http://your-vps-ip:4000/api/v1`)
+- `NEXT_PUBLIC_API_URL` (Set to `/api/v1` for automatic reverse proxying, or your public API domain)
 
 ### 4. Build and Start All Containers
 ```bash

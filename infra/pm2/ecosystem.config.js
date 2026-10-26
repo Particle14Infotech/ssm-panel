@@ -62,6 +62,8 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: 3000,
+        INTERNAL_API_URL: "http://127.0.0.1:4000",
+        NEXT_PUBLIC_API_URL: "/api/v1",
       },
     },
   ],
