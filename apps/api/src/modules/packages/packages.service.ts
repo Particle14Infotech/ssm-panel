@@ -324,7 +324,7 @@ export class PackagesService {
 
       // 4e. Create PackageRules and precompute TIME_DRIP executions
       const createdRules: any[] = [];
-      const createdExecutions: any[] = [];
+      let createdExecutionsCount = 0;
 
       for (const item of quote.items) {
         const isPostTriggered = item.targetType === "POST_OR_REEL" && (item.quantityPerPost || 0) > 0;
@@ -366,9 +366,9 @@ export class PackagesService {
             startAt,
           });
 
-          for (const r of dripResult.runs) {
-            const execution = await tx.packageExecution.create({
-              data: {
+          if (dripResult.runs.length > 0) {
+            await tx.packageExecution.createMany({
+              data: dripResult.runs.map((r) => ({
                 packageId: pkg.id,
                 ruleId: rule.id,
                 source: ExecutionSource.SCHEDULE,
@@ -378,9 +378,9 @@ export class PackagesService {
                 allocatedCharge: new Decimal(r.allocatedCharge),
                 executeAt: r.executeAt,
                 status: PackageExecutionStatus.SCHEDULED,
-              },
+              })),
             });
-            createdExecutions.push(execution);
+            createdExecutionsCount += dripResult.runs.length;
           }
         }
       }
@@ -393,7 +393,7 @@ export class PackagesService {
           status: pkg.status,
           reserveTotal: reserveTotal.toNumber(),
           rulesCount: createdRules.length,
-          executionsCount: createdExecutions.length,
+          executionsCount: createdExecutionsCount,
         },
         newBalance: newBalance.toNumber(),
       };
