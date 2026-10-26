@@ -14,5 +14,8 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app ./
+RUN mkdir -p /app/node_modules/@smm /app/apps/worker/node_modules/@smm && \
+    ln -sf /app/packages/contracts /app/node_modules/@smm/contracts && \
+    ln -sf /app/packages/contracts /app/apps/worker/node_modules/@smm/contracts
 
 CMD ["node", "apps/worker/dist/main.js"]
