@@ -7,6 +7,8 @@ FROM base AS builder
 WORKDIR /app
 COPY . .
 ENV NEXT_PUBLIC_API_URL="/api/v1"
+ENV DOCKER_CONTAINER="true"
+ENV INTERNAL_API_URL="http://api:4000"
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @smm/contracts build
 RUN pnpm --filter @smm/web build

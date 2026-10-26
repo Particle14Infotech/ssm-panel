@@ -26,7 +26,7 @@ const nextConfig = {
       backendUrl = process.env.NEXT_PUBLIC_API_URL;
     }
     if (!backendUrl || backendUrl.includes("railway.app")) {
-      backendUrl = process.env.DOCKER_CONTAINER === "true" ? "http://api:4000" : "http://127.0.0.1:4000";
+      backendUrl = (process.env.DOCKER_CONTAINER === "true" || process.env.NODE_ENV === "production") ? "http://api:4000" : "http://127.0.0.1:4000";
     }
     const cleanBackend = backendUrl.replace(/\/api\/v1\/?$/, "").replace(/\/+$/, "");
     return [

@@ -361,7 +361,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       } else {
         setServices((prev) => (prev.length > 0 ? prev : [
           {
-            id: "1041",
+            id: "1043",
             categoryId: "instagram-growth",
             categoryName: "Instagram Growth",
             name: "Instagram Likes [High Quality • Instant]",
@@ -411,7 +411,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
             dripFeedMaxInterval: 1440,
           },
           {
-            id: "1043",
+            id: "1044",
             categoryId: "instagram-growth",
             categoryName: "Instagram Growth",
             name: "Instagram Reels Views [High Retention • Explore Boost]",
