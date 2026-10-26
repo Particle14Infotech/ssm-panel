@@ -1,7 +1,7 @@
 const { execSync } = require("child_process");
 
 function detectService() {
-  const raw = (process.env.RAILWAY_SERVICE_NAME || process.env.SERVICE_NAME || "").trim().toLowerCase();
+  const raw = (process.env.RAILWAY_SERVICE_NAME || process.env.SERVICE_NAME || process.env.RENDER_SERVICE_NAME || "").trim().toLowerCase();
   if (process.env.BUILD_ALL === "true" || raw === "all") {
     return "all";
   }

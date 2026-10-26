@@ -3,7 +3,7 @@ const fs = require("fs");
 const crypto = require("crypto");
 
 function detectService() {
-  const raw = (process.env.RAILWAY_SERVICE_NAME || process.env.SERVICE_NAME || "").trim().toLowerCase();
+  const raw = (process.env.RAILWAY_SERVICE_NAME || process.env.SERVICE_NAME || process.env.RENDER_SERVICE_NAME || "").trim().toLowerCase();
   if (raw.includes("web") || raw.includes("front") || raw.includes("client") || raw.includes("next")) {
     return "web";
   }
