@@ -46,7 +46,10 @@ export class PackagesController {
     }
     const clientIp = forwardedFor ? forwardedFor.split(",")[0].trim() : undefined;
     if (user?.id || clientIp) {
-      return this.packagesService.getQuote(parseRes.data, user?.id, clientIp);
+      // An authenticated customer already has a per-user quote limit. Do not
+      // additionally apply the proxy IP limit, because web-proxied customers
+      // otherwise share one internal IP bucket.
+      return this.packagesService.getQuote(parseRes.data, user?.id, user?.id ? undefined : clientIp);
     }
     return this.packagesService.getQuote(parseRes.data);
   }

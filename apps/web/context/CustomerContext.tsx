@@ -513,7 +513,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [getAuthToken, logout, user.id, user.name]);
+  }, [getAuthToken, logout]);
 
   useEffect(() => {
     refreshData();

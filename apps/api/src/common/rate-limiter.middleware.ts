@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { Request, Response, NextFunction } from "express";
 import Redis from "ioredis";
+import { createHash } from "crypto";
 
 interface RateLimitConfig {
   points: number; // Max hits
@@ -59,6 +60,13 @@ export class RateLimiterMiddleware implements NestMiddleware {
     }
     const ip = req.ip || req.socket.remoteAddress || "127.0.0.1";
     const apiKey = req.headers["x-api-key"] as string | undefined;
+    const authorization = req.headers.authorization;
+    // Requests proxied through the Next.js web container share its internal IP.
+    // Key authenticated browser traffic by a non-reversible token fingerprint so
+    // one customer's activity can never exhaust another customer's allowance.
+    const sessionKey = authorization?.startsWith("Bearer ")
+      ? createHash("sha256").update(authorization.slice(7)).digest("hex").slice(0, 16)
+      : undefined;
 
     // In local development or testing environments, bypass rate limiter for localhost
     const isLocalhost = ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1";
@@ -84,7 +92,7 @@ export class RateLimiterMiddleware implements NestMiddleware {
       config = { points: 300, duration: 60 }; // 300 req/min for authenticated resellers
     }
 
-    const key = `ratelimit:${tier}:${apiKey ? apiKey.substring(0, 8) : ip}`;
+    const key = `ratelimit:${tier}:${apiKey ? apiKey.substring(0, 8) : sessionKey || ip}`;
 
     try {
       if (this.redis && this.redis.status === "ready") {

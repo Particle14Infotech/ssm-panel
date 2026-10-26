@@ -110,11 +110,7 @@ function NewOrderContent() {
   const initialServiceParam = searchParams.get("service") || searchParams.get("serviceId");
   const initialPlatformParam = searchParams.get("platform");
 
-  const { user, services, createOrder, favorites, orders, refreshData } = useCustomer();
-
-  useEffect(() => {
-    refreshData();
-  }, [refreshData]);
+  const { user, services, createOrder, favorites, orders } = useCustomer();
 
   // Load last platform or query param
   const initialPlatform = initialPlatformParam
