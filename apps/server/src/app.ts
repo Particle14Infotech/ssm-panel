@@ -9,8 +9,12 @@ import { registerHealthRoutes } from "./routes/health";
 import { registerCatalogRoutes } from "./routes/catalog";
 import { registerServicesRoutes } from "./routes/services";
 import { registerPlatformsRoutes } from "./routes/platforms";
+import { registerUsersRoutes } from "./routes/users";
+import { registerSettingsRoutes } from "./routes/settings";
 import { ServicesService } from "./services/services.service";
 import { PlatformsService } from "./services/platforms.service";
+import { UsersService } from "./services/users.service";
+import { SettingsService } from "./services/settings.service";
 import { ZodError } from "zod";
 
 export interface ServerDependencies {
@@ -76,6 +80,12 @@ export async function buildServer(dependencies: ServerDependencies = {}): Promis
 
   const platformsService = new PlatformsService(prisma);
   registerPlatformsRoutes(app, platformsService);
+
+  const usersService = new UsersService(prisma);
+  registerUsersRoutes(app, usersService);
+
+  const settingsService = new SettingsService();
+  registerSettingsRoutes(app, settingsService);
 
   app.get("/", async () => ({ status: "ok", service: "smm-server", uptime: process.uptime(), timestamp: new Date().toISOString() }));
 
