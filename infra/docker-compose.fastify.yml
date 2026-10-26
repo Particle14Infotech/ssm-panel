@@ -1,0 +1,30 @@
+version: "3.8"
+
+# Opt-in migration overlay. Run with:
+# docker compose -f infra/docker-compose.prod.yml -f infra/docker-compose.fastify.yml up -d --build
+# Leave FASTIFY_ROUTE_PREFIXES empty to keep every route on NestJS.
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.server
+    container_name: smm_server
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 4100
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-smm_user}:${POSTGRES_PASSWORD:-smm_password_secure}@postgres:5432/${POSTGRES_DB:-smm_db}?schema=public}
+      DIRECT_URL: ${DIRECT_URL:-postgresql://${POSTGRES_USER:-smm_user}:${POSTGRES_PASSWORD:-smm_password_secure}@postgres:5432/${POSTGRES_DB:-smm_db}?schema=public}
+      REDIS_URL: redis://redis:6379
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      REQUEST_TIMEOUT_MS: ${REQUEST_TIMEOUT_MS:-30000}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  web:
+    environment:
+      INTERNAL_FASTIFY_URL: http://server:4100
+      FASTIFY_ROUTE_PREFIXES: ${FASTIFY_ROUTE_PREFIXES:-}

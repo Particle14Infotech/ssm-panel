@@ -29,7 +29,19 @@ const nextConfig = {
       backendUrl = (process.env.DOCKER_CONTAINER === "true" || process.env.NODE_ENV === "production") ? "http://api:4000" : "http://127.0.0.1:4000";
     }
     const cleanBackend = backendUrl.replace(/\/api\/v1\/?$/, "").replace(/\/+$/, "");
+    const fastifyUrl = process.env.INTERNAL_FASTIFY_URL?.replace(/\/api\/v1\/?$/, "").replace(/\/+$/, "");
+    const fastifyPrefixes = (process.env.FASTIFY_ROUTE_PREFIXES || "")
+      .split(",")
+      .map((prefix) => prefix.trim().replace(/^\/+|\/+$/g, ""))
+      .filter((prefix) => /^[a-zA-Z0-9/_-]+$/.test(prefix));
+    const fastifyRewrites = fastifyUrl
+      ? fastifyPrefixes.map((prefix) => ({
+          source: `/api/v1/${prefix}/:path*`,
+          destination: `${fastifyUrl}/api/v1/${prefix}/:path*`,
+        }))
+      : [];
     return [
+      ...fastifyRewrites,
       {
         source: "/api/v1/:path*",
         destination: `${cleanBackend}/api/v1/:path*`,
