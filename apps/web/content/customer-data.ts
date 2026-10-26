@@ -22,7 +22,7 @@ export const INITIAL_USER: UserProfile = {
   },
   totalSpent: 0,
   totalOrders: 0,
-  createdAt: new Date().toISOString(),
+  createdAt: "2026-10-26T00:00:00.000Z",
 };
 
 export const INITIAL_SERVICES: ServiceItem[] = [];

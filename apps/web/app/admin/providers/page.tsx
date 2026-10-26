@@ -455,7 +455,7 @@ export default function AdminProvidersPage() {
                     </div>
                     <div className="flex justify-between text-slate-400">
                       <span>Last order status check</span>
-                      <span className="text-slate-300 font-mono text-[10px]">
+                      <span className="text-slate-300 font-mono text-[10px]" suppressHydrationWarning>
                         {p.lastStatusCheckAt
                           ? new Date(p.lastStatusCheckAt).toLocaleString()
                           : "No recent checks"}
@@ -470,7 +470,7 @@ export default function AdminProvidersPage() {
                     {p.lastSyncAt && (
                       <div className="flex justify-between text-slate-400">
                         <span>Last Synced</span>
-                        <span className="text-slate-300 font-mono text-[10px]">
+                        <span className="text-slate-300 font-mono text-[10px]" suppressHydrationWarning>
                           {new Date(p.lastSyncAt).toLocaleString()}
                         </span>
                       </div>

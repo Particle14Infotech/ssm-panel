@@ -258,7 +258,7 @@ export default function AdminAuditLogsPage() {
                     <div className="flex items-center gap-3 text-xs text-slate-400 font-mono">
                       <span>{log.ipAddress}</span>
                       <span className="text-white/20">•</span>
-                      <span>{new Date(log.createdAt).toLocaleString()}</span>
+                      <span suppressHydrationWarning>{new Date(log.createdAt).toLocaleString()}</span>
                     </div>
                   </div>
 

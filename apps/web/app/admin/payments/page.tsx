@@ -85,7 +85,7 @@ export default function AdminPaymentsPage() {
                     <td className="py-4 px-3 font-mono font-bold text-white whitespace-nowrap">
                       {txn.id}
                     </td>
-                    <td className="py-4 px-3 font-mono text-on-surface-variant whitespace-nowrap">
+                    <td className="py-4 px-3 font-mono text-on-surface-variant whitespace-nowrap" suppressHydrationWarning>
                       {new Date(txn.createdAt).toLocaleString()}
                     </td>
                     <td className="py-4 px-3 font-mono text-white whitespace-nowrap">

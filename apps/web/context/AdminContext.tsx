@@ -60,7 +60,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [orders, setOrders] = useState<OrderItem[]>([]);
-  const [providers, setProviders] = useState<AdminProvider[]>(INITIAL_ADMIN_PROVIDERS);
+  const [providers, setProviders] = useState<AdminProvider[]>([]);
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -219,7 +219,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
             healthStatus: p.healthStatus || "UNKNOWN",
             consecutiveStatusFailures: Number(p.consecutiveStatusFailures || 0),
             lastStatusCheckAt: p.lastStatusCheckAt || null,
-            lastSyncAt: p.updatedAt || p.lastSyncAt || new Date().toISOString(),
+            lastSyncAt: p.updatedAt || p.lastSyncAt || null,
           }))
         );
       }

@@ -53,7 +53,7 @@ export const INITIAL_ADMIN_PROVIDERS: AdminProvider[] = [
     currency: "INR",
     status: "CONNECTED",
     serviceCount: 2531,
-    lastSyncAt: new Date().toISOString(),
+    lastSyncAt: "2026-10-26T00:00:00.000Z",
   },
 ];
 

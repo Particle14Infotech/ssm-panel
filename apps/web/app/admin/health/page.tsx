@@ -289,7 +289,7 @@ export default function AdminSystemHealthPage() {
                     <div className="text-slate-400 text-[11px]">
                       Status: <span className="text-[#D8EC8D]">{comp.lastDispatch.status}</span> • Ref: {comp.lastDispatch.providerOrderId || "simulated"}
                     </div>
-                    <div className="text-slate-400 text-[10px]">
+                    <div className="text-slate-400 text-[10px]" suppressHydrationWarning>
                       Dispatched: {new Date(comp.lastDispatch.timestamp).toLocaleString()}
                     </div>
                   </div>
@@ -302,7 +302,7 @@ export default function AdminSystemHealthPage() {
                 <div className="text-slate-400 text-[10px] uppercase font-semibold">Catalog Sync Supervisor</div>
                 <div className="text-white">
                   Last Catalog Sync:{" "}
-                  <span className="text-slate-300">
+                  <span className="text-slate-300" suppressHydrationWarning>
                     {comp?.lastCatalogSync?.lastSyncAt
                       ? new Date(comp.lastCatalogSync.lastSyncAt).toLocaleString()
                       : "Sync on boot active"}
