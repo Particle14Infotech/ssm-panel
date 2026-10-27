@@ -21,6 +21,11 @@ import { registerOrdersRoutes } from "./routes/orders";
 import { registerPackagesRoutes, PackagesServiceLike } from "./routes/packages";
 import { registerWalletRoutes } from "./routes/wallet";
 import { registerPaymentsRoutes } from "./routes/payments";
+import { registerPricingRoutes } from "./routes/pricing";
+import { registerCouponsRoutes } from "./routes/coupons";
+import { registerAnnouncementsRoutes } from "./routes/announcements";
+import { registerReportsRoutes } from "./routes/reports";
+import { registerEmailRoutes } from "./routes/email";
 import { ServicesService } from "./services/services.service";
 import { PlatformsService } from "./services/platforms.service";
 import { UsersService } from "./services/users.service";
@@ -36,6 +41,11 @@ import { PackagesService } from "./services/packages.service";
 import { PackagesQuoteService } from "./services/packages-quote.service";
 import { WalletService } from "./services/wallet.service";
 import { PaymentsService } from "./services/payments.service";
+import { PricingService } from "./services/pricing.service";
+import { CouponsService } from "./services/coupons.service";
+import { AnnouncementsService } from "./services/announcements.service";
+import { ReportsService } from "./services/reports.service";
+import { EmailService } from "./services/email.service";
 import { SmmProviderClient } from "./services/smm-provider.client";
 import { ZodError } from "zod";
 
@@ -178,6 +188,21 @@ export async function buildServer(dependencies: ServerDependencies = {}): Promis
 
   const paymentsService = dependencies.paymentsService ?? new PaymentsService(prisma, walletService);
   registerPaymentsRoutes(app, paymentsService);
+
+  const pricingService = new PricingService(prisma);
+  registerPricingRoutes(app, pricingService);
+
+  const couponsService = new CouponsService();
+  registerCouponsRoutes(app, couponsService);
+
+  const announcementsService = new AnnouncementsService();
+  registerAnnouncementsRoutes(app, announcementsService);
+
+  const reportsService = new ReportsService(prisma);
+  registerReportsRoutes(app, reportsService);
+
+  const emailService = new EmailService(prisma);
+  registerEmailRoutes(app, emailService);
 
   app.get("/", async () => ({ status: "ok", service: "smm-server", uptime: process.uptime(), timestamp: new Date().toISOString() }));
 
