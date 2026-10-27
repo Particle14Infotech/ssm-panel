@@ -19,6 +19,8 @@ import { registerResellerRoutes } from "./routes/reseller";
 import { registerProvidersRoutes } from "./routes/providers";
 import { registerOrdersRoutes } from "./routes/orders";
 import { registerPackagesRoutes, PackagesServiceLike } from "./routes/packages";
+import { registerWalletRoutes } from "./routes/wallet";
+import { registerPaymentsRoutes } from "./routes/payments";
 import { ServicesService } from "./services/services.service";
 import { PlatformsService } from "./services/platforms.service";
 import { UsersService } from "./services/users.service";
@@ -32,6 +34,8 @@ import { ProvidersService } from "./services/providers.service";
 import { OrdersService } from "./services/orders.service";
 import { PackagesService } from "./services/packages.service";
 import { PackagesQuoteService } from "./services/packages-quote.service";
+import { WalletService } from "./services/wallet.service";
+import { PaymentsService } from "./services/payments.service";
 import { SmmProviderClient } from "./services/smm-provider.client";
 import { ZodError } from "zod";
 
@@ -40,6 +44,8 @@ export interface ServerDependencies {
   prisma?: PrismaLike;
   smmClient?: SmmProviderClient;
   packagesService?: PackagesServiceLike;
+  walletService?: WalletService;
+  paymentsService?: PaymentsService;
 }
 
 export async function buildServer(dependencies: ServerDependencies = {}): Promise<FastifyInstance> {
@@ -166,6 +172,12 @@ export async function buildServer(dependencies: ServerDependencies = {}): Promis
   const packagesQuoteService = new PackagesQuoteService(prisma, platformsService);
   const packagesService = dependencies.packagesService ?? new PackagesService(prisma, packagesQuoteService, platformsService, cache);
   registerPackagesRoutes(app, packagesService);
+
+  const walletService = dependencies.walletService ?? new WalletService(prisma);
+  registerWalletRoutes(app, walletService);
+
+  const paymentsService = dependencies.paymentsService ?? new PaymentsService(prisma, walletService);
+  registerPaymentsRoutes(app, paymentsService);
 
   app.get("/", async () => ({ status: "ok", service: "smm-server", uptime: process.uptime(), timestamp: new Date().toISOString() }));
 
