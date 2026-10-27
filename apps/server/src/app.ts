@@ -18,6 +18,7 @@ import { registerAuthRoutes } from "./routes/auth";
 import { registerResellerRoutes } from "./routes/reseller";
 import { registerProvidersRoutes } from "./routes/providers";
 import { registerOrdersRoutes } from "./routes/orders";
+import { registerPackagesRoutes, PackagesServiceLike } from "./routes/packages";
 import { ServicesService } from "./services/services.service";
 import { PlatformsService } from "./services/platforms.service";
 import { UsersService } from "./services/users.service";
@@ -29,6 +30,8 @@ import { AuthService } from "./services/auth.service";
 import { ResellerService } from "./services/reseller.service";
 import { ProvidersService } from "./services/providers.service";
 import { OrdersService } from "./services/orders.service";
+import { PackagesService } from "./services/packages.service";
+import { PackagesQuoteService } from "./services/packages-quote.service";
 import { SmmProviderClient } from "./services/smm-provider.client";
 import { ZodError } from "zod";
 
@@ -36,6 +39,7 @@ export interface ServerDependencies {
   cache?: CacheLike;
   prisma?: PrismaLike;
   smmClient?: SmmProviderClient;
+  packagesService?: PackagesServiceLike;
 }
 
 export async function buildServer(dependencies: ServerDependencies = {}): Promise<FastifyInstance> {
@@ -71,19 +75,54 @@ export async function buildServer(dependencies: ServerDependencies = {}): Promis
   });
   app.options("*", async (_request, reply) => reply.status(204).send());
   app.setErrorHandler((error, request, reply) => {
-    const fastifyError = error as { statusCode?: number; message?: string };
-    const statusCode = error instanceof ApiError ? error.statusCode : fastifyError.statusCode && fastifyError.statusCode < 500 ? fastifyError.statusCode : 500;
-    const code = error instanceof ApiError ? error.code : statusCodeToCode(statusCode);
-    const details = error instanceof ApiError ? error.details : error instanceof ZodError ? zodDetails(error) : undefined;
-    const message = error instanceof ApiError
-      ? error.message
-      : error instanceof ZodError
-        ? error.issues.map((issue) => issue.message).join(", ")
-        : statusCode === 500 && process.env.NODE_ENV === "production"
+    let statusCode = 500;
+    let code = "INTERNAL_SERVER_ERROR";
+    let message = "An internal server error occurred.";
+    let details: unknown = undefined;
+
+    if (error instanceof ApiError) {
+      statusCode = error.statusCode;
+      code = error.code;
+      message = error.message;
+      details = error.details;
+    } else if (error instanceof ZodError) {
+      statusCode = 400;
+      code = "BAD_REQUEST";
+      message = error.issues.map((i) => i.message).join(", ");
+      details = zodDetails(error);
+    } else if (typeof (error as any)?.getStatus === "function") {
+      statusCode = (error as any).getStatus();
+      const res = (error as any).getResponse?.();
+      if (typeof res === "string") {
+        message = res;
+        code = statusCodeToCode(statusCode);
+      } else if (res && typeof res === "object") {
+        message = (res as any).message || error.message;
+        code = (res as any).code || statusCodeToCode(statusCode);
+        details = (res as any).details || (Array.isArray((res as any).message) ? (res as any).message : undefined);
+      } else {
+        message = error.message;
+        code = statusCodeToCode(statusCode);
+      }
+    } else {
+      const fastifyError = error as { statusCode?: number; message?: string };
+      statusCode = fastifyError.statusCode && fastifyError.statusCode < 500 ? fastifyError.statusCode : 500;
+      code = statusCodeToCode(statusCode);
+      message =
+        statusCode === 500 && process.env.NODE_ENV === "production"
           ? "Internal server error"
-          : fastifyError.message || "An internal server error occurred.";
+          : fastifyError.message || message;
+    }
+
     if (statusCode >= 500) request.log.error({ err: error }, "Unhandled exception");
-    return reply.status(statusCode).send({ code, message, details, requestId: request.id, timestamp: new Date().toISOString(), path: request.url });
+    return reply.status(statusCode).send({
+      code,
+      message: Array.isArray(message) ? message.join(", ") : message,
+      details,
+      requestId: request.id,
+      timestamp: new Date().toISOString(),
+      path: request.url,
+    });
   });
 
   registerAuth(app);
@@ -123,6 +162,10 @@ export async function buildServer(dependencies: ServerDependencies = {}): Promis
 
   const ordersService = new OrdersService(prisma);
   registerOrdersRoutes(app, ordersService);
+
+  const packagesQuoteService = new PackagesQuoteService(prisma, platformsService);
+  const packagesService = dependencies.packagesService ?? new PackagesService(prisma, packagesQuoteService, platformsService, cache);
+  registerPackagesRoutes(app, packagesService);
 
   app.get("/", async () => ({ status: "ok", service: "smm-server", uptime: process.uptime(), timestamp: new Date().toISOString() }));
 
