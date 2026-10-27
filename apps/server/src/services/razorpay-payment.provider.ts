@@ -22,14 +22,14 @@ export class RazorpayPaymentProvider implements PaymentProvider {
   }
 
   private getKeyId(): string {
-    return this.customKeyId || process.env.RAZORPAY_KEY_ID || "";
+    return typeof this.customKeyId === "string" ? this.customKeyId : (process.env.RAZORPAY_KEY_ID || "");
   }
 
   private getKeySecret(): string {
-    return this.customKeySecret || process.env.RAZORPAY_KEY_SECRET || "";
+    return typeof this.customKeySecret === "string" ? this.customKeySecret : (process.env.RAZORPAY_KEY_SECRET || "");
   }
 
-  async createOrder(_params: PaymentOrderParams): Promise<PaymentOrderResult> {
+  async createOrder(params: PaymentOrderParams): Promise<PaymentOrderResult> {
     const keyId = this.getKeyId();
     const keySecret = this.getKeySecret();
 
@@ -41,10 +41,55 @@ export class RazorpayPaymentProvider implements PaymentProvider {
       );
     }
 
-    throw new ApiError(501, "NOT_IMPLEMENTED", "Razorpay live order creation is awaiting production credentials.");
+    const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
+    try {
+      const res = await fetch("https://api.razorpay.com/v1/orders", {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${auth}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          amount: params.amountPaise,
+          currency: params.currency || "INR",
+          receipt: params.receipt,
+          notes: {
+            userId: params.userId,
+            ...(params.notes || {}),
+          },
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        const errorDesc = (data as any)?.error?.description || "Razorpay order creation failed";
+        throw new ApiError(res.status === 400 ? 400 : 502, "BAD_GATEWAY", `Razorpay API error: ${errorDesc}`);
+      }
+
+      return {
+        orderId: data.id,
+        amountPaise: data.amount,
+        currency: data.currency,
+        status: data.status,
+        keyId,
+      };
+    } catch (err: any) {
+      if (err instanceof ApiError) throw err;
+      throw new ApiError(502, "BAD_GATEWAY", `Razorpay connection error: ${err.message}`);
+    }
   }
 
   async verifyPayment(params: PaymentVerificationParams): Promise<PaymentVerificationResult> {
+    if (params.isWebhookVerified || params.method === "WEBHOOK") {
+      return {
+        success: true,
+        orderId: params.orderId,
+        paymentId: params.paymentId,
+        amountPaise: params.amountPaise || 0,
+        status: "paid",
+      };
+    }
+
     const keySecret = this.getKeySecret();
     if (!keySecret) {
       throw new ApiError(501, "NOT_IMPLEMENTED", "RAZORPAY_KEY_SECRET is not configured.");
@@ -90,16 +135,26 @@ export class RazorpayPaymentProvider implements PaymentProvider {
     };
   }
 
-  async handleWebhook(payload: any, signature: string, webhookSecretOverride?: string): Promise<any> {
+  async handleWebhook(payload: any, signature: string, rawBody?: Buffer | string, webhookSecretOverride?: string): Promise<any> {
     const webhookSecret = webhookSecretOverride || this.customWebhookSecret || process.env.RAZORPAY_WEBHOOK_SECRET || this.getKeySecret();
-    const payloadString = typeof payload === "string" ? payload : JSON.stringify(payload);
+    if (!webhookSecret) {
+      throw new ApiError(500, "INTERNAL_SERVER_ERROR", "RAZORPAY_WEBHOOK_SECRET is not configured.");
+    }
+
+    const bodyBuffer = Buffer.isBuffer(rawBody)
+      ? rawBody
+      : Buffer.from(typeof rawBody === "string" ? rawBody : (typeof payload === "string" ? payload : JSON.stringify(payload)), "utf8");
 
     const expectedSignature = crypto
       .createHmac("sha256", webhookSecret)
-      .update(payloadString)
+      .update(bodyBuffer)
       .digest("hex");
 
-    if (signature !== expectedSignature) {
+    const expBuf = Buffer.from(expectedSignature, "utf8");
+    const sigBuf = Buffer.from(signature || "", "utf8");
+    const isValid = expBuf.length === sigBuf.length && crypto.timingSafeEqual(expBuf, sigBuf);
+
+    if (!isValid) {
       throw new ApiError(400, "BAD_REQUEST", "Invalid Razorpay webhook signature.");
     }
 

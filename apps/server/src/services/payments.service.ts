@@ -9,6 +9,7 @@ import { PaymentProvider } from "./payment-provider.interface";
 
 export class PaymentsService {
   private sandboxPayments = new Map<string, any>();
+  private processedWebhookEvents = new Set<string>();
 
   constructor(
     private readonly prisma: PrismaLike,
@@ -128,6 +129,7 @@ export class PaymentsService {
     userId: string;
     method?: string;
     testOutcome?: "success" | "failure";
+    isWebhookVerified?: boolean;
   }) {
     if (!input.orderId || !input.paymentId) {
       throw new ApiError(400, "BAD_REQUEST", "orderId and paymentId are required for verification.");
@@ -144,6 +146,7 @@ export class PaymentsService {
       userId: input.userId,
       method: input.method,
       testOutcome: input.testOutcome,
+      isWebhookVerified: input.isWebhookVerified,
     });
 
     const client = this.prisma.client || this.prisma;
@@ -296,15 +299,30 @@ export class PaymentsService {
     };
   }
 
-  async handleWebhook(signature: string, payload: any) {
+  async handleWebhook(signature: string, payload: any, rawBody?: Buffer | string) {
     if (!signature) {
       throw new ApiError(401, "UNAUTHORIZED", "Missing webhook signature header.");
     }
 
     const provider = this.getProvider();
-    const webhookRes = await provider.handleWebhook(payload, signature);
+    const webhookRes = await provider.handleWebhook(payload, signature, rawBody as any);
 
     const data = typeof payload === "string" ? JSON.parse(payload) : payload;
+    const eventId = data?.event_id || data?.id;
+
+    if (eventId && this.processedWebhookEvents.has(eventId)) {
+      return {
+        success: true,
+        processed: false,
+        duplicate: true,
+        message: "Duplicate webhook event ignored (idempotent).",
+        webhookRes,
+      };
+    }
+    if (eventId) {
+      this.processedWebhookEvents.add(eventId);
+    }
+
     const paymentEntity = data?.payload?.payment?.entity || data;
     const gatewayOrderId = paymentEntity?.order_id || data?.gatewayOrderId;
     const paymentId = paymentEntity?.id || data?.paymentId;
@@ -322,6 +340,7 @@ export class PaymentsService {
           signature,
           userId: payment.userId,
           method: paymentEntity?.method || "WEBHOOK",
+          isWebhookVerified: true,
         });
       }
     }

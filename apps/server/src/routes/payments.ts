@@ -51,8 +51,9 @@ export function registerPaymentsRoutes(app: FastifyInstance, paymentsService: Pa
     const genericSignature = request.headers["x-webhook-signature"] as string | undefined;
     const payload = (request.body as any) || {};
     const signature = razorpaySignature || genericSignature || payload?.signature;
+    const rawBody = (request as any).rawBody as Buffer | undefined;
 
-    const res = await paymentsService.handleWebhook(signature, payload);
+    const res = await paymentsService.handleWebhook(signature, payload, rawBody);
     return reply.status(201).send(res);
   });
 

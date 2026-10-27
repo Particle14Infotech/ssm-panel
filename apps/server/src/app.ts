@@ -74,6 +74,16 @@ export async function buildServer(dependencies: ServerDependencies = {}): Promis
       return typeof header === "string" && header.trim() ? header : `req_${Date.now().toString(36)}_${randomBytes(4).toString("hex")}`;
     },
   });
+  app.addContentTypeParser("application/json", { parseAs: "buffer" }, (req, body, done) => {
+    (req as any).rawBody = body;
+    try {
+      const json = JSON.parse(body.toString("utf8"));
+      done(null, json);
+    } catch (err: any) {
+      err.statusCode = 400;
+      done(err, undefined);
+    }
+  });
   const cache = dependencies.cache ?? new Cache();
   const prisma = dependencies.prisma ?? new PrismaConnection();
 

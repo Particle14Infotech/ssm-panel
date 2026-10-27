@@ -23,6 +23,7 @@ export interface PaymentVerificationParams {
   amountPaise?: number;
   method?: string;
   testOutcome?: "success" | "failure";
+  isWebhookVerified?: boolean;
 }
 
 export interface PaymentVerificationResult {
@@ -44,6 +45,6 @@ export interface PaymentProvider {
   readonly providerName: "simulated" | "razorpay";
   createOrder(params: PaymentOrderParams): Promise<PaymentOrderResult>;
   verifyPayment(params: PaymentVerificationParams): Promise<PaymentVerificationResult>;
-  handleWebhook(payload: any, signature: string): Promise<any>;
+  handleWebhook(payload: any, signature: string, rawBody?: Buffer | string): Promise<any>;
   refund(params: PaymentRefundParams): Promise<any>;
 }
