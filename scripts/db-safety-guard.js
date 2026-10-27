@@ -1,15 +1,22 @@
-function assertSafeTestDatabase(dbUrl = process.env.DATABASE_URL) {
-  if (!dbUrl) {
-    return;
-  }
+function assertSafeUrl(varName, dbUrl) {
+  if (!dbUrl) return;
+
   let parsed;
   try {
     parsed = new URL(dbUrl);
   } catch (err) {
-    throw new Error(`[DB SAFETY GUARD] Invalid DATABASE_URL format: ${err.message}`);
+    throw new Error(`[DB SAFETY GUARD] Invalid ${varName} format: ${err.message}`);
   }
 
   const host = (parsed.hostname || "").toLowerCase();
+
+  // Explicit check for main production Neon database
+  if (host.includes("ep-lingering-grass-aormacom")) {
+    throw new Error(
+      `[DB SAFETY GUARD CRITICAL] ${varName} points to main production database host "${host}" (ep-lingering-grass-aormacom). Aborting immediately.`
+    );
+  }
+
   const allowlist = (process.env.TEST_DB_HOST_ALLOWLIST || "")
     .split(",")
     .map((h) => h.trim().toLowerCase())
@@ -22,10 +29,19 @@ function assertSafeTestDatabase(dbUrl = process.env.DATABASE_URL) {
 
   if (!isAllowed) {
     throw new Error(
-      `[DB SAFETY GUARD CRITICAL] Refused to run against non-test database host "${host}". ` +
+      `[DB SAFETY GUARD CRITICAL] ${varName} refused non-test host "${host}". ` +
       `Allowed hosts: localhost, 127.0.0.1, or hosts in TEST_DB_HOST_ALLOWLIST.`
     );
   }
 }
 
-module.exports = { assertSafeTestDatabase };
+function assertSafeTestDatabase(env = process.env) {
+  const varsToCheck = ["DATABASE_URL", "DATABASE_URL_TEST", "DIRECT_URL"];
+  for (const v of varsToCheck) {
+    if (env[v]) {
+      assertSafeUrl(v, env[v]);
+    }
+  }
+}
+
+module.exports = { assertSafeTestDatabase, assertSafeUrl };
