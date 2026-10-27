@@ -12,11 +12,15 @@ import { registerPlatformsRoutes } from "./routes/platforms";
 import { registerUsersRoutes } from "./routes/users";
 import { registerSettingsRoutes } from "./routes/settings";
 import { registerNotificationsRoutes } from "./routes/notifications";
+import { registerTicketsRoutes } from "./routes/tickets";
+import { registerFavoritesRoutes } from "./routes/favorites";
 import { ServicesService } from "./services/services.service";
 import { PlatformsService } from "./services/platforms.service";
 import { UsersService } from "./services/users.service";
 import { SettingsService } from "./services/settings.service";
 import { NotificationsService } from "./services/notifications.service";
+import { TicketsService } from "./services/tickets.service";
+import { FavoritesService } from "./services/favorites.service";
 import { ZodError } from "zod";
 
 export interface ServerDependencies {
@@ -91,6 +95,12 @@ export async function buildServer(dependencies: ServerDependencies = {}): Promis
 
   const notificationsService = new NotificationsService();
   registerNotificationsRoutes(app, notificationsService);
+
+  const ticketsService = new TicketsService(prisma);
+  registerTicketsRoutes(app, ticketsService);
+
+  const favoritesService = new FavoritesService(prisma);
+  registerFavoritesRoutes(app, favoritesService);
 
   app.get("/", async () => ({ status: "ok", service: "smm-server", uptime: process.uptime(), timestamp: new Date().toISOString() }));
 
