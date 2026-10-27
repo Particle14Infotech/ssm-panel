@@ -104,24 +104,40 @@ if (service === "web") {
 
   applyDatabaseMigrations();
 
-  const apiDistExists = fs.existsSync("apps/api/dist/main.js") || fs.existsSync("apps/api/dist/src/main.js");
-  if (!apiDistExists) {
-    console.log("[start-service] Compiling @smm/api dist before launch...");
+  if (process.env.USE_LEGACY_NESTJS === "true") {
+    console.log("[start-service] Rollback flag detected (USE_LEGACY_NESTJS=true). Starting legacy NestJS @smm/api...");
+    const apiDistExists = fs.existsSync("apps/api/dist/main.js") || fs.existsSync("apps/api/dist/src/main.js");
+    if (!apiDistExists) {
+      console.log("[start-service] Compiling @smm/api dist before launch...");
+      run("pnpm --filter @smm/contracts build");
+      run("pnpm exec prisma generate");
+      run("pnpm --filter @smm/api build");
+    }
+
+    const entryFile = fs.existsSync("apps/api/dist/main.js")
+      ? "apps/api/dist/main.js"
+      : fs.existsSync("apps/api/dist/src/main.js")
+      ? "apps/api/dist/src/main.js"
+      : null;
+
+    if (entryFile) {
+      run(`node ${entryFile}`);
+    } else {
+      run("pnpm --filter @smm/api start:prod");
+    }
+    return;
+  }
+
+  // Default: Primary production Fastify server (@smm/server)
+  console.log("[start-service] Starting primary Fastify production backend (@smm/server)...");
+  const serverDistExists = fs.existsSync("apps/server/dist/main.js");
+  if (!serverDistExists) {
+    console.log("[start-service] Compiling @smm/server dist before launch...");
     run("pnpm --filter @smm/contracts build");
     run("pnpm exec prisma generate");
-    run("pnpm --filter @smm/api build");
+    run("pnpm --filter @smm/server build");
   }
 
-  const entryFile = fs.existsSync("apps/api/dist/main.js")
-    ? "apps/api/dist/main.js"
-    : fs.existsSync("apps/api/dist/src/main.js")
-    ? "apps/api/dist/src/main.js"
-    : null;
-
-  if (entryFile) {
-    run(`node ${entryFile}`);
-  } else {
-    run("pnpm --filter @smm/api start:prod");
-  }
+  run("node apps/server/dist/main.js");
 }
 

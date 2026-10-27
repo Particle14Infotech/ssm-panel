@@ -46,13 +46,15 @@ if (service === "web") {
 } else if (service === "all") {
   run("pnpm --filter @smm/contracts build");
   runPrismaGenerate();
+  run("pnpm --filter @smm/server build");
   run("pnpm --filter @smm/api build");
   run("pnpm --filter @smm/worker build");
   run("pnpm --filter @smm/web build");
 } else {
-  // smm / api
+  // smm / api / server (compile @smm/server as primary, @smm/api for instant rollback)
   run("pnpm --filter @smm/contracts build");
   runPrismaGenerate();
+  run("pnpm --filter @smm/server build");
   run("pnpm --filter @smm/api build");
 }
 

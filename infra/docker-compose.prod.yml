@@ -43,6 +43,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4000
+      USE_LEGACY_NESTJS: ${USE_LEGACY_NESTJS:-false}
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-smm_user}:${POSTGRES_PASSWORD:-smm_password_secure}@postgres:5432/${POSTGRES_DB:-smm_db}?schema=public}
       DIRECT_URL: ${DIRECT_URL:-postgresql://${POSTGRES_USER:-smm_user}:${POSTGRES_PASSWORD:-smm_password_secure}@postgres:5432/${POSTGRES_DB:-smm_db}?schema=public}
       REDIS_URL: redis://redis:6379

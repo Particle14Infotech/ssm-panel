@@ -1,6 +1,6 @@
 services:
   # -------------------------------------------------------------
-  # 1. NestJS Backend API
+  # 1. Fastify Backend Server (@smm/server)
   # -------------------------------------------------------------
   - type: web
     name: smm-api
@@ -8,7 +8,7 @@ services:
     plan: free
     buildCommand: pnpm install --no-frozen-lockfile && node scripts/build-service.js
     startCommand: node scripts/start-service.js
-    healthCheckPath: /api/v1/health
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
@@ -16,6 +16,8 @@ services:
         value: 4000
       - key: SERVICE_NAME
         value: smm
+      - key: USE_LEGACY_NESTJS
+        value: "false"
       - key: DATABASE_URL
         fromDatabase:
           name: smm-postgres
