@@ -16,6 +16,19 @@ export class PrismaConnection {
         log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
       });
     }
+
+    return new Proxy(this, {
+      get(target: any, prop: string | symbol) {
+        if (prop in target) {
+          return target[prop];
+        }
+        if (target.client && prop in target.client) {
+          const val = target.client[prop];
+          return typeof val === "function" ? val.bind(target.client) : val;
+        }
+        return undefined;
+      },
+    });
   }
 
   async connect(): Promise<void> {

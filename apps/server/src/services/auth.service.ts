@@ -41,7 +41,20 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaLike,
     private readonly emailService?: EmailServiceLike
-  ) {}
+  ) {
+    if (this.prisma && (this.prisma as any).client) {
+      this.prisma = new Proxy(this.prisma, {
+        get(target: any, prop: string | symbol) {
+          if (prop in target) return target[prop];
+          if (target.client && prop in target.client) {
+            const val = target.client[prop];
+            return typeof val === "function" ? val.bind(target.client) : val;
+          }
+          return undefined;
+        },
+      });
+    }
+  }
 
   private checkRateLimit(key: string, maxAttempts = 3, windowSeconds = 900): void {
     const now = Date.now();
