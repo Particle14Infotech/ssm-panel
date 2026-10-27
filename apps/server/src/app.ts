@@ -16,6 +16,7 @@ import { registerTicketsRoutes } from "./routes/tickets";
 import { registerFavoritesRoutes } from "./routes/favorites";
 import { registerAuthRoutes } from "./routes/auth";
 import { registerResellerRoutes } from "./routes/reseller";
+import { registerProvidersRoutes } from "./routes/providers";
 import { ServicesService } from "./services/services.service";
 import { PlatformsService } from "./services/platforms.service";
 import { UsersService } from "./services/users.service";
@@ -25,11 +26,14 @@ import { TicketsService } from "./services/tickets.service";
 import { FavoritesService } from "./services/favorites.service";
 import { AuthService } from "./services/auth.service";
 import { ResellerService } from "./services/reseller.service";
+import { ProvidersService } from "./services/providers.service";
+import { SmmProviderClient } from "./services/smm-provider.client";
 import { ZodError } from "zod";
 
 export interface ServerDependencies {
   cache?: CacheLike;
   prisma?: PrismaLike;
+  smmClient?: SmmProviderClient;
 }
 
 export async function buildServer(dependencies: ServerDependencies = {}): Promise<FastifyInstance> {
@@ -111,6 +115,9 @@ export async function buildServer(dependencies: ServerDependencies = {}): Promis
 
   const resellerService = new ResellerService(prisma, servicesService);
   registerResellerRoutes(app, resellerService, prisma);
+
+  const providersService = new ProvidersService(prisma, dependencies.smmClient);
+  registerProvidersRoutes(app, providersService);
 
   app.get("/", async () => ({ status: "ok", service: "smm-server", uptime: process.uptime(), timestamp: new Date().toISOString() }));
 
