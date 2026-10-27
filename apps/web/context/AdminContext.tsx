@@ -55,7 +55,7 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
-const API_BASE = getApiBase();
+const API_BASE = "/api/v1";
 
 export function AdminProviderWrapper({ children }: { children: React.ReactNode }) {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -86,12 +86,13 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
 
     try {
       setIsLoading(true);
-      const [servicesRes, providersRes, usersRes, ordersRes, ticketsRes] = await Promise.all([
+      const [servicesRes, providersRes, usersRes, ordersRes, ticketsRes, paymentsRes] = await Promise.all([
         fetch(`${API_BASE}/services`, { cache: "no-store" }).catch(() => null),
         fetch(`${API_BASE}/providers`, { headers: authHeaders, cache: "no-store" }).catch(() => null),
         token ? fetch(`${API_BASE}/users`, { headers: authHeaders, cache: "no-store" }).catch(() => null) : null,
         token ? fetch(`${API_BASE}/orders`, { headers: authHeaders, cache: "no-store" }).catch(() => null) : null,
         token ? fetch(`${API_BASE}/tickets/admin/all`, { headers: authHeaders, cache: "no-store" }).catch(() => null) : null,
+        token ? fetch(`${API_BASE}/payments`, { headers: authHeaders, cache: "no-store" }).catch(() => null) : null,
       ]);
 
       let mappedOrders: OrderItem[] = [];
@@ -249,6 +250,31 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
                   }))
                 : [],
             }))
+          );
+        }
+      }
+
+      if (paymentsRes && paymentsRes.ok) {
+        const rawPayments = await paymentsRes.json();
+        if (Array.isArray(rawPayments)) {
+          setTransactions(
+            rawPayments.map((p: any) => {
+              const rawMethod = (p.method || "").toUpperCase();
+              const method: "UPI" | "CARD" | "NETBANKING" =
+                rawMethod.includes("CARD") ? "CARD" : rawMethod.includes("NET") ? "NETBANKING" : "UPI";
+              const status: "SUCCESS" | "PENDING" | "FAILED" =
+                p.status === "SUCCESS" ? "SUCCESS" : p.status === "FAILED" ? "FAILED" : "PENDING";
+              return {
+                id: p.id,
+                userId: p.userId,
+                amount: Number(p.amount),
+                bonus: Number(p.bonusAmount || 0),
+                method,
+                status,
+                referenceId: p.gatewayOrderId || p.id,
+                createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
+              };
+            })
           );
         }
       }

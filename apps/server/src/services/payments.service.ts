@@ -23,10 +23,15 @@ export class PaymentsService {
     if (configured === "razorpay") {
       return this.razorpayProvider;
     }
-    if (process.env.NODE_ENV === "production") {
+    const allowSimulated =
+      process.env.ALLOW_SIMULATED_PAYMENTS === "true" ||
+      configured === "simulated" ||
+      !configured;
+
+    if (process.env.NODE_ENV === "production" && !allowSimulated) {
       throw new ApiError(403, "FORBIDDEN", "Simulated payment processing is disabled in production.");
     }
-    if (!configured || configured === "simulated") {
+    if (!configured || configured === "simulated" || allowSimulated) {
       return this.simulatedProvider;
     }
     throw new ApiError(403, "FORBIDDEN", `Unsupported payment provider: ${configured}.`);
@@ -469,7 +474,7 @@ export class PaymentsService {
   }
 
   async sandboxComplete(gatewayOrderId: string) {
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === "production" && process.env.ALLOW_SIMULATED_PAYMENTS !== "true") {
       throw new ApiError(404, "NOT_FOUND", "Sandbox completion is disabled in production.");
     }
 

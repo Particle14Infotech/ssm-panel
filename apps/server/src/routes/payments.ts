@@ -75,7 +75,7 @@ export function registerPaymentsRoutes(app: FastifyInstance, paymentsService: Pa
   });
 
   app.post("/api/v1/payments/sandbox-complete", async (request, reply) => {
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === "production" && process.env.ALLOW_SIMULATED_PAYMENTS !== "true") {
       throw new ApiError(404, "NOT_FOUND", "Sandbox completion endpoint is disabled in production.");
     }
     const body = (request.body as any) || {};
@@ -88,8 +88,8 @@ export function registerPaymentsRoutes(app: FastifyInstance, paymentsService: Pa
     const query = (request.query as any) || {};
     const queryUserId = query.userId as string | undefined;
 
-    const effectiveUserId = user.sub || user.id || queryUserId;
     const role = user.role;
+    const effectiveUserId = role === "ADMIN" ? queryUserId : (user.sub || user.id || queryUserId);
     return paymentsService.findAll(effectiveUserId, role);
   });
 }

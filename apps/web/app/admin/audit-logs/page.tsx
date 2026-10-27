@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useAdmin } from "@/context/AdminContext";
 import {
   FileText,
@@ -107,6 +107,69 @@ export default function AdminAuditLogsPage() {
   const [logs, setLogs] = useState<AuditLogEntry[]>(INITIAL_AUDIT_LOGS);
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const fetchAuditLogs = useCallback(async () => {
+    try {
+      const token = typeof window !== "undefined"
+        ? localStorage.getItem("authToken") || localStorage.getItem("token")
+        : null;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch("/api/v1/reports/audit-logs", { headers, cache: "no-store" });
+      if (res.ok) {
+        const raw = await res.json();
+        if (Array.isArray(raw) && raw.length > 0) {
+          const mapped: AuditLogEntry[] = raw.map((l: any) => {
+            const actionUpper = (l.action || "").toUpperCase();
+            let cat: "FINANCIAL" | "SERVICE" | "ORDER" | "SECURITY" | "PROVIDER" = "SECURITY";
+            if (actionUpper.includes("WALLET") || actionUpper.includes("DEPOSIT") || actionUpper.includes("PAYMENT") || actionUpper.includes("REFUND")) {
+              cat = "FINANCIAL";
+            } else if (actionUpper.includes("PROVIDER")) {
+              cat = "PROVIDER";
+            } else if (actionUpper.includes("SERVICE") || actionUpper.includes("PRICE") || actionUpper.includes("MARGIN")) {
+              cat = "SERVICE";
+            } else if (actionUpper.includes("ORDER")) {
+              cat = "ORDER";
+            }
+
+            let detailsStr = l.resource || "";
+            if (l.payload) {
+              try {
+                detailsStr = typeof l.payload === "string" ? l.payload : JSON.stringify(l.payload);
+              } catch {
+                detailsStr = String(l.payload);
+              }
+            }
+
+            return {
+              id: l.id,
+              userId: l.userId || undefined,
+              userName: l.user?.name || l.user?.email || (l.userId ? `User (${l.userId.slice(0, 8)})` : "System Automated"),
+              action: l.action,
+              resource: l.resource,
+              category: cat,
+              ipAddress: l.ipAddress || "127.0.0.1",
+              userAgent: l.userAgent || "Internal System API",
+              status: "SUCCESS",
+              details: detailsStr,
+              createdAt: l.createdAt || new Date().toISOString(),
+            };
+          });
+          setLogs(mapped);
+        }
+      }
+    } catch {
+      // Keep initial fallback logs
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAuditLogs();
+  }, [fetchAuditLogs]);
 
   const filteredLogs = useMemo(() => {
     return logs.filter((l) => {

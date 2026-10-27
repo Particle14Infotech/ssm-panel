@@ -90,7 +90,7 @@ export class PaymentsController {
   @Post("sandbox-complete")
   @ApiOperation({ summary: "Simulate Payment Completion" })
   async sandboxComplete(@Body() body: { gatewayOrderId: string }) {
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === "production" && process.env.ALLOW_SIMULATED_PAYMENTS !== "true") {
       throw new NotFoundException("Sandbox completion endpoint is disabled in production.");
     }
     return await this.paymentsService.sandboxComplete(body.gatewayOrderId);
@@ -103,8 +103,11 @@ export class PaymentsController {
     @CurrentUser() user?: CurrentUserData | string,
     @Query("userId") queryUserId?: string
   ) {
-    const effectiveUserId = typeof user === "string" ? user : (user?.id || queryUserId);
     const role = typeof user === "object" ? user?.role : undefined;
+    const effectiveUserId =
+      role === "ADMIN"
+        ? queryUserId
+        : (typeof user === "string" ? user : (user?.id || queryUserId));
     return await this.paymentsService.findAll(effectiveUserId, role);
   }
 }

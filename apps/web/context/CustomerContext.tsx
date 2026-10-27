@@ -101,7 +101,7 @@ interface CustomerContextType {
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
 
-const API_BASE = getApiBase();
+const API_BASE = "/api/v1";
 
 export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile>(EMPTY_USER);

@@ -19,6 +19,12 @@ export class ReportsController {
     return await this.reportsService.getSummary();
   }
 
+  @Get("audit-logs")
+  @ApiOperation({ summary: "Get System Audit Logs" })
+  async getAuditLogs() {
+    return await this.reportsService.getAuditLogs();
+  }
+
   @Get("export-csv")
   @ApiOperation({ summary: "Export Transactions and Orders to CSV" })
   async exportCsv() {

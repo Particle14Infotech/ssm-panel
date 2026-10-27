@@ -20,7 +20,7 @@ import {
 import { GlassCard } from "@/components/shared/GlassCard";
 import { getApiBase } from "@/lib/api-base";
 
-const API_BASE = getApiBase();
+const API_BASE = "/api/v1";
 
 export default function AdminSystemHealthPage() {
   const [telemetry, setTelemetry] = useState<any>(null);

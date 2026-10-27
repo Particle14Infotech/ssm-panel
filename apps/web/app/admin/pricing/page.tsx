@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { getApiBase } from "@/lib/api-base";
 
-const API_BASE = getApiBase();
+const API_BASE = "/api/v1";
 
 export default function AdminPricingPage() {
   const { refreshAdminData } = useAdmin();

@@ -22,9 +22,13 @@ export function getApiBase(): string {
         envUrl.includes("127.0.0.1");
 
       const isDeadRailway = envUrl.includes("railway.app");
+      const isInternalContainer =
+        envUrl.includes("api:4000") ||
+        envUrl.includes("server:4000") ||
+        envUrl.includes("backend:4000");
 
-      // On a remote VPS / production host, never let a stale localhost or dead railway URL break API calls!
-      if (!isLocalhost && (isEnvLocalhost || isDeadRailway)) {
+      // On a remote VPS / production host, never let an internal container hostname, stale localhost, or dead railway URL break client fetches!
+      if (!isLocalhost && (isEnvLocalhost || isDeadRailway || isInternalContainer)) {
         return "/api/v1";
       }
 

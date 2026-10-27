@@ -34,12 +34,17 @@ export class PaymentsService {
     if (configured === "razorpay") {
       return this.razorpayProvider;
     }
-    if (process.env.NODE_ENV === "production") {
+    const allowSimulated =
+      process.env.ALLOW_SIMULATED_PAYMENTS === "true" ||
+      configured === "simulated" ||
+      !configured;
+
+    if (process.env.NODE_ENV === "production" && !allowSimulated) {
       throw new ForbiddenException(
         "Simulated payment processing is disabled in production."
       );
     }
-    if (!configured || configured === "simulated") {
+    if (!configured || configured === "simulated" || allowSimulated) {
       return this.simulatedProvider;
     }
     throw new ForbiddenException(
@@ -388,7 +393,7 @@ export class PaymentsService {
 
   // Backward compatibility alias for sandboxComplete
   async sandboxComplete(gatewayOrderId: string) {
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === "production" && process.env.ALLOW_SIMULATED_PAYMENTS !== "true") {
       throw new NotFoundException("Sandbox completion is disabled in production.");
     }
 
