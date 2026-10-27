@@ -6,7 +6,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const apiKey = process.env.PROVIDER_API_KEY || "e69190fdf34d3a2dcb81ea5c6d0d64ff";
+    const apiKey = process.env.PROVIDER_API_KEY || "";
     const apiUrl = process.env.PROVIDER_API_URL || "https://cheapestsmmpanels.com/api/v2";
 
     const upstreamRes = await fetch(apiUrl, {

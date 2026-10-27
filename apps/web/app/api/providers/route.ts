@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const apiKey = process.env.PROVIDER_API_KEY || "e69190fdf34d3a2dcb81ea5c6d0d64ff";
+    const apiKey = process.env.PROVIDER_API_KEY || "";
     const apiUrl = process.env.PROVIDER_API_URL || "https://cheapestsmmpanels.com/api/v2";
 
     let balance = 76.38;
