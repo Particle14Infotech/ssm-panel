@@ -21,35 +21,6 @@ function run(cmd) {
   execSync(cmd, { stdio: "inherit" });
 }
 
-function applyDatabaseMigrations() {
-  if (!process.env.DATABASE_URL) {
-    console.warn("[start-service] DATABASE_URL is not set. Skipping database migration step.");
-    return;
-  }
-
-  console.log("[start-service] Deploying committed Prisma migrations (prisma migrate deploy)...");
-  try {
-    run("pnpm exec prisma migrate deploy");
-    console.log("[start-service] Prisma migrations applied successfully.");
-  } catch (err) {
-    console.warn("[start-service] Warning: prisma migrate deploy did not complete:", err.message);
-    try {
-      console.log("[start-service] Synchronizing Prisma schema to PostgreSQL (fallback prisma db push)...");
-      run("pnpm exec prisma db push --skip-generate");
-      console.log("[start-service] Database schema synchronized successfully.");
-    } catch (pushErr) {
-      console.warn("[start-service] Note: db push warning:", pushErr.message);
-    }
-  }
-
-  try {
-    console.log("[start-service] Running idempotent database seed...");
-    run("node scripts/seed.js");
-    console.log("[start-service] Database seed completed.");
-  } catch (seedErr) {
-    console.warn("[start-service] Note: seed warning:", seedErr.message);
-  }
-}
 
 if (service === "web") {
   if (!fs.existsSync("apps/web/.next")) {
@@ -68,14 +39,6 @@ if (service === "web") {
     run("pnpm --filter @smm/worker build");
   }
 
-  if (process.env.DATABASE_URL) {
-    try {
-      console.log("[start-service] Ensuring database schema is synced for worker...");
-      run("pnpm exec prisma db push --skip-generate");
-    } catch (err) {
-      console.warn("[start-service] Note: worker db sync notice:", err.message);
-    }
-  }
 
   run("pnpm --filter @smm/worker start");
 } else {
@@ -102,7 +65,6 @@ if (service === "web") {
     process.env.QUOTE_SECRET = crypto.createHmac("sha256", baseSeed).update("quote_secret_salt").digest("hex");
   }
 
-  applyDatabaseMigrations();
 
   if (process.env.USE_LEGACY_NESTJS === "true") {
     console.log("[start-service] Rollback flag detected (USE_LEGACY_NESTJS=true). Starting legacy NestJS @smm/api...");

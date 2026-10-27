@@ -78,16 +78,6 @@ export async function buildServer(dependencies: ServerDependencies = {}): Promis
   if (dependencies.onRoute) {
     app.addHook("onRoute", dependencies.onRoute);
   }
-  app.addContentTypeParser("application/json", { parseAs: "buffer" }, (req, body, done) => {
-    (req as any).rawBody = body;
-    try {
-      const json = JSON.parse(body.toString("utf8"));
-      done(null, json);
-    } catch (err: any) {
-      err.statusCode = 400;
-      done(err, undefined);
-    }
-  });
   const cache = dependencies.cache ?? new Cache();
   const prisma = dependencies.prisma ?? new PrismaConnection();
   if (prisma.connect && !prisma.isConnected) {

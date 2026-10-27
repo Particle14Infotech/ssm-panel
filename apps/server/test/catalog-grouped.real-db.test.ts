@@ -1,11 +1,13 @@
 import { buildServer } from "../src/app";
 import { PrismaConnection } from "../src/prisma";
+import { assertSafeTestDatabase } from "../src/utils/db-safety-guard";
 
 describe("P4: Real PostgreSQL Integration Test - Catalog Grouped", () => {
   let app: any;
   let prisma: PrismaConnection;
 
   beforeAll(async () => {
+    assertSafeTestDatabase();
     prisma = new PrismaConnection();
     app = await buildServer({ prisma });
     await app.ready();

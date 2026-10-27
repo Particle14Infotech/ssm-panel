@@ -40,6 +40,9 @@ process.env.SANDBOX_MODE = "true";
 process.env.BENCHMARK_MODE = "true";
 process.env.DISABLE_RATE_LIMITER = "true";
 
+const { assertSafeTestDatabase } = require("./db-safety-guard");
+assertSafeTestDatabase();
+
 const serverAppPath = fs.existsSync(path.resolve(__dirname, "../apps/server/dist/app.js"))
   ? path.resolve(__dirname, "../apps/server/dist/app.js")
   : path.resolve(__dirname, "../apps/server/dist/src/app.js");

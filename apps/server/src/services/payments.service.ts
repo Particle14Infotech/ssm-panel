@@ -309,7 +309,111 @@ export class PaymentsService {
 
     const data = typeof payload === "string" ? JSON.parse(payload) : payload;
     const eventId = data?.event_id || data?.id;
+    const paymentEntity = data?.payload?.payment?.entity || data;
+    const gatewayOrderId = paymentEntity?.order_id || data?.gatewayOrderId;
+    const paymentId = paymentEntity?.id || data?.paymentId;
+    const client = this.prisma.client || this.prisma;
+    const providerName = provider.providerName || "razorpay";
 
+    // 1. If DB is connected and supports ProcessedWebhookEvent / transactions, use DB-level atomic idempotency
+    if (this.prisma.isConnected && client.processedWebhookEvent?.create) {
+      if (eventId) {
+        try {
+          const txHandler = async (tx: any) => {
+            // Atomic DB insert into ProcessedWebhookEvent with UNIQUE constraint
+            await tx.processedWebhookEvent.create({
+              data: {
+                provider: providerName,
+                eventId,
+              },
+            });
+
+            // Credit wallet + ledger inside the SAME transaction
+            if (gatewayOrderId && paymentId) {
+              const payment = await tx.payment?.findUnique({
+                where: { gatewayOrderId },
+              });
+
+              if (payment && payment.status !== PaymentStatus.SUCCESS) {
+                const totalCredit = new Decimal(payment.amount.toString()).plus(
+                  new Decimal(payment.bonusAmount.toString())
+                );
+
+                let walletRow: any = null;
+                if (typeof tx.$queryRawUnsafe === "function") {
+                  try {
+                    const rows = await tx.$queryRawUnsafe(
+                      `SELECT id, balance FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
+                      payment.userId
+                    );
+                    walletRow = Array.isArray(rows) ? rows[0] : null;
+                  } catch {}
+                }
+                if (!walletRow && tx.wallet?.findUnique) {
+                  walletRow = await tx.wallet.findUnique({ where: { userId: payment.userId } });
+                }
+
+                if (walletRow) {
+                  const currentBalance = new Decimal(walletRow.balance.toString());
+                  const newBalance = currentBalance.plus(totalCredit);
+
+                  await tx.wallet.update({
+                    where: { id: walletRow.id },
+                    data: { balance: newBalance },
+                  });
+
+                  if (tx.ledgerEntry?.create) {
+                    await tx.ledgerEntry.create({
+                      data: {
+                        walletId: walletRow.id,
+                        amount: totalCredit,
+                        type: TransactionType.DEPOSIT,
+                        referenceId: paymentId,
+                        description: `Deposit via WEBHOOK (${paymentId})`,
+                      },
+                    });
+                  }
+
+                  await tx.payment.update({
+                    where: { id: payment.id },
+                    data: {
+                      status: PaymentStatus.SUCCESS,
+                      method: paymentEntity?.method || "WEBHOOK",
+                    },
+                  });
+                }
+              }
+            }
+          };
+
+          if (typeof this.prisma.$transaction === "function") {
+            await this.prisma.$transaction(txHandler);
+          } else {
+            await txHandler(client);
+          }
+        } catch (err: any) {
+          // On unique constraint violation (Prisma P2002), return 200 without crediting
+          if (
+            err.code === "P2002" ||
+            err.message?.includes("unique constraint") ||
+            err.message?.includes("Unique constraint")
+          ) {
+            return {
+              success: true,
+              processed: false,
+              duplicate: true,
+              message: "Duplicate webhook event ignored (idempotent DB record).",
+              webhookRes,
+            };
+          }
+          throw err;
+        }
+
+        return { success: true, processed: true, webhookRes };
+      }
+    }
+
+    // 2. Fallback for sandbox / in-memory mode when running without full DB
     if (eventId && this.processedWebhookEvents.has(eventId)) {
       return {
         success: true,
@@ -323,11 +427,6 @@ export class PaymentsService {
       this.processedWebhookEvents.add(eventId);
     }
 
-    const paymentEntity = data?.payload?.payment?.entity || data;
-    const gatewayOrderId = paymentEntity?.order_id || data?.gatewayOrderId;
-    const paymentId = paymentEntity?.id || data?.paymentId;
-
-    const client = this.prisma.client || this.prisma;
     if (gatewayOrderId && paymentId && this.prisma.isConnected && client.payment?.findUnique) {
       const payment = await client.payment.findUnique({
         where: { gatewayOrderId },

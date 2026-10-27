@@ -46,15 +46,32 @@ export function registerPaymentsRoutes(app: FastifyInstance, paymentsService: Pa
     return reply.status(201).send(res);
   });
 
-  app.post("/api/v1/payments/webhook", async (request, reply) => {
-    const razorpaySignature = request.headers["x-razorpay-signature"] as string | undefined;
-    const genericSignature = request.headers["x-webhook-signature"] as string | undefined;
-    const payload = (request.body as any) || {};
-    const signature = razorpaySignature || genericSignature || payload?.signature;
-    const rawBody = (request as any).rawBody as Buffer | undefined;
+  app.register(async (webhookScope) => {
+    webhookScope.addContentTypeParser(
+      "application/json",
+      { parseAs: "buffer" },
+      (req, body, done) => {
+        (req as any).rawBody = body;
+        try {
+          const json = JSON.parse(body.toString("utf8"));
+          done(null, json);
+        } catch (err: any) {
+          err.statusCode = 400;
+          done(err, undefined);
+        }
+      }
+    );
 
-    const res = await paymentsService.handleWebhook(signature, payload, rawBody);
-    return reply.status(201).send(res);
+    webhookScope.post("/api/v1/payments/webhook", async (request, reply) => {
+      const razorpaySignature = request.headers["x-razorpay-signature"] as string | undefined;
+      const genericSignature = request.headers["x-webhook-signature"] as string | undefined;
+      const payload = (request.body as any) || {};
+      const signature = razorpaySignature || genericSignature || payload?.signature;
+      const rawBody = (request as any).rawBody as Buffer | undefined;
+
+      const res = await paymentsService.handleWebhook(signature, payload, rawBody);
+      return reply.status(201).send(res);
+    });
   });
 
   app.post("/api/v1/payments/sandbox-complete", async (request, reply) => {

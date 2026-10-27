@@ -1,5 +1,6 @@
 import { buildServer } from "../src/app";
 import { PrismaConnection } from "../src/prisma";
+import { assertSafeTestDatabase } from "../src/utils/db-safety-guard";
 import jwt from "jsonwebtoken";
 
 describe("P5: Multi-Module Real PostgreSQL Integration Suite", () => {
@@ -8,6 +9,7 @@ describe("P5: Multi-Module Real PostgreSQL Integration Suite", () => {
   let adminToken: string;
 
   beforeAll(async () => {
+    assertSafeTestDatabase();
     process.env.JWT_ACCESS_SECRET = "jwt-secret-min-32-chars-for-test!!";
     prisma = new PrismaConnection();
     app = await buildServer({ prisma });
