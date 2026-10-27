@@ -13,6 +13,7 @@
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "@smm/contracts": "workspace:*",
+    "argon2": "^0.45.1",
     "decimal.js": "^10.5.0",
     "dotenv": "^16.4.7",
     "fastify": "^4.28.1",

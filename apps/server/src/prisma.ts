@@ -39,4 +39,5 @@ export interface PrismaLike {
   client: any;
   connect?(): Promise<void>;
   disconnect?(): Promise<void>;
+  [model: string]: any;
 }

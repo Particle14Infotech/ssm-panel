@@ -14,6 +14,8 @@ import { registerSettingsRoutes } from "./routes/settings";
 import { registerNotificationsRoutes } from "./routes/notifications";
 import { registerTicketsRoutes } from "./routes/tickets";
 import { registerFavoritesRoutes } from "./routes/favorites";
+import { registerAuthRoutes } from "./routes/auth";
+import { registerResellerRoutes } from "./routes/reseller";
 import { ServicesService } from "./services/services.service";
 import { PlatformsService } from "./services/platforms.service";
 import { UsersService } from "./services/users.service";
@@ -21,6 +23,8 @@ import { SettingsService } from "./services/settings.service";
 import { NotificationsService } from "./services/notifications.service";
 import { TicketsService } from "./services/tickets.service";
 import { FavoritesService } from "./services/favorites.service";
+import { AuthService } from "./services/auth.service";
+import { ResellerService } from "./services/reseller.service";
 import { ZodError } from "zod";
 
 export interface ServerDependencies {
@@ -101,6 +105,12 @@ export async function buildServer(dependencies: ServerDependencies = {}): Promis
 
   const favoritesService = new FavoritesService(prisma);
   registerFavoritesRoutes(app, favoritesService);
+
+  const authService = new AuthService(prisma);
+  registerAuthRoutes(app, authService);
+
+  const resellerService = new ResellerService(prisma, servicesService);
+  registerResellerRoutes(app, resellerService, prisma);
 
   app.get("/", async () => ({ status: "ok", service: "smm-server", uptime: process.uptime(), timestamp: new Date().toISOString() }));
 
