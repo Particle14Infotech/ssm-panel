@@ -199,12 +199,6 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
       if (providersRes && providersRes.ok) {
         rawProviders = await providersRes.json().catch(() => null);
       }
-      if (!Array.isArray(rawProviders)) {
-        const localProvidersRes = await fetch("/api/providers", { cache: "no-store" }).catch(() => null);
-        if (localProvidersRes && localProvidersRes.ok) {
-          rawProviders = await localProvidersRes.json().catch(() => null);
-        }
-      }
 
       if (Array.isArray(rawProviders)) {
         setProviders(
@@ -444,17 +438,10 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
     try {
-      let res = await fetch(`/api/providers/${providerId}/sync`, {
+      const res = await fetch(`${API_BASE}/providers/${providerId}/sync`, {
         method: "POST",
         headers,
       }).catch(() => null);
-
-      if (!res || !res.ok) {
-        res = await fetch(`${API_BASE}/providers/${providerId}/sync`, {
-          method: "POST",
-          headers,
-        }).catch(() => null);
-      }
 
       if (res && res.ok) {
         const data = await res.json().catch(() => null);

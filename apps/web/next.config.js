@@ -30,15 +30,24 @@ const nextConfig = {
     }
     const cleanBackend = backendUrl.replace(/\/api\/v1\/?$/, "").replace(/\/+$/, "");
     const fastifyUrl = process.env.INTERNAL_FASTIFY_URL?.replace(/\/api\/v1\/?$/, "").replace(/\/+$/, "");
-    const fastifyPrefixes = (process.env.FASTIFY_ROUTE_PREFIXES || "")
+    const defaultPrefixes = "health,catalog,services,platforms,admin/platforms,users,settings,notifications,tickets,favorites,auth,reseller,providers,orders,packages,wallet,payments,admin,coupons,bonuses,announcements,reports,webhooks";
+    const fastifyPrefixes = (process.env.FASTIFY_ROUTE_PREFIXES || defaultPrefixes)
       .split(",")
       .map((prefix) => prefix.trim().replace(/^\/+|\/+$/g, ""))
-      .filter((prefix) => /^[a-zA-Z0-9/_-]+$/.test(prefix));
+      .filter((prefix) => /^[a-zA-Z0-9/_*-]+$/.test(prefix));
+    const isAllFastify = fastifyPrefixes.includes("*");
     const fastifyRewrites = fastifyUrl
-      ? fastifyPrefixes.map((prefix) => ({
-          source: `/api/v1/${prefix}/:path*`,
-          destination: `${fastifyUrl}/api/v1/${prefix}/:path*`,
-        }))
+      ? isAllFastify
+        ? [
+            {
+              source: "/api/v1/:path*",
+              destination: `${fastifyUrl}/api/v1/:path*`,
+            },
+          ]
+        : fastifyPrefixes.map((prefix) => ({
+            source: `/api/v1/${prefix}/:path*`,
+            destination: `${fastifyUrl}/api/v1/${prefix}/:path*`,
+          }))
       : [];
     return [
       ...fastifyRewrites,
