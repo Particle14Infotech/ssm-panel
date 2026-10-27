@@ -355,7 +355,8 @@ export class SMMWorkerEngine {
       },
     });
 
-    if (order?.packageExecutionId && process.env.PACKAGES_ENABLED !== "true") {
+    const isPackagesEnabled = process.env.PACKAGES_ENABLED !== "false";
+    if (order?.packageExecutionId && !isPackagesEnabled) {
       logger.info(`[Worker] Package order #${order.id} not dispatched because PACKAGES_ENABLED is off.`);
       return;
     }
@@ -1811,7 +1812,8 @@ export class SMMWorkerEngine {
    * Package/execution row locks serialize rescheduling and dispatch; order, state, and outbox writes commit together.
    */
   async pollAndDispatchPackageExecutions(database: PrismaClient = prisma) {
-    if (process.env.NODE_ENV === "production" || process.env.PACKAGES_ENABLED !== "true") {
+    const isPackagesEnabled = process.env.PACKAGES_ENABLED !== "false";
+    if (!isPackagesEnabled) {
       return { dispatchedCount: 0, errorsCount: 0 };
     }
 

@@ -84,6 +84,7 @@ services:
       DIRECT_URL: ${DIRECT_URL:-postgresql://${POSTGRES_USER:-smm_user}:${POSTGRES_PASSWORD:-smm_password_secure}@postgres:5432/${POSTGRES_DB:-smm_db}?schema=public}
       REDIS_URL: redis://redis:6379
       PROVIDER_KEY_SECRET: ${PROVIDER_KEY_SECRET}
+      PACKAGES_ENABLED: ${PACKAGES_ENABLED:-true}
     depends_on:
       redis:
         condition: service_healthy
