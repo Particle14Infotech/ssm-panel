@@ -40,12 +40,11 @@ process.env.SANDBOX_MODE = "true";
 process.env.BENCHMARK_MODE = "true";
 process.env.DISABLE_RATE_LIMITER = "true";
 
-const { NestFactory } = require("@nestjs/core");
-const appModulePath = fs.existsSync(path.resolve(__dirname, "../apps/api/dist/src/app.module.js"))
-  ? path.resolve(__dirname, "../apps/api/dist/src/app.module.js")
-  : path.resolve(__dirname, "../apps/api/dist/app.module.js");
+const serverAppPath = fs.existsSync(path.resolve(__dirname, "../apps/server/dist/app.js"))
+  ? path.resolve(__dirname, "../apps/server/dist/app.js")
+  : path.resolve(__dirname, "../apps/server/dist/src/app.js");
 
-const { AppModule } = require(appModulePath);
+const { buildServer } = require(serverAppPath);
 
 function getGitCommit() {
   try {
@@ -137,11 +136,10 @@ async function runSmoke() {
   console.log(`Database Target: smm_db (Isolated in-memory sandbox mode)`);
   console.log("================================================================================\n");
 
-  console.log("▶ Initializing NestJS Modular Monolith API on port 4001...");
-  const app = await NestFactory.create(AppModule, { logger: false });
-  app.setGlobalPrefix("api/v1");
-  await app.listen(4001);
-  console.log("✅ NestJS API online at http://127.0.0.1:4001/api/v1\n");
+  console.log("▶ Initializing Fastify (@smm/server) API on port 4001...");
+  const app = await buildServer();
+  await app.listen({ port: 4001, host: "127.0.0.1" });
+  console.log("✅ Fastify (@smm/server) API online at http://127.0.0.1:4001/api/v1\n");
 
   const baseUrl = { host: "127.0.0.1", port: 4001 };
   let sessionToken = "";

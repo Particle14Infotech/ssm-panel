@@ -56,6 +56,7 @@ export interface ServerDependencies {
   packagesService?: PackagesServiceLike;
   walletService?: WalletService;
   paymentsService?: PaymentsService;
+  onRoute?: (routeOptions: any) => void;
 }
 
 export async function buildServer(dependencies: ServerDependencies = {}): Promise<FastifyInstance> {
@@ -74,6 +75,9 @@ export async function buildServer(dependencies: ServerDependencies = {}): Promis
       return typeof header === "string" && header.trim() ? header : `req_${Date.now().toString(36)}_${randomBytes(4).toString("hex")}`;
     },
   });
+  if (dependencies.onRoute) {
+    app.addHook("onRoute", dependencies.onRoute);
+  }
   app.addContentTypeParser("application/json", { parseAs: "buffer" }, (req, body, done) => {
     (req as any).rawBody = body;
     try {
@@ -86,6 +90,9 @@ export async function buildServer(dependencies: ServerDependencies = {}): Promis
   });
   const cache = dependencies.cache ?? new Cache();
   const prisma = dependencies.prisma ?? new PrismaConnection();
+  if (prisma.connect && !prisma.isConnected) {
+    await prisma.connect();
+  }
 
   app.addHook("onRequest", async (request, reply) => {
     reply.header("X-Request-Id", request.id);

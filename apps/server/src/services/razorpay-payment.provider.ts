@@ -60,7 +60,7 @@ export class RazorpayPaymentProvider implements PaymentProvider {
         }),
       });
 
-      const data = await res.json().catch(() => null);
+      const data: any = await res.json().catch(() => null);
       if (!res.ok) {
         const errorDesc = (data as any)?.error?.description || "Razorpay order creation failed";
         throw new ApiError(res.status === 400 ? 400 : 502, "BAD_GATEWAY", `Razorpay API error: ${errorDesc}`);
