@@ -37,6 +37,7 @@ import {
   localDateTimeToInstant,
 } from "@smm/contracts";
 import { getApiBase } from "@/lib/api-base";
+import { getAuthToken } from "@/lib/auth-session";
 
 interface RuleSelectionState {
   enabled: boolean;
@@ -54,7 +55,7 @@ export default function PackageDetailPage() {
   const [triggers, setTriggers] = useState<any[]>([]);
   const [executions, setExecutions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pageError, setPageError] = useState<{ message: string; requestId: string } | null>(null);
+  const [pageError, setPageError] = useState<{ message: string; requestId: string; isAuthError?: boolean } | null>(null);
   const [activeTab, setActiveTab] = useState<"timeline" | "triggers" | "executions">("timeline");
 
   // Per-Post Start Flow State
@@ -99,8 +100,16 @@ export default function PackageDetailPage() {
 
   const fetchPackage = useCallback(async () => {
     if (typeof window === "undefined" || !packageId) return;
-    const token = localStorage.getItem("authToken");
-    if (!token) return;
+    const token = getAuthToken();
+    if (!token) {
+      setPageError({
+        message: "You are not logged in. Please sign in to view package details.",
+        requestId: `auth_missing_${Date.now()}`,
+        isAuthError: true,
+      });
+      setLoading(false);
+      return;
+    }
 
     setPageError(null);
     try {
@@ -116,9 +125,11 @@ export default function PackageDetailPage() {
       } else {
         const errJson = await pkgRes.json().catch(() => ({}));
         const reqId = errJson.requestId || `req_${Date.now()}`;
+        const isAuthErr = pkgRes.status === 401 || (errJson.message && (errJson.message.toLowerCase().includes("jwt") || errJson.message.toLowerCase().includes("expired") || errJson.message.toLowerCase().includes("unauthorized")));
         setPageError({
-          message: errJson.message || "Failed to load package details.",
+          message: isAuthErr ? "Your login session has expired. Please log in again to continue." : (errJson.message || "Failed to load package details."),
           requestId: reqId,
+          isAuthError: isAuthErr,
         });
       }
 
@@ -150,7 +161,7 @@ export default function PackageDetailPage() {
     if (e) e.preventDefault();
     if (!postLink.trim()) return;
 
-    const token = localStorage.getItem("authToken");
+    const token = getAuthToken();
     if (!token) return;
 
     setPreviewLoading(true);
@@ -202,7 +213,7 @@ export default function PackageDetailPage() {
   // Handle Start Delivery
   const handleStartDelivery = async () => {
     if (!previewData || startingDelivery) return;
-    const token = localStorage.getItem("authToken");
+    const token = getAuthToken();
     if (!token) return;
 
     const chosenRules = Object.entries(ruleSelections)
@@ -315,7 +326,7 @@ export default function PackageDetailPage() {
   const handleSpeedUp = async () => {
     setSubmittingSpeedUp(true);
     try {
-      const token = localStorage.getItem("authToken");
+      const token = getAuthToken();
       const res = await fetch(`${getApiBase()}/packages/${packageId}/speed-up`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -346,7 +357,7 @@ export default function PackageDetailPage() {
     if (!selectedTriggerForSwap || !swapNewUrl.trim()) return;
     setSubmittingSwap(true);
     try {
-      const token = localStorage.getItem("authToken");
+      const token = getAuthToken();
       const res = await fetch(
         `${getApiBase()}/packages/${packageId}/triggers/${selectedTriggerForSwap.id}/swap-link`,
         {
@@ -381,7 +392,7 @@ export default function PackageDetailPage() {
   const handleToggleAutoRenew = async (newVal: boolean) => {
     setTogglingAutoRenew(true);
     try {
-      const token = localStorage.getItem("authToken");
+      const token = getAuthToken();
       const res = await fetch(`${getApiBase()}/packages/${packageId}/auto-renew`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -410,7 +421,7 @@ export default function PackageDetailPage() {
   const handleManualRenew = async () => {
     setSubmittingRenew(true);
     try {
-      const token = localStorage.getItem("authToken");
+      const token = getAuthToken();
       const res = await fetch(`${getApiBase()}/packages/${packageId}/renew`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -461,7 +472,7 @@ export default function PackageDetailPage() {
       return;
     }
 
-    const token = localStorage.getItem("authToken");
+    const token = getAuthToken();
     if (!token) {
       setNotification({ type: "error", message: "Please log in to reschedule an execution." });
       return;
@@ -541,6 +552,13 @@ export default function PackageDetailPage() {
   }
 
   if (pageError) {
+    const isAuthErr =
+      pageError.isAuthError ||
+      pageError.message.toLowerCase().includes("jwt") ||
+      pageError.message.toLowerCase().includes("expired") ||
+      pageError.message.toLowerCase().includes("unauthorized") ||
+      pageError.message.toLowerCase().includes("session");
+
     return (
       <div className="py-24 text-center space-y-4 max-w-md mx-auto">
         <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
@@ -549,13 +567,22 @@ export default function PackageDetailPage() {
         <div className="text-white font-semibold text-lg">{pageError.message}</div>
         <div className="text-xs text-slate-500 font-mono">Reference: {pageError.requestId}</div>
         <div className="flex items-center justify-center gap-3 pt-2">
-          <button
-            type="button"
-            onClick={fetchPackage}
-            className="px-4 py-2 rounded-xl bg-[#D8EC8D] text-[#131313] font-bold text-xs hover:brightness-105 transition-all"
-          >
-            Retry
-          </button>
+          {isAuthErr ? (
+            <Link
+              href="/login"
+              className="px-5 py-2.5 rounded-xl bg-[#D8EC8D] text-[#131313] font-bold text-xs hover:brightness-105 transition-all shadow-md inline-block"
+            >
+              Log In Again
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={fetchPackage}
+              className="px-4 py-2 rounded-xl bg-[#D8EC8D] text-[#131313] font-bold text-xs hover:brightness-105 transition-all"
+            >
+              Retry
+            </button>
+          )}
           <Link href="/packages" className="text-xs text-slate-400 hover:text-white underline">
             Back to Packages
           </Link>

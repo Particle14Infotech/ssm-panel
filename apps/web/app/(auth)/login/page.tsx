@@ -32,16 +32,19 @@ export default function LoginPage() {
     },
   });
 
-  const establishSession = (userObj: any, tokenStr?: string) => {
+  const establishSession = (userObj: any, tokenStr?: string, refreshTokenStr?: string) => {
     const token = tokenStr || `jwt_demo_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const role = userObj.role || "CUSTOMER";
 
     if (typeof window !== "undefined") {
       localStorage.clear();
       localStorage.setItem("authToken", token);
+      if (refreshTokenStr) {
+        localStorage.setItem("refreshToken", refreshTokenStr);
+      }
       localStorage.setItem("authUser", JSON.stringify(userObj));
 
-      // Set cookie for Next.js middleware and SSR
+      // Set cookie for Next.js middleware and SSR (7 days = 604800s)
       document.cookie = `authToken=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax`;
       document.cookie = `userRole=${encodeURIComponent(role)}; path=/; max-age=604800; SameSite=Lax`;
 
@@ -82,7 +85,7 @@ export default function LoginPage() {
         if (res.ok) {
           const json = await res.json();
           if (json.token) {
-            establishSession(json.user || { email, role: "CUSTOMER" }, json.token);
+            establishSession(json.user || { email, role: "CUSTOMER" }, json.token, json.refreshToken);
             return;
           }
         } else {
