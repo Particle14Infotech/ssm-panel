@@ -288,11 +288,16 @@ export default function PackageDetailPage() {
       } else {
         setNotification({
           type: "success",
-          message: `Delivery started! ${data.executionsCreated || 1} scheduled execution(s) scheduled.`,
+          message: `🚀 1st run dispatched immediately to provider! ${
+            (data.executionsCreated || 1) - 1 > 0
+              ? `${(data.executionsCreated || 1) - 1} further run(s) queued on schedule.`
+              : ""
+          }`,
         });
         setPostLink("");
         setPreviewData(null);
         setConsentChecked(false);
+        setActiveTab("executions");
         await fetchPackage();
       }
     } catch {

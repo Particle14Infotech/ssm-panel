@@ -7,6 +7,8 @@ import {
   PackageExecutionStatus,
   ExecutionSource,
   TransactionType,
+  OrderStatus,
+  OutboxStatus,
 } from "@prisma/client";
 import {
   PackageQuoteInput,
@@ -446,20 +448,69 @@ export class PackagesService implements PackagesServiceLike {
 
         for (const run of drip.runs) {
           const currentSeq = nextSeq++;
-          await tx.packageExecution.create({
+          const isImmediateFirstRun = run.seq === 1;
+          let childOrderId: string | null = null;
+
+          if (isImmediateFirstRun) {
+            const childOrder = await tx.order.create({
+              data: {
+                userId: pkg.userId,
+                serviceId: rule.serviceId,
+                target: linkRes.normalizedUrl,
+                quantity: run.quantity,
+                charge: new Decimal(run.allocatedCharge.toString()),
+                isPrepaid: true,
+                status: OrderStatus.PENDING,
+                startCount: 0,
+                remains: run.quantity,
+                providerId: rule.service?.providerId || null,
+              },
+            });
+            childOrderId = childOrder.id;
+
+            await tx.outboxEvent.create({
+              data: {
+                aggregate: "ORDER",
+                eventType: "ORDER_CREATED",
+                payload: {
+                  orderId: childOrder.id,
+                  packageId: pkg.id,
+                  ruleId: rule.id,
+                  serviceId: rule.serviceId,
+                  target: linkRes.normalizedUrl,
+                  quantity: run.quantity,
+                  isPrepaid: true,
+                },
+                status: OutboxStatus.PENDING,
+              },
+            });
+          }
+
+          const execution = await tx.packageExecution.create({
             data: {
               packageId: pkg.id,
               triggerId: trigger.id,
               serviceId: rule.serviceId,
               seq: currentSeq,
               executeAt: run.executeAt,
-              status: PackageExecutionStatus.SCHEDULED,
+              status: isImmediateFirstRun
+                ? PackageExecutionStatus.DISPATCHED
+                : PackageExecutionStatus.SCHEDULED,
               source: ExecutionSource.MEDIA,
               quantity: run.quantity,
               remainingQuantity: run.quantity,
               allocatedCharge: new Decimal(run.allocatedCharge),
+              orderId: childOrderId,
             },
           });
+
+          if (childOrderId) {
+            await tx.order.update({
+              where: { id: childOrderId },
+              data: { packageExecutionId: execution.id },
+            });
+          }
+
           totalRunsCreated++;
         }
 

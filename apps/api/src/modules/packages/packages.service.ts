@@ -29,6 +29,8 @@ import {
   PackageRuleKind,
   PackageExecutionStatus,
   ExecutionSource,
+  OrderStatus,
+  OutboxStatus,
 } from "@prisma/client";
 import {
   calculateFollowersDrip,
@@ -653,9 +655,49 @@ export class PackagesService {
           startAt: now,
         });
 
-        // Insert executions (first run at now)
+        // Insert executions: 1st run of each service rule dispatches immediately to provider, remaining runs scheduled
         for (const run of drip.runs) {
           const currentSeq = nextSeq++;
+          const isImmediateFirstRun = run.seq === 1;
+
+          let childOrderId: string | null = null;
+          if (isImmediateFirstRun) {
+            const childOrder = await tx.order.create({
+              data: {
+                userId: lockedPkg.userId,
+                serviceId: rule.serviceId,
+                target: normalizedUrl,
+                quantity: run.quantity,
+                charge: new Decimal(run.allocatedCharge.toString()),
+                isPrepaid: true,
+                status: OrderStatus.PENDING,
+                startCount: 0,
+                remains: run.quantity,
+                providerId: rule.service.providerId || null,
+              },
+            });
+            childOrderId = childOrder.id;
+
+            // Enqueue outbox event so worker dispatches order to upstream SMM provider immediately
+            await tx.outboxEvent.create({
+              data: {
+                aggregate: "ORDER",
+                eventType: "ORDER_CREATED",
+                payload: {
+                  orderId: childOrder.id,
+                  packageId: lockedPkg.id,
+                  ruleId: rule.id,
+                  packageExecutionId: null, // will be linked below
+                  serviceId: rule.serviceId,
+                  target: normalizedUrl,
+                  quantity: run.quantity,
+                  isPrepaid: true,
+                },
+                status: OutboxStatus.PENDING,
+              },
+            });
+          }
+
           const execution = await tx.packageExecution.create({
             data: {
               packageId: lockedPkg.id,
@@ -669,10 +711,24 @@ export class PackagesService {
               remainingQuantity: run.quantity,
               allocatedCharge: new Decimal(run.allocatedCharge),
               executeAt: run.executeAt,
-              status: PackageExecutionStatus.SCHEDULED,
+              status: isImmediateFirstRun
+                ? PackageExecutionStatus.DISPATCHED
+                : PackageExecutionStatus.SCHEDULED,
+              orderId: childOrderId,
             },
           });
-          createdExecutions.push(execution);
+
+          if (childOrderId) {
+            await tx.order.update({
+              where: { id: childOrderId },
+              data: { packageExecutionId: execution.id },
+            });
+          }
+
+          createdExecutions.push({
+            ...execution,
+            orderId: childOrderId,
+          });
         }
       }
 
@@ -688,6 +744,7 @@ export class PackagesService {
           allocatedCharge: Number(e.allocatedCharge),
           executeAt: e.executeAt.toISOString(),
           status: e.status,
+          childOrderId: e.orderId || null,
         })),
       };
     });
