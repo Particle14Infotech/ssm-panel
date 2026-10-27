@@ -268,7 +268,7 @@ export class ServicesService {
       const uncategorizedServices = await this.client.service.findMany({
         where: {
           ...serviceWhere,
-          OR: [{ categoryId: null }, { categoryId: "" }],
+          categoryId: "",
         },
         orderBy: { ratePer1000: "asc" },
       });
