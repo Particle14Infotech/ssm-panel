@@ -13,6 +13,8 @@ const filesToSync = [
   "apps/web/app/(customer)/new-order/page.tsx",
   "apps/web/app/(customer)/packages/[id]/page.tsx",
   "apps/web/components/customer/PackageOrderBuilder.tsx",
+  "apps/worker/src/main.ts",
+  "infra/docker-compose.prod.yml",
 ];
 
 const bundle = {};

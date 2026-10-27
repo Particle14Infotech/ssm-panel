@@ -1440,6 +1440,16 @@ export class SMMWorkerEngine {
       return simId;
     }
 
+    let targetUrl = apiUrl.trim();
+    if (
+      !targetUrl.includes("/api/") &&
+      !targetUrl.startsWith("simulated://") &&
+      !targetUrl.includes("localhost") &&
+      !targetUrl.includes("127.0.0.1")
+    ) {
+      targetUrl = targetUrl.replace(/\/+$/, "") + "/api/v2";
+    }
+
     const cleanLink = link.trim();
     const payload: Record<string, any> = {
       key: apiKey,
@@ -1456,26 +1466,9 @@ export class SMMWorkerEngine {
       payload.interval = interval;
     }
 
-    // If upstream expects username or link is a profile handle/URL
-    if (cleanLink.includes("instagram.com/")) {
-      const postMatch = cleanLink.match(/instagram\.com\/(?:p|reel|tv)\/([a-zA-Z0-9_-]+)/i);
-      if (postMatch && postMatch[1]) {
-        payload.link = cleanLink;
-        payload.username = postMatch[1];
-      } else {
-        const profileMatch = cleanLink.match(/instagram\.com\/([a-zA-Z0-9._]+)\/?(?:\?.*)?$/i);
-        if (
-          profileMatch &&
-          profileMatch[1] &&
-          !["p", "reel", "tv", "stories", "explore", "reels"].includes(profileMatch[1].toLowerCase())
-        ) {
-          payload.username = profileMatch[1];
-          payload.link = `https://www.instagram.com/${profileMatch[1]}`;
-        }
-      }
-    } else if (!cleanLink.startsWith("http")) {
-      payload.username = cleanLink.replace(/^@/, "");
-      payload.link = cleanLink.replace(/^@/, "");
+    if (!cleanLink.startsWith("http")) {
+      const cleanHandle = cleanLink.replace(/^@/, "");
+      payload.link = `https://www.instagram.com/${cleanHandle}`;
     }
 
     const sanitizedPayload = { ...payload, key: "[REDACTED]" };
@@ -1483,7 +1476,7 @@ export class SMMWorkerEngine {
     let data: any;
 
     try {
-      response = await fetch(apiUrl, {
+      response = await fetch(targetUrl, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams(payload as any).toString(),
@@ -1491,7 +1484,8 @@ export class SMMWorkerEngine {
       });
 
       if (!response.ok) {
-        throw new Error(`Upstream SMM API returned HTTP ${response.status}`);
+        const errText = await response.text().catch(() => "");
+        throw new Error(`Upstream SMM API returned HTTP ${response.status}: ${errText.slice(0, 200)}`);
       }
 
       data = await response.json();
@@ -1501,7 +1495,7 @@ export class SMMWorkerEngine {
         const fallbackUser = cleanLink.replace(/^https?:\/\/(?:www\.)?instagram\.com\//i, "").replace(/\/.*$/, "").replace(/^@/, "");
         if (fallbackUser && fallbackUser.length > 0) {
           payload.username = fallbackUser;
-          const retryRes = await fetch(apiUrl, {
+          const retryRes = await fetch(targetUrl, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: new URLSearchParams(payload as any).toString(),
@@ -1564,6 +1558,16 @@ export class SMMWorkerEngine {
       return { status: "Completed", start_count: 50, remains: 0 };
     }
 
+    let targetUrl = apiUrl.trim();
+    if (
+      !targetUrl.includes("/api/") &&
+      !targetUrl.startsWith("simulated://") &&
+      !targetUrl.includes("localhost") &&
+      !targetUrl.includes("127.0.0.1")
+    ) {
+      targetUrl = targetUrl.replace(/\/+$/, "") + "/api/v2";
+    }
+
     const payload = {
       key: apiKey,
       action: "status",
@@ -1571,7 +1575,7 @@ export class SMMWorkerEngine {
     };
 
     try {
-      const response = await fetch(apiUrl, {
+      const response = await fetch(targetUrl, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams(payload as any).toString(),
@@ -1579,7 +1583,8 @@ export class SMMWorkerEngine {
       });
 
       if (!response.ok) {
-        throw new Error(`Upstream SMM API status check returned HTTP ${response.status}`);
+        const errText = await response.text().catch(() => "");
+        throw new Error(`Upstream SMM API status check returned HTTP ${response.status}: ${errText.slice(0, 200)}`);
       }
 
       const status = (await response.json()) as any;
