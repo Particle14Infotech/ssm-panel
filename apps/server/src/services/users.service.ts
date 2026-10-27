@@ -96,4 +96,66 @@ export class UsersService {
       createdAt: user.createdAt,
     };
   }
+
+  async updateProfile(userId: string, body: { name?: string; tier?: string }) {
+    if (userId) {
+      const user = await this.client.user.update({
+        where: { id: userId },
+        data: {
+          name: body.name ? body.name.trim() : undefined,
+        },
+      });
+      return { success: true, user };
+    }
+    return { success: true, updated: body };
+  }
+
+  async update(id: string, body: any) {
+    const user = await this.client.user.update({
+      where: { id },
+      data: {
+        name: body.name || undefined,
+        role: body.role || undefined,
+        tier: body.tier || undefined,
+      },
+    });
+    return { success: true, user };
+  }
+
+  async remove(id: string) {
+    await this.client.user.update({
+      where: { id },
+      data: { isDeleted: true, deletedAt: new Date() },
+    });
+    return { success: true, message: `User #${id} soft-deleted.` };
+  }
+
+  async updateStatus(id: string, body: { role?: any; tier?: string }) {
+    const user = await this.client.user.update({
+      where: { id },
+      data: {
+        role: body.role || undefined,
+        tier: body.tier || undefined,
+      },
+    });
+    return { success: true, user };
+  }
+
+  async adminResetPassword(id: string, body: { newPassword?: string }) {
+    const argon2 = await import("argon2");
+    const newPassword = body.newPassword || "TemporaryP@ss123!";
+    const passwordHash = await argon2.hash(newPassword, {
+      type: argon2.argon2id,
+      memoryCost: 65536,
+      timeCost: 3,
+      parallelism: 4,
+    });
+
+    await this.client.user.update({
+      where: { id },
+      data: { passwordHash },
+    });
+
+    return { success: true, message: `Password reset successfully for user #${id}.` };
+  }
 }
