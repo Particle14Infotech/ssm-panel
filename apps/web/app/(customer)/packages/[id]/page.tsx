@@ -29,6 +29,15 @@ import {
   Link2,
   Repeat,
   Zap,
+  Wallet,
+  Copy,
+  Sparkles,
+  ShieldCheck,
+  Activity,
+  TrendingUp,
+  Users,
+  Clipboard,
+  ListFilter,
 } from "lucide-react";
 import { formatIndianNumber } from "@/lib/numberFormat";
 import { formatPackageId } from "@/lib/utils";
@@ -97,6 +106,28 @@ export default function PackageDetailPage() {
   const [problemIssue, setProblemIssue] = useState("Execution delayed or missed");
   const [problemDesc, setProblemDesc] = useState("");
   const [submittingProblem, setSubmittingProblem] = useState(false);
+
+  // Quick Action State
+  const [copiedId, setCopiedId] = useState(false);
+  const handleCopyId = () => {
+    if (!pkg?.id) return;
+    navigator.clipboard.writeText(pkg.id);
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 2000);
+  };
+
+  const handlePasteLink = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && text.trim()) {
+        setPostLink(text.trim());
+        setPreviewData(null);
+        setPreviewError(null);
+      }
+    } catch {
+      // clipboard access error / permission denied
+    }
+  };
 
   const fetchPackage = useCallback(async () => {
     if (typeof window === "undefined" || !packageId) return;
@@ -643,54 +674,78 @@ export default function PackageDetailPage() {
       </div>
 
       {/* Main Header Card */}
-      <GlassCard className="p-6 md:p-8 rounded-3xl border-white/10 space-y-6 bg-white/[0.02]">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-3">
-              <PlatformIcon platform={pkg.platform || "instagram"} size={22} />
-              <h1 className="text-2xl font-bold text-white">@{pkg.handle}</h1>
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium border ${
-                  pkg.status === "ACTIVE"
-                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                    : pkg.status === "PAUSED"
-                    ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                    : pkg.status === "COMPLETED"
-                    ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                    : pkg.status === "CANCELLED"
-                    ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                    : "bg-slate-500/10 text-slate-400 border-slate-500/20"
-                }`}
-              >
-                {pkg.status}
-              </span>
+      <GlassCard className="p-6 md:p-8 rounded-3xl border-white/10 space-y-6 bg-gradient-to-b from-white/[0.04] to-transparent relative overflow-hidden shadow-2xl">
+        {/* Subtle ambient lighting */}
+        <div className="absolute top-0 right-0 w-96 h-48 bg-[#D8EC8D]/5 blur-[90px] pointer-events-none -z-10" />
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-3.5 flex-wrap">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-amber-500/20 border border-white/15 flex items-center justify-center p-2.5 shadow-lg">
+                <PlatformIcon platform={pkg.platform || "instagram"} size={26} />
+              </div>
+              <div>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">@{pkg.handle}</h1>
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold border shadow-sm ${
+                      pkg.status === "ACTIVE"
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                        : pkg.status === "PAUSED"
+                        ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                        : pkg.status === "COMPLETED"
+                        ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                        : pkg.status === "CANCELLED"
+                        ? "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                        : "bg-slate-500/10 text-slate-400 border-slate-500/30"
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${pkg.status === "ACTIVE" ? "bg-emerald-400 animate-pulse" : "bg-current"}`} />
+                    <span>{pkg.status}</span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-400 font-mono mt-1">
+                  <span>ID: {formatPackageId(pkg.id)}</span>
+                  <button
+                    type="button"
+                    onClick={handleCopyId}
+                    className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                    title="Copy full Package ID"
+                  >
+                    {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                  <span className="text-slate-600">·</span>
+                  <span className="text-slate-300">
+                    Active through {new Date(pkg.endAt || pkg.endDate).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="text-xs text-slate-400 font-mono">
-              ID: {formatPackageId(pkg.id)} · Active through{" "}
-              {new Date(pkg.endAt || pkg.endDate).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
-            </div>
-            <div className="text-[11px] text-slate-500">
-              Platform: <span className="capitalize text-slate-300">{pkg.platform}</span> · Schedule timezone:{" "}
-              <span className="text-slate-300">{pkg.timezone || "UTC"}</span> · We do not verify account ownership.
+            <div className="text-[11px] text-slate-400 flex items-center gap-2 pt-0.5 flex-wrap">
+              <span>Platform: <strong className="capitalize text-slate-200">{pkg.platform}</strong></span>
+              <span className="text-slate-600">·</span>
+              <span>Schedule Timezone: <strong className="text-slate-200">{pkg.timezone || "UTC"}</strong></span>
+              <span className="text-slate-600">·</span>
+              <span className="text-slate-400">Autonomous drip campaign</span>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
+          <div className="flex items-center gap-2 self-start md:self-auto flex-wrap">
             <button
               type="button"
               onClick={() => setProblemModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-semibold text-xs border border-white/10 transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-amber-300 font-medium text-xs border border-white/10 transition-all hover:border-amber-500/30"
             >
               <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-              <span>Report a Problem</span>
+              <span>Report Issue</span>
             </button>
 
             {pkg.status === "ACTIVE" && (
               <button
                 type="button"
                 onClick={() => setSpeedUpModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#D8EC8D]/10 hover:bg-[#D8EC8D]/20 text-[#D8EC8D] font-semibold text-xs border border-[#D8EC8D]/30 transition-all"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#D8EC8D]/10 hover:bg-[#D8EC8D]/20 text-[#D8EC8D] font-semibold text-xs border border-[#D8EC8D]/30 transition-all shadow-sm"
               >
                 <FastForward className="w-3.5 h-3.5" />
                 <span>Speed Up</span>
@@ -722,9 +777,9 @@ export default function PackageDetailPage() {
               <button
                 type="button"
                 onClick={() => setCancelModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 font-semibold text-xs border border-rose-500/20 transition-all"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 font-semibold text-xs border border-rose-500/20 transition-all hover:border-rose-500/40"
               >
-                <Ban className="w-4 h-4" />
+                <Ban className="w-3.5 h-3.5" />
                 <span>Cancel Remaining</span>
               </button>
             )}
@@ -732,7 +787,7 @@ export default function PackageDetailPage() {
         </div>
 
         {/* Retainer & Auto-Renew Management Bar */}
-        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-[#D8EC8D]/10 text-[#D8EC8D] flex items-center justify-center shrink-0">
               <Repeat className="w-4 h-4" />
@@ -759,7 +814,7 @@ export default function PackageDetailPage() {
           </div>
 
           <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-300">
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-300 hover:text-white transition-colors">
               <input
                 type="checkbox"
                 disabled={togglingAutoRenew}
@@ -773,7 +828,7 @@ export default function PackageDetailPage() {
             <button
               type="button"
               onClick={() => setRenewModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs border border-white/10 transition-all flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs border border-white/10 transition-all flex items-center gap-1.5 shadow-sm"
             >
               <Repeat className="w-3.5 h-3.5 text-[#D8EC8D]" />
               <span>Renew Retainer</span>
@@ -782,32 +837,78 @@ export default function PackageDetailPage() {
         </div>
 
         {/* Progress & Stat Highlights */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-white/5">
-          <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5">
-            <div className="text-[10px] uppercase font-mono text-slate-500">Total Upfront</div>
-            <div className="text-lg font-mono font-bold text-white mt-1">₹{Number(pkg.reserveTotal ?? pkg.totalCharge ?? 0).toFixed(2)}</div>
-            <div className="text-[10px] text-slate-500">Maximum reserve</div>
-          </div>
-          <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5">
-            <div className="text-[10px] uppercase font-mono text-slate-500">Triggers Started</div>
-            <div className="text-lg font-mono font-bold text-[#D8EC8D] mt-1">
-              {triggers.length} post(s)
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-4 border-t border-white/5">
+          {/* Card 1: Total Upfront */}
+          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/15 transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Total Budget</span>
+              <div className="w-7 h-7 rounded-lg bg-[#D8EC8D]/10 text-[#D8EC8D] flex items-center justify-center">
+                <Wallet className="w-3.5 h-3.5" />
+              </div>
             </div>
-            <div className="text-[10px] text-slate-500">Manual Start flow</div>
-          </div>
-          <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5">
-            <div className="text-[10px] uppercase font-mono text-slate-500">Execution Progress</div>
-            <div className="text-lg font-mono font-bold text-white mt-1">
-              {completedExecs} / {totalExecs}
+            <div className="text-xl sm:text-2xl font-mono font-bold text-white tracking-tight">
+              ₹{Number(pkg.reserveTotal ?? pkg.totalCharge ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div className="text-[10px] text-slate-400 font-mono">{progressPercent}% complete</div>
+            <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-[#D8EC8D]" />
+              <span>Pre-funded reserve balance</span>
+            </div>
           </div>
-          <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5">
-            <div className="text-[10px] uppercase font-mono text-slate-500">Refunded Amount</div>
-            <div className="text-lg font-mono font-bold text-amber-400 mt-1">
+
+          {/* Card 2: Triggers / Posts Started */}
+          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/15 transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Posts Started</span>
+              <div className="w-7 h-7 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center">
+                <Film className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-xl sm:text-2xl font-mono font-bold text-white tracking-tight flex items-baseline gap-2">
+              <span className="text-[#D8EC8D]">{triggers.length}</span>
+              <span className="text-xs text-slate-400 font-normal">post(s)</span>
+            </div>
+            <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-sky-400" />
+              <span>Active delivery triggers</span>
+            </div>
+          </div>
+
+          {/* Card 3: Execution Progress with Animated Progress Bar */}
+          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/15 transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Drip Progress</span>
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                <Activity className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <div className="text-xl sm:text-2xl font-mono font-bold text-white tracking-tight">
+                {completedExecs} <span className="text-xs text-slate-400 font-normal">/ {totalExecs} runs</span>
+              </div>
+              <span className="text-xs font-mono font-bold text-[#D8EC8D]">{progressPercent}%</span>
+            </div>
+            <div className="w-full h-1.5 bg-white/10 rounded-full mt-2.5 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-[#D8EC8D] to-emerald-400 rounded-full transition-all duration-500"
+                style={{ width: `${Math.min(100, Math.max(progressPercent, totalExecs > 0 ? 6 : 0))}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Card 4: Refunded / Protected */}
+          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/15 transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Refund Guarantee</span>
+              <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                <TrendingUp className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-xl sm:text-2xl font-mono font-bold text-amber-400 tracking-tight">
               ₹{Number(pkg.refundedAmount || 0).toFixed(2)}
             </div>
-            <div className="text-[10px] text-slate-500">Unused / partials</div>
+            <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+              <span>Automatic refund for unused</span>
+            </div>
           </div>
         </div>
       </GlassCard>
@@ -832,36 +933,72 @@ export default function PackageDetailPage() {
             </span>
           </div>
 
-          {/* Link Box Input */}
-          <form onSubmit={handlePreviewPost} className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="url"
-              required
-              placeholder={`https://${pkg.platform}.com/...`}
-              value={postLink}
-              onChange={(e) => {
-                setPostLink(e.target.value);
-                setPreviewData(null);
-                setPreviewError(null);
-              }}
-              className="flex-1 bg-white/[0.04] border border-white/10 rounded-2xl px-4 py-3 text-sm text-white font-mono placeholder:text-slate-600 focus:outline-none focus:border-[#D8EC8D]/50"
-            />
-            <button
-              type="submit"
-              disabled={previewLoading || !postLink.trim()}
-              className="px-6 py-3 rounded-2xl bg-[#D8EC8D] text-[#131313] font-bold text-xs hover:brightness-105 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0 flex items-center justify-center gap-2 shadow-sm"
-            >
-              {previewLoading ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>Validating Link...</span>
-                </>
-              ) : (
-                <>
-                  <span>Preview Post</span>
-                </>
-              )}
-            </button>
+          {/* Link Box Input with Direct Paste & Clear Buttons */}
+          <form onSubmit={handlePreviewPost} className="relative">
+            <div className="relative flex items-center">
+              <div className="absolute left-4 pointer-events-none text-slate-400">
+                <PlatformIcon platform={pkg.platform || "instagram"} size={20} />
+              </div>
+              <input
+                type="url"
+                required
+                placeholder={`https://${pkg.platform || "instagram"}.com/p/... or /reel/...`}
+                value={postLink}
+                onChange={(e) => {
+                  setPostLink(e.target.value);
+                  setPreviewData(null);
+                  setPreviewError(null);
+                }}
+                className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-44 py-3.5 text-sm text-white font-mono placeholder:text-slate-600 focus:outline-none focus:border-[#D8EC8D] focus:ring-1 focus:ring-[#D8EC8D]/50 transition-all shadow-inner"
+              />
+              <div className="absolute right-2 flex items-center gap-2">
+                {!postLink && (
+                  <button
+                    type="button"
+                    onClick={handlePasteLink}
+                    className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all border border-white/5"
+                    title="Paste from clipboard"
+                  >
+                    <Clipboard className="w-3.5 h-3.5 text-[#D8EC8D]" />
+                    <span>Paste</span>
+                  </button>
+                )}
+                {postLink && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPostLink("");
+                      setPreviewData(null);
+                      setPreviewError(null);
+                    }}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-white transition-colors"
+                    title="Clear"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={previewLoading || !postLink.trim()}
+                  className="px-5 py-2 rounded-xl bg-[#D8EC8D] text-[#131313] font-bold text-xs hover:brightness-105 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0 flex items-center gap-1.5 shadow-sm"
+                >
+                  {previewLoading ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Checking...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Preview Post</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-2 pl-1">
+              Supports Instagram Reels, Posts, Carousels, and IGTV. We distribute likes & views across multiple days naturally.
+            </p>
           </form>
 
           {/* Preview Error Banner */}
@@ -1051,96 +1188,184 @@ export default function PackageDetailPage() {
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-white/10 pb-3">
+      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white/[0.03] border border-white/10 rounded-2xl w-fit">
         <button
           type="button"
           onClick={() => setActiveTab("timeline")}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2.5 ${
             activeTab === "timeline"
-              ? "bg-[#D8EC8D]/15 text-white border border-[#D8EC8D]/30"
-              : "text-slate-400 hover:text-white"
+              ? "bg-[#D8EC8D] text-[#131313] shadow-md shadow-[#D8EC8D]/15 font-bold"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
           }`}
         >
-          <Calendar className="w-3.5 h-3.5" />
-          <span>Package Rules ({pkg.rules?.length || 0})</span>
+          <ListFilter className="w-3.5 h-3.5" />
+          <span>Package Rules</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+              activeTab === "timeline"
+                ? "bg-black/20 text-[#131313]"
+                : "bg-white/10 text-slate-300"
+            }`}
+          >
+            {pkg.rules?.length || 0}
+          </span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab("triggers")}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2.5 ${
             activeTab === "triggers"
-              ? "bg-[#D8EC8D]/15 text-white border border-[#D8EC8D]/30"
-              : "text-slate-400 hover:text-white"
+              ? "bg-[#D8EC8D] text-[#131313] shadow-md shadow-[#D8EC8D]/15 font-bold"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
           }`}
         >
           <Film className="w-3.5 h-3.5" />
-          <span>Posts Delivered ({triggers.length})</span>
+          <span>Posts Delivered</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+              activeTab === "triggers"
+                ? "bg-black/20 text-[#131313]"
+                : "bg-white/10 text-slate-300"
+            }`}
+          >
+            {triggers.length}
+          </span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab("executions")}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2.5 ${
             activeTab === "executions"
-              ? "bg-[#D8EC8D]/15 text-white border border-[#D8EC8D]/30"
-              : "text-slate-400 hover:text-white"
+              ? "bg-[#D8EC8D] text-[#131313] shadow-md shadow-[#D8EC8D]/15 font-bold"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
-          <span>Drip Executions ({executions.length})</span>
+          <span>Drip Executions</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+              activeTab === "executions"
+                ? "bg-black/20 text-[#131313]"
+                : "bg-white/10 text-slate-300"
+            }`}
+          >
+            {executions.length}
+          </span>
         </button>
       </div>
 
       {/* TAB 1: PACKAGE RULES OVERVIEW */}
       {activeTab === "timeline" && (
         <section className="space-y-4">
-          <div className="glass-panel overflow-hidden rounded-2xl border border-white/10">
+          <div className="glass-panel overflow-hidden rounded-2xl border border-white/10 shadow-xl shadow-black/20">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-white/10 bg-white/[0.02] text-[10px] font-mono uppercase text-slate-400 tracking-wider">
-                    <th className="py-3 px-4">Kind</th>
-                    <th className="py-3 px-4">Service</th>
-                    <th className="py-3 px-4">Quota / Total Qty</th>
-                    <th className="py-3 px-4">Qty / Post</th>
-                    <th className="py-3 px-4">Rate / 1k</th>
-                    <th className="py-3 px-4">Allocated Reserve</th>
-                    <th className="py-3 px-4 text-right">Quota Used</th>
+                  <tr className="border-b border-white/10 bg-white/[0.03] text-[10px] font-mono uppercase text-slate-400 tracking-wider">
+                    <th className="py-3.5 px-4 font-semibold">Trigger Kind</th>
+                    <th className="py-3.5 px-4 font-semibold">Service Details</th>
+                    <th className="py-3.5 px-4 font-semibold">Quota / Limits</th>
+                    <th className="py-3.5 px-4 font-semibold">Quantity / Post</th>
+                    <th className="py-3.5 px-4 font-semibold">Rate Snapshot</th>
+                    <th className="py-3.5 px-4 font-semibold">Allocated Reserve</th>
+                    <th className="py-3.5 px-4 font-semibold text-right">Quota Utilization</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5 font-mono">
+                <tbody className="divide-y divide-white/5">
                   {pkg.rules?.map((r: any) => (
                     <tr key={r.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-3 px-4 text-white font-semibold">
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-white/5 text-slate-300">
-                          {r.kind}
-                        </span>
+                      <td className="py-3.5 px-4">
+                        {r.kind === "POST_TRIGGERED" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <Zap className="w-3 h-3 text-emerald-400" />
+                            <span>Per-Post Trigger</span>
+                          </span>
+                        ) : r.kind === "TIME_DRIP" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                            <Clock className="w-3 h-3 text-cyan-400" />
+                            <span>Scheduled Drip</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                            <Users className="w-3 h-3 text-violet-400" />
+                            <span>Followers Growth</span>
+                          </span>
+                        )}
                       </td>
-                      <td className="py-3 px-4 text-slate-200 font-sans font-medium">
-                        {r.service?.displayName || r.service?.name}
+                      <td className="py-3.5 px-4">
+                        <div className="space-y-0.5">
+                          <div className="font-sans font-medium text-white text-xs">
+                            {r.service?.displayName || r.service?.name}
+                          </div>
+                          {r.service?.platform && (
+                            <div className="text-[10px] text-slate-400 uppercase tracking-wider font-mono flex items-center gap-1">
+                              <span>{r.service.platform}</span>
+                              {r.service?.category && (
+                                <>
+                                  <span className="text-white/20">•</span>
+                                  <span className="text-slate-500 capitalize">{r.service.category}</span>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </td>
-                      <td className="py-3 px-4 text-white">
+                      <td className="py-3.5 px-4 font-mono text-white text-xs font-semibold">
                         {r.kind === "FOLLOWERS_INTERVAL"
                           ? `${formatIndianNumber(r.totalFollowers || 0)} total`
                           : `${r.maxPosts} posts max`}
                       </td>
-                      <td className="py-3 px-4 text-slate-300">
-                        {r.kind === "POST_TRIGGERED" ? formatIndianNumber(r.quantityPerPost) : "—"}
-                      </td>
-                      <td className="py-3 px-4 text-[#D8EC8D]">₹{Number(r.rateSnapshot).toFixed(2)}</td>
-                      <td className="py-3 px-4 text-white font-semibold">
-                        ₹{Number(r.unitCharge).toFixed(2)}
-                      </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3.5 px-4 font-mono text-slate-300 text-xs">
                         {r.kind === "POST_TRIGGERED" ? (
-                          <span
-                            className={
-                              r.usedCount >= r.maxPosts ? "text-rose-400" : "text-emerald-400"
-                            }
-                          >
-                            {r.usedCount} / {r.maxPosts}
+                          <span className="px-2 py-0.5 rounded-md bg-white/5 text-white font-medium">
+                            {formatIndianNumber(r.quantityPerPost)}
                           </span>
                         ) : (
-                          <span className="text-slate-500">Scheduled</span>
+                          <span className="text-slate-600">—</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 font-mono text-[#D8EC8D] text-xs font-semibold">
+                        ₹{Number(r.rateSnapshot).toFixed(2)}
+                        <span className="text-[10px] text-slate-500 font-normal"> / 1k</span>
+                      </td>
+                      <td className="py-3.5 px-4 font-mono text-white font-bold text-xs">
+                        ₹{Number(r.unitCharge).toFixed(2)}
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        {r.kind === "POST_TRIGGERED" ? (
+                          <div className="flex flex-col items-end gap-1.5">
+                            <div className="flex items-center gap-1.5 font-mono text-xs">
+                              <span
+                                className={
+                                  r.usedCount >= r.maxPosts ? "text-rose-400 font-bold" : "text-[#D8EC8D] font-bold"
+                                }
+                              >
+                                {r.usedCount}
+                              </span>
+                              <span className="text-slate-500">/</span>
+                              <span className="text-slate-400">{r.maxPosts} posts</span>
+                            </div>
+                            <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${
+                                  r.usedCount >= r.maxPosts
+                                    ? "bg-rose-500"
+                                    : "bg-gradient-to-r from-[#D8EC8D] to-emerald-400"
+                                }`}
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    Math.round(((r.usedCount || 0) / (r.maxPosts || 1)) * 100)
+                                  )}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-white/5 text-slate-400 border border-white/5">
+                            <Clock className="w-2.5 h-2.5 text-cyan-400" />
+                            <span>Scheduled</span>
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -1156,37 +1381,60 @@ export default function PackageDetailPage() {
       {activeTab === "triggers" && (
         <section className="space-y-4">
           {triggers.length === 0 ? (
-            <div className="p-8 rounded-2xl bg-white/[0.02] border border-white/5 text-center text-slate-400 text-xs space-y-2">
-              <Film className="w-8 h-8 mx-auto text-slate-500" />
-              <div>No posts started for this package yet.</div>
-              <div className="text-[11px] text-slate-500">
-                Paste your post link above to configure per-post drip delivery.
+            <div className="p-12 rounded-3xl bg-white/[0.02] border border-white/5 text-center text-slate-400 text-xs space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 mx-auto flex items-center justify-center text-slate-400">
+                <Film className="w-6 h-6" />
+              </div>
+              <div className="text-sm font-semibold text-white">No posts started for this package yet</div>
+              <div className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                Paste your post or reel link above to schedule automated drip delivery for your media.
               </div>
             </div>
           ) : (
-            <div className="glass-panel overflow-hidden rounded-2xl border border-white/10">
+            <div className="glass-panel overflow-hidden rounded-2xl border border-white/10 shadow-xl shadow-black/20">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-white/10 bg-white/[0.02] text-[10px] font-mono uppercase text-slate-400 tracking-wider">
-                      <th className="py-3 px-4">Media Key</th>
-                      <th className="py-3 px-4">Target Link</th>
-                      <th className="py-3 px-4">Executions</th>
-                      <th className="py-3 px-4">Created Date</th>
-                      <th className="py-3 px-4 text-right">Link</th>
+                    <tr className="border-b border-white/10 bg-white/[0.03] text-[10px] font-mono uppercase text-slate-400 tracking-wider">
+                      <th className="py-3.5 px-4 font-semibold">Media Key</th>
+                      <th className="py-3.5 px-4 font-semibold">Target Link</th>
+                      <th className="py-3.5 px-4 font-semibold">Drip Runs</th>
+                      <th className="py-3.5 px-4 font-semibold">Initiated Date</th>
+                      <th className="py-3.5 px-4 font-semibold text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5 font-mono">
+                  <tbody className="divide-y divide-white/5">
                     {triggers.map((trig) => (
                       <tr key={trig.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-3 px-4 text-white font-semibold">{trig.mediaKey}</td>
-                        <td className="py-3 px-4 text-slate-400 max-w-[260px] truncate" title={trig.url}>
-                          {trig.url}
+                        <td className="py-3.5 px-4">
+                          <span className="font-mono text-xs font-bold text-white bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
+                            {trig.mediaKey}
+                          </span>
                         </td>
-                        <td className="py-3 px-4 text-[#D8EC8D]">
-                          {trig.executions?.length || 0} run(s)
+                        <td className="py-3.5 px-4 text-slate-300 max-w-[280px]">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate font-mono text-xs text-slate-300" title={trig.url}>
+                              {trig.url}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(trig.url);
+                              }}
+                              title="Copy URL"
+                              className="text-slate-500 hover:text-white p-1 rounded transition-colors"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </div>
                         </td>
-                        <td className="py-3 px-4 text-slate-300">
+                        <td className="py-3.5 px-4">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold font-mono bg-[#D8EC8D]/10 text-[#D8EC8D] border border-[#D8EC8D]/20">
+                            <Layers className="w-3 h-3" />
+                            <span>{trig.executions?.length || 0} run(s)</span>
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-300 font-mono text-xs">
                           {new Date(trig.createdAt).toLocaleString([], {
                             month: "short",
                             day: "numeric",
@@ -1194,7 +1442,7 @@ export default function PackageDetailPage() {
                             minute: "2-digit",
                           })}
                         </td>
-                        <td className="py-3 px-4 text-right">
+                        <td className="py-3.5 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             {pkg.status === "ACTIVE" && (
                               <button
@@ -1204,9 +1452,9 @@ export default function PackageDetailPage() {
                                   setSwapNewUrl(trig.url);
                                   setSwapModalOpen(true);
                                 }}
-                                className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[11px] inline-flex items-center gap-1 border border-white/5 transition-all"
+                                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white text-xs font-semibold inline-flex items-center gap-1.5 border border-white/10 transition-all hover:border-white/20"
                               >
-                                <Link2 className="w-3 h-3 text-[#D8EC8D]" />
+                                <Link2 className="w-3.5 h-3.5 text-[#D8EC8D]" />
                                 <span>Swap Link</span>
                               </button>
                             )}
@@ -1214,10 +1462,10 @@ export default function PackageDetailPage() {
                               href={trig.url}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-[#D8EC8D] hover:underline inline-flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-xl bg-[#D8EC8D]/10 hover:bg-[#D8EC8D]/20 text-[#D8EC8D] text-xs font-semibold inline-flex items-center gap-1.5 border border-[#D8EC8D]/20 transition-all"
                             >
-                              <span>Open</span>
-                              <ExternalLink className="w-3 h-3" />
+                              <span>Open Post</span>
+                              <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           </div>
                         </td>
@@ -1235,83 +1483,100 @@ export default function PackageDetailPage() {
       {activeTab === "executions" && (
         <section className="space-y-4">
           {executions.length === 0 ? (
-            <div className="p-8 rounded-2xl bg-white/[0.02] border border-white/5 text-center text-slate-400 text-xs space-y-2">
-              <Layers className="w-8 h-8 mx-auto text-slate-500" />
-              <div>No workflow executions scheduled yet.</div>
-              <div className="text-[11px] text-slate-500">
-                Executions are created when followers drip is purchased or when you start post delivery.
+            <div className="p-12 rounded-3xl bg-white/[0.02] border border-white/5 text-center text-slate-400 text-xs space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 mx-auto flex items-center justify-center text-slate-400">
+                <Layers className="w-6 h-6" />
+              </div>
+              <div className="text-sm font-semibold text-white">No drip executions scheduled yet</div>
+              <div className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                Executions are created when you configure recurring scheduled drips or start post delivery.
               </div>
             </div>
           ) : (
-            <div className="glass-panel overflow-hidden rounded-2xl border border-white/10">
+            <div className="glass-panel overflow-hidden rounded-2xl border border-white/10 shadow-xl shadow-black/20">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-white/10 bg-white/[0.02] text-[10px] font-mono uppercase text-slate-400 tracking-wider">
-                      <th className="py-3 px-4">Seq #</th>
-                      <th className="py-3 px-4">Service</th>
-                      <th className="py-3 px-4">Source</th>
-                      <th className="py-3 px-4">Target Link</th>
-                      <th className="py-3 px-4">Quantity</th>
-                      <th className="py-3 px-4">Allocated Charge</th>
-                      <th className="py-3 px-4">Scheduled For</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4 text-right">Order Ref</th>
+                    <tr className="border-b border-white/10 bg-white/[0.03] text-[10px] font-mono uppercase text-slate-400 tracking-wider">
+                      <th className="py-3.5 px-4 font-semibold">Run #</th>
+                      <th className="py-3.5 px-4 font-semibold">Service</th>
+                      <th className="py-3.5 px-4 font-semibold">Target Link</th>
+                      <th className="py-3.5 px-4 font-semibold">Quantity</th>
+                      <th className="py-3.5 px-4 font-semibold">Charge</th>
+                      <th className="py-3.5 px-4 font-semibold">Scheduled For</th>
+                      <th className="py-3.5 px-4 font-semibold">Status</th>
+                      <th className="py-3.5 px-4 font-semibold text-right">Order Ref</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5 font-mono">
+                  <tbody className="divide-y divide-white/5">
                     {executions.map((e) => (
                       <tr key={e.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-3 px-4 text-white font-semibold">#{e.seq}</td>
-                        <td className="py-3 px-4 text-slate-200 font-sans font-medium">
-                          {e.rule?.service?.displayName || e.rule?.service?.name || "Service"}
+                        <td className="py-3.5 px-4 font-mono font-bold text-white text-xs">
+                          <span className="px-2 py-0.5 rounded bg-white/5 text-slate-300">
+                            #{String(e.seq).padStart(2, "0")}
+                          </span>
                         </td>
-                        <td className="py-3 px-4 text-slate-400 text-[10px]">{e.source}</td>
-                        <td className="py-3 px-4 text-slate-400 max-w-[160px] truncate" title={e.targetUrl}>
-                          {e.targetUrl}
+                        <td className="py-3.5 px-4">
+                          <div className="font-sans font-medium text-white text-xs">
+                            {e.rule?.service?.displayName || e.rule?.service?.name || "Service"}
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-mono capitalize">
+                            Source: {e.source?.toLowerCase() || "auto"}
+                          </div>
                         </td>
-                        <td className="py-3 px-4 text-white font-bold">
+                        <td className="py-3.5 px-4 text-slate-400 max-w-[180px]">
+                          <span className="truncate block font-mono text-xs text-slate-300" title={e.targetUrl}>
+                            {e.targetUrl}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-mono text-white font-bold text-xs">
                           {formatIndianNumber(e.quantity)}
                           {e.order?.remains !== undefined && e.order?.remains !== null && (
-                            <div className="mt-1 text-[10px] font-normal text-slate-400">
-                              Remaining: {formatIndianNumber(e.order.remains)}
+                            <div className="mt-0.5 text-[10px] font-normal text-slate-400">
+                              Remains: {formatIndianNumber(e.order.remains)}
                             </div>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-[#D8EC8D]">₹{Number(e.allocatedCharge).toFixed(2)}</td>
-                        <td className="py-3 px-4 text-slate-300">
-                          {new Date(e.executeAt).toLocaleString([], {
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            timeZone: pkg.timezone || "UTC",
-                          })}
+                        <td className="py-3.5 px-4 font-mono text-[#D8EC8D] font-bold text-xs">
+                          ₹{Number(e.allocatedCharge).toFixed(2)}
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-300 font-mono text-xs">
+                          <div>
+                            {new Date(e.executeAt).toLocaleString([], {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              timeZone: pkg.timezone || "UTC",
+                            })}
+                          </div>
                           {e.status === "SCHEDULED" && pkg.status === "ACTIVE" && (
                             <div className="mt-2 space-y-2 font-sans">
                               {reschedulingExecutionId === e.id ? (
-                                <>
-                                  <p className="max-w-64 text-[10px] text-slate-500">
-                                    Enter the schedule time in {pkg.timezone || "UTC"}. Nonexistent or repeated local times during daylight-saving changes are rejected.
+                                <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 space-y-2">
+                                  <p className="max-w-64 text-[10px] text-slate-400">
+                                    Timezone: <span className="text-[#D8EC8D]">{pkg.timezone || "UTC"}</span>
                                   </p>
                                   <input
                                     type="datetime-local"
                                     aria-label={`New execution time for ${e.id}`}
                                     value={rescheduleDrafts[e.id] || ""}
-                                    onChange={(event) => setRescheduleDrafts((previous) => ({
-                                      ...previous,
-                                      [e.id]: event.target.value,
-                                    }))}
-                                    className="w-full rounded-lg border border-white/10 bg-black/30 px-2 py-1.5 text-[11px] text-white"
+                                    onChange={(event) =>
+                                      setRescheduleDrafts((previous) => ({
+                                        ...previous,
+                                        [e.id]: event.target.value,
+                                      }))
+                                    }
+                                    className="w-full rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#D8EC8D]/50"
                                   />
                                   <div className="flex gap-2">
                                     <button
                                       type="button"
                                       disabled={!rescheduleDrafts[e.id] || savingRescheduleExecutionId === e.id}
                                       onClick={() => handleRescheduleExecution(e.id)}
-                                      className="rounded-lg bg-[#D8EC8D]/15 px-2.5 py-1 text-[10px] font-semibold text-[#D8EC8D] disabled:opacity-40"
+                                      className="rounded-lg bg-[#D8EC8D] px-2.5 py-1 text-[10px] font-bold text-[#131313] hover:brightness-105 disabled:opacity-40 transition-all"
                                     >
-                                      {savingRescheduleExecutionId === e.id ? "Saving..." : "Save"}
+                                      {savingRescheduleExecutionId === e.id ? "Saving..." : "Save Time"}
                                     </button>
                                     <button
                                       type="button"
@@ -1324,12 +1589,12 @@ export default function PackageDetailPage() {
                                           return next;
                                         });
                                       }}
-                                      className="rounded-lg bg-white/5 px-2.5 py-1 text-[10px] text-slate-300"
+                                      className="rounded-lg bg-white/5 hover:bg-white/10 px-2.5 py-1 text-[10px] text-slate-300 transition-colors"
                                     >
                                       Cancel
                                     </button>
                                   </div>
-                                </>
+                                </div>
                               ) : (
                                 <button
                                   type="button"
@@ -1341,21 +1606,24 @@ export default function PackageDetailPage() {
                                     setRescheduleDrafts((previous) => ({ ...previous, [e.id]: localInputValue }));
                                     setReschedulingExecutionId(e.id);
                                   }}
-                                  className="text-[10px] text-[#D8EC8D] hover:underline"
+                                  className="text-[10px] text-[#D8EC8D] hover:underline font-semibold inline-flex items-center gap-1"
                                 >
-                                  Reschedule
+                                  <Clock className="w-2.5 h-2.5" />
+                                  <span>Reschedule Run</span>
                                 </button>
                               )}
                             </div>
                           )}
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-3.5 px-4">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] ${
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold ${
                               e.status === "COMPLETED"
                                 ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
                                 : e.status === "DISPATCHED" || e.status === "PROCESSING"
                                 ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
+                                : e.status === "SCHEDULED"
+                                ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/20"
                                 : e.status === "PARTIAL"
                                 ? "bg-blue-500/15 text-blue-400 border border-blue-500/20"
                                 : e.status === "FAILED"
@@ -1365,7 +1633,16 @@ export default function PackageDetailPage() {
                                 : "bg-white/5 text-slate-300 border border-white/10"
                             }`}
                           >
-                            {e.status}
+                            {e.status === "COMPLETED" ? (
+                              <Check className="w-3 h-3 text-emerald-400" />
+                            ) : e.status === "PROCESSING" || e.status === "DISPATCHED" ? (
+                              <RefreshCw className="w-3 h-3 animate-spin text-amber-400" />
+                            ) : e.status === "SCHEDULED" ? (
+                              <Clock className="w-3 h-3 text-cyan-400" />
+                            ) : e.status === "FAILED" ? (
+                              <XCircle className="w-3 h-3 text-rose-400" />
+                            ) : null}
+                            <span>{e.status}</span>
                           </span>
                           {e.skipReason && (
                             <div className="mt-1 max-w-56 font-sans text-[10px] text-amber-300">
@@ -1373,13 +1650,16 @@ export default function PackageDetailPage() {
                             </div>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-right">
+                        <td className="py-3.5 px-4 text-right">
                           {e.childOrderId ? (
-                            <Link href="/orders" className="text-[11px] text-[#D8EC8D] hover:underline">
+                            <Link
+                              href="/orders"
+                              className="px-2.5 py-1 rounded-md bg-[#D8EC8D]/10 hover:bg-[#D8EC8D]/20 text-[11px] font-mono text-[#D8EC8D] font-semibold border border-[#D8EC8D]/20 transition-all inline-block"
+                            >
                               #{e.childOrderId.slice(0, 8)}
                             </Link>
                           ) : (
-                            <span className="text-slate-600">—</span>
+                            <span className="text-slate-600 font-mono">—</span>
                           )}
                         </td>
                       </tr>
