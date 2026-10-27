@@ -758,7 +758,7 @@ export default function PackageDetailPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-white/5">
           <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5">
             <div className="text-[10px] uppercase font-mono text-slate-500">Total Upfront</div>
-            <div className="text-lg font-mono font-bold text-white mt-1">₹{Number(pkg.totalCharge).toFixed(2)}</div>
+            <div className="text-lg font-mono font-bold text-white mt-1">₹{Number(pkg.reserveTotal ?? pkg.totalCharge ?? 0).toFixed(2)}</div>
             <div className="text-[10px] text-slate-500">Maximum reserve</div>
           </div>
           <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5">
@@ -877,10 +877,12 @@ export default function PackageDetailPage() {
 
                 <div className="space-y-3">
                   {previewData.rules?.map((rule: any) => {
+                    const maxAllowed = rule.maxQtyPerPost ?? rule.maxQuantity ?? rule.maxQty ?? rule.defaultQuantity ?? 10000;
+                    const minAllowed = rule.minQty ?? rule.minQuantity ?? 10;
                     const sel = ruleSelections[rule.ruleId] || {
                       enabled: false,
-                      quantity: rule.defaultQuantity,
-                      deliveryWindowMin: rule.deliveryWindowMin || 60,
+                      quantity: rule.defaultQuantity || maxAllowed,
+                      deliveryWindowMin: rule.deliveryWindowMin || 1440,
                     };
                     const isExhausted = rule.remainingPosts <= 0;
 
@@ -919,20 +921,20 @@ export default function PackageDetailPage() {
                             </div>
                           </label>
 
-                          {/* Per-Rule Quantity and Delivery Window Controls */}
+                          {/* Per-Rule Quantity and Delivery Spread (Days) Controls */}
                           {sel.enabled && (
                             <div className="flex items-center gap-4 text-xs font-mono">
                               <div>
                                 <label className="text-[10px] uppercase text-slate-500 block mb-1">
-                                  Quantity (max {formatIndianNumber(rule.maxQuantity)})
+                                  Quantity (max {formatIndianNumber(maxAllowed)})
                                 </label>
                                 <input
                                   type="number"
-                                  min={rule.minQuantity}
-                                  max={rule.maxQuantity}
+                                  min={minAllowed}
+                                  max={maxAllowed}
                                   value={sel.quantity}
                                   onChange={(e) => {
-                                    const val = parseInt(e.target.value, 10) || rule.minQuantity;
+                                    const val = parseInt(e.target.value, 10) || minAllowed;
                                     setRuleSelections((prev) => ({
                                       ...prev,
                                       [rule.ruleId]: { ...sel, quantity: val },
@@ -944,23 +946,25 @@ export default function PackageDetailPage() {
 
                               <div>
                                 <label className="text-[10px] uppercase text-slate-500 block mb-1">
-                                  Window (minutes)
+                                  Delivery Spread (Days)
                                 </label>
-                                <input
-                                  type="number"
-                                  min={rule.minGapMinutes || 5}
-                                  max={1440}
-                                  step={5}
-                                  value={sel.deliveryWindowMin}
+                                <select
+                                  value={Math.max(1, Math.round((sel.deliveryWindowMin || 1440) / 1440))}
                                   onChange={(e) => {
-                                    const val = parseInt(e.target.value, 10) || 60;
+                                    const days = parseInt(e.target.value, 10) || 1;
                                     setRuleSelections((prev) => ({
                                       ...prev,
-                                      [rule.ruleId]: { ...sel, deliveryWindowMin: val },
+                                      [rule.ruleId]: { ...sel, deliveryWindowMin: days * 1440 },
                                     }));
                                   }}
-                                  className="w-24 bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white"
-                                />
+                                  className="bg-[#1e2315] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono"
+                                >
+                                  <option value={1}>1 Day (24 hrs drip)</option>
+                                  <option value={2}>2 Days (48 hrs drip)</option>
+                                  <option value={3}>3 Days (72 hrs drip)</option>
+                                  <option value={5}>5 Days (120 hrs drip)</option>
+                                  <option value={7}>7 Days (1 week drip)</option>
+                                </select>
                               </div>
                             </div>
                           )}

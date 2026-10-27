@@ -42,7 +42,7 @@ export const DEFAULT_PLATFORM_CONFIGS: PlatformRuleDefinition[] = [
     handleRegex: "^[a-zA-Z0-9._]{1,30}$",
     handleMaxLength: 30,
     hostAllowlist: ["instagram.com", "www.instagram.com"],
-    pathPattern: "^/(?:p|reel|tv)/([a-zA-Z0-9_-]+)/?",
+    pathPattern: "^/(?:(?:[a-zA-Z0-9._-]+/)?(?:p|reel|reels|tv)|share/(?:p|reel|reels))/([a-zA-Z0-9_-]+)/?",
     mediaKeyExtractor: "$1",
     urlContainsHandle: false,
     eligibleRuleKinds: ["POST_TRIGGERED", "TIME_DRIP"],
@@ -242,13 +242,16 @@ export function validatePlatformLink(
     throw new BadRequestException("URL is required.");
   }
 
-  const trimmed = rawUrl.trim();
+  let trimmed = rawUrl.trim();
   if (trimmed.length > 2048) {
     throw new BadRequestException("URL exceeds maximum length of 2048 characters.");
   }
 
-  if (!trimmed.startsWith("https://")) {
-    throw new BadRequestException("Only secure https:// URLs are allowed.");
+  // Tolerate missing protocol or http:// by automatically upgrading to https://
+  if (trimmed.startsWith("http://")) {
+    trimmed = "https://" + trimmed.slice(7);
+  } else if (!trimmed.startsWith("https://")) {
+    trimmed = "https://" + trimmed;
   }
 
   // Fast host extraction for validation
@@ -326,10 +329,17 @@ export function validatePlatformLink(
   }
 
   // 3. Path pattern and media key extraction
-  // Combine pathname and search for platforms like YouTube (?v=...)
-  const fullPath = parsed.pathname + parsed.search;
-  const pathRegex = getCachedPathRegex(config.pathPattern);
-  const match = pathRegex.exec(fullPath);
+  // For platforms like YouTube, query params are part of the target (?v=...).
+  // For Instagram/TikTok/etc, test against parsed.pathname so query params (?igsh=...) do not break matching.
+  const testPath = config.platform === "youtube" ? (parsed.pathname + parsed.search) : parsed.pathname;
+
+  let pattern = config.pathPattern;
+  if (config.platform === "instagram" && !pattern.includes("reels")) {
+    pattern = "^/(?:(?:[a-zA-Z0-9._-]+/)?(?:p|reel|reels|tv)|share/(?:p|reel|reels))/([a-zA-Z0-9_-]+)/?";
+  }
+
+  const pathRegex = getCachedPathRegex(pattern);
+  const match = pathRegex.exec(testPath);
 
   if (!match) {
     throw new BadRequestException(
@@ -377,7 +387,9 @@ export function validatePlatformLink(
 
   // Canonical clean URL without query params (except for youtube ?v=)
   let cleanUrl = `${parsed.protocol}//${parsed.hostname}${parsed.pathname}`;
-  if (config.platform === "youtube" && parsed.searchParams.has("v")) {
+  if (config.platform === "instagram" && mediaKey) {
+    cleanUrl = `https://www.instagram.com/reel/${mediaKey}`;
+  } else if (config.platform === "youtube" && parsed.searchParams.has("v")) {
     cleanUrl = `${parsed.protocol}//${parsed.hostname}/watch?v=${parsed.searchParams.get("v")}`;
   }
 

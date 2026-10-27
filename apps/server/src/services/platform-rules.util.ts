@@ -42,7 +42,7 @@ export const DEFAULT_PLATFORM_CONFIGS: PlatformRuleDefinition[] = [
     handleRegex: "^[a-zA-Z0-9._]{1,30}$",
     handleMaxLength: 30,
     hostAllowlist: ["instagram.com", "www.instagram.com"],
-    pathPattern: "^/(?:p|reel|tv)/([a-zA-Z0-9_-]+)/?",
+    pathPattern: "^/(?:(?:[a-zA-Z0-9._-]+/)?(?:p|reel|reels|tv)|share/(?:p|reel|reels))/([a-zA-Z0-9_-]+)/?",
     mediaKeyExtractor: "$1",
     urlContainsHandle: false,
     eligibleRuleKinds: ["POST_TRIGGERED", "TIME_DRIP"],
@@ -235,13 +235,16 @@ export function validatePlatformLink(
     throw new ApiError(400, "BAD_REQUEST", "URL is required.");
   }
 
-  const trimmed = rawUrl.trim();
+  let trimmed = rawUrl.trim();
   if (trimmed.length > 2048) {
     throw new ApiError(400, "BAD_REQUEST", "URL exceeds maximum length of 2048 characters.");
   }
 
-  if (!trimmed.startsWith("https://")) {
-    throw new ApiError(400, "BAD_REQUEST", "Only secure https:// URLs are allowed.");
+  // Tolerate missing protocol or http:// by automatically upgrading to https://
+  if (trimmed.startsWith("http://")) {
+    trimmed = "https://" + trimmed.slice(7);
+  } else if (!trimmed.startsWith("https://")) {
+    trimmed = "https://" + trimmed;
   }
 
   const slashIdx = trimmed.indexOf("/", 8);
@@ -321,9 +324,15 @@ export function validatePlatformLink(
     throw new ApiError(400, "BAD_REQUEST", "URLs with non-default ports are not permitted.");
   }
 
-  const fullPath = parsed.pathname + parsed.search;
-  const pathRegex = getCachedPathRegex(config.pathPattern);
-  const match = pathRegex.exec(fullPath);
+  const testPath = config.platform === "youtube" ? (parsed.pathname + parsed.search) : parsed.pathname;
+
+  let pattern = config.pathPattern;
+  if (config.platform === "instagram" && !pattern.includes("reels")) {
+    pattern = "^/(?:(?:[a-zA-Z0-9._-]+/)?(?:p|reel|reels|tv)|share/(?:p|reel|reels))/([a-zA-Z0-9_-]+)/?";
+  }
+
+  const pathRegex = getCachedPathRegex(pattern);
+  const match = pathRegex.exec(testPath);
 
   if (!match) {
     throw new ApiError(
@@ -371,7 +380,9 @@ export function validatePlatformLink(
   }
 
   let cleanUrl = `${parsed.protocol}//${parsed.hostname}${parsed.pathname}`;
-  if (config.platform === "youtube" && parsed.searchParams.has("v")) {
+  if (config.platform === "instagram" && mediaKey) {
+    cleanUrl = `https://www.instagram.com/reel/${mediaKey}`;
+  } else if (config.platform === "youtube" && parsed.searchParams.has("v")) {
     cleanUrl = `${parsed.protocol}//${parsed.hostname}/watch?v=${parsed.searchParams.get("v")}`;
   }
 

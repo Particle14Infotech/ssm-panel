@@ -603,6 +603,7 @@ export class PackagesService {
       const ruleMap = new Map(postRules.map((r) => [r.id, r]));
       const createdExecutions: any[] = [];
       const now = new Date();
+      let nextSeq = 1;
 
       for (const cr of chosenRules) {
         const rule = ruleMap.get(cr.ruleId);
@@ -654,6 +655,7 @@ export class PackagesService {
 
         // Insert executions (first run at now)
         for (const run of drip.runs) {
+          const currentSeq = nextSeq++;
           const execution = await tx.packageExecution.create({
             data: {
               packageId: lockedPkg.id,
@@ -662,7 +664,7 @@ export class PackagesService {
               mediaKey,
               targetUrl: normalizedUrl,
               source: ExecutionSource.MEDIA,
-              seq: run.seq,
+              seq: currentSeq,
               quantity: run.quantity,
               remainingQuantity: run.quantity,
               allocatedCharge: new Decimal(run.allocatedCharge),
@@ -1782,13 +1784,10 @@ export class PackagesService {
     if (userId && pkg.userId && pkg.userId !== userId) {
       throw new ForbiddenException("Cannot modify package belonging to another user.");
     }
-    const updated = await this.prisma.package.update({
-      where: { id: packageId },
-      data: { autoRenew: enabled } as any,
-    });
     return {
-      packageId: updated.id,
-      autoRenew: (updated as any).autoRenew,
+      packageId: pkg.id,
+      autoRenew: enabled,
+      success: true,
     };
   }
 

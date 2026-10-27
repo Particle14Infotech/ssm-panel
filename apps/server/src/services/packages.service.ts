@@ -429,6 +429,7 @@ export class PackagesService implements PackagesServiceLike {
       });
 
       let totalRunsCreated = 0;
+      let nextSeq = 1;
       for (const rule of postRules) {
         if (rule.usedCount >= rule.maxPosts) continue;
 
@@ -444,12 +445,13 @@ export class PackagesService implements PackagesServiceLike {
         });
 
         for (const run of drip.runs) {
+          const currentSeq = nextSeq++;
           await tx.packageExecution.create({
             data: {
               packageId: pkg.id,
               triggerId: trigger.id,
               serviceId: rule.serviceId,
-              seq: run.seq,
+              seq: currentSeq,
               executeAt: run.executeAt,
               status: PackageExecutionStatus.SCHEDULED,
               source: ExecutionSource.MEDIA,

@@ -663,7 +663,7 @@ function NewOrderContent() {
           }`}
         >
           <Boxes className="w-4 h-4" />
-          Package (Drip-feed)
+          Combo Package
           <span
             className={`text-[10px] px-1.5 py-0.5 rounded-md ${
               orderMode === "PACKAGE"
@@ -1185,7 +1185,7 @@ function NewOrderContent() {
             </div>
           )}
 
-          {/* Gradual delivery promotion to Package (Drip-feed) tab */}
+          {/* Gradual delivery promotion to Combo Package (Multi-Day) tab */}
           <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-[#D8EC8D]/10 flex items-center justify-center shrink-0">
@@ -1193,7 +1193,7 @@ function NewOrderContent() {
               </div>
               <div>
                 <div className="text-xs font-medium text-white">Looking for gradual (drip-feed) delivery?</div>
-                <div className="text-[11px] text-slate-400">Use our multi-day Packages for automated daily spread and scheduled pacing.</div>
+                <div className="text-[11px] text-slate-400">Use our Combo Package (Multi-Day) for automated daily spread and scheduled pacing.</div>
               </div>
             </div>
             <button
@@ -1201,7 +1201,7 @@ function NewOrderContent() {
               onClick={() => setOrderMode("PACKAGE")}
               className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-medium text-[#D8EC8D] transition-colors self-start sm:self-auto shrink-0"
             >
-              Switch to Package
+              Switch to Combo Package
             </button>
           </div>
         </form>

@@ -127,11 +127,11 @@ export function PackageOrderBuilder() {
   // State: Per-service workflows & per-post customization
   const [likesEnabled, setLikesEnabled] = useState<boolean>(true);
   const [likesPerPost, setLikesPerPost] = useState<number>(500);
-  const [likesWindow, setLikesWindow] = useState<number>(180); // minutes
+  const [likesWindow, setLikesWindow] = useState<number>(1440); // minutes (default 1 day)
 
   const [viewsEnabled, setViewsEnabled] = useState<boolean>(true);
   const [viewsPerPost, setViewsPerPost] = useState<number>(1000);
-  const [viewsWindow, setViewsWindow] = useState<number>(180); // minutes
+  const [viewsWindow, setViewsWindow] = useState<number>(1440); // minutes (default 1 day)
 
   const [followersEnabled, setFollowersEnabled] = useState<boolean>(true);
   const [followersTotalQty, setFollowersTotalQty] = useState<number>(3000);
@@ -725,17 +725,17 @@ export function PackageOrderBuilder() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-slate-400">Delivery Window (Minutes)</label>
+                      <label className="text-slate-400">Delivery Spread (Days)</label>
                       <select
                         value={likesWindow}
                         onChange={(e) => setLikesWindow(parseInt(e.target.value, 10))}
                         className="w-full px-3 py-2 rounded-xl bg-[#1e2315] border border-white/10 text-white font-mono"
                       >
-                        <option value={60}>60 mins (1 hour)</option>
-                        <option value={120}>120 mins (2 hours)</option>
-                        <option value={180}>180 mins (3 hours)</option>
-                        <option value={360}>360 mins (6 hours)</option>
-                        <option value={720}>720 mins (12 hours)</option>
+                        <option value={1440}>1 Day (24 hrs drip)</option>
+                        <option value={2880}>2 Days (48 hrs drip)</option>
+                        <option value={4320}>3 Days (72 hrs drip)</option>
+                        <option value={7200}>5 Days (120 hrs drip)</option>
+                        <option value={10080}>7 Days (1 week drip)</option>
                       </select>
                     </div>
                   </div>
@@ -803,16 +803,17 @@ export function PackageOrderBuilder() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-slate-400">Delivery Window (Minutes)</label>
+                      <label className="text-slate-400">Delivery Spread (Days)</label>
                       <select
                         value={viewsWindow}
                         onChange={(e) => setViewsWindow(parseInt(e.target.value, 10))}
                         className="w-full px-3 py-2 rounded-xl bg-[#1e2315] border border-white/10 text-white font-mono"
                       >
-                        <option value={60}>60 mins (1 hour)</option>
-                        <option value={120}>120 mins (2 hours)</option>
-                        <option value={180}>180 mins (3 hours)</option>
-                        <option value={360}>360 mins (6 hours)</option>
+                        <option value={1440}>1 Day (24 hrs drip)</option>
+                        <option value={2880}>2 Days (48 hrs drip)</option>
+                        <option value={4320}>3 Days (72 hrs drip)</option>
+                        <option value={7200}>5 Days (120 hrs drip)</option>
+                        <option value={10080}>7 Days (1 week drip)</option>
                       </select>
                     </div>
                   </div>
