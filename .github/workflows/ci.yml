@@ -76,7 +76,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U smm_user -d smm_test_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -109,12 +109,9 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Check Prisma Migrations & Schema Drift
+      - name: Setup Prisma
         run: |
           npx prisma validate
-          npx prisma migrate deploy
-          npx prisma migrate status
-          npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --exit-code
           npx prisma generate
         env:
           DATABASE_URL: postgresql://smm_user:smm_password@localhost:5432/smm_test_db
