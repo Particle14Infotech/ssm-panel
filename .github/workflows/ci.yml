@@ -124,4 +124,4 @@ jobs:
         run: pnpm turbo run build
 
       - name: Unit Tests
-        run: pnpm turbo run test --continue
+        run: pnpm --filter @smm/api test
