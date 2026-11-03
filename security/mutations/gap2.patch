@@ -1,8 +1,0 @@
---- a/apps/api/src/modules/packages/packages-quote.service.ts
-+++ b/apps/api/src/modules/packages/packages-quote.service.ts
-@@ -100,4 +100,2 @@
--    if (runsEstimate > 730 || days > 365) {
--      throw new BadRequestException("Quote request exceeds safety limits.");
--    }
-+    // MUTATION: Remove loop computation limits
-+    // No cap on runsEstimate or days

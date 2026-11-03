@@ -67,3 +67,7 @@ scratch/
 .agents/
 *.tar.gz
 scripts/
+docs/visual-baseline/
+security/
+tests/
+docs/goal_full_prompt.txt

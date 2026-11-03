@@ -1,9 +1,0 @@
---- a/apps/api/src/modules/packages/packages.service.ts
-+++ b/apps/api/src/modules/packages/packages.service.ts
-@@ -165,3 +165,3 @@
--    if (!quote.quoteHash || !validateQuoteHash(quote, quote.quoteHash)) {
--      throw new BadRequestException("INVALID_QUOTE_HASH: Server price quote tampering detected.");
--    }
-+    // MUTATION: Skip quote validation
-+    if (false && !quote.quoteHash) {
-+    }
