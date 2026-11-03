@@ -98,7 +98,7 @@ export default function AdminPaymentsPage() {
                     <td className="py-4 px-3 font-mono font-bold text-white whitespace-nowrap">
                       ₹{txn.amount.toFixed(2)}
                     </td>
-                    <td className="py-4 px-3 font-mono text-emerald-400 whitespace-nowrap">
+                    <td className="py-4 px-3 font-mono text-success whitespace-nowrap">
                       +₹{txn.bonus.toFixed(2)}
                     </td>
                     <td className="py-4 px-3 whitespace-nowrap">

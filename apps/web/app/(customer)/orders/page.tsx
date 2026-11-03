@@ -160,7 +160,7 @@ export default function OrdersPage() {
       {/* Header Clean (Telemetry badge removed) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl font-semibold text-white tracking-tight">Orders History</h1>
+          <h1 className="text-3xl font-bold text-fg tracking-tight">Orders History</h1>
           <p className="text-xs text-slate-400">
             View real-time delivery status, start count tracking, and warranty refills.
           </p>
@@ -199,7 +199,7 @@ export default function OrdersPage() {
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 flex items-center gap-1.5 ${
                   isSelected
                     ? "bg-[#D8EC8D] text-[#131313] font-bold shadow-sm shadow-[#D8EC8D]/20"
-                    : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+                    : "bg-surface-raised text-slate-700 text-fg-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10"
                 }`}
               >
                 <span>{st.label}</span>
@@ -216,7 +216,7 @@ export default function OrdersPage() {
         </div>
 
         {/* Search & Platform Filter Row */}
-        <div className="flex flex-col sm:flex-row items-center gap-3 pt-1 border-t border-white/5">
+        <div className="flex flex-col sm:flex-row items-center gap-3 pt-1 border-t border-slate-200/60 dark:border-white/5">
           <div className="relative flex-1 w-full">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
@@ -224,7 +224,7 @@ export default function OrdersPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter by Order ID, service name, or target link..."
-              className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none"
+              className="w-full bg-surface-raised border border-border focus:border-[#D8EC8D]/50 rounded-xl pl-9 pr-4 py-2 text-xs text-fg placeholder-slate-400 focus:outline-none"
             />
           </div>
 
@@ -232,15 +232,15 @@ export default function OrdersPage() {
             <select
               value={selectedPlatform}
               onChange={(e) => setSelectedPlatform(e.target.value)}
-              className="w-full sm:w-44 bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-sans"
+              className="w-full sm:w-44 bg-surface-raised border border-border focus:border-[#D8EC8D]/50 rounded-xl px-3 py-2 text-xs text-fg focus:outline-none font-sans"
             >
-              <option value="ALL" className="bg-[#131313]">All Platforms</option>
-              <option value="instagram" className="bg-[#131313]">Instagram</option>
-              <option value="youtube" className="bg-[#131313]">YouTube</option>
-              <option value="tiktok" className="bg-[#131313]">TikTok</option>
-              <option value="telegram" className="bg-[#131313]">Telegram</option>
-              <option value="twitter" className="bg-[#131313]">X (Twitter)</option>
-              <option value="spotify" className="bg-[#131313]">Spotify</option>
+              <option value="ALL" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">All Platforms</option>
+              <option value="instagram" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">Instagram</option>
+              <option value="youtube" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">YouTube</option>
+              <option value="tiktok" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">TikTok</option>
+              <option value="telegram" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">Telegram</option>
+              <option value="twitter" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">X (Twitter)</option>
+              <option value="spotify" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">Spotify</option>
             </select>
           </div>
         </div>
@@ -261,28 +261,124 @@ export default function OrdersPage() {
             No orders match the current filter criteria.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-white/10 text-[11px] uppercase tracking-wider text-slate-400 font-mono">
-                  <th className="py-3 px-3">Order ID</th>
-                  <th className="py-3 px-3">Service & Platform</th>
-                  <th className="py-3 px-3">Target Vector</th>
-                  <th className="py-3 px-3">Quantity</th>
-                  <th className="py-3 px-3">Charge</th>
-                  <th className="py-3 px-3">Status</th>
-                  <th className="py-3 px-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5 text-xs">
-                {filteredOrders.map((order) => (
-                  <tr
-                    key={order.id}
-                    onClick={() => setActiveModalOrder(order)}
-                    className="hover:bg-white/[0.04] transition-colors cursor-pointer group"
-                  >
-                    {/* Order ID */}
-                    <td className="py-3.5 px-3 font-mono font-semibold text-white whitespace-nowrap">
+          <>
+            {/* MOBILE CARDS VIEW (< md) */}
+            <div className="block md:hidden space-y-3">
+              {filteredOrders.map((order) => (
+                <div
+                  key={order.id}
+                  onClick={() => setActiveModalOrder(order)}
+                  className="p-4 rounded-2xl bg-white/[0.02] border border-border hover:border-accent/30 transition-all space-y-3 cursor-pointer active:scale-[0.99]"
+                >
+                  {/* Top Header: ID + Copy + Status */}
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-white/5 pb-2.5">
+                    <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-fg">
+                      <span>{formatOrderId(order.id)}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopy(formatOrderId(order.id));
+                        }}
+                        className="text-fg-muted hover:text-slate-900 dark:hover:text-white p-1 transition-colors"
+                        title="Copy ID"
+                      >
+                        {copiedId === order.id ? (
+                          <Check className="w-3.5 h-3.5 text-success" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                    <StatusBadge status={order.status} />
+                  </div>
+
+                  {/* Service Name & Platform */}
+                  <div>
+                    <div className="text-sm font-semibold text-fg leading-snug line-clamp-2">
+                      {order.serviceName}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 border border-slate-200/60 dark:border-white/5 text-[10px] uppercase font-mono text-fg-2">
+                        <PlatformIcon platform={order.platform} size={12} useBrandColor={true} />
+                        <span>{order.platform}</span>
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ""}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Target Link */}
+                  <div className="text-xs font-mono text-slate-400 bg-slate-100 dark:bg-black/20 p-2 rounded-xl border border-slate-200/60 dark:border-white/5 truncate">
+                    {order.target}
+                  </div>
+
+                  {/* Quantity & Charge */}
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60 dark:border-white/5">
+                    <div>
+                      <span className="text-slate-400">Qty: </span>
+                      <span className="font-mono font-bold text-fg">{order.quantity.toLocaleString()}</span>
+                      {order.remains !== null && order.remains !== undefined && (
+                        <span className="text-slate-500 text-[10px] ml-1.5">({order.remains} left)</span>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Charge: </span>
+                      <span className="font-mono font-bold text-[#D8EC8D]">
+                        {(order as any).isPrepaid ? "Prepaid" : `₹${order.charge.toFixed(2)}`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Quick Action buttons */}
+                  <div className="flex items-center justify-end gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => setActiveModalOrder(order)}
+                      className="flex-1 py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-fg text-xs font-medium text-center transition-colors min-h-[38px] flex items-center justify-center"
+                    >
+                      Details
+                    </button>
+                    {order.refillable && (
+                      <button
+                        type="button"
+                        onClick={() => handleRefill(order.id)}
+                        disabled={refillingId === order.id}
+                        className="flex-1 py-2 px-3 rounded-xl bg-accent/15 hover:bg-accent/25 text-[#D8EC8D] text-xs font-medium text-center transition-colors min-h-[38px] flex items-center justify-center gap-1.5"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${refillingId === order.id ? "animate-spin" : ""}`} />
+                        <span>Refill</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* DESKTOP TABLE VIEW (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border text-[11px] uppercase tracking-wider text-slate-400 font-mono">
+                    <th className="py-3 px-3">Order ID</th>
+                    <th className="py-3 px-3">Service & Platform</th>
+                    <th className="py-3 px-3">Target Vector</th>
+                    <th className="py-3 px-3">Quantity</th>
+                    <th className="py-3 px-3">Charge</th>
+                    <th className="py-3 px-3">Status</th>
+                    <th className="py-3 px-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5 text-xs">
+                  {filteredOrders.map((order) => (
+                    <tr
+                      key={order.id}
+                      onClick={() => setActiveModalOrder(order)}
+                      className="hover:bg-white/[0.04] transition-colors cursor-pointer group"
+                    >
+                      {/* Order ID */}
+                      <td className="py-3.5 px-3 font-mono font-semibold text-fg whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <span className="group-hover:text-[#D8EC8D] transition-colors">{formatOrderId(order.id)}</span>
                         <button
@@ -291,11 +387,11 @@ export default function OrdersPage() {
                             e.stopPropagation();
                             handleCopy(formatOrderId(order.id));
                           }}
-                          className="text-slate-400 hover:text-white"
+                          className="text-fg-muted hover:text-slate-900 dark:hover:text-white transition-colors"
                           title="Copy ID"
                         >
                           {copiedId === order.id ? (
-                            <Check className="w-3 h-3 text-emerald-400" />
+                            <Check className="w-3 h-3 text-success" />
                           ) : (
                             <Copy className="w-3 h-3" />
                           )}
@@ -307,7 +403,7 @@ export default function OrdersPage() {
                     </td>
 
                     <td className="py-3.5 px-3">
-                      <div className="font-medium text-white max-w-xs truncate">{order.serviceName}</div>
+                      <div className="font-medium text-fg max-w-xs truncate">{order.serviceName}</div>
                       <div className="flex items-center gap-1.5 mt-1">
                         <PlatformIcon platform={order.platform} size={13} useBrandColor={true} />
                         <span className="text-[10px] text-slate-400 uppercase font-mono">{order.platform}</span>
@@ -320,7 +416,7 @@ export default function OrdersPage() {
                         href={order.target}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-slate-300 hover:text-[#D8EC8D] max-w-[180px] truncate block"
+                        className="text-fg-2 hover:text-[#D8EC8D] max-w-[180px] truncate block"
                         title={order.target}
                       >
                         {order.target}
@@ -345,12 +441,12 @@ export default function OrdersPage() {
                                 <Boxes className="w-2.5 h-2.5" />
                                 Package Run #{runNum}
                               </span>
-                              <span className="text-white font-medium">
+                              <span className="text-fg font-medium">
                                 {order.quantity.toLocaleString()} units
                               </span>
                             </div>
                             {pkg && (
-                              <div className="text-[10px] text-slate-300">
+                              <div className="text-[10px] text-fg-2">
                                 Aim: {completedRuns} / {totalRuns} runs done
                               </div>
                             )}
@@ -364,15 +460,15 @@ export default function OrdersPage() {
                       })() : order.isDripFeed || order.dripMode === "MANAGED" || order.dripMode === "NATIVE" ? (
                         <div className="space-y-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="px-1.5 py-0.5 rounded bg-[#D8EC8D]/15 text-[#D8EC8D] text-[10px] font-semibold">
+                            <span className="px-1.5 py-0.5 rounded bg-accent/15 text-[#D8EC8D] text-[10px] font-semibold">
                               Drip-feed ({order.dripMode || "MANAGED"})
                             </span>
-                            <span className="text-white font-medium">
+                            <span className="text-fg font-medium">
                               {order.totalQuantity ?? (order.runs ? order.quantity * order.runs : order.quantity)} total
                             </span>
                           </div>
                           {order.runsList && order.runsList.length > 0 ? (
-                            <div className="text-[10px] text-slate-300">
+                            <div className="text-[10px] text-fg-2">
                               {order.runsList.filter((r: any) => r.status === "COMPLETED").length} of {order.runsList.length} runs done
                               {" "}({order.runsList.reduce((acc: number, r: any) => acc + (r.delivered || 0), 0)} / {order.totalQuantity ?? order.quantity * (order.runs || 1)})
                             </div>
@@ -395,7 +491,7 @@ export default function OrdersPage() {
                       ) : (
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-white font-medium">{order.quantity.toLocaleString()}</span>
+                            <span className="text-fg font-medium">{order.quantity.toLocaleString()}</span>
                             <span className="text-slate-400 text-[10px]">aim</span>
                           </div>
                           {order.remains !== null && order.remains !== undefined && (
@@ -414,7 +510,7 @@ export default function OrdersPage() {
                           Prepaid (₹0.00)
                         </span>
                       ) : (
-                        <span className="text-white">
+                        <span className="text-fg">
                           ₹{order.charge.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                         </span>
                       )}
@@ -431,7 +527,7 @@ export default function OrdersPage() {
                         <button
                           type="button"
                           onClick={() => setActiveModalOrder(order)}
-                          className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-medium transition-all"
+                          className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-fg-2 hover:text-white text-xs font-medium transition-all"
                         >
                           Details
                         </button>
@@ -441,7 +537,7 @@ export default function OrdersPage() {
                             type="button"
                             onClick={() => handleRefill(order.id)}
                             disabled={refillingId === order.id}
-                            className="px-2.5 py-1 rounded-lg bg-[#D8EC8D]/15 hover:bg-[#D8EC8D]/25 text-[#D8EC8D] text-xs font-medium transition-all flex items-center gap-1"
+                            className="px-2.5 py-1 rounded-lg bg-accent/15 hover:bg-accent/25 text-[#D8EC8D] text-xs font-medium transition-all flex items-center gap-1"
                           >
                             <RefreshCw className={`w-3 h-3 ${refillingId === order.id ? "animate-spin" : ""}`} />
                             <span>{refillingId === order.id ? "Refilling" : "Refill"}</span>
@@ -481,19 +577,20 @@ export default function OrdersPage() {
               </tbody>
             </table>
           </div>
+        </>
         )}
       </div>
 
-      {/* Details & Timeline Drawer / Modal */}
+      {/* Details & Timeline Drawer / Modal (Bottom Sheet on Mobile, Centered on Desktop) */}
       {activeModalOrder && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#1c1b1b] border border-white/15 rounded-3xl p-6 md:p-8 max-w-lg w-full space-y-6 shadow-2xl relative text-xs">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white dark:bg-[#1c1b1b] border border-border rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 md:p-8 max-w-lg w-full space-y-5 sm:space-y-6 shadow-2xl relative text-xs max-h-[88vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <div className="space-y-0.5">
                 <span className="text-[10px] uppercase font-mono text-[#D8EC8D] font-semibold">
                   Order Telemetry & Execution Lifecycle
                 </span>
-                <h3 className="text-base font-semibold text-white">Order {formatOrderId(activeModalOrder.id)}</h3>
+                <h3 className="text-base font-semibold text-fg">Order {formatOrderId(activeModalOrder.id)}</h3>
               </div>
               <button
                 onClick={() => setActiveModalOrder(null)}
@@ -505,7 +602,7 @@ export default function OrdersPage() {
             </div>
 
             {/* Lifecycle Timeline */}
-            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-3">
+            <div className="p-4 rounded-2xl bg-white/[0.03] border border-slate-200/60 dark:border-white/5 space-y-3">
               <div className="text-[10px] uppercase tracking-wider text-slate-400 font-mono">
                 Dispatch Lifecycle
               </div>
@@ -514,7 +611,7 @@ export default function OrdersPage() {
                   <div className="w-5 h-5 rounded-full bg-[#D8EC8D] text-[#131313] flex items-center justify-center text-[10px] font-bold">
                     1
                   </div>
-                  <span className="text-[10px] font-mono text-slate-300">Created</span>
+                  <span className="text-[10px] font-mono text-fg-2">Created</span>
                 </div>
                 <div className="flex-1 h-0.5 bg-[#D8EC8D]/40 -mt-3" />
 
@@ -522,7 +619,7 @@ export default function OrdersPage() {
                   <div className="w-5 h-5 rounded-full bg-[#D8EC8D] text-[#131313] flex items-center justify-center text-[10px] font-bold">
                     2
                   </div>
-                  <span className="text-[10px] font-mono text-slate-300">Dispatched</span>
+                  <span className="text-[10px] font-mono text-fg-2">Dispatched</span>
                 </div>
                 <div className="flex-1 h-0.5 bg-[#D8EC8D]/40 -mt-3" />
 
@@ -536,7 +633,7 @@ export default function OrdersPage() {
                   }`}>
                     3
                   </div>
-                  <span className="text-[10px] font-mono text-slate-300">
+                  <span className="text-[10px] font-mono text-fg-2">
                     {activeModalOrder.status}
                   </span>
                 </div>
@@ -544,7 +641,7 @@ export default function OrdersPage() {
             </div>
 
             {/* Aim & Fulfillment Progress */}
-            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-2.5">
+            <div className="p-4 rounded-2xl bg-white/[0.03] border border-slate-200/60 dark:border-white/5 space-y-2.5">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400 font-mono uppercase text-[10px] tracking-wider">
                   Aim Fulfillment Progress
@@ -589,7 +686,7 @@ export default function OrdersPage() {
                   }}
                 />
               </div>
-              <div className="flex justify-between text-[11px] font-mono text-slate-300 pt-1">
+              <div className="flex justify-between text-[11px] font-mono text-fg-2 pt-1">
                 <span>Start: {activeModalOrder.startCount ?? 0}</span>
                 <span>
                   Delivered:{" "}
@@ -635,7 +732,7 @@ export default function OrdersPage() {
                         <span className="text-[10px] uppercase font-mono text-purple-400 font-bold block">
                           Part of Growth Package
                         </span>
-                        <span className="text-white font-semibold text-xs">
+                        <span className="text-fg font-semibold text-xs">
                           {pkgName}
                         </span>
                       </div>
@@ -647,7 +744,7 @@ export default function OrdersPage() {
 
                   {pkg && (
                     <div className="space-y-1">
-                      <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                      <div className="flex justify-between text-[11px] font-mono text-fg-2">
                         <span>Package Overall Aim</span>
                         <span className="text-purple-300 font-bold">
                           {completedRuns} of {totalRuns} runs completed
@@ -681,14 +778,14 @@ export default function OrdersPage() {
             })()}
 
             {/* Spec Details */}
-            <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-2.5 font-mono text-xs">
+            <div className="bg-white/[0.02] border border-slate-200/60 dark:border-white/5 rounded-2xl p-4 space-y-2.5 font-mono text-xs">
               <div className="flex justify-between text-slate-400">
                 <span>Service</span>
-                <span className="text-white font-medium truncate max-w-[200px]">{activeModalOrder.serviceName}</span>
+                <span className="text-fg font-medium truncate max-w-[200px]">{activeModalOrder.serviceName}</span>
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Platform</span>
-                <span className="text-white uppercase">{activeModalOrder.platform}</span>
+                <span className="text-fg uppercase">{activeModalOrder.platform}</span>
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Target Vector</span>
@@ -702,32 +799,32 @@ export default function OrdersPage() {
                   </div>
                   <div className="flex justify-between text-slate-400">
                     <span>Per-Run Quantity</span>
-                    <span className="text-white font-medium">{(activeModalOrder.quantityPerRun ?? activeModalOrder.quantity).toLocaleString()}</span>
+                    <span className="text-fg font-medium">{(activeModalOrder.quantityPerRun ?? activeModalOrder.quantity).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-slate-400">
                     <span>Total Quantity</span>
-                    <span className="text-white font-bold">{(activeModalOrder.totalQuantity ?? (activeModalOrder.runs ? activeModalOrder.quantity * activeModalOrder.runs : activeModalOrder.quantity)).toLocaleString()}</span>
+                    <span className="text-fg font-bold">{(activeModalOrder.totalQuantity ?? (activeModalOrder.runs ? activeModalOrder.quantity * activeModalOrder.runs : activeModalOrder.quantity)).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-slate-400">
                     <span>Estimated Schedule</span>
-                    <span className="text-white">{((activeModalOrder.runs || 1) - 1) * (activeModalOrder.intervalMinutes || 0)} mins</span>
+                    <span className="text-fg">{((activeModalOrder.runs || 1) - 1) * (activeModalOrder.intervalMinutes || 0)} mins</span>
                   </div>
                 </>
               ) : (
                 <div className="flex justify-between text-slate-400">
                   <span>Aim Quantity</span>
-                  <span className="text-white">{activeModalOrder.quantity.toLocaleString()}</span>
+                  <span className="text-fg">{activeModalOrder.quantity.toLocaleString()}</span>
                 </div>
               )}
               <div className="flex justify-between text-slate-400">
                 <span>Start Count</span>
-                <span className="text-white">{activeModalOrder.startCount ?? 0}</span>
+                <span className="text-fg">{activeModalOrder.startCount ?? 0}</span>
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>Units Remaining</span>
-                <span className="text-white">{activeModalOrder.remains ?? 0}</span>
+                <span className="text-fg">{activeModalOrder.remains ?? 0}</span>
               </div>
-              <div className="border-t border-white/10 pt-2 flex justify-between text-white font-semibold">
+              <div className="border-t border-border pt-2 flex justify-between text-fg font-semibold">
                 <span>Total Charge</span>
                 <span>
                   {(activeModalOrder as any).isPrepaid
@@ -738,14 +835,14 @@ export default function OrdersPage() {
             </div>
 
             {/* Wallet Balance & Need to Recharge Section */}
-            <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/10 flex items-center justify-between gap-3">
+            <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-border flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#D8EC8D]/15 text-[#D8EC8D] flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-accent/15 text-[#D8EC8D] flex items-center justify-center shrink-0">
                   <Wallet className="w-4 h-4" />
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-400 block font-mono">Wallet Balance</span>
-                  <span className="text-white font-bold font-mono text-sm">
+                  <span className="text-fg font-bold font-mono text-sm">
                     ₹{user?.balance !== undefined ? user.balance.toFixed(2) : "0.00"}
                   </span>
                 </div>
@@ -783,15 +880,15 @@ export default function OrdersPage() {
                 </div>
                 <div className="max-h-48 overflow-y-auto space-y-1.5 no-scrollbar">
                   {activeModalOrder.runsList.map((run: any) => (
-                    <div key={run.id} className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between text-[11px] font-mono">
+                    <div key={run.id} className="p-2.5 rounded-xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 flex items-center justify-between text-[11px] font-mono">
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-white font-semibold">Run #{run.runIndex + 1}</span>
+                          <span className="text-fg font-semibold">Run #{run.runIndex + 1}</span>
                           <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
                             run.status === "COMPLETED" ? "bg-emerald-500/15 text-emerald-300" :
                             run.status === "DISPATCHING" || run.status === "PROCESSING" ? "bg-amber-500/15 text-amber-300" :
                             run.status === "FAILED" || run.status === "CANCELED" ? "bg-rose-500/15 text-rose-300" :
-                            "bg-white/10 text-slate-300"
+                            "bg-white/10 text-fg-2"
                           }`}>
                             {run.status}
                           </span>
@@ -803,10 +900,10 @@ export default function OrdersPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className="text-white font-medium">{run.quantity} units</span>
+                        <span className="text-fg font-medium">{run.quantity} units</span>
                         <div className="text-[10px] text-slate-400">
                           {run.status === "FAILED" || run.status === "CANCELED" ? (
-                            <span className="text-rose-400">₹{run.chargeShare.toFixed(2)} refunded</span>
+                            <span className="text-danger">₹{run.chargeShare.toFixed(2)} refunded</span>
                           ) : (
                             <span>₹{run.chargeShare.toFixed(2)}</span>
                           )}
@@ -822,14 +919,14 @@ export default function OrdersPage() {
               <button
                 type="button"
                 onClick={() => setOrderProblemModalOpen(true)}
-                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-amber-400 font-medium text-xs transition-colors border border-white/5 flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-warning font-medium text-xs transition-colors border border-slate-200/60 dark:border-white/5 flex items-center gap-1.5"
               >
                 <AlertCircle className="w-3.5 h-3.5" />
                 <span>Report Issue</span>
               </button>
               <Link
                 href={`/support?orderId=${activeModalOrder.id}`}
-                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs transition-colors"
+                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-fg font-medium text-xs transition-colors"
               >
                 Open Ticket
               </Link>
@@ -844,16 +941,16 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {/* Order Problem Report Modal */}
+      {/* Order Problem Report Modal (Bottom Sheet on Mobile) */}
       {orderProblemModalOpen && activeModalOrder && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-white/10 space-y-5 bg-[#171717] shadow-2xl">
-            <div className="flex items-center gap-3 text-amber-400">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <GlassCard className="max-w-md w-full p-5 sm:p-6 rounded-t-3xl sm:rounded-3xl border-border space-y-4 sm:space-y-5 bg-white dark:bg-[#171717] shadow-2xl max-h-[88vh] overflow-y-auto">
+            <div className="flex items-center gap-3 text-warning">
               <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
                 <AlertCircle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Report Order Issue</h3>
+                <h3 className="text-lg font-bold text-fg">Report Order Issue</h3>
                 <p className="text-xs text-slate-400 font-mono">Order {formatOrderId(activeModalOrder.id)}</p>
               </div>
             </div>
@@ -864,12 +961,12 @@ export default function OrdersPage() {
                 <select
                   value={orderProblemIssue}
                   onChange={(e) => setOrderProblemIssue(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-[#D8EC8D]"
+                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-border text-fg text-xs font-mono focus:outline-none focus:border-[#D8EC8D]"
                 >
-                  <option value="Execution delayed or missed" className="bg-[#1c1c1c] text-white">Execution delayed or missed</option>
-                  <option value="Quantity drop or discrepancy" className="bg-[#1c1c1c] text-white">Quantity drop or discrepancy</option>
-                  <option value="Target URL not updating" className="bg-[#1c1c1c] text-white">Target URL not updating</option>
-                  <option value="Other delivery issue" className="bg-[#1c1c1c] text-white">Other delivery issue</option>
+                  <option value="Execution delayed or missed" className="bg-white dark:bg-[#1c1c1c] text-fg">Execution delayed or missed</option>
+                  <option value="Quantity drop or discrepancy" className="bg-white dark:bg-[#1c1c1c] text-fg">Quantity drop or discrepancy</option>
+                  <option value="Target URL not updating" className="bg-white dark:bg-[#1c1c1c] text-fg">Target URL not updating</option>
+                  <option value="Other delivery issue" className="bg-white dark:bg-[#1c1c1c] text-fg">Other delivery issue</option>
                 </select>
               </div>
 
@@ -880,7 +977,7 @@ export default function OrdersPage() {
                   value={orderProblemDesc}
                   onChange={(e) => setOrderProblemDesc(e.target.value)}
                   placeholder="Describe what occurred with this order..."
-                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-[#D8EC8D]"
+                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-border text-fg text-xs placeholder:text-slate-500 focus:outline-none focus:border-[#D8EC8D]"
                 />
               </div>
             </div>
@@ -889,7 +986,7 @@ export default function OrdersPage() {
               <button
                 type="button"
                 onClick={() => setOrderProblemModalOpen(false)}
-                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs transition-colors"
+                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-fg font-medium text-xs transition-colors"
               >
                 Cancel
               </button>

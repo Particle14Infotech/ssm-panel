@@ -49,7 +49,7 @@ export default function ResellerApiPage() {
           <span className="px-3 py-1 rounded-full text-xs font-mono bg-[#201f1f] text-cyan-300 border border-cyan-500/20">
             Rate Limit: 60 req/min
           </span>
-          <span className="px-3 py-1 rounded-full text-xs font-mono bg-[#201f1f] text-[#D8EC8D] border border-[#D8EC8D]/20">
+          <span className="px-3 py-1 rounded-full text-xs font-mono bg-[#201f1f] text-[#D8EC8D] border border-accent/20">
             99.98% SLA
           </span>
         </div>
@@ -77,7 +77,7 @@ export default function ResellerApiPage() {
             onClick={handleCopy}
             className="p-2 rounded-xl bg-[#201f1f] hover:bg-[#2a2a2a] text-white flex items-center gap-1.5 shrink-0 transition-all"
           >
-            {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+            {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
             <span className="text-[11px]">{copied ? "Copied" : "Copy"}</span>
           </button>
         </div>
@@ -126,7 +126,7 @@ export default function ResellerApiPage() {
             </div>
             <div className="bg-[#131313] p-4 rounded-2xl border border-white/10 font-mono text-xs text-white overflow-x-auto">
               <span className="text-purple-400">curl</span> -X GET http://localhost:4000/api/v1/services \<br />
-              &nbsp;&nbsp;-H <span className="text-emerald-400">&quot;x-api-key: {apiKey}&quot;</span>
+              &nbsp;&nbsp;-H <span className="text-success">&quot;x-api-key: {apiKey}&quot;</span>
             </div>
           </div>
         )}
@@ -139,8 +139,8 @@ export default function ResellerApiPage() {
             </div>
             <div className="bg-[#131313] p-4 rounded-2xl border border-white/10 font-mono text-xs text-white overflow-x-auto">
               <span className="text-purple-400">curl</span> -X POST http://localhost:4000/api/v1/orders/create \<br />
-              &nbsp;&nbsp;-H <span className="text-emerald-400">&quot;Content-Type: application/json&quot;</span> \<br />
-              &nbsp;&nbsp;-H <span className="text-emerald-400">&quot;x-api-key: {apiKey}&quot;</span> \<br />
+              &nbsp;&nbsp;-H <span className="text-success">&quot;Content-Type: application/json&quot;</span> \<br />
+              &nbsp;&nbsp;-H <span className="text-success">&quot;x-api-key: {apiKey}&quot;</span> \<br />
               &nbsp;&nbsp;-d <span className="text-amber-300">{`'{\n  "serviceId": "srv-01",\n  "target": "https://instagram.com/p/C123456789",\n  "quantity": 2500,\n  "idempotencyKey": "order_uuid_10293"\n}'`}</span>
             </div>
           </div>
@@ -154,7 +154,7 @@ export default function ResellerApiPage() {
             </div>
             <div className="bg-[#131313] p-4 rounded-2xl border border-white/10 font-mono text-xs text-white overflow-x-auto">
               <span className="text-purple-400">curl</span> -X GET http://localhost:4000/api/v1/orders/ORD-98421 \<br />
-              &nbsp;&nbsp;-H <span className="text-emerald-400">&quot;x-api-key: {apiKey}&quot;</span>
+              &nbsp;&nbsp;-H <span className="text-success">&quot;x-api-key: {apiKey}&quot;</span>
             </div>
           </div>
         )}
@@ -167,7 +167,7 @@ export default function ResellerApiPage() {
             </div>
             <div className="bg-[#131313] p-4 rounded-2xl border border-white/10 font-mono text-xs text-white overflow-x-auto">
               <span className="text-purple-400">curl</span> -X GET http://localhost:4000/api/v1/wallet/balance \<br />
-              &nbsp;&nbsp;-H <span className="text-emerald-400">&quot;x-api-key: {apiKey}&quot;</span>
+              &nbsp;&nbsp;-H <span className="text-success">&quot;x-api-key: {apiKey}&quot;</span>
             </div>
           </div>
         )}

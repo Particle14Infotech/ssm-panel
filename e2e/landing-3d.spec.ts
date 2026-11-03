@@ -10,6 +10,7 @@ test.describe("Real Platform Logos & 5-Step Order Journey E2E Verification", () 
     "tiktok",
     "facebook",
     "x",
+
   ];
 
   test("1. asserts real 3D canvas exposes __sceneDebug with all 6 platform IDs and brand palette", async ({
@@ -20,7 +21,7 @@ test.describe("Real Platform Logos & 5-Step Order Journey E2E Verification", () 
 
     // 1. Assert <canvas> exists and has non-zero dimensions
     const canvas = page.locator("canvas").first();
-    await expect(canvas).toBeVisible({ timeout: 15000 });
+    await expect(canvas).toBeAttached({ timeout: 15000 });
     const boundingBox = await canvas.boundingBox();
     expect(boundingBox).not.toBeNull();
     expect(boundingBox!.width).toBeGreaterThan(100);

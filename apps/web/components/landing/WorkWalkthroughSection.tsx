@@ -64,19 +64,19 @@ function Step01AddFundsScreen() {
   };
 
   return (
-    <div className="w-full h-full p-4 sm:p-5 flex flex-col justify-between bg-[#131313] text-white select-none">
+    <div className="w-full h-full p-4 sm:p-5 flex flex-col justify-between bg-surface text-fg select-none">
       {/* Top bar with wallet balance */}
-      <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+      <div className="flex items-center justify-between pb-3 border-b border-border">
         <div>
-          <span className="text-[11px] font-mono uppercase text-[#A1A1AA] tracking-wider block">
+          <span className="text-[11px] font-mono uppercase text-fg-muted tracking-wider block">
             Wallet Liquidity
           </span>
-          <span className="text-lg sm:text-xl font-bold font-mono text-white">
+          <span className="text-lg sm:text-xl font-bold font-mono text-fg">
             ₹{isSuccess ? (2450 + amount).toLocaleString("en-IN") : "2,450.00"}{" "}
-            <span className="text-xs font-normal text-[#A1A1AA]">INR</span>
+            <span className="text-xs font-normal text-fg-muted">INR</span>
           </span>
         </div>
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#d8ec8d]/10 border border-[#d8ec8d]/20 text-[#d8ec8d] text-xs font-medium">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent-text text-xs font-medium">
           <Zap className="w-3 h-3" />
           <span>Instant Credit</span>
         </div>
@@ -84,9 +84,9 @@ function Step01AddFundsScreen() {
 
       {/* Payment methods */}
       <div className="my-2.5">
-        <div className="flex items-center justify-between text-xs text-[#A1A1AA] mb-2">
+        <div className="flex items-center justify-between text-xs text-fg-muted mb-2">
           <span className="font-medium">Choose Deposit Method</span>
-          <span className="text-[11px] text-[#d8ec8d] font-mono">
+          <span className="text-[11px] text-accent-text font-mono">
             {DEPOSIT_METHODS.find((m) => m.id === selectedMethod)?.description}
           </span>
         </div>
@@ -101,25 +101,25 @@ function Step01AddFundsScreen() {
                 onClick={() => setSelectedMethod(method.id)}
                 className={`p-2 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
                   isSelected
-                    ? "bg-white/[0.08] border-[#d8ec8d] shadow-[0_0_12px_rgba(216,236,141,0.15)]"
-                    : "bg-white/[0.02] border-white/[0.06] opacity-70 hover:opacity-100 hover:bg-white/[0.04]"
+                    ? "bg-accent/10 border-accent shadow-[0_0_12px_rgba(216,236,141,0.15)]"
+                    : "bg-surface-glass border-border hover:bg-surface-raised"
                 }`}
               >
                 <div
                   className={`w-6 h-6 rounded-lg flex items-center justify-center mx-auto mb-1 transition-colors ${
                     isSelected
-                      ? "bg-[#d8ec8d]/20 text-[#d8ec8d]"
-                      : "bg-white/[0.06] text-white/80"
+                      ? "bg-accent/20 text-accent-text"
+                      : "bg-surface-raised text-fg-2"
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-xs font-semibold text-white block">
+                <span className="text-xs font-semibold text-fg block">
                   {method.name}
                 </span>
                 <span
-                  className={`text-[10px] font-mono ${
-                    isSelected ? "text-[#d8ec8d]" : "text-[#A1A1AA]"
+                  className={`text-[10px] font-mono font-medium ${
+                    isSelected ? "text-accent-text" : "text-fg-2"
                   }`}
                 >
                   {method.fee}
@@ -133,17 +133,17 @@ function Step01AddFundsScreen() {
       {/* Deposit Amount Field & 4 Presets */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-[#A1A1AA]">Deposit Amount (Select a preset)</span>
-          <span className="text-[#d8ec8d] font-mono flex items-center gap-1">
+          <span className="text-fg-muted">Deposit Amount (Select a preset)</span>
+          <span className="text-accent-text font-mono flex items-center gap-1">
             <Sparkles className="w-3 h-3" />
             +10% Tier Bonus Active
           </span>
         </div>
-        <div className="h-10 px-3 rounded-xl bg-white/[0.04] border border-white/[0.1] flex items-center justify-between">
-          <span className="font-mono text-base font-semibold text-white">
+        <div className="h-10 px-3 rounded-xl bg-white/[0.04] border border-border flex items-center justify-between">
+          <span className="font-mono text-base font-semibold text-fg">
             ₹ {amount.toLocaleString("en-IN")}
           </span>
-          <span className="text-xs font-mono text-[#A1A1AA]">INR</span>
+          <span className="text-xs font-mono text-fg-muted">INR</span>
         </div>
 
         {/* 4 Clickable Presets */}
@@ -157,8 +157,8 @@ function Step01AddFundsScreen() {
                 onClick={() => setAmount(preset)}
                 className={`py-1.5 px-1 text-center rounded-lg text-xs font-mono border transition-all cursor-pointer ${
                   isSelected
-                    ? "bg-[#d8ec8d]/20 border-[#d8ec8d] text-[#d8ec8d] font-bold shadow-sm"
-                    : "bg-white/[0.02] border-white/[0.06] text-[#A1A1AA] hover:bg-white/[0.05] hover:text-white"
+                    ? "bg-accent/20 border-accent text-accent-text font-bold shadow-sm"
+                    : "bg-white/[0.02] border-border text-fg-muted hover:bg-white/[0.05] hover:text-fg"
                 }`}
               >
                 ₹{preset.toLocaleString("en-IN")}
@@ -169,9 +169,9 @@ function Step01AddFundsScreen() {
       </div>
 
       {/* Action button */}
-      <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between">
-        <div className="text-[11px] text-[#A1A1AA] flex items-center gap-1">
-          <CheckCircle2 className="w-3 h-3 text-[#d8ec8d]" />
+      <div className="pt-3 border-t border-border flex items-center justify-between">
+        <div className="text-[11px] text-fg-muted flex items-center gap-1">
+          <CheckCircle2 className="w-3 h-3 text-accent-text" />
           <span>256-bit encrypted gateway</span>
         </div>
         <button
@@ -179,13 +179,13 @@ function Step01AddFundsScreen() {
           onClick={handleTopUp}
           className={`h-9 px-4 rounded-xl font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer ${
             isSuccess
-              ? "bg-[#d8ec8d] text-[#171e00] ring-2 ring-[#d8ec8d]/50"
-              : "bg-[#d8ec8d] hover:bg-[#c9dd7f] text-[#171e00]"
+              ? "bg-accent text-on-accent ring-2 ring-accent/50"
+              : "bg-accent hover:bg-accent/90 text-on-accent"
           }`}
         >
           {isSuccess ? (
             <>
-              <CheckCheck className="w-3.5 h-3.5 text-[#171e00]" />
+              <CheckCheck className="w-3.5 h-3.5 text-on-accent" />
               <span>₹{amount} Credited!</span>
             </>
           ) : (
@@ -348,15 +348,15 @@ function Step02ChooseServiceScreen() {
   };
 
   return (
-    <div className="w-full h-full p-4 sm:p-5 flex flex-col justify-between bg-[#131313] text-white select-none">
+    <div className="w-full h-full p-4 sm:p-5 flex flex-col justify-between bg-surface text-fg select-none">
       {/* Top search & platform filters */}
       <div>
-        <div className="flex items-center justify-between pb-3 mb-2.5 border-b border-white/[0.08]">
-          <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-[#d8ec8d]" />
+        <div className="flex items-center justify-between pb-3 mb-2.5 border-b border-border">
+          <span className="text-xs font-semibold text-fg flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-accent-text" />
             Live Service Catalog (500+ Active)
           </span>
-          <span className="text-[11px] font-mono text-[#d8ec8d] bg-[#d8ec8d]/10 px-2 py-0.5 rounded-full border border-[#d8ec8d]/20">
+          <span className="text-[11px] font-mono text-accent-text bg-accent/10 px-2 py-0.5 rounded-full border border-accent/20">
             Wholesale INR Rates
           </span>
         </div>
@@ -372,8 +372,8 @@ function Step02ChooseServiceScreen() {
                 onClick={() => handlePlatformChange(platform)}
                 className={`py-1.5 px-2 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer ${
                   isSelected
-                    ? "bg-[#d8ec8d] text-[#171e00] border-[#d8ec8d] font-semibold shadow-sm"
-                    : "bg-white/[0.03] text-white/70 border-white/[0.06] hover:bg-white/[0.06] hover:text-white"
+                    ? "bg-accent text-on-accent border-accent font-semibold shadow-sm"
+                    : "bg-white/[0.03] text-fg-muted border-border hover:bg-white/[0.06] hover:text-fg"
                 }`}
               >
                 {platform}
@@ -400,31 +400,31 @@ function Step02ChooseServiceScreen() {
               }}
               className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
                 isSelected
-                  ? "bg-white/[0.07] border-[#d8ec8d] shadow-[0_0_12px_rgba(216,236,141,0.08)]"
+                  ? "bg-white/[0.07] border-accent shadow-[0_0_12px_rgba(216,236,141,0.08)]"
                   : "bg-white/[0.02] border-white/[0.05] hover:bg-white/[0.04]"
               }`}
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-xs font-medium text-white truncate block">
+                  <span className="text-xs font-medium text-fg truncate block">
                     {svc.name}
                   </span>
-                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/[0.06] text-[#d8ec8d] shrink-0 border border-white/[0.08]">
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/[0.06] text-accent-text shrink-0 border border-border">
                     {svc.badge}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-[10px] font-mono text-[#A1A1AA]">
+                <div className="flex items-center gap-3 text-[10px] font-mono text-fg-muted">
                   <span>Min: {svc.min}</span>
                   <span>Max: {svc.max}</span>
-                  <span className="text-white/60">Speed: {svc.speed}</span>
+                  <span className="text-fg-muted">Speed: {svc.speed}</span>
                 </div>
               </div>
 
               <div className="text-right shrink-0">
-                <div className="text-xs font-bold font-mono text-[#d8ec8d]">
+                <div className="text-xs font-bold font-mono text-accent-text">
                   {svc.rate}
                 </div>
-                <div className="text-[10px] text-[#A1A1AA] font-mono">per 1,000</div>
+                <div className="text-[10px] text-fg-muted font-mono">per 1,000</div>
               </div>
             </div>
           );
@@ -432,9 +432,9 @@ function Step02ChooseServiceScreen() {
       </div>
 
       {/* Footer hint */}
-      <div className="pt-2.5 border-t border-white/[0.08] flex items-center justify-between text-[11px] text-[#A1A1AA]">
+      <div className="pt-2.5 border-t border-border flex items-center justify-between text-[11px] text-fg-muted">
         <span>Upfront wholesale rates. Instant automated routing.</span>
-        <span className="text-[#d8ec8d] font-mono flex items-center gap-1">
+        <span className="text-accent-text font-mono flex items-center gap-1">
           <span>Active & Validated</span>
           <Check className="w-3 h-3" />
         </span>
@@ -464,19 +464,19 @@ function Step03PlaceOrderScreen() {
   };
 
   return (
-    <div className="w-full h-full p-4 sm:p-5 flex flex-col justify-between bg-[#131313] text-white select-none">
+    <div className="w-full h-full p-4 sm:p-5 flex flex-col justify-between bg-surface text-fg select-none">
       {/* Top Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+      <div className="flex items-center justify-between pb-3 border-b border-border">
         <div>
-          <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-            <Send className="w-3.5 h-3.5 text-[#d8ec8d]" />
+          <span className="text-xs font-semibold text-fg flex items-center gap-1.5">
+            <Send className="w-3.5 h-3.5 text-accent-text" />
             New Order Configuration
           </span>
-          <span className="text-[11px] text-[#A1A1AA]">
+          <span className="text-[11px] text-fg-muted">
             Instant automated queue dispatch
           </span>
         </div>
-        <span className="text-[11px] font-mono text-[#d8ec8d] bg-[#d8ec8d]/10 px-2 py-0.5 rounded-full border border-[#d8ec8d]/20">
+        <span className="text-[11px] font-mono text-accent-text bg-accent/10 px-2 py-0.5 rounded-full border border-accent/20">
           Instagram / Followers
         </span>
       </div>
@@ -485,12 +485,12 @@ function Step03PlaceOrderScreen() {
       <div className="space-y-2.5 my-2">
         {/* Destination Link */}
         <div>
-          <label className="text-xs font-medium text-[#A1A1AA] mb-1 flex items-center justify-between">
+          <label className="text-xs font-medium text-fg-muted mb-1 flex items-center justify-between">
             <span>Destination Link / Target Handle</span>
-            <span className="text-[10px] font-mono text-[#d8ec8d]">Verified Public</span>
+            <span className="text-[10px] font-mono text-accent-text">Verified Public</span>
           </label>
-          <div className="h-9 px-3 rounded-xl bg-white/[0.04] border border-white/[0.1] flex items-center">
-            <span className="font-mono text-xs text-white/90 truncate">
+          <div className="h-9 px-3 rounded-xl bg-white/[0.04] border border-border flex items-center">
+            <span className="font-mono text-xs text-fg truncate">
               https://instagram.com/mycreativestudio
             </span>
           </div>
@@ -499,8 +499,8 @@ function Step03PlaceOrderScreen() {
         {/* Quantity selector & Presets */}
         <div>
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-[#A1A1AA]">Desired Quantity</span>
-            <span className="font-mono text-white font-semibold">
+            <span className="text-fg-muted">Desired Quantity</span>
+            <span className="font-mono text-fg font-semibold">
               {quantity.toLocaleString("en-IN")} units
             </span>
           </div>
@@ -515,8 +515,8 @@ function Step03PlaceOrderScreen() {
                   onClick={() => setQuantity(q)}
                   className={`py-1 text-center rounded-lg text-xs font-mono border transition-all cursor-pointer ${
                     isSelected
-                      ? "bg-[#d8ec8d]/20 border-[#d8ec8d] text-[#d8ec8d] font-bold"
-                      : "bg-white/[0.03] border-white/[0.06] text-[#A1A1AA] hover:bg-white/[0.05] hover:text-white"
+                      ? "bg-accent/20 border-accent text-accent-text font-bold"
+                      : "bg-white/[0.03] border-border text-fg-muted hover:bg-white/[0.05] hover:text-fg"
                   }`}
                 >
                   {q.toLocaleString("en-IN")}
@@ -527,19 +527,19 @@ function Step03PlaceOrderScreen() {
         </div>
 
         {/* Live Calculation Callout */}
-        <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-between text-xs">
+        <div className="p-2.5 rounded-xl bg-white/[0.03] border border-border flex items-center justify-between text-xs">
           <div>
-            <span className="text-[10px] font-mono text-[#A1A1AA] uppercase block">
+            <span className="text-[10px] font-mono text-fg-muted uppercase block">
               Calculated Total (₹65/1k)
             </span>
-            <span className="text-base font-bold font-mono text-[#d8ec8d]">
+            <span className="text-base font-bold font-mono text-accent-text">
               ₹ {Number(totalCost).toLocaleString("en-IN", { minimumFractionDigits: 2 })}{" "}
-              <span className="text-xs font-normal text-[#A1A1AA]">INR</span>
+              <span className="text-xs font-normal text-fg-muted">INR</span>
             </span>
           </div>
-          <div className="text-right font-mono text-[11px] text-[#A1A1AA]">
+          <div className="text-right font-mono text-[11px] text-fg-muted">
             <span>Wallet After: </span>
-            <span className="text-white">
+            <span className="text-fg">
               ₹ {Number(walletAfter).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
             </span>
           </div>
@@ -547,9 +547,9 @@ function Step03PlaceOrderScreen() {
       </div>
 
       {/* Submit Button */}
-      <div className="pt-2.5 border-t border-white/[0.08] flex items-center justify-between">
-        <span className="text-[11px] text-[#A1A1AA] flex items-center gap-1">
-          <Clock className="w-3 h-3 text-[#d8ec8d]" />
+      <div className="pt-2.5 border-t border-border flex items-center justify-between">
+        <span className="text-[11px] text-fg-muted flex items-center gap-1">
+          <Clock className="w-3 h-3 text-accent-text" />
           <span>Dispatches in &lt; 30 seconds</span>
         </span>
         <button
@@ -557,13 +557,13 @@ function Step03PlaceOrderScreen() {
           onClick={handleConfirmOrder}
           className={`h-9 px-4 rounded-xl font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer ${
             isOrdered
-              ? "bg-[#d8ec8d] text-[#171e00] ring-2 ring-[#d8ec8d]/50"
-              : "bg-[#d8ec8d] hover:bg-[#c9dd7f] text-[#171e00]"
+              ? "bg-accent text-on-accent ring-2 ring-accent/50"
+              : "bg-accent hover:bg-accent/90 text-on-accent"
           }`}
         >
           {isOrdered ? (
             <>
-              <CheckCheck className="w-3.5 h-3.5 text-[#171e00]" />
+              <CheckCheck className="w-3.5 h-3.5 text-on-accent" />
               <span>Queued #ORD-94830</span>
             </>
           ) : (
@@ -618,21 +618,21 @@ function Step04TrackRefundsScreen() {
     filter === "all" ? ORDER_ITEMS : ORDER_ITEMS.filter((o) => o.status === filter);
 
   return (
-    <div className="w-full h-full p-4 sm:p-5 flex flex-col justify-between bg-[#131313] text-white select-none">
+    <div className="w-full h-full p-4 sm:p-5 flex flex-col justify-between bg-surface text-fg select-none">
       {/* Top Header */}
       <div>
-        <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+        <div className="flex items-center justify-between pb-3 border-b border-border">
           <div>
-            <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-              <RotateCcw className="w-3.5 h-3.5 text-[#d8ec8d]" />
+            <span className="text-xs font-semibold text-fg flex items-center gap-1.5">
+              <RotateCcw className="w-3.5 h-3.5 text-accent-text" />
               Live Orders & Automated Refunds
             </span>
-            <span className="text-[11px] text-[#A1A1AA]">
+            <span className="text-[11px] text-fg-muted">
               Real-time status synced via provider WebHooks
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] font-mono text-[#d8ec8d]">
-            <span className="w-2 h-2 rounded-full bg-[#d8ec8d] animate-pulse" />
+          <div className="flex items-center gap-1.5 text-[11px] font-mono text-accent-text">
+            <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
             <span>Live Sync</span>
           </div>
         </div>
@@ -653,8 +653,8 @@ function Step04TrackRefundsScreen() {
                 onClick={() => setFilter(tab.id as typeof filter)}
                 className={`py-1 px-1 rounded-lg text-xs font-mono border text-center transition-all cursor-pointer ${
                   isSelected
-                    ? "bg-[#d8ec8d]/15 border-[#d8ec8d] text-[#d8ec8d] font-bold"
-                    : "bg-white/[0.02] border-white/[0.05] text-[#A1A1AA] hover:bg-white/[0.04] hover:text-white"
+                    ? "bg-accent/15 border-accent text-accent-text font-bold"
+                    : "bg-white/[0.02] border-white/[0.05] text-fg-muted hover:bg-white/[0.04] hover:text-fg"
                 }`}
               >
                 {tab.label}
@@ -675,10 +675,10 @@ function Step04TrackRefundsScreen() {
               >
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold font-mono text-white">
+                    <span className="text-xs font-semibold font-mono text-fg">
                       {ord.id}
                     </span>
-                    <span className="text-[11px] text-[#A1A1AA] truncate">
+                    <span className="text-[11px] text-fg-muted truncate">
                       {ord.service}
                     </span>
                   </div>
@@ -687,7 +687,7 @@ function Step04TrackRefundsScreen() {
                   </span>
                 </div>
                 <div className="text-[11px] text-amber-200/90 flex items-center gap-1.5 mt-1">
-                  <RotateCcw className="w-3 h-3 text-amber-400 shrink-0" />
+                  <RotateCcw className="w-3 h-3 text-warning shrink-0" />
                   <span>
                     {ord.refundAmount} {ord.note}
                   </span>
@@ -700,30 +700,30 @@ function Step04TrackRefundsScreen() {
             return (
               <div
                 key={ord.id}
-                className="p-2.5 rounded-xl bg-white/[0.05] border border-white/[0.08]"
+                className="p-2.5 rounded-xl bg-white/[0.05] border border-border"
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold font-mono text-white">
+                    <span className="text-xs font-semibold font-mono text-fg">
                       {ord.id}
                     </span>
-                    <span className="text-[11px] text-[#A1A1AA] truncate">
+                    <span className="text-[11px] text-fg-muted truncate">
                       {ord.service}
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#d8ec8d]/15 text-[#d8ec8d] border border-[#d8ec8d]/30 font-medium">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-accent/15 text-accent-text border border-accent/30 font-medium">
                     {ord.statusLabel}
                   </span>
                 </div>
                 <div className="w-full bg-white/[0.08] h-1.5 rounded-full overflow-hidden mb-1.5">
                   <div
-                    className="bg-[#d8ec8d] h-full rounded-full transition-all duration-500"
+                    className="bg-accent h-full rounded-full transition-all duration-500"
                     style={{ width: `${ord.progress}%` }}
                   />
                 </div>
-                <div className="flex items-center justify-between text-[10px] font-mono text-[#A1A1AA]">
+                <div className="flex items-center justify-between text-[10px] font-mono text-fg-muted">
                   <span>Delivered: {ord.delivered}</span>
-                  <span className="text-[#d8ec8d]">{ord.progress}% complete</span>
+                  <span className="text-accent-text">{ord.progress}% complete</span>
                 </div>
               </div>
             );
@@ -735,10 +735,10 @@ function Step04TrackRefundsScreen() {
               className="p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-between"
             >
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-white/70">{ord.id}</span>
-                <span className="text-[11px] text-[#A1A1AA]">{ord.service}</span>
+                <span className="text-xs font-mono text-fg-muted">{ord.id}</span>
+                <span className="text-[11px] text-fg-muted">{ord.service}</span>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/[0.06] text-white/80 border border-white/[0.1]">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/[0.06] text-fg-2 border border-border">
                 {ord.statusLabel}
               </span>
             </div>
@@ -747,9 +747,9 @@ function Step04TrackRefundsScreen() {
       </div>
 
       {/* Footer Guarantee */}
-      <div className="pt-2.5 border-t border-white/[0.08] flex items-center justify-between text-[11px] text-[#A1A1AA]">
+      <div className="pt-2.5 border-t border-border flex items-center justify-between text-[11px] text-fg-muted">
         <span>Zero funds lost. Unfulfilled counts credit automatically.</span>
-        <span className="font-mono text-white/60">Updated just now</span>
+        <span className="font-mono text-fg-muted">Updated just now</span>
       </div>
     </div>
   );
@@ -827,16 +827,16 @@ export function WorkWalkthroughSection() {
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div className="max-w-xl text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-4">
-              <span className="w-2 h-2 rounded-full bg-[#d8ec8d]" />
-              <span className="text-[13px] font-medium text-[#d8ec8d]">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-border mb-4">
+              <span className="w-2 h-2 rounded-full bg-accent" />
+              <span className="text-[13px] font-medium text-accent-text">
                 02 / 05 — How It Works
               </span>
             </div>
-            <h2 className="text-[clamp(28px,3.8vw,48px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-4">
+            <h2 className="text-[clamp(28px,3.8vw,48px)] font-semibold text-fg tracking-[-0.02em] leading-tight mb-4">
               Four simple steps
             </h2>
-            <p className="text-base sm:text-lg text-[#A1A1AA] font-normal leading-relaxed">
+            <p className="text-base sm:text-lg text-fg-muted font-normal leading-relaxed">
               Get started in minutes with transparent pricing, instant INR deposits, and automated live order tracking.
             </p>
           </div>
@@ -862,18 +862,18 @@ export function WorkWalkthroughSection() {
                   key={s.num}
                   type="button"
                   onClick={() => handleStepClick(idx)}
-                  className={`w-full min-h-[48px] p-4 sm:p-5 rounded-2xl text-left border transition-all duration-300 flex items-start gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d8ec8d] cursor-pointer ${
+                  className={`w-full min-h-[48px] p-4 sm:p-5 rounded-2xl text-left border transition-all duration-300 flex items-start gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus cursor-pointer ${
                     isSelected
-                      ? "bg-white/[0.06] border-[#d8ec8d] shadow-[0_4px_20px_rgba(216,236,141,0.08)]"
-                      : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.12]"
+                      ? "bg-white/[0.06] border-accent shadow-[0_4px_20px_rgba(216,236,141,0.08)]"
+                      : "bg-white/[0.02] border-border hover:bg-white/[0.04] hover:border-white/[0.12]"
                   }`}
                 >
                   {/* Step Number Badge */}
                   <div
                     className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono text-xs font-bold shrink-0 transition-colors ${
                       isSelected
-                        ? "bg-[#d8ec8d] text-[#171e00] shadow-sm"
-                        : "bg-white/[0.04] text-white/70 border border-white/[0.08]"
+                        ? "bg-accent text-on-accent shadow-sm"
+                        : "bg-white/[0.04] text-fg-muted border border-border"
                     }`}
                   >
                     {s.num}
@@ -881,16 +881,16 @@ export function WorkWalkthroughSection() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <h3 className="text-base font-semibold text-white truncate">
+                      <h3 className="text-base font-semibold text-fg truncate">
                         {s.title}
                       </h3>
                       {isSelected && (
-                        <span className="text-[11px] font-mono text-[#d8ec8d] px-2 py-0.5 rounded-full bg-[#d8ec8d]/10 shrink-0 border border-[#d8ec8d]/20">
+                        <span className="text-[11px] font-mono text-accent-text px-2 py-0.5 rounded-full bg-accent/10 shrink-0 border border-accent/20">
                           Active
                         </span>
                       )}
                     </div>
-                    <p className="text-xs sm:text-sm text-[#A1A1AA] font-normal leading-relaxed line-clamp-2">
+                    <p className="text-xs sm:text-sm text-fg-muted font-normal leading-relaxed line-clamp-2">
                       {s.sentence}
                     </p>
                   </div>
@@ -901,26 +901,26 @@ export function WorkWalkthroughSection() {
 
           {/* Right Column (Glass Preview Panel: 7 cols) */}
           <div className="lg:col-span-7 flex flex-col items-center justify-center relative">
-            <div className="w-full rounded-3xl bg-[#1c1b1b]/90 border border-white/[0.14] backdrop-blur-2xl p-4 sm:p-6 shadow-2xl relative overflow-hidden">
+            <div className="w-full rounded-3xl bg-surface-glass border border-border backdrop-blur-2xl p-4 sm:p-6 shadow-2xl relative overflow-hidden">
               {/* Header Bar */}
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/[0.08]">
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-border">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-white/20" />
                   <span className="w-2.5 h-2.5 rounded-full bg-white/20" />
                   <span className="w-2.5 h-2.5 rounded-full bg-white/20" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-[#A1A1AA]">
+                  <span className="text-xs font-mono text-fg-muted">
                     Step {current.num} / {current.total}: {current.title}
                   </span>
-                  <div className="text-[11px] font-mono tracking-wider uppercase px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.1] text-white/80">
+                  <div className="text-[11px] font-mono tracking-wider uppercase px-2 py-0.5 rounded-full bg-white/[0.06] border border-border text-fg-2">
                     Live UI Preview
                   </div>
                 </div>
               </div>
 
               {/* Screen Preview Frame: Crisp, reactive, authentic mock UI */}
-              <div className="relative min-h-[350px] sm:min-h-[380px] w-full rounded-2xl overflow-hidden bg-[#131313] border border-white/[0.08]">
+              <div className="relative min-h-[350px] sm:min-h-[380px] w-full rounded-2xl overflow-hidden bg-surface border border-border">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={current.num}
@@ -936,12 +936,12 @@ export function WorkWalkthroughSection() {
               </div>
 
               {/* Bottom detail pill */}
-              <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs text-[#A1A1AA]">
+              <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-fg-muted">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#d8ec8d]" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-accent-text" />
                   <span>{current.detail}</span>
                 </div>
-                <span className="font-mono text-white/50">
+                <span className="font-mono text-fg/50">
                   {userLocked ? "Interacting (Locked)" : "Auto-advancing"}
                 </span>
               </div>
@@ -951,18 +951,18 @@ export function WorkWalkthroughSection() {
         </div>
 
         {/* Workflow Guarantee Chips */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 pt-8 border-t border-white/[0.08]">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 pt-8 border-t border-border">
           <div className="h-12 min-h-[44px] flex items-center gap-3 px-4 rounded-xl bg-white/[0.02] border border-white/[0.05]">
-            <Zap className="w-4 h-4 text-[#d8ec8d] shrink-0" />
-            <span className="text-xs sm:text-sm text-white/80">Instant UPI & Card Deposit</span>
+            <Zap className="w-4 h-4 text-accent-text shrink-0" />
+            <span className="text-xs sm:text-sm text-fg-2">Instant UPI & Card Deposit</span>
           </div>
           <div className="h-12 min-h-[44px] flex items-center gap-3 px-4 rounded-xl bg-white/[0.02] border border-white/[0.05]">
-            <ShieldCheck className="w-4 h-4 text-[#d8ec8d] shrink-0" />
-            <span className="text-xs sm:text-sm text-white/80">Automated Dispatch &lt; 60s</span>
+            <ShieldCheck className="w-4 h-4 text-accent-text shrink-0" />
+            <span className="text-xs sm:text-sm text-fg-2">Automated Dispatch &lt; 60s</span>
           </div>
           <div className="h-12 min-h-[44px] flex items-center gap-3 px-4 rounded-xl bg-white/[0.02] border border-white/[0.05]">
-            <RotateCcw className="w-4 h-4 text-[#d8ec8d] shrink-0" />
-            <span className="text-xs sm:text-sm text-white/80">100% Wallet Balance Protection</span>
+            <RotateCcw className="w-4 h-4 text-accent-text shrink-0" />
+            <span className="text-xs sm:text-sm text-fg-2">100% Wallet Balance Protection</span>
           </div>
         </div>
 

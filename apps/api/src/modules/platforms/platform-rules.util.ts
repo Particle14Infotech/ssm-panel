@@ -247,11 +247,8 @@ export function validatePlatformLink(
     throw new BadRequestException("URL exceeds maximum length of 2048 characters.");
   }
 
-  // Tolerate missing protocol or http:// by automatically upgrading to https://
-  if (trimmed.startsWith("http://")) {
-    trimmed = "https://" + trimmed.slice(7);
-  } else if (!trimmed.startsWith("https://")) {
-    trimmed = "https://" + trimmed;
+  if (!trimmed.startsWith("https://")) {
+    throw new BadRequestException("Invalid URL format: Only secure https:// URLs are permitted.");
   }
 
   // Fast host extraction for validation
@@ -331,7 +328,7 @@ export function validatePlatformLink(
   // 3. Path pattern and media key extraction
   // For platforms like YouTube, query params are part of the target (?v=...).
   // For Instagram/TikTok/etc, test against parsed.pathname so query params (?igsh=...) do not break matching.
-  const testPath = config.platform === "youtube" ? (parsed.pathname + parsed.search) : parsed.pathname;
+  const testPath = (config.platform === "youtube" || (config.platform === "facebook" && parsed.pathname.includes("/watch"))) ? (parsed.pathname + parsed.search) : parsed.pathname;
 
   let pattern = config.pathPattern;
   if (config.platform === "instagram" && !pattern.includes("reels")) {

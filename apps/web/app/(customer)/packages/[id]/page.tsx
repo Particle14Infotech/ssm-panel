@@ -38,6 +38,7 @@ import {
   Users,
   Clipboard,
   ListFilter,
+  X,
 } from "lucide-react";
 import { formatIndianNumber } from "@/lib/numberFormat";
 import { formatPackageId } from "@/lib/utils";
@@ -48,10 +49,35 @@ import {
 import { getApiBase } from "@/lib/api-base";
 import { getAuthToken } from "@/lib/auth-session";
 
+function formatExecutionSchedule(executeAt?: string | Date) {
+  if (!executeAt) return null;
+  const d = new Date(executeAt);
+  if (isNaN(d.getTime())) return null;
+
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const isTomorrow = d.toDateString() === tomorrow.toDateString();
+
+  if (isToday) return "Delivering Today";
+  if (isTomorrow) return "Tomorrow";
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
 interface RuleSelectionState {
   enabled: boolean;
   quantity: number;
   deliveryWindowMin: number;
+  runsCount: number;
+  intervalMinutes: number;
+}
+
+interface ExtraServiceSelectionState {
+  enabled: boolean;
+  quantity: number;
+  runsCount: number;
+  intervalMinutes: number;
 }
 
 export default function PackageDetailPage() {
@@ -73,6 +99,7 @@ export default function PackageDetailPage() {
   const [previewData, setPreviewData] = useState<any | null>(null);
   const [previewError, setPreviewError] = useState<{ message: string; requestId: string } | null>(null);
   const [ruleSelections, setRuleSelections] = useState<{ [ruleId: string]: RuleSelectionState }>({});
+  const [extraSelections, setExtraSelections] = useState<{ [serviceId: string]: ExtraServiceSelectionState }>({});
   const [consentChecked, setConsentChecked] = useState(false);
   const [startingDelivery, setStartingDelivery] = useState(false);
 
@@ -84,9 +111,131 @@ export default function PackageDetailPage() {
   const [reschedulingExecutionId, setReschedulingExecutionId] = useState<string | null>(null);
   const [savingRescheduleExecutionId, setSavingRescheduleExecutionId] = useState<string | null>(null);
   const [rescheduleDrafts, setRescheduleDrafts] = useState<Record<string, string>>({});
+  const [retryingExecutionId, setRetryingExecutionId] = useState<string | null>(null);
+  const [retryModalExecution, setRetryModalExecution] = useState<any | null>(null);
+  const [retryTargetUrl, setRetryTargetUrl] = useState<string>("");
+  const [syncingExecutionId, setSyncingExecutionId] = useState<string | null>(null);
+  const [resolvingExecutionId, setResolvingExecutionId] = useState<string | null>(null);
+  const [resolveModalExecution, setResolveModalExecution] = useState<any | null>(null);
+
+  const handleSyncExecution = async (executionId: string) => {
+    setSyncingExecutionId(executionId);
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${getApiBase()}/packages/${packageId}/executions/${executionId}/sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setNotification({
+          type: "success",
+          message: data.message || "Live status updated from provider!",
+        });
+        await fetchPackage();
+      } else {
+        setNotification({
+          type: "error",
+          message: data.message || "Could not sync live status from provider.",
+        });
+      }
+    } catch {
+      setNotification({
+        type: "error",
+        message: "Network error while syncing status.",
+      });
+    } finally {
+      setSyncingExecutionId(null);
+    }
+  };
+
+  const handleConfirmResolve = async (executionId: string) => {
+    setResolvingExecutionId(executionId);
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${getApiBase()}/packages/${packageId}/executions/${executionId}/resolve-stalled`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setNotification({
+          type: "success",
+          message: data.message || `Run resolved. ₹${data.refundedAmount?.toFixed(2) || "0.00"} refunded to wallet.`,
+        });
+        setResolveModalExecution(null);
+        await fetchPackage();
+      } else {
+        setNotification({
+          type: "error",
+          message: data.message || "Could not resolve execution.",
+        });
+      }
+    } catch {
+      setNotification({
+        type: "error",
+        message: "Network error while resolving execution.",
+      });
+    } finally {
+      setResolvingExecutionId(null);
+    }
+  };
+
+  const handleConfirmRetry = async (executionId: string, targetUrl?: string) => {
+    setRetryingExecutionId(executionId);
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${getApiBase()}/packages/${packageId}/executions/${executionId}/retry`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ targetUrl: targetUrl?.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setNotification({
+          type: "success",
+          message: data.message || "Execution queued for retry delivery!",
+        });
+        setRetryModalExecution(null);
+        await fetchPackage();
+      } else {
+        setNotification({
+          type: "error",
+          message: data.message || "Failed to retry execution.",
+        });
+      }
+    } catch {
+      setNotification({
+        type: "error",
+        message: "Network error while retrying execution.",
+      });
+    } finally {
+      setRetryingExecutionId(null);
+    }
+  };
 
   // Speed-Up Schedule State
   const [speedUpModalOpen, setSpeedUpModalOpen] = useState(false);
+
+  // Delivery Window Reschedule Modal State (D3 UI)
+  const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
+  const [reschedulePreset, setReschedulePreset] = useState<"ANY_TIME" | "DAYTIME" | "EVENING" | "CUSTOM">("DAYTIME");
+  const [rescheduleStartHour, setRescheduleStartHour] = useState<number>(9);
+  const [rescheduleEndHour, setRescheduleEndHour] = useState<number>(21);
+  const [rescheduleTimezone, setRescheduleTimezone] = useState<string>("Asia/Kolkata");
+  const [reschedulePreviewData, setReschedulePreviewData] = useState<any>(null);
+  const [loadingReschedulePreview, setLoadingReschedulePreview] = useState<boolean>(false);
+  const [submittingReschedule, setSubmittingReschedule] = useState<boolean>(false);
+  const [rescheduleError, setRescheduleError] = useState<{ message: string; requestId?: string } | null>(null);
   const [speedFactor, setSpeedFactor] = useState(1.25);
   const [submittingSpeedUp, setSubmittingSpeedUp] = useState(false);
 
@@ -225,11 +374,27 @@ export default function PackageDetailPage() {
             initialSelections[r.ruleId] = {
               enabled: r.remainingPosts > 0,
               quantity: r.defaultQuantity,
-              deliveryWindowMin: r.deliveryWindowMin || 60,
+              deliveryWindowMin: r.defaultWindowMin || 1440,
+              runsCount: r.runsCount || 2,
+              intervalMinutes: r.gapMinutes || 120,
             };
           });
         }
         setRuleSelections(initialSelections);
+
+        // Initialize extra complementary services
+        const initialExtras: { [serviceId: string]: ExtraServiceSelectionState } = {};
+        if (Array.isArray(data.availableExtraServices)) {
+          data.availableExtraServices.forEach((s: any) => {
+            initialExtras[s.id] = {
+              enabled: false,
+              quantity: s.minQty || 100,
+              runsCount: 1,
+              intervalMinutes: 120,
+            };
+          });
+        }
+        setExtraSelections(initialExtras);
       }
     } catch {
       setPreviewError({
@@ -253,9 +418,20 @@ export default function PackageDetailPage() {
         ruleId,
         quantity: sel.quantity,
         deliveryWindowMin: sel.deliveryWindowMin,
+        runsCount: sel.runsCount,
+        intervalMinutes: sel.intervalMinutes,
       }));
 
-    if (chosenRules.length === 0) {
+    const chosenExtras = Object.entries(extraSelections)
+      .filter(([_, sel]) => sel.enabled)
+      .map(([serviceId, sel]) => ({
+        serviceId,
+        quantity: sel.quantity,
+        runsCount: sel.runsCount,
+        intervalMinutes: sel.intervalMinutes,
+      }));
+
+    if (chosenRules.length === 0 && chosenExtras.length === 0) {
       setNotification({ type: "error", message: "Select at least one service rule to deliver." });
       return;
     }
@@ -274,6 +450,7 @@ export default function PackageDetailPage() {
         body: JSON.stringify({
           url: previewData.normalizedUrl,
           rules: chosenRules,
+          extraServices: chosenExtras,
           idempotencyKey,
         }),
       });
@@ -372,7 +549,7 @@ export default function PackageDetailPage() {
       if (res.ok) {
         setNotification({
           type: "success",
-          message: `Delivery schedule accelerated (${speedFactor}x)! Upcoming runs recalculated with safe platform bounds.`,
+          message: `Delivery schedule accelerated (${speedFactor}x)! Upcoming runs recalculated with standard platform bounds.`,
         });
         setSpeedUpModalOpen(false);
         await fetchPackage();
@@ -488,6 +665,95 @@ export default function PackageDetailPage() {
     }
   };
 
+  const handleFetchReschedulePreview = async () => {
+    setLoadingReschedulePreview(true);
+    setRescheduleError(null);
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${getApiBase()}/packages/${packageId}/reschedule/preview`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          timezone: rescheduleTimezone,
+          deliveryWindow: {
+            timezone: rescheduleTimezone,
+            ranges:
+              reschedulePreset === "ANY_TIME"
+                ? []
+                : reschedulePreset === "DAYTIME"
+                ? [{ startHour: 9, startMinute: 0, endHour: 21, endMinute: 0 }]
+                : reschedulePreset === "EVENING"
+                ? [{ startHour: 17, startMinute: 0, endHour: 23, endMinute: 0 }]
+                : [{ startHour: rescheduleStartHour, startMinute: 0, endHour: rescheduleEndHour, endMinute: 0 }],
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Could not preview schedule.");
+      }
+      setReschedulePreviewData(data);
+    } catch (err: any) {
+      setRescheduleError({
+        message: err.message || "Failed to load schedule preview.",
+        requestId: "req_" + Math.random().toString(36).slice(2, 9),
+      });
+    } finally {
+      setLoadingReschedulePreview(false);
+    }
+  };
+
+  const handleConfirmReschedule = async () => {
+    setSubmittingReschedule(true);
+    setRescheduleError(null);
+    try {
+      const token = getAuthToken();
+      const idempotencyKey = `idemp_resched_${packageId}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      const res = await fetch(`${getApiBase()}/packages/${packageId}/reschedule`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "Idempotency-Key": idempotencyKey,
+        },
+        body: JSON.stringify({
+          timezone: rescheduleTimezone,
+          deliveryWindow: {
+            timezone: rescheduleTimezone,
+            ranges:
+              reschedulePreset === "ANY_TIME"
+                ? []
+                : reschedulePreset === "DAYTIME"
+                ? [{ startHour: 9, startMinute: 0, endHour: 21, endMinute: 0 }]
+                : reschedulePreset === "EVENING"
+                ? [{ startHour: 17, startMinute: 0, endHour: 23, endMinute: 0 }]
+                : [{ startHour: rescheduleStartHour, startMinute: 0, endHour: rescheduleEndHour, endMinute: 0 }],
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to apply delivery window reschedule.");
+      }
+      setNotification({
+        type: "success",
+        message: `Delivery window updated successfully! ${data.rescheduledCount || 0} upcoming runs adjusted.`,
+      });
+      setRescheduleModalOpen(false);
+      await fetchPackage();
+    } catch (err: any) {
+      setRescheduleError({
+        message: err.message || "Reschedule execution failed.",
+        requestId: "req_" + Math.random().toString(36).slice(2, 9),
+      });
+    } finally {
+      setSubmittingReschedule(false);
+    }
+  };
+
   const handleRescheduleExecution = async (executionId: string) => {
     const draft = rescheduleDrafts[executionId];
     let executeAt: string;
@@ -597,10 +863,10 @@ export default function PackageDetailPage() {
 
     return (
       <div className="py-24 text-center space-y-4 max-w-md mx-auto">
-        <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
+        <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-danger flex items-center justify-center mx-auto">
           <AlertCircle className="w-6 h-6" />
         </div>
-        <div className="text-white font-semibold text-lg">{pageError.message}</div>
+        <div className="text-fg font-semibold text-lg">{pageError.message}</div>
         <div className="text-xs text-slate-500 font-mono">Reference: {pageError.requestId}</div>
         <div className="flex items-center justify-center gap-3 pt-2">
           {isAuthErr ? (
@@ -630,7 +896,7 @@ export default function PackageDetailPage() {
   if (!pkg) {
     return (
       <div className="py-24 text-center space-y-4">
-        <div className="text-white font-semibold text-lg">Package not found</div>
+        <div className="text-fg font-semibold text-lg">Package not found</div>
         <Link href="/packages" className="text-xs text-[#D8EC8D] underline">
           Back to Growth Packages
         </Link>
@@ -641,6 +907,9 @@ export default function PackageDetailPage() {
   const completedExecs = executions.filter((e) => e.status === "COMPLETED").length;
   const totalExecs = executions.length;
   const progressPercent = totalExecs > 0 ? Math.round((completedExecs / totalExecs) * 100) : 0;
+  const nextScheduledExecution = executions
+    .filter((e) => e.status === "SCHEDULED" || e.status === "PENDING")
+    .sort((a, b) => new Date(a.executeAt).getTime() - new Date(b.executeAt).getTime())[0];
 
   return (
     <motion.div
@@ -679,29 +948,35 @@ export default function PackageDetailPage() {
       </div>
 
       {/* Main Header Card */}
-      <GlassCard className="p-6 md:p-8 rounded-3xl border-white/10 space-y-6 bg-gradient-to-b from-white/[0.04] to-transparent relative overflow-hidden shadow-2xl">
+      <GlassCard className="p-6 md:p-8 rounded-3xl border-border space-y-6 bg-gradient-to-b from-white/[0.04] to-transparent relative overflow-hidden shadow-2xl">
         {/* Subtle ambient lighting */}
         <div className="absolute top-0 right-0 w-96 h-48 bg-[#D8EC8D]/5 blur-[90px] pointer-events-none -z-10" />
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2.5">
             <div className="flex items-center gap-3.5 flex-wrap">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-amber-500/20 border border-white/15 flex items-center justify-center p-2.5 shadow-lg">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-amber-500/20 border border-border flex items-center justify-center p-2.5 shadow-lg">
                 <PlatformIcon platform={pkg.platform || "instagram"} size={26} />
               </div>
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">@{pkg.handle}</h1>
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-fg tracking-tight truncate max-w-xl">
+                    {pkg.handle?.startsWith("http") ? (
+                      <span className="font-mono text-base sm:text-lg">{pkg.handle}</span>
+                    ) : (
+                      `@${pkg.handle}`
+                    )}
+                  </h1>
                   <span
                     className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold border shadow-sm ${
                       pkg.status === "ACTIVE"
-                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                        ? "bg-emerald-500/10 text-success border-emerald-500/30"
                         : pkg.status === "PAUSED"
-                        ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                        ? "bg-amber-500/10 text-warning border-amber-500/30"
                         : pkg.status === "COMPLETED"
                         ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
                         : pkg.status === "CANCELLED"
-                        ? "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                        ? "bg-rose-500/10 text-danger border-rose-500/30"
                         : "bg-slate-500/10 text-slate-400 border-slate-500/30"
                     }`}
                   >
@@ -717,10 +992,10 @@ export default function PackageDetailPage() {
                     className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                     title="Copy full Package ID"
                   >
-                    {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedId ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                   <span className="text-slate-600">·</span>
-                  <span className="text-slate-300">
+                  <span className="text-fg-2">
                     Active through {new Date(pkg.endAt || pkg.endDate).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 </div>
@@ -731,7 +1006,7 @@ export default function PackageDetailPage() {
               <span className="text-slate-600">·</span>
               <span>Schedule Timezone: <strong className="text-slate-200">{pkg.timezone || "UTC"}</strong></span>
               <span className="text-slate-600">·</span>
-              <span className="text-slate-400">Autonomous drip campaign</span>
+              <span className="text-slate-400">Drip Delivery Campaign</span>
             </div>
           </div>
 
@@ -740,9 +1015,9 @@ export default function PackageDetailPage() {
             <button
               type="button"
               onClick={() => setProblemModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-amber-300 font-medium text-xs border border-white/10 transition-all hover:border-amber-500/30"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-fg-2 hover:text-amber-300 font-medium text-xs border border-border transition-all hover:border-amber-500/30"
             >
-              <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+              <AlertCircle className="w-3.5 h-3.5 text-warning" />
               <span>Report Issue</span>
             </button>
 
@@ -750,7 +1025,7 @@ export default function PackageDetailPage() {
               <button
                 type="button"
                 onClick={() => setSpeedUpModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#D8EC8D]/10 hover:bg-[#D8EC8D]/20 text-[#D8EC8D] font-semibold text-xs border border-[#D8EC8D]/30 transition-all shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent/10 hover:bg-accent/20 text-[#D8EC8D] font-semibold text-xs border border-accent/30 transition-all shadow-sm"
               >
                 <FastForward className="w-3.5 h-3.5" />
                 <span>Speed Up</span>
@@ -760,18 +1035,34 @@ export default function PackageDetailPage() {
             {(pkg.status === "ACTIVE" || pkg.status === "PAUSED") && (
               <button
                 type="button"
+                onClick={() => {
+                  setRescheduleTimezone(pkg.timezone || "Asia/Kolkata");
+                  setRescheduleModalOpen(true);
+                  setReschedulePreviewData(null);
+                  setRescheduleError(null);
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent/10 hover:bg-accent/20 text-[#D8EC8D] font-semibold text-xs border border-accent/30 transition-all"
+              >
+                <Clock className="w-3.5 h-3.5 text-[#D8EC8D]" />
+                <span>Change Delivery Window</span>
+              </button>
+            )}
+
+            {(pkg.status === "ACTIVE" || pkg.status === "PAUSED") && (
+              <button
+                type="button"
                 disabled={actionInProgress}
                 onClick={handleTogglePause}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-semibold text-xs border border-white/10 transition-all"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-fg-2 font-semibold text-xs border border-border transition-all"
               >
                 {pkg.status === "ACTIVE" ? (
                   <>
-                    <Pause className="w-3.5 h-3.5 text-amber-400" />
+                    <Pause className="w-3.5 h-3.5 text-warning" />
                     <span>Pause</span>
                   </>
                 ) : (
                   <>
-                    <Play className="w-3.5 h-3.5 text-emerald-400" />
+                    <Play className="w-3.5 h-3.5 text-success" />
                     <span>Resume</span>
                   </>
                 )}
@@ -792,19 +1083,20 @@ export default function PackageDetailPage() {
         </div>
 
         {/* Retainer & Auto-Renew Management Bar */}
-        <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {(pkg.mode === "RETAINER" || pkg.autoRenew) && (
+        <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[#D8EC8D]/10 text-[#D8EC8D] flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-accent/10 text-[#D8EC8D] flex items-center justify-center shrink-0">
               <Repeat className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-white">Monthly Retainer & Auto-Renew</span>
+                <span className="text-xs font-semibold text-fg">Monthly Retainer & Auto-Renew</span>
                 <span
                   className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium ${
                     pkg.autoRenew
                       ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20"
-                      : "bg-white/5 text-slate-400 border border-white/10"
+                      : "bg-white/5 text-slate-400 border border-border"
                   }`}
                 >
                   {pkg.autoRenew ? "Auto-Renew Active" : "Manual Renewal"}
@@ -819,13 +1111,13 @@ export default function PackageDetailPage() {
           </div>
 
           <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-300 hover:text-white transition-colors">
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-fg-2 hover:text-white transition-colors">
               <input
                 type="checkbox"
                 disabled={togglingAutoRenew}
                 checked={Boolean(pkg.autoRenew)}
                 onChange={(e) => handleToggleAutoRenew(e.target.checked)}
-                className="w-4 h-4 rounded text-[#D8EC8D] focus:ring-0 bg-black/40 border-white/20"
+                className="w-4 h-4 rounded text-[#D8EC8D] focus:ring-0 bg-slate-100 dark:bg-black/40 border-slate-300 dark:border-white/20"
               />
               <span>Auto-Renew</span>
             </label>
@@ -833,61 +1125,62 @@ export default function PackageDetailPage() {
             <button
               type="button"
               onClick={() => setRenewModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs border border-white/10 transition-all flex items-center gap-1.5 shadow-sm"
+              className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-fg font-medium text-xs border border-border transition-all flex items-center gap-1.5 shadow-sm"
             >
               <Repeat className="w-3.5 h-3.5 text-[#D8EC8D]" />
               <span>Renew Retainer</span>
             </button>
           </div>
         </div>
+        )}
 
         {/* Progress & Stat Highlights */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-4 border-t border-white/5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-4 border-t border-slate-200/60 dark:border-white/5">
           {/* Card 1: Total Upfront */}
-          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/15 transition-all">
+          <div className="p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 hover:border-white/15 transition-all">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Total Budget</span>
-              <div className="w-7 h-7 rounded-lg bg-[#D8EC8D]/10 text-[#D8EC8D] flex items-center justify-center">
+              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Total Order Value</span>
+              <div className="w-7 h-7 rounded-lg bg-accent/10 text-[#D8EC8D] flex items-center justify-center">
                 <Wallet className="w-3.5 h-3.5" />
               </div>
             </div>
-            <div className="text-xl sm:text-2xl font-mono font-bold text-white tracking-tight">
+            <div className="text-xl sm:text-2xl font-mono font-bold text-fg tracking-tight">
               ₹{Number(pkg.reserveTotal ?? pkg.totalCharge ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
               <ShieldCheck className="w-3 h-3 text-[#D8EC8D]" />
-              <span>Pre-funded reserve balance</span>
+              <span>Pre-funded package total</span>
             </div>
           </div>
 
           {/* Card 2: Triggers / Posts Started */}
-          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/15 transition-all">
+          <div className="p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 hover:border-white/15 transition-all">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Posts Started</span>
-              <div className="w-7 h-7 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center">
+              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Target Reel / Link</span>
+              <div className="w-7 h-7 rounded-lg bg-sky-500/10 text-info flex items-center justify-center">
                 <Film className="w-3.5 h-3.5" />
               </div>
             </div>
-            <div className="text-xl sm:text-2xl font-mono font-bold text-white tracking-tight flex items-baseline gap-2">
-              <span className="text-[#D8EC8D]">{triggers.length}</span>
-              <span className="text-xs text-slate-400 font-normal">post(s)</span>
+            <div className="text-xl sm:text-2xl font-mono font-bold text-fg tracking-tight flex items-baseline gap-2">
+              <span className="text-[#D8EC8D]">{triggers.length > 0 ? triggers.length : (pkg.slots?.length || 1)}</span>
+              <span className="text-xs text-slate-400 font-normal">{triggers.length > 0 ? "post(s)" : "Active Target"}</span>
             </div>
             <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-sky-400" />
-              <span>Active delivery triggers</span>
+              <CheckCircle2 className="w-3 h-3 text-[#D8EC8D]" />
+              <span>Target link attached</span>
             </div>
           </div>
 
           {/* Card 3: Execution Progress with Animated Progress Bar */}
-          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/15 transition-all">
+          <div className="p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 hover:border-white/15 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Drip Progress</span>
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-success flex items-center justify-center">
                 <Activity className="w-3.5 h-3.5" />
               </div>
             </div>
             <div className="flex items-baseline justify-between">
-              <div className="text-xl sm:text-2xl font-mono font-bold text-white tracking-tight">
+              <div className="text-xl sm:text-2xl font-mono font-bold text-fg tracking-tight">
                 {completedExecs} <span className="text-xs text-slate-400 font-normal">/ {totalExecs} runs</span>
               </div>
               <span className="text-xs font-mono font-bold text-[#D8EC8D]">{progressPercent}%</span>
@@ -898,36 +1191,245 @@ export default function PackageDetailPage() {
                 style={{ width: `${Math.min(100, Math.max(progressPercent, totalExecs > 0 ? 6 : 0))}%` }}
               />
             </div>
+            <div className="text-[11px] text-slate-400 mt-2 flex items-center justify-between font-mono">
+                <span>Status:</span>
+                <span className="text-emerald-400 font-semibold">{pkg.status === "ACTIVE" ? "In Progress" : pkg.status}</span>
+              </div>
           </div>
 
           {/* Card 4: Refunded / Protected */}
-          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/15 transition-all">
+          <div className="p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 hover:border-white/15 transition-all">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Refund Guarantee</span>
-              <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Protected Balance</span>
+              <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-warning flex items-center justify-center">
                 <TrendingUp className="w-3.5 h-3.5" />
               </div>
             </div>
-            <div className="text-xl sm:text-2xl font-mono font-bold text-amber-400 tracking-tight">
+            <div className="text-xl sm:text-2xl font-mono font-bold text-warning tracking-tight">
               ₹{Number(pkg.refundedAmount || 0).toFixed(2)}
             </div>
             <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-              <span>Automatic refund for unused</span>
+              <span>Unused balance protected</span>
             </div>
           </div>
         </div>
       </GlassCard>
 
-      {/* ACTIVE PACKAGE CARD: START FLOW WITH LINK PREVIEW */}
-      {pkg.status === "ACTIVE" && (
-        <GlassCard className="p-6 md:p-8 rounded-3xl border-white/10 space-y-6 bg-white/[0.02]">
+      {/* CAMPAIGN PROGRESS & METRICS GRAPH (Theme-Matched Visualizer) */}
+      <GlassCard className="p-6 md:p-8 rounded-3xl border-border space-y-6 bg-white/[0.02]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/60 dark:border-white/5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-accent/15 text-[#D8EC8D] flex items-center justify-center">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-fg">Campaign Delivery Progress</h2>
+              <p className="text-xs text-slate-400">
+                Paced delivery metrics and stage completion for this package
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <span className="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-accent/10 text-[#D8EC8D] border border-accent/20">
+              {completedExecs} of {totalExecs} Batches Delivered
+            </span>
+          </div>
+        </div>
+
+        {/* Per-Service Metric Progress Bars */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {pkg.rules?.map((r: any, idx: number) => {
+            const totalUnits = (r.quantityPerPost || 0) * (r.maxPosts || 1);
+            const ruleExecs = executions.filter((e: any) => e.ruleId === r.id);
+            const deliveredUnits = ruleExecs
+              .filter((e: any) => e.status === "COMPLETED")
+              .reduce((sum: number, e: any) => sum + (e.quantity || 0), 0);
+            const pct = totalUnits > 0 ? Math.min(100, Math.round((deliveredUnits / totalUnits) * 100)) : 0;
+
+            const colorGradients = [
+              "from-[#D8EC8D] to-emerald-400",
+              "from-sky-400 to-indigo-500",
+              "from-amber-400 to-orange-500",
+              "from-purple-400 to-pink-500",
+            ];
+            const activeGradient = colorGradients[idx % colorGradients.length];
+
+            return (
+              <div
+                key={r.id || idx}
+                className="p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 space-y-3"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-semibold text-xs text-fg truncate">
+                    {r.service?.displayName || r.service?.name}
+                  </div>
+                  <span className="text-xs font-mono font-bold text-[#D8EC8D] shrink-0">
+                    {pct}%
+                  </span>
+                </div>
+
+                <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full bg-gradient-to-r ${activeGradient} rounded-full transition-all duration-500`}
+                    style={{ width: `${Math.max(pct, totalUnits > 0 && deliveredUnits > 0 ? 5 : 2)}%` }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-0.5">
+                  <span>
+                    <strong className="text-fg">{formatIndianNumber(deliveredUnits)}</strong> / {formatIndianNumber(totalUnits)}
+                  </span>
+                  <span>{formatIndianNumber(r.quantityPerPost || 0)} / day</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Day-by-Day Delivery Stage Stepper */}
+        {(() => {
+          const durationDays = pkg.rules?.[0]?.maxPosts || 5;
+          const daysArray = Array.from({ length: durationDays }, (_, i) => i + 1);
+
+          // Calculate completed days based on executions completed
+          const runsPerDay = Math.max(1, Math.floor(totalExecs / durationDays));
+          const completedDays = Math.floor(completedExecs / runsPerDay);
+
+          return (
+            <div className="p-4 rounded-2xl bg-white/[0.015] border border-slate-200/60 dark:border-white/5 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-mono text-slate-400 uppercase tracking-wider text-[10px]">
+                  Daily Pacing Timeline
+                </span>
+                <span className="text-[11px] font-mono text-[#D8EC8D]">
+                  Day {Math.min(durationDays, completedDays + 1)} of {durationDays} Active
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 pt-1">
+                {daysArray.map((dayNum) => {
+                  const isPast = dayNum <= completedDays;
+                  const isCurrent = dayNum === completedDays + 1 && completedDays < durationDays;
+                  const isFuture = dayNum > completedDays + 1;
+
+                  const nextTodayExec = executions.find((e: any) => e.status === "SCHEDULED" && e.executeAt);
+                  const isDelayed = nextTodayExec?.executeAt && (new Date(nextTodayExec.executeAt).getTime() < Date.now() - 15 * 60 * 1000);
+                  const todayTimeStr = nextTodayExec?.executeAt
+                    ? new Date(nextTodayExec.executeAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true })
+                    : null;
+
+                  return (
+                    <div
+                      key={dayNum}
+                      className={`p-3 rounded-xl border text-center transition-all ${
+                        isPast
+                          ? "bg-emerald-500/10 border-emerald-500/30 text-success"
+                          : isCurrent
+                          ? isDelayed
+                            ? "bg-amber-500/10 border-amber-500/40 text-warning shadow-sm shadow-amber-500/10"
+                            : "bg-accent/10 border-accent/40 text-[#D8EC8D] shadow-sm shadow-accent/10"
+                          : "bg-white/[0.02] border-slate-200/60 dark:border-white/5 text-slate-500"
+                      }`}
+                    >
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        {isPast ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                        ) : isCurrent ? (
+                          isDelayed ? (
+                            <Clock className="w-3.5 h-3.5 text-warning" />
+                          ) : (
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                          )
+                        ) : (
+                          <Clock className="w-3 h-3 text-slate-500" />
+                        )}
+                        <span className="text-xs font-bold font-mono">Day {dayNum}</span>
+                      </div>
+                      <div className="text-[10px] font-mono">
+                        {isPast
+                          ? "Completed"
+                          : isCurrent
+                          ? isDelayed
+                            ? "Delayed"
+                            : "Active Today"
+                          : "Scheduled"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+      </GlassCard>
+
+      {/* TARGET MEDIA SUMMARY CARD (When Slot is Already Attached) */}
+      {pkg.status === "ACTIVE" && pkg.slots && pkg.slots.length > 0 && pkg.slots[0].targetUrl && (
+        <GlassCard className="p-6 md:p-8 rounded-3xl border-border space-y-4 bg-white/[0.02]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-accent/15 text-[#D8EC8D] flex items-center justify-center shrink-0">
+                <PlatformIcon platform={pkg.platform || "instagram"} size={22} />
+              </div>
+              <div className="space-y-1 min-w-0">
+                <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">
+                  Active Campaign Target
+                </div>
+                <div className="font-mono text-sm font-bold text-fg truncate max-w-xl">
+                  {pkg.slots[0].targetUrl}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(pkg.slots[0].targetUrl);
+                  setNotification({ type: "success", message: "Link copied to clipboard!" });
+                }}
+                className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-fg-2 hover:text-white text-xs font-semibold inline-flex items-center gap-1.5 border border-border transition-all"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copy Link</span>
+              </button>
+              <a
+                href={pkg.slots[0].targetUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2 rounded-xl bg-[#D8EC8D] text-[#131313] text-xs font-bold inline-flex items-center gap-1.5 hover:brightness-105 transition-all shadow-sm"
+              >
+                <span>View Reel</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-200/60 dark:border-white/5 text-xs text-slate-400">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[#D8EC8D]" />
+              <span>Multi-Day Paced Schedule</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-[#D8EC8D]" />
+              <span>Staggered Metric Sequencing</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-[#D8EC8D]" />
+              <span>1 Active Delivery Guard per Target</span>
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
+      {/* ACTIVE PACKAGE CARD: START FLOW WITH LINK PREVIEW (For Unattached Retainers) */}
+      {pkg.status === "ACTIVE" && (!pkg.slots || pkg.slots.length === 0 || !pkg.slots[0]?.targetUrl) && (
+        <GlassCard className="p-6 md:p-8 rounded-3xl border-border space-y-6 bg-white/[0.02]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[#D8EC8D]/15 text-[#D8EC8D] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-accent/15 text-[#D8EC8D] flex items-center justify-center">
                 <Film className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-white">Start Delivery for New Post</h2>
+                <h2 className="text-base font-bold text-fg">Start Delivery for New Post</h2>
                 <p className="text-xs text-slate-400">
                   Paste the post or reel link below to configure quantity, interval, and start drip delivery.
                 </p>
@@ -954,14 +1456,14 @@ export default function PackageDetailPage() {
                   setPreviewData(null);
                   setPreviewError(null);
                 }}
-                className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-44 py-3.5 text-sm text-white font-mono placeholder:text-slate-600 focus:outline-none focus:border-[#D8EC8D] focus:ring-1 focus:ring-[#D8EC8D]/50 transition-all shadow-inner"
+                className="w-full bg-slate-100 dark:bg-black/40 border border-border rounded-2xl pl-12 pr-44 py-3.5 text-sm text-fg font-mono placeholder:text-slate-600 focus:outline-none focus:border-[#D8EC8D] focus:ring-1 focus:ring-[#D8EC8D]/50 transition-all shadow-inner"
               />
               <div className="absolute right-2 flex items-center gap-2">
                 {!postLink && (
                   <button
                     type="button"
                     onClick={handlePasteLink}
-                    className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all border border-white/5"
+                    className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-fg-2 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all border border-slate-200/60 dark:border-white/5"
                     title="Paste from clipboard"
                   >
                     <Clipboard className="w-3.5 h-3.5 text-[#D8EC8D]" />
@@ -1002,7 +1504,7 @@ export default function PackageDetailPage() {
               </div>
             </div>
             <p className="text-[11px] text-slate-500 mt-2 pl-1">
-              Supports Instagram Reels, Posts, Carousels, and IGTV. We distribute likes & views across multiple days naturally.
+              Supports Instagram Reels, Posts, Carousels, and IGTV. We distribute likes & views across multiple days.
             </p>
           </form>
 
@@ -1010,20 +1512,20 @@ export default function PackageDetailPage() {
           {previewError && (
             <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                <AlertCircle className="w-4 h-4 shrink-0 text-danger" />
                 <span>{previewError.message}</span>
               </div>
-              <span className="font-mono text-[10px] text-rose-400/70">Ref: {previewError.requestId}</span>
+              <span className="font-mono text-[10px] text-danger/70">Ref: {previewError.requestId}</span>
             </div>
           )}
 
           {/* Preview Configuration Section (zero side effects) */}
           {previewData && (
-            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-white/5">
+            <div className="p-6 rounded-2xl bg-white/[0.02] border border-border space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-200/60 dark:border-white/5">
                 <div>
                   <div className="text-xs text-slate-400">Target Media Key</div>
-                  <div className="text-sm font-mono font-bold text-white">{previewData.mediaKey}</div>
+                  <div className="text-sm font-mono font-bold text-fg">{previewData.mediaKey}</div>
                 </div>
                 <div className="text-xs text-slate-400">
                   Normalized URL:{" "}
@@ -1040,7 +1542,7 @@ export default function PackageDetailPage() {
 
               {/* Service Rules Checklist */}
               <div className="space-y-4">
-                <div className="text-xs font-semibold text-slate-300">
+                <div className="text-xs font-semibold text-fg-2">
                   Select Services to Deliver for this Post:
                 </div>
 
@@ -1060,8 +1562,8 @@ export default function PackageDetailPage() {
                         key={rule.ruleId}
                         className={`p-4 rounded-xl border transition-all ${
                           sel.enabled
-                            ? "bg-[#D8EC8D]/5 border-[#D8EC8D]/30"
-                            : "bg-white/[0.01] border-white/5 opacity-60"
+                            ? "bg-[#D8EC8D]/5 border-accent/30"
+                            : "bg-white/[0.01] border-slate-200/60 dark:border-white/5 opacity-60"
                         }`}
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1076,13 +1578,13 @@ export default function PackageDetailPage() {
                                   [rule.ruleId]: { ...sel, enabled: e.target.checked },
                                 }))
                               }
-                              className="w-4 h-4 rounded text-[#D8EC8D] focus:ring-0 bg-black/40 border-white/20"
+                              className="w-4 h-4 rounded text-[#D8EC8D] focus:ring-0 bg-slate-100 dark:bg-black/40 border-slate-300 dark:border-white/20"
                             />
                             <div>
-                              <div className="text-sm font-medium text-white">{rule.serviceName}</div>
+                              <div className="text-sm font-medium text-fg">{rule.serviceName}</div>
                               <div className="text-[11px] text-slate-400 font-mono">
                                 Quota: {rule.usedCount} / {rule.maxPosts} posts used (
-                                <span className={isExhausted ? "text-rose-400" : "text-emerald-400"}>
+                                <span className={isExhausted ? "text-danger" : "text-success"}>
                                   {rule.remainingPosts} remaining
                                 </span>
                                 )
@@ -1090,9 +1592,9 @@ export default function PackageDetailPage() {
                             </div>
                           </label>
 
-                          {/* Per-Rule Quantity and Delivery Spread (Days) Controls */}
+                          {/* Per-Rule Quantity, Trigger Runs, and Interval Gap Controls */}
                           {sel.enabled && (
-                            <div className="flex items-center gap-4 text-xs font-mono">
+                            <div className="flex flex-wrap items-center gap-4 text-xs font-mono mt-3 pt-3 border-t border-slate-200/60 dark:border-white/5">
                               <div>
                                 <label className="text-[10px] uppercase text-slate-500 block mb-1">
                                   Quantity (max {formatIndianNumber(maxAllowed)})
@@ -1109,31 +1611,67 @@ export default function PackageDetailPage() {
                                       [rule.ruleId]: { ...sel, quantity: val },
                                     }));
                                   }}
-                                  className="w-28 bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                                  className="w-28 bg-white/[0.04] border border-border rounded-lg px-2.5 py-1.5 text-xs text-fg"
                                 />
                               </div>
 
                               <div>
                                 <label className="text-[10px] uppercase text-slate-500 block mb-1">
-                                  Delivery Spread (Days)
+                                  Trigger Runs
                                 </label>
                                 <select
-                                  value={Math.max(1, Math.round((sel.deliveryWindowMin || 1440) / 1440))}
+                                  value={sel.runsCount || 1}
                                   onChange={(e) => {
-                                    const days = parseInt(e.target.value, 10) || 1;
+                                    const runs = parseInt(e.target.value, 10) || 1;
                                     setRuleSelections((prev) => ({
                                       ...prev,
-                                      [rule.ruleId]: { ...sel, deliveryWindowMin: days * 1440 },
+                                      [rule.ruleId]: { ...sel, runsCount: runs },
                                     }));
                                   }}
-                                  className="bg-[#1e2315] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono"
+                                  className="bg-slate-100 dark:bg-[#1e2315] border border-border rounded-lg px-2.5 py-1.5 text-xs text-fg font-mono"
                                 >
-                                  <option value={1}>1 Day (24 hrs drip)</option>
-                                  <option value={2}>2 Days (48 hrs drip)</option>
-                                  <option value={3}>3 Days (72 hrs drip)</option>
-                                  <option value={5}>5 Days (120 hrs drip)</option>
-                                  <option value={7}>7 Days (1 week drip)</option>
+                                  <option value={1}>1 Run (Standard 100%)</option>
+                                  <option value={2}>2 Runs (50% each)</option>
+                                  <option value={3}>3 Runs (Balanced)</option>
+                                  <option value={4}>4 Runs (25% each)</option>
+                                  <option value={5}>5 Runs (Drip)</option>
+                                  <option value={8}>8 Runs (Extended)</option>
+                                  <option value={10}>10 Runs (Ultra Drip)</option>
                                 </select>
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] uppercase text-slate-500 block mb-1">
+                                  Interval Gap
+                                </label>
+                                <select
+                                  value={sel.intervalMinutes || 120}
+                                  onChange={(e) => {
+                                    const gap = parseInt(e.target.value, 10) || 120;
+                                    setRuleSelections((prev) => ({
+                                      ...prev,
+                                      [rule.ruleId]: { ...sel, intervalMinutes: gap },
+                                    }));
+                                  }}
+                                  className="bg-slate-100 dark:bg-[#1e2315] border border-border rounded-lg px-2.5 py-1.5 text-xs text-fg font-mono"
+                                >
+                                  <option value={15}>Every 15 Minutes</option>
+                                  <option value={30}>Every 30 Minutes</option>
+                                  <option value={60}>Every 1 Hour</option>
+                                  <option value={120}>Every 2 Hours</option>
+                                  <option value={360}>Every 6 Hours</option>
+                                  <option value={720}>Every 12 Hours</option>
+                                  <option value={1440}>Every 24 Hours (Daily)</option>
+                                  <option value={2880}>Every 48 Hours (2 Days)</option>
+                                </select>
+                              </div>
+
+                              <div className="w-full text-[11px] text-[#D8EC8D]/80 flex items-center gap-1.5 mt-0.5">
+                                <span>⚡ Delivery Plan:</span>
+                                <span className="font-semibold">
+                                  {sel.runsCount || 1} run(s) of ~{Math.floor(sel.quantity / (sel.runsCount || 1))} units
+                                </span>
+                                <span>• Spaced every {(sel.intervalMinutes || 120) >= 60 ? `${(sel.intervalMinutes || 120) / 60} hour(s)` : `${sel.intervalMinutes || 120} min`}</span>
                               </div>
                             </div>
                           )}
@@ -1144,14 +1682,141 @@ export default function PackageDetailPage() {
                 </div>
               </div>
 
+              {/* Extra Platform Services (Reach, Impressions, Shares, Saves, Comments) */}
+              {Array.isArray(previewData.availableExtraServices) && previewData.availableExtraServices.length > 0 && (
+                <div className="space-y-3 pt-4 border-t border-border">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-semibold text-[#D8EC8D] flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Boost Post with Extra Platform Add-ons (Reach, Shares, Saves, etc.)</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">Deducted from wallet balance</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {previewData.availableExtraServices.map((service: any) => {
+                      const extraSel = extraSelections[service.id] || {
+                        enabled: false,
+                        quantity: service.minQty || 100,
+                        runsCount: 1,
+                        intervalMinutes: 120,
+                      };
+                      const estCost = ((extraSel.quantity * service.ratePer1000) / 1000).toFixed(2);
+
+                      return (
+                        <div
+                          key={service.id}
+                          className={`p-3.5 rounded-xl border transition-all ${
+                            extraSel.enabled
+                              ? "bg-accent/10 border-[#D8EC8D]/40 shadow-sm"
+                              : "bg-white/[0.01] border-slate-200/60 dark:border-white/5 opacity-70 hover:opacity-100"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <label className="flex items-start gap-2.5 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={extraSel.enabled}
+                                onChange={(e) =>
+                                  setExtraSelections((prev) => ({
+                                    ...prev,
+                                    [service.id]: { ...extraSel, enabled: e.target.checked },
+                                  }))
+                                }
+                                className="w-4 h-4 mt-0.5 rounded text-[#D8EC8D] focus:ring-0 bg-slate-100 dark:bg-black/40 border-slate-300 dark:border-white/20"
+                              />
+                              <div>
+                                <div className="text-xs font-bold text-fg leading-tight">
+                                  {service.displayName || service.name}
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                  ₹{service.ratePer1000.toFixed(2)} / 1K • Min {service.minQty}
+                                </div>
+                              </div>
+                            </label>
+
+                            {extraSel.enabled && (
+                              <span className="text-xs font-mono font-bold text-[#D8EC8D] bg-slate-100 dark:bg-black/40 px-2 py-0.5 rounded-md border border-slate-200/60 dark:border-white/5">
+                                ₹{estCost}
+                              </span>
+                            )}
+                          </div>
+
+                          {extraSel.enabled && (
+                            <div className="grid grid-cols-3 gap-2 text-xs font-mono mt-2.5 pt-2 border-t border-slate-200/60 dark:border-white/5">
+                              <div>
+                                <label className="text-[9px] uppercase text-slate-500 block mb-0.5">Qty</label>
+                                <input
+                                  type="number"
+                                  min={service.minQty}
+                                  max={service.maxQty}
+                                  value={extraSel.quantity}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value, 10) || service.minQty;
+                                    setExtraSelections((prev) => ({
+                                      ...prev,
+                                      [service.id]: { ...extraSel, quantity: val },
+                                    }));
+                                  }}
+                                  className="w-full bg-white/[0.04] border border-border rounded-lg px-2 py-1 text-xs text-fg"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[9px] uppercase text-slate-500 block mb-0.5">Runs</label>
+                                <select
+                                  value={extraSel.runsCount || 1}
+                                  onChange={(e) => {
+                                    const runs = parseInt(e.target.value, 10) || 1;
+                                    setExtraSelections((prev) => ({
+                                      ...prev,
+                                      [service.id]: { ...extraSel, runsCount: runs },
+                                    }));
+                                  }}
+                                  className="w-full bg-slate-100 dark:bg-[#1e2315] border border-border rounded-lg px-2 py-1 text-xs text-fg font-mono"
+                                >
+                                  <option value={1}>1 Run</option>
+                                  <option value={2}>2 Runs</option>
+                                  <option value={3}>3 Runs</option>
+                                  <option value={4}>4 Runs</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-[9px] uppercase text-slate-500 block mb-0.5">Interval</label>
+                                <select
+                                  value={extraSel.intervalMinutes || 120}
+                                  onChange={(e) => {
+                                    const gap = parseInt(e.target.value, 10) || 120;
+                                    setExtraSelections((prev) => ({
+                                      ...prev,
+                                      [service.id]: { ...extraSel, intervalMinutes: gap },
+                                    }));
+                                  }}
+                                  className="w-full bg-slate-100 dark:bg-[#1e2315] border border-border rounded-lg px-2 py-1 text-xs text-fg font-mono"
+                                >
+                                  <option value={30}>30 min</option>
+                                  <option value={60}>1 hour</option>
+                                  <option value={120}>2 hours</option>
+                                  <option value={360}>6 hours</option>
+                                  <option value={1440}>1 day</option>
+                                </select>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Consent and Compliance Rules */}
-              <div className="space-y-3 pt-2 border-t border-white/5">
+              <div className="space-y-3 pt-2 border-t border-slate-200/60 dark:border-white/5">
                 <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-400">
                   <input
                     type="checkbox"
                     checked={consentChecked}
                     onChange={(e) => setConsentChecked(e.target.checked)}
-                    className="w-4 h-4 mt-0.5 rounded text-[#D8EC8D] focus:ring-0 bg-black/40 border-white/20 shrink-0"
+                    className="w-4 h-4 mt-0.5 rounded text-[#D8EC8D] focus:ring-0 bg-slate-100 dark:bg-black/40 border-slate-300 dark:border-white/20 shrink-0"
                   />
                   <span>
                     I confirm that I understand platform rules and delivery terms. We do not verify account ownership.
@@ -1159,41 +1824,62 @@ export default function PackageDetailPage() {
                 </label>
               </div>
 
-              {/* Start Button */}
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setPreviewData(null)}
-                  className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-semibold text-xs transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={startingDelivery || !consentChecked}
-                  onClick={handleStartDelivery}
-                  className="px-6 py-2.5 rounded-xl bg-[#D8EC8D] text-[#131313] font-bold text-xs hover:brightness-105 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
-                >
-                  {startingDelivery ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>Scheduling Runs...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Start Delivery</span>
-                    </>
-                  )}
-                </button>
-              </div>
+              {/* Start Button & Wallet Balance Summary */}
+              {(() => {
+                const totalExtraCost = Object.entries(extraSelections)
+                  .filter(([_, s]) => s.enabled)
+                  .reduce((acc, [serviceId, s]) => {
+                    const svc = previewData.availableExtraServices?.find((x: any) => x.id === serviceId);
+                    return acc + (svc ? (s.quantity * svc.ratePer1000) / 1000 : 0);
+                  }, 0);
+
+                return (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                    <div>
+                      {totalExtraCost > 0 && (
+                        <div className="text-xs font-mono text-fg-2">
+                          Wallet Add-on Charge:{" "}
+                          <span className="font-bold text-[#D8EC8D]">₹{totalExtraCost.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewData(null)}
+                        className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-fg-2 font-semibold text-xs transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={startingDelivery || !consentChecked}
+                        onClick={handleStartDelivery}
+                        className="px-6 py-2.5 rounded-xl bg-[#D8EC8D] text-[#131313] font-bold text-xs hover:brightness-105 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
+                      >
+                        {startingDelivery ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Scheduling Runs...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-3.5 h-3.5" />
+                            <span>Start Delivery</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </GlassCard>
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white/[0.03] border border-white/10 rounded-2xl w-fit">
+      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white/[0.03] border border-border rounded-2xl w-fit">
         <button
           type="button"
           onClick={() => setActiveTab("timeline")}
@@ -1204,12 +1890,12 @@ export default function PackageDetailPage() {
           }`}
         >
           <ListFilter className="w-3.5 h-3.5" />
-          <span>Package Rules</span>
+          <span>Campaign Services</span>
           <span
             className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
               activeTab === "timeline"
-                ? "bg-black/20 text-[#131313]"
-                : "bg-white/10 text-slate-300"
+                ? "bg-slate-100 dark:bg-black/20 text-[#131313]"
+                : "bg-white/10 text-fg-2"
             }`}
           >
             {pkg.rules?.length || 0}
@@ -1229,8 +1915,8 @@ export default function PackageDetailPage() {
           <span
             className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
               activeTab === "triggers"
-                ? "bg-black/20 text-[#131313]"
-                : "bg-white/10 text-slate-300"
+                ? "bg-slate-100 dark:bg-black/20 text-[#131313]"
+                : "bg-white/10 text-fg-2"
             }`}
           >
             {triggers.length}
@@ -1246,12 +1932,12 @@ export default function PackageDetailPage() {
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
-          <span>Drip Executions</span>
+          <span>Delivery Batches</span>
           <span
             className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
               activeTab === "executions"
-                ? "bg-black/20 text-[#131313]"
-                : "bg-white/10 text-slate-300"
+                ? "bg-slate-100 dark:bg-black/20 text-[#131313]"
+                : "bg-white/10 text-fg-2"
             }`}
           >
             {executions.length}
@@ -1262,119 +1948,56 @@ export default function PackageDetailPage() {
       {/* TAB 1: PACKAGE RULES OVERVIEW */}
       {activeTab === "timeline" && (
         <section className="space-y-4">
-          <div className="glass-panel overflow-hidden rounded-2xl border border-white/10 shadow-xl shadow-black/20">
+          <div className="glass-panel overflow-hidden rounded-2xl border border-border shadow-xl shadow-black/20">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-white/10 bg-white/[0.03] text-[10px] font-mono uppercase text-slate-400 tracking-wider">
-                    <th className="py-3.5 px-4 font-semibold">Trigger Kind</th>
+                  <tr className="border-b border-border bg-white/[0.03] text-[10px] font-mono uppercase text-slate-400 tracking-wider">
                     <th className="py-3.5 px-4 font-semibold">Service Details</th>
-                    <th className="py-3.5 px-4 font-semibold">Quota / Limits</th>
-                    <th className="py-3.5 px-4 font-semibold">Quantity / Post</th>
-                    <th className="py-3.5 px-4 font-semibold">Rate Snapshot</th>
-                    <th className="py-3.5 px-4 font-semibold">Allocated Reserve</th>
-                    <th className="py-3.5 px-4 font-semibold text-right">Quota Utilization</th>
+                    <th className="py-3.5 px-4 font-semibold">Total Quantity</th>
+                    <th className="py-3.5 px-4 font-semibold">Daily Pace</th>
+                    <th className="py-3.5 px-4 font-semibold">Rate</th>
+                    <th className="py-3.5 px-4 font-semibold">Total Charge</th>
+                    <th className="py-3.5 px-4 font-semibold text-right">Delivery Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {pkg.rules?.map((r: any) => (
-                    <tr key={r.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-3.5 px-4">
-                        {r.kind === "POST_TRIGGERED" ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <Zap className="w-3 h-3 text-emerald-400" />
-                            <span>Per-Post Trigger</span>
-                          </span>
-                        ) : r.kind === "TIME_DRIP" ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                            <Clock className="w-3 h-3 text-cyan-400" />
-                            <span>Scheduled Drip</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                            <Users className="w-3 h-3 text-violet-400" />
-                            <span>Followers Growth</span>
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="space-y-0.5">
-                          <div className="font-sans font-medium text-white text-xs">
+                  {pkg.rules?.map((r: any) => {
+                    const totalUnits = (r.quantityPerPost || 0) * (r.maxPosts || 1);
+                    return (
+                      <tr key={r.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="py-3.5 px-4">
+                          <div className="font-sans font-medium text-fg text-xs">
                             {r.service?.displayName || r.service?.name}
                           </div>
-                          {r.service?.platform && (
-                            <div className="text-[10px] text-slate-400 uppercase tracking-wider font-mono flex items-center gap-1">
-                              <span>{r.service.platform}</span>
-                              {r.service?.category && (
-                                <>
-                                  <span className="text-white/20">•</span>
-                                  <span className="text-slate-500 capitalize">{r.service.category}</span>
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 font-mono text-white text-xs font-semibold">
-                        {r.kind === "FOLLOWERS_INTERVAL"
-                          ? `${formatIndianNumber(r.totalFollowers || 0)} total`
-                          : `${r.maxPosts} posts max`}
-                      </td>
-                      <td className="py-3.5 px-4 font-mono text-slate-300 text-xs">
-                        {r.kind === "POST_TRIGGERED" ? (
-                          <span className="px-2 py-0.5 rounded-md bg-white/5 text-white font-medium">
-                            {formatIndianNumber(r.quantityPerPost)}
-                          </span>
-                        ) : (
-                          <span className="text-slate-600">—</span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 font-mono text-[#D8EC8D] text-xs font-semibold">
-                        ₹{Number(r.rateSnapshot).toFixed(2)}
-                        <span className="text-[10px] text-slate-500 font-normal"> / 1k</span>
-                      </td>
-                      <td className="py-3.5 px-4 font-mono text-white font-bold text-xs">
-                        ₹{Number(r.unitCharge).toFixed(2)}
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        {r.kind === "POST_TRIGGERED" ? (
-                          <div className="flex flex-col items-end gap-1.5">
-                            <div className="flex items-center gap-1.5 font-mono text-xs">
-                              <span
-                                className={
-                                  r.usedCount >= r.maxPosts ? "text-rose-400 font-bold" : "text-[#D8EC8D] font-bold"
-                                }
-                              >
-                                {r.usedCount}
-                              </span>
-                              <span className="text-slate-500">/</span>
-                              <span className="text-slate-400">{r.maxPosts} posts</span>
-                            </div>
-                            <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all duration-500 ${
-                                  r.usedCount >= r.maxPosts
-                                    ? "bg-rose-500"
-                                    : "bg-gradient-to-r from-[#D8EC8D] to-emerald-400"
-                                }`}
-                                style={{
-                                  width: `${Math.min(
-                                    100,
-                                    Math.round(((r.usedCount || 0) / (r.maxPosts || 1)) * 100)
-                                  )}%`,
-                                }}
-                              />
-                            </div>
+                          <div className="text-[10px] text-slate-500 font-mono capitalize flex items-center gap-1.5 mt-0.5">
+                            <span>{r.service?.platform || pkg.platform || "Instagram"}</span>
+                            <span>•</span>
+                            <span>Paced Drip</span>
                           </div>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-white/5 text-slate-400 border border-white/5">
-                            <Clock className="w-2.5 h-2.5 text-cyan-400" />
-                            <span>Scheduled</span>
+                        </td>
+                        <td className="py-3.5 px-4 font-mono text-fg text-xs font-semibold">
+                          {formatIndianNumber(totalUnits)} units
+                        </td>
+                        <td className="py-3.5 px-4 font-mono text-[#D8EC8D] text-xs font-semibold">
+                          {formatIndianNumber(r.quantityPerPost || 0)} / day
+                        </td>
+                        <td className="py-3.5 px-4 font-mono text-slate-400 text-xs">
+                          ₹{Number(r.rateSnapshot || 0).toFixed(2)}
+                          <span className="text-[10px] text-slate-500 font-normal"> / 1k</span>
+                        </td>
+                        <td className="py-3.5 px-4 font-mono text-fg font-bold text-xs">
+                          ₹{Number(r.reserve || r.unitCharge * (r.maxPosts || 1)).toFixed(2)}
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/10 text-success border border-emerald-500/20">
+                            <Check className="w-3 h-3 text-success" />
+                            <span>Active</span>
                           </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1386,21 +2009,21 @@ export default function PackageDetailPage() {
       {activeTab === "triggers" && (
         <section className="space-y-4">
           {triggers.length === 0 ? (
-            <div className="p-12 rounded-3xl bg-white/[0.02] border border-white/5 text-center text-slate-400 text-xs space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 mx-auto flex items-center justify-center text-slate-400">
+            <div className="p-12 rounded-3xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 text-center text-slate-400 text-xs space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-border mx-auto flex items-center justify-center text-slate-400">
                 <Film className="w-6 h-6" />
               </div>
-              <div className="text-sm font-semibold text-white">No posts started for this package yet</div>
+              <div className="text-sm font-semibold text-fg">No posts started for this package yet</div>
               <div className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
                 Paste your post or reel link above to schedule automated drip delivery for your media.
               </div>
             </div>
           ) : (
-            <div className="glass-panel overflow-hidden rounded-2xl border border-white/10 shadow-xl shadow-black/20">
+            <div className="glass-panel overflow-hidden rounded-2xl border border-border shadow-xl shadow-black/20">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-white/10 bg-white/[0.03] text-[10px] font-mono uppercase text-slate-400 tracking-wider">
+                    <tr className="border-b border-border bg-white/[0.03] text-[10px] font-mono uppercase text-slate-400 tracking-wider">
                       <th className="py-3.5 px-4 font-semibold">Media Key</th>
                       <th className="py-3.5 px-4 font-semibold">Target Link</th>
                       <th className="py-3.5 px-4 font-semibold">Drip Runs</th>
@@ -1412,13 +2035,13 @@ export default function PackageDetailPage() {
                     {triggers.map((trig) => (
                       <tr key={trig.id} className="hover:bg-white/[0.02] transition-colors">
                         <td className="py-3.5 px-4">
-                          <span className="font-mono text-xs font-bold text-white bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
+                          <span className="font-mono text-xs font-bold text-fg bg-white/5 px-2.5 py-1 rounded-lg border border-border">
                             {trig.mediaKey}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-slate-300 max-w-[280px]">
+                        <td className="py-3.5 px-4 text-fg-2 max-w-[280px]">
                           <div className="flex items-center gap-2">
-                            <span className="truncate font-mono text-xs text-slate-300" title={trig.url}>
+                            <span className="truncate font-mono text-xs text-fg-2" title={trig.url}>
                               {trig.url}
                             </span>
                             <button
@@ -1434,12 +2057,12 @@ export default function PackageDetailPage() {
                           </div>
                         </td>
                         <td className="py-3.5 px-4">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold font-mono bg-[#D8EC8D]/10 text-[#D8EC8D] border border-[#D8EC8D]/20">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold font-mono bg-accent/10 text-[#D8EC8D] border border-accent/20">
                             <Layers className="w-3 h-3" />
                             <span>{trig.executions?.length || 0} run(s)</span>
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-slate-300 font-mono text-xs">
+                        <td className="py-3.5 px-4 text-fg-2 font-mono text-xs">
                           {new Date(trig.createdAt).toLocaleString([], {
                             month: "short",
                             day: "numeric",
@@ -1457,7 +2080,7 @@ export default function PackageDetailPage() {
                                   setSwapNewUrl(trig.url);
                                   setSwapModalOpen(true);
                                 }}
-                                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white text-xs font-semibold inline-flex items-center gap-1.5 border border-white/10 transition-all hover:border-white/20"
+                                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white text-xs font-semibold inline-flex items-center gap-1.5 border border-border transition-all hover:border-white/20"
                               >
                                 <Link2 className="w-3.5 h-3.5 text-[#D8EC8D]" />
                                 <span>Swap Link</span>
@@ -1467,7 +2090,7 @@ export default function PackageDetailPage() {
                               href={trig.url}
                               target="_blank"
                               rel="noreferrer"
-                              className="px-3 py-1.5 rounded-xl bg-[#D8EC8D]/10 hover:bg-[#D8EC8D]/20 text-[#D8EC8D] text-xs font-semibold inline-flex items-center gap-1.5 border border-[#D8EC8D]/20 transition-all"
+                              className="px-3 py-1.5 rounded-xl bg-accent/10 hover:bg-accent/20 text-[#D8EC8D] text-xs font-semibold inline-flex items-center gap-1.5 border border-accent/20 transition-all"
                             >
                               <span>Open Post</span>
                               <ExternalLink className="w-3.5 h-3.5" />
@@ -1488,53 +2111,52 @@ export default function PackageDetailPage() {
       {activeTab === "executions" && (
         <section className="space-y-4">
           {executions.length === 0 ? (
-            <div className="p-12 rounded-3xl bg-white/[0.02] border border-white/5 text-center text-slate-400 text-xs space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 mx-auto flex items-center justify-center text-slate-400">
+            <div className="p-12 rounded-3xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 text-center text-slate-400 text-xs space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-border mx-auto flex items-center justify-center text-slate-400">
                 <Layers className="w-6 h-6" />
               </div>
-              <div className="text-sm font-semibold text-white">No drip executions scheduled yet</div>
+              <div className="text-sm font-semibold text-fg">No drip executions scheduled yet</div>
               <div className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
                 Executions are created when you configure recurring scheduled drips or start post delivery.
               </div>
             </div>
           ) : (
-            <div className="glass-panel overflow-hidden rounded-2xl border border-white/10 shadow-xl shadow-black/20">
+            <div className="glass-panel overflow-hidden rounded-2xl border border-border shadow-xl shadow-black/20">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-white/10 bg-white/[0.03] text-[10px] font-mono uppercase text-slate-400 tracking-wider">
-                      <th className="py-3.5 px-4 font-semibold">Run #</th>
+                    <tr className="border-b border-border bg-white/[0.03] text-[10px] font-mono uppercase text-slate-400 tracking-wider">
+                      <th className="py-3.5 px-4 font-semibold">Batch #</th>
                       <th className="py-3.5 px-4 font-semibold">Service</th>
                       <th className="py-3.5 px-4 font-semibold">Target Link</th>
                       <th className="py-3.5 px-4 font-semibold">Quantity</th>
                       <th className="py-3.5 px-4 font-semibold">Charge</th>
-                      <th className="py-3.5 px-4 font-semibold">Scheduled For</th>
                       <th className="py-3.5 px-4 font-semibold">Status</th>
-                      <th className="py-3.5 px-4 font-semibold text-right">Order Ref</th>
+                      <th className="py-3.5 px-4 font-semibold text-right">Action / Order</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {executions.map((e) => (
                       <tr key={e.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-3.5 px-4 font-mono font-bold text-white text-xs">
-                          <span className="px-2 py-0.5 rounded bg-white/5 text-slate-300">
+                        <td className="py-3.5 px-4 font-mono font-bold text-fg text-xs">
+                          <span className="px-2 py-0.5 rounded bg-white/5 text-fg-2">
                             #{String(e.seq).padStart(2, "0")}
                           </span>
                         </td>
                         <td className="py-3.5 px-4">
-                          <div className="font-sans font-medium text-white text-xs">
+                          <div className="font-sans font-medium text-fg text-xs">
                             {e.rule?.service?.displayName || e.rule?.service?.name || "Service"}
                           </div>
                           <div className="text-[10px] text-slate-500 font-mono capitalize">
-                            Source: {e.source?.toLowerCase() || "auto"}
+                            Paced Delivery
                           </div>
                         </td>
                         <td className="py-3.5 px-4 text-slate-400 max-w-[180px]">
-                          <span className="truncate block font-mono text-xs text-slate-300" title={e.targetUrl}>
-                            {e.targetUrl}
+                          <span className="truncate block font-mono text-xs text-fg-2" title={e.targetUrl || pkg.slots?.[0]?.targetUrl}>
+                            {e.targetUrl || pkg.slots?.[0]?.targetUrl || "—"}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 font-mono text-white font-bold text-xs">
+                        <td className="py-3.5 px-4 font-mono text-fg font-bold text-xs">
                           {formatIndianNumber(e.quantity)}
                           {e.order?.remains !== undefined && e.order?.remains !== null && (
                             <div className="mt-0.5 text-[10px] font-normal text-slate-400">
@@ -1545,126 +2167,119 @@ export default function PackageDetailPage() {
                         <td className="py-3.5 px-4 font-mono text-[#D8EC8D] font-bold text-xs">
                           ₹{Number(e.allocatedCharge).toFixed(2)}
                         </td>
-                        <td className="py-3.5 px-4 text-slate-300 font-mono text-xs">
-                          <div>
-                            {new Date(e.executeAt).toLocaleString([], {
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              timeZone: pkg.timezone || "UTC",
-                            })}
-                          </div>
-                          {e.status === "SCHEDULED" && pkg.status === "ACTIVE" && (
-                            <div className="mt-2 space-y-2 font-sans">
-                              {reschedulingExecutionId === e.id ? (
-                                <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 space-y-2">
-                                  <p className="max-w-64 text-[10px] text-slate-400">
-                                    Timezone: <span className="text-[#D8EC8D]">{pkg.timezone || "UTC"}</span>
-                                  </p>
-                                  <input
-                                    type="datetime-local"
-                                    aria-label={`New execution time for ${e.id}`}
-                                    value={rescheduleDrafts[e.id] || ""}
-                                    onChange={(event) =>
-                                      setRescheduleDrafts((previous) => ({
-                                        ...previous,
-                                        [e.id]: event.target.value,
-                                      }))
-                                    }
-                                    className="w-full rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#D8EC8D]/50"
-                                  />
-                                  <div className="flex gap-2">
-                                    <button
-                                      type="button"
-                                      disabled={!rescheduleDrafts[e.id] || savingRescheduleExecutionId === e.id}
-                                      onClick={() => handleRescheduleExecution(e.id)}
-                                      className="rounded-lg bg-[#D8EC8D] px-2.5 py-1 text-[10px] font-bold text-[#131313] hover:brightness-105 disabled:opacity-40 transition-all"
-                                    >
-                                      {savingRescheduleExecutionId === e.id ? "Saving..." : "Save Time"}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      disabled={savingRescheduleExecutionId === e.id}
-                                      onClick={() => {
-                                        setReschedulingExecutionId(null);
-                                        setRescheduleDrafts((previous) => {
-                                          const next = { ...previous };
-                                          delete next[e.id];
-                                          return next;
-                                        });
-                                      }}
-                                      className="rounded-lg bg-white/5 hover:bg-white/10 px-2.5 py-1 text-[10px] text-slate-300 transition-colors"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const localInputValue = formatInstantForDateTimeLocal(
-                                      e.executeAt,
-                                      pkg.timezone || "UTC"
-                                    );
-                                    setRescheduleDrafts((previous) => ({ ...previous, [e.id]: localInputValue }));
-                                    setReschedulingExecutionId(e.id);
-                                  }}
-                                  className="text-[10px] text-[#D8EC8D] hover:underline font-semibold inline-flex items-center gap-1"
-                                >
-                                  <Clock className="w-2.5 h-2.5" />
-                                  <span>Reschedule Run</span>
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </td>
                         <td className="py-3.5 px-4">
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold ${
-                              e.status === "COMPLETED"
-                                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
-                                : e.status === "DISPATCHED" || e.status === "PROCESSING"
-                                ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
-                                : e.status === "SCHEDULED"
-                                ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/20"
-                                : e.status === "PARTIAL"
-                                ? "bg-blue-500/15 text-blue-400 border border-blue-500/20"
-                                : e.status === "FAILED"
-                                ? "bg-rose-500/15 text-rose-400 border border-rose-500/20"
-                                : e.status === "CANCELLED"
-                                ? "bg-slate-500/15 text-slate-400 border border-slate-500/20"
-                                : "bg-white/5 text-slate-300 border border-white/10"
-                            }`}
-                          >
-                            {e.status === "COMPLETED" ? (
-                              <Check className="w-3 h-3 text-emerald-400" />
-                            ) : e.status === "PROCESSING" || e.status === "DISPATCHED" ? (
-                              <RefreshCw className="w-3 h-3 animate-spin text-amber-400" />
-                            ) : e.status === "SCHEDULED" ? (
-                              <Clock className="w-3 h-3 text-cyan-400" />
-                            ) : e.status === "FAILED" ? (
-                              <XCircle className="w-3 h-3 text-rose-400" />
-                            ) : null}
-                            <span>{e.status}</span>
-                          </span>
-                          {e.skipReason && (
-                            <div className="mt-1 max-w-56 font-sans text-[10px] text-amber-300">
-                              {e.skipReason}
-                            </div>
-                          )}
+                          <div className="flex flex-col gap-0.5">
+                            {(() => {
+                              const isToday = Boolean(e.executeAt && new Date(e.executeAt).toDateString() === new Date().toDateString());
+                              const isScheduled = e.status === "SCHEDULED";
+                              const isOverdue = isScheduled && e.executeAt && new Date(e.executeAt).getTime() < Date.now() - 15 * 60 * 1000;
+                              // For executions scheduled on current day, they are actively delivering today in intraday micro-batches!
+                              const isTodayActive = isScheduled && isToday;
+
+                              return (
+                                <>
+                                  <span
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold w-fit ${
+                                      e.status === "COMPLETED"
+                                        ? "bg-emerald-500/15 text-success border border-emerald-500/20"
+                                        : e.status === "DISPATCHED" || e.status === "PROCESSING"
+                                        ? "bg-amber-500/15 text-warning border border-amber-500/20"
+                                        : isTodayActive
+                                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+                                        : isOverdue
+                                        ? "bg-amber-500/15 text-warning border border-amber-500/20"
+                                        : isScheduled
+                                        ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/20"
+                                        : e.status === "PARTIAL"
+                                        ? "bg-blue-500/15 text-blue-400 border border-blue-500/20"
+                                        : e.status === "FAILED"
+                                        ? "bg-rose-500/15 text-danger border border-rose-500/20"
+                                        : "bg-slate-500/15 text-slate-400 border border-slate-500/20"
+                                    }`}
+                                  >
+                                    {e.status === "COMPLETED" ? (
+                                      <Check className="w-3 h-3 text-success" />
+                                    ) : e.status === "PROCESSING" || e.status === "DISPATCHED" ? (
+                                      <RefreshCw className="w-3 h-3 animate-spin text-warning" />
+                                    ) : isTodayActive ? (
+                                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                                    ) : isScheduled ? (
+                                      isOverdue ? (
+                                        <Clock className="w-3 h-3 text-warning" />
+                                      ) : (
+                                        <Clock className="w-3 h-3 text-cyan-400" />
+                                      )
+                                    ) : e.status === "FAILED" ? (
+                                      <XCircle className="w-3 h-3 text-danger" />
+                                    ) : null}
+                                    <span>
+                                      {e.status === "COMPLETED"
+                                        ? "COMPLETED"
+                                        : e.status === "PROCESSING" || e.status === "DISPATCHED"
+                                        ? e.status
+                                        : isTodayActive
+                                        ? "IN PROGRESS"
+                                        : isOverdue
+                                        ? "DELAYED"
+                                        : e.status}
+                                    </span>
+                                  </span>
+                                  {isScheduled && e.executeAt && (
+                                    <span className={`text-[10px] font-mono pl-0.5 ${isTodayActive ? "text-emerald-400/80 font-medium" : "text-slate-400"}`}>
+                                      {formatExecutionSchedule(e.executeAt)}
+                                    </span>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
                         </td>
                         <td className="py-3.5 px-4 text-right">
-                          {e.childOrderId ? (
+                          {(e.status === "FAILED" || e.status === "PARTIAL") ? (
+                            <button
+                              type="button"
+                              disabled={retryingExecutionId === e.id}
+                              onClick={() => {
+                                setRetryModalExecution(e);
+                                setRetryTargetUrl(e.targetUrl || pkg?.targetUrl || pkg?.handle || "");
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-[#D8EC8D] text-[#131313] hover:brightness-105 text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                            >
+                              <RefreshCw className={`w-3.5 h-3.5 ${retryingExecutionId === e.id ? "animate-spin" : ""}`} />
+                              <span>{retryingExecutionId === e.id ? "Retrying..." : "Retry Run"}</span>
+                            </button>
+                          ) : (e.status === "DISPATCHED" || e.status === "PROCESSING") ? (
+                            <div className="inline-flex items-center gap-1.5 justify-end">
+                              <button
+                                type="button"
+                                title="Check live status from provider"
+                                disabled={syncingExecutionId === e.id}
+                                onClick={() => handleSyncExecution(e.id)}
+                                className="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer text-[11px] inline-flex items-center gap-1 border border-border"
+                              >
+                                <RefreshCw className={`w-3 h-3 ${syncingExecutionId === e.id ? "animate-spin text-[#D8EC8D]" : ""}`} />
+                                <span className="hidden sm:inline">Sync</span>
+                              </button>
+                              <button
+                                type="button"
+                                title="Resolve stalled run and unblock schedule"
+                                disabled={resolvingExecutionId === e.id}
+                                onClick={() => setResolveModalExecution(e)}
+                                className="px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-warning text-[11px] font-semibold transition-colors cursor-pointer border border-amber-500/20 inline-flex items-center gap-1"
+                              >
+                                <Zap className="w-3 h-3" />
+                                <span>Resolve</span>
+                              </button>
+                            </div>
+                          ) : e.childOrderId ? (
                             <Link
                               href="/orders"
-                              className="px-2.5 py-1 rounded-md bg-[#D8EC8D]/10 hover:bg-[#D8EC8D]/20 text-[11px] font-mono text-[#D8EC8D] font-semibold border border-[#D8EC8D]/20 transition-all inline-block"
+                              className="px-2.5 py-1 rounded-md bg-accent/10 hover:bg-accent/20 text-[11px] font-mono text-[#D8EC8D] font-semibold border border-accent/20 transition-all inline-block"
                             >
                               #{e.childOrderId.slice(0, 8)}
                             </Link>
                           ) : (
-                            <span className="text-slate-600 font-mono">—</span>
+                            <span className="text-slate-500 font-mono text-xs">Queued</span>
                           )}
                         </td>
                       </tr>
@@ -1680,22 +2295,22 @@ export default function PackageDetailPage() {
       {/* Cancellation Modal */}
       {cancelModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-white/10 space-y-5 bg-[#171717]">
-            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
+          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-border space-y-5 bg-white dark:bg-[#171717]">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-danger">
               <AlertTriangle className="w-6 h-6" />
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-lg font-bold text-white">Cancel Remaining Runs?</h3>
+              <h3 className="text-lg font-bold text-fg">Cancel Remaining Runs?</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Cancelling will stop all upcoming executions and refund the unused reserve back to your wallet.
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-2 text-xs">
+            <div className="p-4 rounded-xl bg-white/[0.03] border border-slate-200/60 dark:border-white/5 space-y-2 text-xs">
               <div className="flex items-center justify-between text-slate-400">
                 <span>Undispatched runs:</span>
-                <span className="font-mono text-white font-bold">{scheduledExecutions.length}</span>
+                <span className="font-mono text-fg font-bold">{scheduledExecutions.length}</span>
               </div>
               <div className="flex items-center justify-between text-slate-400">
                 <span>Refund to Wallet:</span>
@@ -1709,7 +2324,7 @@ export default function PackageDetailPage() {
               <button
                 type="button"
                 onClick={() => setCancelModalOpen(false)}
-                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs transition-colors"
+                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-fg font-medium text-xs transition-colors"
               >
                 Keep Active
               </button>
@@ -1729,12 +2344,12 @@ export default function PackageDetailPage() {
       {/* Problem Report Modal */}
       {problemModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-white/10 space-y-5 bg-[#171717] shadow-2xl">
-            <div className="flex items-center gap-3 text-amber-400">
+          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-border space-y-5 bg-white dark:bg-[#171717] shadow-2xl">
+            <div className="flex items-center gap-3 text-warning">
               <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
                 <AlertCircle className="w-5 h-5" />
               </div>
-              <h3 className="text-lg font-bold text-white">Report a Problem</h3>
+              <h3 className="text-lg font-bold text-fg">Report a Problem</h3>
             </div>
 
             <div className="space-y-4">
@@ -1743,12 +2358,12 @@ export default function PackageDetailPage() {
                 <select
                   value={problemIssue}
                   onChange={(e) => setProblemIssue(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-[#D8EC8D]"
+                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-border text-fg text-xs font-mono focus:outline-none focus:border-[#D8EC8D]"
                 >
-                  <option value="Execution delayed or missed" className="bg-[#1c1c1c] text-white">Execution delayed or missed</option>
-                  <option value="Quantity drop or discrepancy" className="bg-[#1c1c1c] text-white">Quantity drop or discrepancy</option>
-                  <option value="Post URL was not detected" className="bg-[#1c1c1c] text-white">Post URL was not detected</option>
-                  <option value="Other delivery issue" className="bg-[#1c1c1c] text-white">Other delivery issue</option>
+                  <option value="Execution delayed or missed" className="bg-white dark:bg-[#1c1c1c] text-fg">Execution delayed or missed</option>
+                  <option value="Quantity drop or discrepancy" className="bg-white dark:bg-[#1c1c1c] text-fg">Quantity drop or discrepancy</option>
+                  <option value="Post URL was not detected" className="bg-white dark:bg-[#1c1c1c] text-fg">Post URL was not detected</option>
+                  <option value="Other delivery issue" className="bg-white dark:bg-[#1c1c1c] text-fg">Other delivery issue</option>
                 </select>
               </div>
 
@@ -1759,7 +2374,7 @@ export default function PackageDetailPage() {
                   value={problemDesc}
                   onChange={(e) => setProblemDesc(e.target.value)}
                   placeholder="Provide any details about the discrepancy..."
-                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-[#D8EC8D]"
+                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-border text-fg text-xs placeholder:text-slate-500 focus:outline-none focus:border-[#D8EC8D]"
                 />
               </div>
             </div>
@@ -1768,7 +2383,7 @@ export default function PackageDetailPage() {
               <button
                 type="button"
                 onClick={() => setProblemModalOpen(false)}
-                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs transition-colors"
+                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-fg font-medium text-xs transition-colors"
               >
                 Cancel
               </button>
@@ -1810,23 +2425,23 @@ export default function PackageDetailPage() {
       {/* Speed-Up Schedule Modal */}
       {speedUpModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-white/10 space-y-5 bg-[#171717] shadow-2xl">
+          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-border space-y-5 bg-white dark:bg-[#171717] shadow-2xl">
             <div className="flex items-center gap-3 text-[#D8EC8D]">
-              <div className="p-2 rounded-xl bg-[#D8EC8D]/15 border border-[#D8EC8D]/30">
+              <div className="p-2 rounded-xl bg-accent/15 border border-accent/30">
                 <FastForward className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Accelerate Delivery Schedule</h3>
-                <p className="text-xs text-slate-400">Safely compresses remaining run intervals.</p>
+                <h3 className="text-lg font-bold text-fg">Accelerate Delivery Schedule</h3>
+                <p className="text-xs text-slate-400">Compresses remaining run intervals within pace cap.</p>
               </div>
             </div>
 
             <div className="space-y-4">
-              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-2 text-xs">
-                <div className="text-slate-300 font-medium">Select Compression Factor:</div>
+              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-slate-200/60 dark:border-white/5 space-y-2 text-xs">
+                <div className="text-fg-2 font-medium">Select Compression Factor:</div>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { factor: 1.25, label: "1.25x (Safe)" },
+                    { factor: 1.25, label: "1.25x (Standard)" },
                     { factor: 1.5, label: "1.50x (Moderate)" },
                     { factor: 2.0, label: "2.00x (Maximum)" },
                   ].map((opt) => (
@@ -1836,8 +2451,8 @@ export default function PackageDetailPage() {
                       onClick={() => setSpeedFactor(opt.factor)}
                       className={`p-2.5 rounded-xl border text-center transition-all ${
                         speedFactor === opt.factor
-                          ? "bg-[#D8EC8D]/15 border-[#D8EC8D] text-[#D8EC8D] font-bold"
-                          : "bg-white/5 border-white/10 text-slate-400 hover:text-white"
+                          ? "bg-accent/15 border-[#D8EC8D] text-[#D8EC8D] font-bold"
+                          : "bg-white/5 border-border text-slate-400 hover:text-white"
                       }`}
                     >
                       <div className="text-xs">{opt.label}</div>
@@ -1846,7 +2461,7 @@ export default function PackageDetailPage() {
                 </div>
               </div>
 
-              <div className="text-[11px] text-slate-400 leading-relaxed bg-black/30 p-3 rounded-xl border border-white/5">
+              <div className="text-[11px] text-fg-muted leading-relaxed bg-slate-100 dark:bg-black/30 p-3 rounded-xl border border-slate-200/60 dark:border-white/5">
                 Remaining scheduled executions will be shifted forward by {speedFactor}x compression. Minimum 15-minute intervals between runs are automatically enforced to stay strictly within platform delivery limits.
               </div>
             </div>
@@ -1855,7 +2470,7 @@ export default function PackageDetailPage() {
               <button
                 type="button"
                 onClick={() => setSpeedUpModalOpen(false)}
-                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs transition-colors"
+                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-fg font-medium text-xs transition-colors"
               >
                 Cancel
               </button>
@@ -1885,9 +2500,9 @@ export default function PackageDetailPage() {
       {/* Link Swap Modal */}
       {swapModalOpen && selectedTriggerForSwap && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-white/10 space-y-5 bg-[#171717] shadow-2xl">
-            <div className="flex items-center gap-3 text-white">
-              <div className="p-2 rounded-xl bg-white/10 border border-white/20 text-[#D8EC8D]">
+          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-border space-y-5 bg-white dark:bg-[#171717] shadow-2xl">
+            <div className="flex items-center gap-3 text-fg">
+              <div className="p-2 rounded-xl bg-white/10 border border-slate-300 dark:border-white/20 text-[#D8EC8D]">
                 <Link2 className="w-5 h-5" />
               </div>
               <div>
@@ -1899,7 +2514,7 @@ export default function PackageDetailPage() {
             <div className="space-y-4">
               <div>
                 <label className="text-xs font-mono text-slate-400 block mb-1">Current URL</label>
-                <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 text-xs font-mono text-slate-400 truncate">
+                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-black/40 border border-slate-200/60 dark:border-white/5 text-xs font-mono text-slate-400 truncate">
                   {selectedTriggerForSwap.url}
                 </div>
               </div>
@@ -1912,11 +2527,11 @@ export default function PackageDetailPage() {
                   placeholder={`https://${pkg.platform}.com/...`}
                   value={swapNewUrl}
                   onChange={(e) => setSwapNewUrl(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-[#D8EC8D]"
+                  className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-border text-fg text-xs font-mono focus:outline-none focus:border-[#D8EC8D]"
                 />
               </div>
 
-              <div className="text-[11px] text-slate-400 leading-relaxed bg-black/30 p-3 rounded-xl border border-white/5">
+              <div className="text-[11px] text-fg-muted leading-relaxed bg-slate-100 dark:bg-black/30 p-3 rounded-xl border border-slate-200/60 dark:border-white/5">
                 Swapping updates all undispatched, scheduled runs for this trigger to the new link. Already completed or dispatched orders are kept as-is.
               </div>
             </div>
@@ -1928,7 +2543,7 @@ export default function PackageDetailPage() {
                   setSwapModalOpen(false);
                   setSelectedTriggerForSwap(null);
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs transition-colors"
+                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-fg font-medium text-xs transition-colors"
               >
                 Cancel
               </button>
@@ -1955,9 +2570,9 @@ export default function PackageDetailPage() {
       {/* Manual Retainer Renewal Modal */}
       {renewModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-white/10 space-y-5 bg-[#171717] shadow-2xl">
-            <div className="flex items-center gap-3 text-white">
-              <div className="p-2 rounded-xl bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 text-[#D8EC8D]">
+          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-border space-y-5 bg-white dark:bg-[#171717] shadow-2xl">
+            <div className="flex items-center gap-3 text-fg">
+              <div className="p-2 rounded-xl bg-accent/15 border border-accent/30 text-[#D8EC8D]">
                 <Repeat className="w-5 h-5" />
               </div>
               <div>
@@ -1967,16 +2582,16 @@ export default function PackageDetailPage() {
             </div>
 
             <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-2 text-xs">
+              <div className="p-4 rounded-xl bg-white/[0.03] border border-slate-200/60 dark:border-white/5 space-y-2 text-xs">
                 <div className="flex items-center justify-between text-slate-400">
                   <span>Target Handle:</span>
-                  <span className="font-mono text-white font-bold">@{pkg.handle}</span>
+                  <span className="font-mono text-fg font-bold">@{pkg.handle}</span>
                 </div>
                 <div className="flex items-center justify-between text-slate-400">
                   <span>Cycle Duration:</span>
-                  <span className="font-mono text-white font-bold">30 Days</span>
+                  <span className="font-mono text-fg font-bold">30 Days</span>
                 </div>
-                <div className="flex items-center justify-between text-slate-400 pt-1 border-t border-white/5">
+                <div className="flex items-center justify-between text-slate-400 pt-1 border-t border-slate-200/60 dark:border-white/5">
                   <span>Wallet Charge / Reserve:</span>
                   <span className="font-mono text-[#D8EC8D] font-bold text-sm">
                     ₹{Number(pkg.reserveTotal || pkg.totalCharge).toFixed(2)}
@@ -1984,7 +2599,7 @@ export default function PackageDetailPage() {
                 </div>
               </div>
 
-              <div className="text-[11px] text-slate-400 leading-relaxed bg-black/30 p-3 rounded-xl border border-white/5">
+              <div className="text-[11px] text-fg-muted leading-relaxed bg-slate-100 dark:bg-black/30 p-3 rounded-xl border border-slate-200/60 dark:border-white/5">
                 Confirming renewal will deduct ₹{Number(pkg.reserveTotal || pkg.totalCharge).toFixed(2)} from your wallet and provision an active package cycle with all current rule quotas restored.
               </div>
             </div>
@@ -1993,7 +2608,7 @@ export default function PackageDetailPage() {
               <button
                 type="button"
                 onClick={() => setRenewModalOpen(false)}
-                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs transition-colors"
+                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-fg font-medium text-xs transition-colors"
               >
                 Cancel
               </button>
@@ -2012,6 +2627,346 @@ export default function PackageDetailPage() {
                   <>
                     <Repeat className="w-3.5 h-3.5" />
                     <span>Confirm & Renew</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* Change Delivery Window Modal (D3 UI) */}
+      {rescheduleModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <GlassCard className="max-w-md w-full p-6 rounded-3xl border-border space-y-5 bg-white dark:bg-[#171717] shadow-2xl">
+            <div className="flex items-center justify-between text-fg">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-accent/15 border border-accent/30 text-[#D8EC8D]">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-fg">Change Delivery Window</h3>
+                  <p className="text-xs text-slate-400">Reschedule remaining runs to a new window.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRescheduleModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5">
+              {/* Presets */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Window Preset
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { key: "ANY_TIME", label: "Any time (24/7)" },
+                    { key: "DAYTIME", label: "Daytime (09:00 - 21:00)" },
+                    { key: "EVENING", label: "Evening (17:00 - 23:00)" },
+                    { key: "CUSTOM", label: "Custom Window" },
+                  ].map((p) => (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() => setReschedulePreset(p.key as any)}
+                      className={`py-2 px-2.5 text-xs font-semibold rounded-xl border text-left transition-all ${
+                        reschedulePreset === p.key
+                          ? "bg-[#D8EC8D] text-black border-[#D8EC8D] font-bold"
+                          : "bg-surface-raised border-border text-fg-muted hover:text-fg"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Timezone */}
+              <div className="flex items-center justify-between text-xs pt-1">
+                <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Timezone</span>
+                <select
+                  value={rescheduleTimezone}
+                  onChange={(e) => setRescheduleTimezone(e.target.value)}
+                  className="px-2.5 py-1.5 rounded-lg bg-surface border border-border text-fg text-xs focus:outline-none"
+                >
+                  <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                  <option value="America/New_York">America/New_York (EST/EDT)</option>
+                  <option value="Europe/London">Europe/London (GMT/BST)</option>
+                  <option value="UTC">UTC (Universal Time)</option>
+                  <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+                  <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
+                </select>
+              </div>
+
+              {/* Error card */}
+              {rescheduleError && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">{rescheduleError.message}</span>
+                    <button
+                      type="button"
+                      onClick={handleFetchReschedulePreview}
+                      className="px-2 py-0.5 rounded bg-rose-500/20 hover:bg-rose-500/30 text-[10px] font-mono"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                  {rescheduleError.requestId && (
+                    <div className="text-[10px] font-mono text-slate-400">Ref: {rescheduleError.requestId}</div>
+                  )}
+                </div>
+              )}
+
+              {/* Preview Button */}
+              {!reschedulePreviewData && (
+                <button
+                  type="button"
+                  disabled={loadingReschedulePreview}
+                  onClick={handleFetchReschedulePreview}
+                  className="w-full py-2.5 rounded-xl bg-[#D8EC8D] text-black font-semibold text-xs hover:brightness-105 transition-all shadow-md flex items-center justify-center gap-1.5"
+                >
+                  {loadingReschedulePreview ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Computing Schedule...</span>
+                    </>
+                  ) : (
+                    <span>Preview New Schedule</span>
+                  )}
+                </button>
+              )}
+
+              {/* Preview Schedule Changes section */}
+              {reschedulePreviewData && (
+                <div className="space-y-3 pt-2 border-t border-border">
+                  <div className="flex items-center justify-between text-xs font-semibold text-fg">
+                    <span>Preview Schedule Changes</span>
+                    <span className="font-mono text-[#D8EC8D] text-[11px]">
+                      {reschedulePreviewData.rescheduledCount || reschedulePreviewData.runs?.length || 0} Runs
+                    </span>
+                  </div>
+
+                  {reschedulePreviewData.warnings?.length > 0 && (
+                    <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px]">
+                      {reschedulePreviewData.warnings.join(" ")}
+                    </div>
+                  )}
+
+                  <div className="max-h-36 overflow-y-auto space-y-1 pr-1 scrollbar-thin">
+                    {(reschedulePreviewData.runs || []).map((r: any) => (
+                      <div
+                        key={r.executionId || r.seq}
+                        className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-surface-raised border border-border text-[11px]"
+                      >
+                        <span className="font-mono text-fg font-medium">Run #{r.seq}</span>
+                        <span className="font-mono text-[#D8EC8D] font-semibold">
+                          {new Date(r.executeAt).toLocaleDateString("en-IN", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            timeZone: rescheduleTimezone,
+                          })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setReschedulePreviewData(null)}
+                      className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-fg text-xs"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      disabled={submittingReschedule}
+                      onClick={handleConfirmReschedule}
+                      className="flex-1 py-2 rounded-xl bg-[#D8EC8D] text-black font-semibold text-xs hover:brightness-105 transition-all flex items-center justify-center gap-1.5 shadow-md"
+                    >
+                      {submittingReschedule ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Applying...</span>
+                        </>
+                      ) : (
+                        <span>Confirm Reschedule</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </GlassCard>
+        </div>
+      )}
+      {/* Customer Retry Execution Modal */}
+      {retryModalExecution && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <GlassCard className="max-w-md w-full p-5 sm:p-6 rounded-3xl border-border space-y-4 bg-white dark:bg-[#171717] shadow-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-accent/15 border border-accent/30 text-[#D8EC8D]">
+                  <RefreshCw className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-fg">Retry Execution Run</h3>
+                  <p className="text-xs text-slate-400">Re-queue this batch for delivery.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRetryModalExecution(null)}
+                className="text-slate-400 hover:text-fg transition-colors p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 space-y-2 text-xs font-mono">
+              <div className="flex items-center justify-between text-slate-400">
+                <span>Run / Service:</span>
+                <span className="text-fg font-semibold truncate max-w-[180px]">
+                  {retryModalExecution.rule?.service?.displayName || retryModalExecution.rule?.service?.name || "Service"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-slate-400">
+                <span>Quantity:</span>
+                <span className="text-fg font-bold">{formatIndianNumber(retryModalExecution.quantity)} units</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-400 pt-1 border-t border-white/5">
+                <span>Allocated Value:</span>
+                <span className="text-[#D8EC8D] font-bold">₹{Number(retryModalExecution.allocatedCharge).toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-fg block">
+                Target Link (Edit if original link was broken or rejected)
+              </label>
+              <input
+                type="url"
+                value={retryTargetUrl}
+                onChange={(e) => setRetryTargetUrl(e.target.value)}
+                placeholder="https://..."
+                className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-black/50 border border-slate-200/80 dark:border-white/10 text-fg text-xs font-mono focus:outline-none focus:border-[#D8EC8D]"
+              />
+              <p className="text-[10px] text-slate-400">
+                If this run was refunded to your wallet upon failure, the allocated value will be deducted upon confirmation.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setRetryModalExecution(null)}
+                disabled={retryingExecutionId !== null}
+                className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-fg font-medium text-xs transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={retryingExecutionId !== null}
+                onClick={() => handleConfirmRetry(retryModalExecution.id, retryTargetUrl)}
+                className="flex-1 py-2 rounded-xl bg-[#D8EC8D] text-black font-bold text-xs hover:brightness-105 transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {retryingExecutionId === retryModalExecution.id ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Queuing...</span>
+                  </>
+                ) : (
+                  <span>Confirm Retry</span>
+                )}
+              </button>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* Customer Resolve Stalled Execution Modal */}
+      {resolveModalExecution && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <GlassCard className="max-w-md w-full p-5 sm:p-6 rounded-3xl border-border space-y-4 bg-white dark:bg-[#171717] shadow-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-warning">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-fg">Resolve Stalled Run</h3>
+                  <p className="text-xs text-slate-400">Finalize batch and unblock upcoming schedule.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResolveModalExecution(null)}
+                className="text-slate-400 hover:text-fg transition-colors p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 space-y-2 text-xs font-mono">
+              <div className="flex items-center justify-between text-slate-400">
+                <span>Run / Service:</span>
+                <span className="text-fg font-semibold truncate max-w-[180px]">
+                  {resolveModalExecution.rule?.service?.displayName || resolveModalExecution.rule?.service?.name || "Service"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-slate-400">
+                <span>Target Units:</span>
+                <span className="text-fg font-bold">{formatIndianNumber(resolveModalExecution.quantity)} units</span>
+              </div>
+              {resolveModalExecution.order?.remains !== undefined && (
+                <div className="flex items-center justify-between text-slate-400">
+                  <span>Undelivered Units:</span>
+                  <span className="text-amber-400 font-bold">{formatIndianNumber(resolveModalExecution.order.remains)} units</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between text-slate-400 pt-1 border-t border-white/5">
+                <span>Allocated Value:</span>
+                <span className="text-[#D8EC8D] font-bold">₹{Number(resolveModalExecution.allocatedCharge).toFixed(2)}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-400 leading-relaxed">
+              If upstream delivery is taking longer than expected, resolving this run will finalize it as <span className="text-blue-400 font-semibold font-mono">PARTIAL</span>, automatically refund any undelivered balance back to your wallet, and immediately allow tomorrow&apos;s run to dispatch on schedule.
+            </p>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setResolveModalExecution(null)}
+                disabled={resolvingExecutionId !== null}
+                className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-fg font-medium text-xs transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={resolvingExecutionId !== null}
+                onClick={() => handleConfirmResolve(resolveModalExecution.id)}
+                className="flex-1 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-xs border border-amber-500/30 transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {resolvingExecutionId === resolveModalExecution.id ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Resolving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>Finalize & Refund</span>
                   </>
                 )}
               </button>

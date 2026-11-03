@@ -31,7 +31,7 @@ export function FaqSection() {
   return (
     <section
       id="faq"
-      className="w-full py-14 sm:py-20 lg:py-28 bg-[#161616]/50 border-y border-white/[0.06] relative"
+      className="w-full py-14 sm:py-20 lg:py-28 bg-surface-glass border-y border-border relative"
     >
       <script
         type="application/ld+json"
@@ -42,20 +42,20 @@ export function FaqSection() {
         {/* Left-aligned Title Block */}
         <div className="mb-10 md:mb-12">
           <Reveal delay={0.05}>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-mono text-[#D8EC8D] uppercase tracking-wider mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-border text-xs font-mono text-accent-text uppercase tracking-wider mb-3">
               {landingContent.faq.badge}
             </div>
           </Reveal>
 
           <SplitHeading
             as="h2"
-            className="font-semibold text-[clamp(28px,3.6vw,44px)] leading-tight text-white mb-3"
+            className="font-semibold text-[clamp(28px,3.6vw,44px)] leading-tight text-fg mb-3"
           >
             {landingContent.faq.title}
           </SplitHeading>
 
           <Reveal delay={0.15}>
-            <p className="text-base text-[#A1A1AA] leading-relaxed max-w-[560px]">
+            <p className="text-base text-fg-muted leading-relaxed max-w-[560px]">
               {landingContent.faq.description}
             </p>
           </Reveal>
@@ -76,7 +76,7 @@ export function FaqSection() {
             const answerId = `faq-answer-${idx}`;
             return (
               <RevealItem key={idx}>
-                <div className="rounded-[20px] bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.18] transition-colors overflow-hidden">
+                <div className="rounded-[20px] bg-white/[0.03] border border-border hover:border-white/[0.18] transition-colors overflow-hidden">
                   <button
                     type="button"
                     onClick={() => toggle(idx)}
@@ -84,13 +84,13 @@ export function FaqSection() {
                     aria-expanded={isOpen}
                     aria-controls={answerId}
                   >
-                    <span className="text-sm sm:text-base font-semibold text-white leading-snug">
+                    <span className="text-sm sm:text-base font-semibold text-fg leading-snug">
                       {item.question}
                     </span>
                     <motion.div
                       animate={{ rotate: isOpen ? 45 : 0 }}
                       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                      className="p-1 rounded-full bg-white/[0.05] text-[#D8EC8D] shrink-0"
+                      className="p-1 rounded-full bg-white/[0.05] text-accent-text shrink-0"
                     >
                       <Plus className="w-4 h-4" />
                     </motion.div>
@@ -106,7 +106,7 @@ export function FaqSection() {
                         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                         className="overflow-hidden"
                       >
-                        <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-0 text-sm sm:text-base text-[#A1A1AA] leading-relaxed border-t border-white/[0.06] mt-1">
+                        <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-0 text-sm sm:text-base text-fg-muted leading-relaxed border-t border-border mt-1">
                           {item.answer}
                         </div>
                       </motion.div>
@@ -118,7 +118,7 @@ export function FaqSection() {
           })}
         </RevealGroup>
 
-        <p className="text-sm text-[#71717A] text-center mt-8 leading-relaxed pr-14 sm:pr-0">
+        <p className="text-sm text-fg-muted text-center mt-8 leading-relaxed pr-14 sm:pr-0">
           Instagram, YouTube, Telegram, TikTok, Facebook and X are trademarks of their respective owners. This service is not affiliated with or endorsed by them.
         </p>
       </div>

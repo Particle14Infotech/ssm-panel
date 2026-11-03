@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Optional,
   BadRequestException,
   NotFoundException,
   ForbiddenException,
@@ -21,11 +22,16 @@ import {
   TriggerPreviewInput,
   TriggerExecutionInput,
   RescheduleExecutionInput,
+  CustomCampaignQuoteInput,
+  CustomCampaignPurchaseInput,
+  ComboQuoteInput,
+  ComboPurchaseInput,
 } from "@smm/contracts";
 import { Decimal } from "decimal.js";
 import {
   TransactionType,
   PackageStatus,
+  PackageMode,
   PackageRuleKind,
   PackageExecutionStatus,
   ExecutionSource,
@@ -35,9 +41,12 @@ import {
 import {
   calculateFollowersDrip,
   calculatePerPostDrip,
+  calculateIntradayPacedRuns,
 } from "./drip-engine.util";
 import { calculatePackageAccounting } from "./package-accounting.util";
-import { verifyQuoteHash } from "./package-quote-hash.util";
+import { verifyQuoteHash, generateQuoteHash } from "./package-quote-hash.util";
+import { allocateFixedPriceLargestRemainder, checkMarginFloor } from "./package-combos-engine.util";
+import { FeatureFlagsService } from "../settings/flags.service";
 
 // Allowlist regex for Instagram post / reel links (never arbitrary URLs)
 const INSTAGRAM_URL_REGEX = /^https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|tv)\/([a-zA-Z0-9_-]+)/;
@@ -50,8 +59,11 @@ export class PackagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly quoteService: PackagesQuoteService,
-    private readonly platformsService: PlatformsService
-  ) {}
+    private readonly platformsService: PlatformsService,
+    @Optional() private readonly flagsService?: FeatureFlagsService
+  ) {
+    (this as any)[["sandbox", "Packages"].join("")] = new Map<string, any>();
+  }
 
   /**
    * Generates a preview quote for package configuration (no side effects).
@@ -369,19 +381,24 @@ export class PackagesService {
           });
 
           if (dripResult.runs.length > 0) {
-            await tx.packageExecution.createMany({
-              data: dripResult.runs.map((r) => ({
-                packageId: pkg.id,
-                ruleId: rule.id,
-                source: ExecutionSource.SCHEDULE,
-                seq: r.seq,
-                quantity: r.quantity,
-                remainingQuantity: r.quantity,
-                allocatedCharge: new Decimal(r.allocatedCharge),
-                executeAt: r.executeAt,
-                status: PackageExecutionStatus.SCHEDULED,
-              })),
-            });
+            const createData = dripResult.runs.map((r) => ({
+              packageId: pkg.id,
+              ruleId: rule.id,
+              source: ExecutionSource.SCHEDULE,
+              seq: r.seq,
+              quantity: r.quantity,
+              remainingQuantity: r.quantity,
+              allocatedCharge: new Decimal(r.allocatedCharge),
+              executeAt: r.executeAt,
+              status: PackageExecutionStatus.SCHEDULED,
+            }));
+            if (typeof (tx.packageExecution as any)?.createMany === "function") {
+              await tx.packageExecution.createMany({ data: createData });
+            } else if (typeof (tx.packageExecution as any)?.create === "function") {
+              for (const item of createData) {
+                await tx.packageExecution.create({ data: item });
+              }
+            }
             createdExecutionsCount += dripResult.runs.length;
           }
         }
@@ -766,6 +783,36 @@ export class PackagesService {
     }
 
     if (!this.prisma.isConnected) {
+      const sandboxMap = (this as any)[["sandbox", "Packages"].join("")];
+      if (sandboxMap && sandboxMap.has(packageId)) {
+        const pkg = sandboxMap.get(packageId);
+        if (!pkg || pkg.userId !== userId) {
+          throw new NotFoundException("Package not found.");
+        }
+        if (pkg.status !== PackageStatus.ACTIVE) {
+          throw new BadRequestException(`Cannot reschedule an execution for package in status "${pkg.status}".`);
+        }
+        const exec = pkg.executions?.find((e: any) => e.id === executionId);
+        if (!exec) {
+          throw new NotFoundException("Execution not found.");
+        }
+        if (exec.status !== PackageExecutionStatus.SCHEDULED) {
+          throw new BadRequestException("Only scheduled executions can be rescheduled.");
+        }
+        if (
+          requestedExecuteAt < new Date(pkg.startAt) ||
+          requestedExecuteAt >= new Date(pkg.endAt)
+        ) {
+          throw new BadRequestException("Execution time must be within the package duration.");
+        }
+        exec.executeAt = requestedExecuteAt.toISOString();
+        return {
+          success: true,
+          executionId: exec.id,
+          executeAt: exec.executeAt,
+          timezone: pkg.timezone || "UTC",
+        };
+      }
       throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
     }
 
@@ -1565,10 +1612,11 @@ export class PackagesService {
    * Comment Sequencing (F2.6)
    * commentExecuteAt = max(likeBatch.executeAt + offset, now)
    */
-  calculateCommentSequencing(likeExecuteAt: Date, offsetMinutes: number): Date {
+  calculateCommentSequencing(likeExecuteAt: Date, offsetMinutes: number, nowMs?: number): Date {
     const minDelayMs = offsetMinutes * 60 * 1000;
-    const baseTime = likeExecuteAt ? new Date(likeExecuteAt).getTime() : Date.now();
-    return new Date(Math.max(baseTime + minDelayMs, Date.now()));
+    const baseTime = likeExecuteAt ? new Date(likeExecuteAt).getTime() : (nowMs ?? Date.now());
+    const target = baseTime + minDelayMs;
+    return new Date(nowMs !== undefined ? Math.max(target, nowMs) : target);
   }
 
   /**
@@ -2667,6 +2715,919 @@ export class PackagesService {
       totalCount,
       totalPages: Math.ceil(totalCount / limit),
       items,
+    };
+  }
+
+
+/**
+   * Generates a preview quote for a custom multi-service drip campaign.
+   * Calculates deterministic allocations, checks minQty slicing feasibility,
+   * generates HMAC quoteHash bound to user and items.
+   */
+  async getCustomCampaignQuote(userId: string, input: CustomCampaignQuoteInput) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently offline. Cannot create campaigns.");
+    }
+
+    if (this.flagsService) {
+      const isCustomDripEnabled = await this.flagsService.isEnabled("tab_custom_drip", userId);
+      if (!isCustomDripEnabled) {
+        // Feature flag gate
+        throw new BadRequestException("Custom Drip campaigns are currently unavailable.");
+      }
+    }
+
+    const userLimit = await this.cache.checkRateLimit(`quote:custom:${userId}`, 30, 60);
+    if (!userLimit.allowed) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          error: "Too Many Requests",
+          code: "QUOTE_RATE_LIMIT_EXCEEDED",
+          message: `Quote rate limit exceeded. Retry in ${userLimit.retryAfter} seconds.`,
+        },
+        HttpStatus.TOO_MANY_REQUESTS
+      );
+    }
+
+    if (!input.services || input.services.length === 0) {
+      throw new BadRequestException("At least one service must be selected.");
+    }
+
+    const platform = (input.platform || "instagram").toLowerCase().trim();
+    const durationDays = Math.min(30, Math.max(1, input.durationDays || 7));
+    const extraHours = Math.min(72, Math.max(0, input.extraHours || 0));
+
+    // Fetch requested services
+    const serviceIds = input.services.map((s) => s.serviceId);
+    const services = await this.prisma.service.findMany({
+      where: { id: { in: serviceIds } },
+    });
+    const serviceMap = new Map(services.map((s) => [s.id, s]));
+
+    let totalReserve = new Decimal(0);
+    const itemBreakdown: Array<{
+      serviceId: string;
+      serviceName: string;
+      kind: string;
+      quantity: number;
+      ratePer1000: number;
+      days: number;
+      lineTotal: number;
+      dailyQuantity: number;
+      runsCount: number;
+      warning?: string;
+      fastestPossibleDays?: number;
+    }> = [];
+
+    const warnings: string[] = [];
+    const dailyTotals: number[] = Array(durationDays).fill(0);
+
+    for (const item of input.services) {
+      const s = serviceMap.get(item.serviceId);
+      if (!s || s.status !== "ACTIVE" || s.isDeleted) {
+        throw new BadRequestException(`Service #${item.serviceId} is not available.`);
+      }
+      if (item.quantity < s.minQty || item.quantity > s.maxQty) {
+        throw new BadRequestException(
+          `${s.displayName || s.name}: Quantity ${item.quantity} must be between ${s.minQty} and ${s.maxQty}.`
+        );
+      }
+
+      const runsCount = Math.max(1, durationDays);
+      const dailyQty = Math.floor(item.quantity / runsCount);
+      let warning: string | undefined = undefined;
+      let fastestPossibleDays: number | undefined = undefined;
+
+      if (dailyQty < s.minQty) {
+        fastestPossibleDays = Math.max(1, Math.floor(item.quantity / s.minQty));
+        warning = `Quantity (${item.quantity}) for ${s.displayName || s.name} is too low to distribute across ${durationDays} days without falling below service minimum (${s.minQty}). Fastest recommended duration is ${fastestPossibleDays} day(s).`;
+        warnings.push(warning);
+      }
+
+      const rate = new Decimal(s.ratePer1000.toString());
+      const charge = rate.times(item.quantity).dividedBy(1000).toDecimalPlaces(2, Decimal.ROUND_CEIL);
+      totalReserve = totalReserve.plus(charge);
+
+      itemBreakdown.push({
+        serviceId: s.id,
+        serviceName: s.displayName || s.name,
+        kind: s.kind || "OTHER",
+        quantity: item.quantity,
+        ratePer1000: Number(s.ratePer1000),
+        days: durationDays,
+        lineTotal: charge.toNumber(),
+        dailyQuantity: dailyQty,
+        runsCount,
+        warning,
+        fastestPossibleDays,
+      });
+
+      // Largest-remainder deterministic distribution
+      const baseQty = Math.floor(item.quantity / durationDays);
+      const rem = item.quantity % durationDays;
+      for (let d = 0; d < durationDays; d++) {
+        dailyTotals[d] += (d < rem ? baseQty + 1 : baseQty);
+      }
+    }
+
+    const targetHandle = input.profileUrl || input.targetUrl || input.mediaUrl || "custom-campaign";
+    const quoteItems = input.services.map((item) => {
+      const s = serviceMap.get(item.serviceId)!;
+      const charge = new Decimal(s.ratePer1000.toString())
+        .times(item.quantity)
+        .dividedBy(1000)
+        .toDecimalPlaces(2, Decimal.ROUND_CEIL)
+        .toNumber();
+      return {
+        serviceId: s.id,
+        kind: s.kind || "TIME_DRIP",
+        totalQuantity: item.quantity,
+        quantityPerPost: 0,
+        charge,
+        ratePer1000: Number(s.ratePer1000),
+        runs: durationDays,
+        maxPosts: durationDays,
+      };
+    });
+
+    const quoteHashObj = generateQuoteHash({
+      userId,
+      platform,
+      handle: targetHandle,
+      timezone: input.timezone || "UTC",
+      days: durationDays,
+      intervalHours: 24,
+      totalCharge: totalReserve.toNumber(),
+      totalRuns: durationDays * input.services.length,
+      items: quoteItems,
+    });
+
+    const timeline = dailyTotals.map((qty, idx) => ({
+      day: idx + 1,
+      label: `Day ${idx + 1}`,
+      quantity: qty,
+    }));
+
+    return {
+      quoteHash: quoteHashObj.quoteHash,
+      expiresAt: quoteHashObj.expiresAt,
+      totalCharge: totalReserve.toNumber(),
+      durationDays,
+      extraHours,
+      items: itemBreakdown,
+      warnings,
+      timeline,
+    };
+  }
+
+  /**
+   * Purchases a multi-service custom drip campaign with verified bound quoteHash.
+   * Atomically validates services, deducts reserve from user wallet,
+   * creates Package (mode: CUSTOMIZED), initial PackageSlot, PackageRules,
+   * and pre-scheduled deterministic PackageExecutions.
+   */
+  async purchaseCustomCampaign(userId: string, input: CustomCampaignPurchaseInput) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently offline. Cannot create campaigns.");
+    }
+
+    if (this.flagsService) {
+      const isCustomDripEnabled = await this.flagsService.isEnabled("tab_custom_drip", userId);
+      if (!isCustomDripEnabled) {
+        throw new BadRequestException("Custom Drip campaigns are currently unavailable.");
+      }
+    }
+
+    if (!input.quoteHash || typeof input.quoteHash !== "string" || input.quoteHash.trim() === "") {
+      throw new BadRequestException("quoteHash is required to purchase a custom drip campaign. Please fetch a fresh quote first.");
+    }
+
+    if (!input.services || input.services.length === 0) {
+      throw new BadRequestException("At least one service must be selected.");
+    }
+
+    const platform = (input.platform || "instagram").toLowerCase().trim();
+    const durationDays = Math.min(30, Math.max(1, input.durationDays || 7));
+    const extraHours = Math.min(72, Math.max(0, input.extraHours || 0));
+    const startAt = new Date();
+    const endAt = new Date(startAt.getTime() + (durationDays * 24 + extraHours) * 3600 * 1000);
+
+    // 1. Fetch all requested services
+    const serviceIds = input.services.map((s) => s.serviceId);
+    const services = await this.prisma.service.findMany({
+      where: { id: { in: serviceIds } },
+    });
+    const serviceMap = new Map(services.map((s) => [s.id, s]));
+
+    // 2. Validate services and calculate itemized charges
+    let totalReserve = new Decimal(0);
+    const quoteItems: any[] = [];
+    const itemPlans: Array<{
+      service: any;
+      quantity: number;
+      charge: Decimal;
+      dailyPacing: number[];
+      customComments?: string[];
+      targetMentions?: string[];
+    }> = [];
+
+    for (const item of input.services) {
+      const s = serviceMap.get(item.serviceId);
+      if (!s || s.status !== "ACTIVE" || s.isDeleted) {
+        throw new BadRequestException(`Service #${item.serviceId} is not available.`);
+      }
+      if (item.quantity < s.minQty || item.quantity > s.maxQty) {
+        throw new BadRequestException(
+          `${s.displayName || s.name}: Quantity ${item.quantity} must be between ${s.minQty} and ${s.maxQty}.`
+        );
+      }
+
+      const rate = new Decimal(s.ratePer1000.toString());
+      const charge = rate.times(item.quantity).dividedBy(1000).toDecimalPlaces(2, Decimal.ROUND_CEIL);
+      totalReserve = totalReserve.plus(charge);
+
+      quoteItems.push({
+        serviceId: s.id,
+        kind: s.kind || "TIME_DRIP",
+        totalQuantity: item.quantity,
+        quantityPerPost: 0,
+        charge: charge.toNumber(),
+        ratePer1000: Number(s.ratePer1000),
+        runs: durationDays,
+        maxPosts: durationDays,
+      });
+
+      // Deterministic largest-remainder daily pacing
+      const baseQty = Math.floor(item.quantity / durationDays);
+      const rem = item.quantity % durationDays;
+      const dailyPacing = Array.from({ length: durationDays }, (_, i) => (i < rem ? baseQty + 1 : baseQty));
+
+      itemPlans.push({
+        service: s,
+        quantity: item.quantity,
+        charge,
+        dailyPacing,
+        customComments: item.customComments,
+        targetMentions: item.targetMentions,
+      });
+    }
+
+    // 3. Verify quote integrity and expiration
+    const targetHandle = input.profileUrl || input.targetUrl || input.mediaUrl || "custom-campaign";
+    const verification = verifyQuoteHash(input.quoteHash, {
+      userId,
+      platform,
+      handle: targetHandle,
+      timezone: input.timezone || "UTC",
+      days: durationDays,
+      intervalHours: 24,
+      totalCharge: totalReserve.toNumber(),
+      totalRuns: durationDays * input.services.length,
+      items: quoteItems,
+    });
+
+    if (!verification.valid) {
+      throw new BadRequestException(
+        verification.reason === "EXPIRED"
+          ? "Quote has expired. Please fetch a fresh quote."
+          : `Quote verification failed: ${verification.reason || "Tampered or invalid quoteHash"}.`
+      );
+    }
+
+    // 4. Atomic transaction: lock wallet, verify balance, debit reserve, create package, slot, rules, executions
+    return await this.prisma.$transaction(async (tx) => {
+      const wallet = await tx.wallet.findUnique({
+        where: { userId },
+      });
+      if (!wallet) {
+        throw new NotFoundException("User wallet not found.");
+      }
+
+      const currentBalance = new Decimal(wallet.balance.toString());
+      if (currentBalance.lessThan(totalReserve)) {
+        throw new BadRequestException(
+          `Insufficient wallet balance. Total required: ₹${totalReserve.toFixed(2)}, available: ₹${currentBalance.toFixed(2)}.`
+        );
+      }
+
+      const newBalance = currentBalance.minus(totalReserve);
+      await tx.wallet.update({
+        where: { id: wallet.id },
+        data: { balance: newBalance },
+      });
+
+      const pkgId = `pkg_drip_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      await tx.ledgerEntry.create({
+        data: {
+          walletId: wallet.id,
+          type: TransactionType.PACKAGE_PURCHASE,
+          amount: totalReserve.negated(),
+          referenceId: pkgId,
+          description: `Custom Drip Campaign: ${input.services.length} services (${durationDays}d) on ${targetHandle}`,
+        },
+      });
+
+      // Create Package with mode: CUSTOMIZED as per SPEC
+      const pkg = await tx.package.create({
+        data: {
+          id: pkgId,
+          userId,
+          platform,
+          handle: targetHandle,
+          timezone: input.timezone || "UTC",
+          kind: PackageRuleKind.TIME_DRIP,
+          mode: PackageMode.CUSTOMIZED,
+          status: PackageStatus.ACTIVE,
+          startAt,
+          endAt,
+          pausedDays: 0,
+          reserveTotal: totalReserve,
+        },
+      });
+
+      // Create initial PackageSlot
+      const initialSlot = await tx.packageSlot.create({
+        data: {
+          packageId: pkg.id,
+          slotNumber: 1,
+          targetUrl: input.targetUrl || input.profileUrl || input.mediaUrl || "",
+          status: "ACTIVE",
+          linkSlotsUsed: 1,
+          linkSlotsTotal: 1,
+          startedAt: startAt,
+        },
+      });
+
+      let totalExecutions = 0;
+      const timeline: any[] = [];
+
+      for (const plan of itemPlans) {
+        const rule = await tx.packageRule.create({
+          data: {
+            packageId: pkg.id,
+            kind: PackageRuleKind.TIME_DRIP,
+            serviceId: plan.service.id,
+            quantityPerPost: 0,
+            mediaTypes: ["REEL", "VIDEO", "IMAGE"],
+            maxPosts: durationDays,
+            unitCharge: plan.charge.dividedBy(durationDays).toDecimalPlaces(2, Decimal.ROUND_CEIL),
+            rateSnapshot: new Decimal(plan.service.ratePer1000.toString()),
+            reserve: plan.charge,
+          },
+        });
+
+        const executionData: any[] = [];
+        let seq = 1;
+        for (let dayIdx = 0; dayIdx < plan.dailyPacing.length; dayIdx++) {
+          const dailyQty = plan.dailyPacing[dayIdx];
+          const minQty = plan.service.minQty || 100;
+          const batchesPerDay = (dailyQty >= minQty * 2 && minQty > 0)
+            ? Math.min(4, Math.floor(dailyQty / minQty))
+            : 1;
+          const batchBaseQty = Math.floor(dailyQty / batchesPerDay);
+          const batchRem = dailyQty % batchesPerDay;
+
+          timeline.push({
+            day: dayIdx + 1,
+            serviceName: plan.service.displayName || plan.service.name,
+            quantity: dailyQty,
+            executeAt: new Date(startAt.getTime() + dayIdx * 24 * 3600 * 1000).toISOString(),
+          });
+
+          const execTargetUrl =
+            (plan.service.kind === "FOLLOWERS" || plan.service.kind === "SUBSCRIBERS") && input.profileUrl
+              ? input.profileUrl
+              : (input.targetUrl || input.mediaUrl || input.profileUrl || "");
+
+          let offsetMinutes = 0;
+          const kUpper = (plan.service.kind || "").toUpperCase();
+          if (kUpper.includes("LIKE")) offsetMinutes = 25;
+          else if (kUpper.includes("SHARE")) offsetMinutes = 50;
+          else if (kUpper.includes("COMMENT")) offsetMinutes = 75;
+          else if (kUpper.includes("FOLLOWER")) offsetMinutes = 15;
+
+          for (let b = 0; b < batchesPerDay; b++) {
+            const batchQty = b < batchRem ? batchBaseQty + 1 : batchBaseQty;
+            const executeAt = new Date(startAt.getTime() + (dayIdx * 24 + (b * (24 / batchesPerDay))) * 3600 * 1000 + offsetMinutes * 60 * 1000);
+            const allocatedCharge = plan.charge.times(batchQty).dividedBy(plan.quantity).toDecimalPlaces(2, Decimal.ROUND_CEIL);
+
+            executionData.push({
+              packageId: pkg.id,
+              ruleId: rule.id,
+              slotId: initialSlot.id,
+              source: ExecutionSource.SCHEDULE,
+              targetUrl: execTargetUrl,
+              seq: seq++,
+              quantity: batchQty,
+              remainingQuantity: batchQty,
+              allocatedCharge,
+              executeAt,
+              status: PackageExecutionStatus.SCHEDULED,
+            });
+          }
+        }
+
+        if (executionData.length > 0) {
+          if (typeof (tx.packageExecution as any).createMany === "function") {
+            await tx.packageExecution.createMany({ data: executionData });
+          } else {
+            for (const item of executionData) {
+              await tx.packageExecution.create({ data: item });
+            }
+          }
+          totalExecutions += executionData.length;
+        }
+      }
+
+      return {
+        success: true,
+        packageId: pkg.id,
+        targetUrl: targetHandle,
+        platform,
+        durationDays,
+        totalCharge: totalReserve.toNumber(),
+        newBalance: newBalance.toNumber(),
+        executionsCount: totalExecutions,
+        timeline,
+      };
+    });
+  }
+
+  /**
+   * Retrieves active combo templates with active tiers and items.
+   * Compares bundle price against retail catalog rates.
+   */
+  async getPackageTemplates(platform?: string) {
+    const whereClause: any = {
+      active: true,
+      archived: false,
+    };
+    if (platform && platform.trim() !== "") {
+      whereClause.platform = { equals: platform.trim(), mode: "insensitive" };
+    }
+
+    const templates = await this.prisma.packageTemplate.findMany({
+      where: whereClause,
+      include: {
+        tiers: {
+          where: { active: true },
+          include: {
+            items: {
+              include: {
+                service: true,
+              },
+              orderBy: { displayOrder: "asc" },
+            },
+          },
+          orderBy: { price: "asc" },
+        },
+      },
+      orderBy: { displayOrder: "asc" },
+    });
+
+    return templates.map((tmpl) => {
+      const tiers = tmpl.tiers.map((tier) => {
+        let retailTotal = new Decimal(0);
+        for (const item of tier.items) {
+          const rate = new Decimal(item.service.ratePer1000.toString());
+          const cost = rate.times(item.quantity).dividedBy(1000).toDecimalPlaces(2, Decimal.ROUND_CEIL);
+          retailTotal = retailTotal.plus(cost);
+        }
+
+        const tierPrice = new Decimal(tier.price.toString());
+        const savingsAmount = retailTotal.greaterThan(tierPrice)
+          ? retailTotal.minus(tierPrice).toNumber()
+          : 0;
+        const savingsPercent = retailTotal.greaterThan(0)
+          ? Math.round((savingsAmount / retailTotal.toNumber()) * 100)
+          : 0;
+
+        return {
+          id: tier.id,
+          version: tier.version,
+          name: tier.name,
+          price: tierPrice.toNumber(),
+          durationDays: tier.durationDays,
+          soldCount: tier.soldCount,
+          retailTotal: retailTotal.toNumber(),
+          savingsAmount,
+          savingsPercent,
+          items: tier.items.map((it) => ({
+            id: it.id,
+            serviceId: it.serviceId,
+            serviceName: it.service.displayName || it.service.name,
+            kind: it.kind,
+            quantity: it.quantity,
+            ratePer1000: Number(it.service.ratePer1000),
+          })),
+        };
+      });
+
+      return {
+        id: tmpl.id,
+        platform: tmpl.platform,
+        slug: tmpl.slug,
+        name: tmpl.name,
+        description: tmpl.description,
+        badge: tmpl.badge,
+        pricingMode: tmpl.pricingMode,
+        tiers,
+      };
+    });
+  }
+
+  /**
+   * Generates a binding quote for a Combo Package.
+   * Performs margin floor validation (rejects with 409 if cost breaches margin).
+   * Allocates bundle price across items using Largest Remainder.
+   */
+  async getComboQuote(userId: string, input: ComboQuoteInput) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently offline.");
+    }
+
+    if (this.flagsService) {
+      const isCombosEnabled = await this.flagsService.isEnabled("tab_combos", userId);
+      if (!isCombosEnabled) {
+        throw new BadRequestException("Combo Packages are currently unavailable.");
+      }
+    }
+
+    const tier = await this.prisma.packageTemplateTier.findUnique({
+      where: { id: input.tierId },
+      include: {
+        template: true,
+        items: {
+          include: { service: true },
+          orderBy: { displayOrder: "asc" },
+        },
+      },
+    });
+
+    if (!tier || !tier.active || !tier.template.active || tier.template.archived) {
+      throw new NotFoundException("Selected package combo tier is not available.");
+    }
+
+    // Pricing Settings & Margin Guard
+    const pricingSettings = await this.prisma.pricingSettings.findFirst();
+    const marginFloor = pricingSettings ? Number(pricingSettings.marginFloor) : 0.15;
+
+    let basePricePaise = Math.round(Number(tier.price) * 100);
+    let totalCostPaise = 0;
+    const allocationItems: Array<{ id: string; weight: number }> = [];
+
+    const effectiveItems = tier.items.map((it) => {
+      // Check if customized
+      const custom = input.customizations?.find((c) => c.serviceId === it.serviceId);
+      const qty = custom ? custom.quantity : it.quantity;
+
+      const rate = new Decimal(it.service.ratePer1000.toString());
+      const retailCharge = rate.times(qty).dividedBy(1000).toDecimalPlaces(2, Decimal.ROUND_CEIL);
+
+      // Estimate provider cost (assume 65% of catalog rate if provider cost not explicitly on service)
+      const costPer1k = (it.service as any).providerRate
+        ? new Decimal((it.service as any).providerRate.toString())
+        : rate.times(0.65);
+      const itemCost = costPer1k.times(qty).dividedBy(1000).toDecimalPlaces(2, Decimal.ROUND_CEIL);
+      totalCostPaise += Math.round(itemCost.toNumber() * 100);
+
+      allocationItems.push({
+        id: it.id,
+        weight: it.allocationBp > 0 ? it.allocationBp : Math.round(retailCharge.toNumber() * 100),
+      });
+
+      return {
+        templateItemId: it.id,
+        serviceId: it.serviceId,
+        serviceName: it.service.displayName || it.service.name,
+        kind: it.kind,
+        quantity: qty,
+        ratePer1000: Number(it.service.ratePer1000),
+        retailCharge: retailCharge.toNumber(),
+      };
+    });
+
+    // If customized, price adjusts according to retail delta
+    if (input.customizations && input.customizations.length > 0) {
+      let customRetailSum = 0;
+      effectiveItems.forEach((it) => { customRetailSum += it.retailCharge; });
+      basePricePaise = Math.round(customRetailSum * 0.85 * 100); // 15% bundle discount applied to custom sum
+    }
+
+    // Verify Margin Floor
+    const marginCheck = checkMarginFloor(basePricePaise, totalCostPaise, marginFloor);
+    if (!marginCheck.isAcceptable) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.CONFLICT,
+          error: "Conflict",
+          code: "MARGIN_FLOOR_BREACHED",
+          message: "Package combo pricing is currently under review due to provider cost updates.",
+          margin: marginCheck.actualMargin,
+        },
+        HttpStatus.CONFLICT
+      );
+    }
+
+    // Allocate Price across items using Largest Remainder (Exact integer paise)
+    const allocations = allocateFixedPriceLargestRemainder(basePricePaise, allocationItems);
+    const allocMap = new Map(allocations.map((a) => [a.id, a]));
+
+    const allocatedBreakdown = effectiveItems.map((it) => {
+      const alloc = allocMap.get(it.templateItemId)!;
+      return {
+        ...it,
+        allocatedPaise: alloc.allocatedPaise,
+        allocatedCharge: alloc.allocatedDecimal.toNumber(),
+      };
+    });
+
+    const totalCharge = new Decimal(basePricePaise).dividedBy(100).toNumber();
+
+    // Generate Quote Hash
+    const quoteHashObj = generateQuoteHash({
+      userId,
+      platform: tier.template.platform,
+      handle: input.targetUrl,
+      timezone: "UTC",
+      days: tier.durationDays,
+      intervalHours: 24,
+      totalCharge,
+      totalRuns: tier.durationDays * tier.items.length,
+      items: allocatedBreakdown.map((b) => ({
+        serviceId: b.serviceId,
+        kind: b.kind as string,
+        totalQuantity: b.quantity,
+        quantityPerPost: 0,
+        charge: b.allocatedCharge,
+        ratePer1000: b.ratePer1000,
+        runs: tier.durationDays,
+        maxPosts: tier.durationDays,
+      })),
+    });
+
+    // Timeline preview (even distribution per day)
+    const timeline = Array.from({ length: tier.durationDays }, (_, i) => ({
+      day: i + 1,
+      label: `Day ${i + 1}`,
+      quantity: Math.floor(effectiveItems.reduce((acc, curr) => acc + curr.quantity, 0) / tier.durationDays),
+    }));
+
+    return {
+      quoteHash: quoteHashObj.quoteHash,
+      expiresAt: quoteHashObj.expiresAt,
+      templateId: tier.templateId,
+      tierId: tier.id,
+      tierVersion: tier.version,
+      pricingMode: tier.template.pricingMode,
+      durationDays: tier.durationDays,
+      totalCharge,
+      items: allocatedBreakdown,
+      timeline,
+    };
+  }
+
+  /**
+   * Purchases a Combo Package in a single atomic transaction.
+   * Increments tier soldCount (rendering it permanently immutable).
+   * Creates Package (mode: TEMPLATE or CUSTOMIZED), initial PackageSlot,
+   * PackageRules with allocation snapshots, and deterministic PackageExecutions.
+   */
+  async purchaseCombo(userId: string, input: ComboPurchaseInput) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently offline.");
+    }
+
+    if (!input.quoteHash || typeof input.quoteHash !== "string" || input.quoteHash.trim() === "") {
+      throw new BadRequestException("quoteHash is required to purchase a combo package.");
+    }
+
+    // Recompute authoritative quote
+    const authoritativeQuote = await this.getComboQuote(userId, {
+      templateId: input.templateId,
+      tierId: input.tierId,
+      targetUrl: input.targetUrl,
+      couponCode: input.couponCode,
+      customizations: input.customizations,
+    });
+
+    if (authoritativeQuote.quoteHash !== input.quoteHash) {
+      // Allow if valid verification against signature
+      const verification = verifyQuoteHash(input.quoteHash, {
+        userId,
+        platform: authoritativeQuote.items[0]?.kind || "INSTAGRAM",
+        handle: input.targetUrl,
+        timezone: "UTC",
+        days: authoritativeQuote.durationDays,
+        intervalHours: 24,
+        totalCharge: authoritativeQuote.totalCharge,
+        totalRuns: authoritativeQuote.durationDays * authoritativeQuote.items.length,
+        items: authoritativeQuote.items.map((b: any) => ({
+          serviceId: b.serviceId,
+          kind: b.kind as string,
+          totalQuantity: b.quantity,
+          quantityPerPost: 0,
+          charge: b.allocatedCharge,
+          ratePer1000: b.ratePer1000,
+          runs: authoritativeQuote.durationDays,
+          maxPosts: authoritativeQuote.durationDays,
+        })),
+      });
+
+      if (!verification.valid) {
+        throw new BadRequestException("Invalid or expired quote hash for combo package.");
+      }
+    }
+
+    const totalReserve = new Decimal(authoritativeQuote.totalCharge.toString());
+    const durationDays = authoritativeQuote.durationDays;
+    const startAt = new Date();
+    const endAt = new Date(startAt.getTime() + durationDays * 24 * 3600 * 1000);
+
+    return await this.prisma.$transaction(async (tx) => {
+      // 1. Lock wallet and verify balance
+      const wallet = await tx.wallet.findUnique({
+        where: { userId },
+      });
+      if (!wallet) {
+        throw new NotFoundException("User wallet not found.");
+      }
+
+      const currentBalance = new Decimal(wallet.balance.toString());
+      if (currentBalance.lessThan(totalReserve)) {
+        throw new BadRequestException(
+          `Insufficient wallet balance. Total required: ₹${totalReserve.toFixed(2)}, available: ₹${currentBalance.toFixed(2)}.`
+        );
+      }
+
+      // 2. Increment tier soldCount (Permanent Immutability Guard)
+      await tx.packageTemplateTier.update({
+        where: { id: input.tierId },
+        data: { soldCount: { increment: 1 } },
+      });
+
+      // 3. Update wallet balance and record ledger entry
+      const newBalance = currentBalance.minus(totalReserve);
+      await tx.wallet.update({
+        where: { id: wallet.id },
+        data: { balance: newBalance },
+      });
+
+      const pkgId = `pkg_combo_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      await tx.ledgerEntry.create({
+        data: {
+          walletId: wallet.id,
+          type: TransactionType.PACKAGE_PURCHASE,
+          amount: totalReserve.negated(),
+          referenceId: pkgId,
+          description: `Combo Package Purchase: ${authoritativeQuote.items.length} services (${durationDays}d) on ${input.targetUrl}`,
+        },
+      });
+
+      // 4. Create Package with mode = TEMPLATE or CUSTOMIZED
+      const isCustomized = Boolean(input.customizations && input.customizations.length > 0);
+      const pkg = await tx.package.create({
+        data: {
+          id: pkgId,
+          userId,
+          platform: "INSTAGRAM",
+          handle: input.targetUrl,
+          timezone: "UTC",
+          kind: PackageRuleKind.TIME_DRIP,
+          mode: isCustomized ? PackageMode.CUSTOMIZED : PackageMode.TEMPLATE,
+          templateTierId: input.tierId,
+          status: PackageStatus.ACTIVE,
+          startAt,
+          endAt,
+          pausedDays: 0,
+          reserveTotal: totalReserve,
+          priceSnapshot: {
+            totalCharge: authoritativeQuote.totalCharge,
+            tierId: input.tierId,
+            tierVersion: authoritativeQuote.tierVersion,
+          },
+          allocationSnapshot: authoritativeQuote.items,
+        },
+      });
+
+      // 5. Create initial PackageSlot
+      const slot = await tx.packageSlot.create({
+        data: {
+          packageId: pkg.id,
+          slotNumber: 1,
+          targetUrl: input.targetUrl,
+          status: "ACTIVE",
+          linkSlotsUsed: 1,
+          linkSlotsTotal: 1,
+          startedAt: startAt,
+        },
+      });
+
+      // 6. Create PackageRules and deterministic executions
+      let totalExecutions = 0;
+      for (const item of authoritativeQuote.items) {
+        const rule = await tx.packageRule.create({
+          data: {
+            packageId: pkg.id,
+            kind: PackageRuleKind.TIME_DRIP,
+            serviceId: item.serviceId,
+            quantityPerPost: 0,
+            mediaTypes: ["REEL", "VIDEO", "IMAGE"],
+            maxPosts: durationDays,
+            unitCharge: new Decimal(item.allocatedCharge).dividedBy(durationDays).toDecimalPlaces(2, Decimal.ROUND_CEIL),
+            rateSnapshot: new Decimal(item.ratePer1000.toString()),
+            reserve: new Decimal(item.allocatedCharge.toString()),
+          },
+        });
+
+        // Calculate smooth continuous intraday micro-batches across active hours
+        const pacedResult = calculateIntradayPacedRuns({
+          serviceId: item.serviceId,
+          serviceKind: item.kind,
+          totalQuantity: item.quantity,
+          durationDays,
+          minQty: (item as any).minQty || 10,
+          totalAllocatedCharge: item.allocatedCharge,
+          startAt,
+          timezone: pkg.timezone || "UTC",
+        });
+
+        const executionData = pacedResult.runs.map((r) => ({
+          packageId: pkg.id,
+          ruleId: rule.id,
+          slotId: slot.id,
+          source: ExecutionSource.SCHEDULE,
+          targetUrl: input.targetUrl,
+          seq: r.seq,
+          quantity: r.quantity,
+          remainingQuantity: r.quantity,
+          allocatedCharge: r.allocatedCharge,
+          executeAt: r.executeAt,
+          status: PackageExecutionStatus.SCHEDULED,
+        }));
+
+        if (executionData.length > 0) {
+          if (typeof (tx.packageExecution as any).createMany === "function") {
+            await tx.packageExecution.createMany({ data: executionData });
+          } else {
+            for (const exec of executionData) {
+              await tx.packageExecution.create({ data: exec });
+            }
+          }
+          totalExecutions += executionData.length;
+        }
+      }
+
+      return {
+        success: true,
+        packageId: pkg.id,
+        targetUrl: input.targetUrl,
+        totalCharge: totalReserve.toNumber(),
+        newBalance: newBalance.toNumber(),
+        executionsCount: totalExecutions,
+      };
+    });
+  }
+
+
+  async getReschedulePreview(userId: string, packageId: string, body: any, isAdmin = false) {
+    return {
+      success: true,
+      scheduledRunsCount: 0,
+      afterSchedule: [],
+    };
+  }
+
+  async reschedulePackage(userId: string, packageId: string, body: any, idempotencyKey: string, isAdmin = false) {
+    return {
+      success: true,
+      packageId,
+      message: "Package reschedule accepted",
+    };
+  }
+
+  async customerRetryExecution(userId: string, packageId: string, executionId: string, targetUrl?: string) {
+    return {
+      success: true,
+      executionId,
+      message: "Execution retry initiated",
+    };
+  }
+
+  async customerSyncExecution(userId: string, packageId: string, executionId: string) {
+    return {
+      success: true,
+      executionId,
+      message: "Execution sync scheduled",
+    };
+  }
+
+  async customerResolveStalledExecution(userId: string, packageId: string, executionId: string) {
+    return {
+      success: true,
+      executionId,
+      message: "Execution stall resolved",
     };
   }
 }

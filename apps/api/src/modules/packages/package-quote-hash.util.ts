@@ -8,6 +8,11 @@ export interface CanonicalQuoteInput {
   platform: string;
   handle: string;
   timezone: string;
+  deliveryWindow?: {
+    timezone?: string;
+    ranges?: Array<{ startHour: number; startMinute?: number; endHour: number; endMinute?: number }>;
+    daysOfWeek?: number[];
+  };
   days: number;
   intervalHours?: number;
   totalCharge: number;
@@ -89,10 +94,32 @@ export function computeCanonicalPayloadString(
     }))
     .sort((a, b) => a.serviceId.localeCompare(b.serviceId) || a.kind.localeCompare(b.kind));
 
+  let canonicalWindow = null;
+  if (input.deliveryWindow) {
+    const tz = (input.deliveryWindow.timezone || normalizedTimezone || "UTC").trim();
+    const ranges = (input.deliveryWindow.ranges || [])
+      .map((r) => ({
+        startHour: r.startHour,
+        startMinute: r.startMinute ?? 0,
+        endHour: r.endHour,
+        endMinute: r.endMinute ?? 0,
+      }))
+      .sort((a, b) => a.startHour * 60 + a.startMinute - (b.startHour * 60 + b.startMinute));
+    const daysOfWeek = input.deliveryWindow.daysOfWeek
+      ? [...input.deliveryWindow.daysOfWeek].sort((a, b) => a - b)
+      : undefined;
+    canonicalWindow = {
+      daysOfWeek,
+      ranges,
+      timezone: tz,
+    };
+  }
+
   if (version === 1) {
     // V1 legacy schema format
     return JSON.stringify({
       days,
+      deliveryWindow: canonicalWindow,
       handle: normalizedHandle,
       items: sortedItems,
       platform: normalizedPlatform,
@@ -105,6 +132,7 @@ export function computeCanonicalPayloadString(
   // V2 canonical format with userId, intervalHours, and kid binding
   const canonicalObj = {
     days,
+    deliveryWindow: canonicalWindow,
     handle: normalizedHandle,
     intervalHours,
     items: sortedItems,

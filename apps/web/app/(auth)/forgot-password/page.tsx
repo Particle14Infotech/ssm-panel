@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <div className="mb-4 flex justify-center">
-            <BrandLogo variant="combined" size={38} withLink href="/" />
+            <BrandLogo variant="combined" size={38} withLink href="/" textClassName="text-white" />
           </div>
           <h1 className="font-heading text-2xl font-light text-white">Reset Password</h1>
           <p className="text-xs text-[#c7c8b6] mt-1 font-mono">
@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
         <div className="glass-panel rounded-3xl p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
           {submitted ? (
             <div className="text-center py-6">
-              <div className="w-14 h-14 rounded-full bg-[#D8EC8D]/15 text-[#D8EC8D] flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 rounded-full bg-accent/15 text-[#D8EC8D] flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="w-7 h-7" />
               </div>
               <h2 className="font-heading text-xl font-medium text-white mb-2">Check Your Inbox</h2>

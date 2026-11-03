@@ -488,6 +488,13 @@ describe("Milestone M8: Final Comprehensive Gate (14 Invariant & Verification Sc
           return { id: `led_${Date.now()}`, ...data };
         },
       },
+      order: {
+        create: async ({ data }: any) => ({ id: `ord_${Date.now()}`, ...data }),
+        update: async () => ({}),
+      },
+      outboxEvent: {
+        create: async ({ data }: any) => ({ id: `out_${Date.now()}`, ...data }),
+      },
       systemSetting: {
         findUnique: async () => null,
       },

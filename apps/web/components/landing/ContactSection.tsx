@@ -47,44 +47,44 @@ export function ContactSection() {
           {/* Left Info Column */}
           <RevealOnScroll className="lg:col-span-5 flex flex-col justify-between">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-mono text-[#D8EC8D] uppercase tracking-widest mb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-border text-xs font-mono text-accent-text uppercase tracking-widest mb-4">
                 {landingContent.contact.badge}
               </div>
-              <h2 className="font-heading text-[clamp(28px,3.4vw,42px)] font-semibold text-white tracking-[-0.02em] mb-4 leading-tight">
+              <h2 className="font-heading text-[clamp(28px,3.4vw,42px)] font-semibold text-fg tracking-[-0.02em] mb-4 leading-tight">
                 {landingContent.contact.title}
               </h2>
-              <p className="text-base text-[#A1A1AA] leading-relaxed mb-8">
+              <p className="text-base text-fg-muted leading-relaxed mb-8">
                 {landingContent.contact.description}
               </p>
             </div>
 
-            <div className="flex flex-col gap-4 p-6 rounded-[20px] bg-white/[0.03] border border-white/[0.08]">
+            <div className="flex flex-col gap-4 p-6 rounded-[20px] bg-white/[0.03] border border-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-[#D8EC8D]">
+                <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-border flex items-center justify-center text-accent-text">
                   <Mail className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-xs text-[#A1A1AA] font-mono block">Direct Inquiries</span>
-                  <span className="text-sm font-semibold text-white">
+                  <span className="text-xs text-fg-muted font-mono block">Direct Inquiries</span>
+                  <span className="text-sm font-semibold text-fg">
                     {landingContent.contact.email}
                   </span>
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-white/[0.08] text-xs text-[#A1A1AA] font-mono">
+              <div className="pt-3 border-t border-border text-xs text-fg-muted font-mono">
                 {landingContent.contact.responsePromise}
               </div>
             </div>
           </RevealOnScroll>
 
           {/* Right Form Column */}
-          <RevealOnScroll delay={0.15} className="lg:col-span-7 rounded-[20px] p-8 bg-white/[0.03] border border-white/[0.08]">
+          <RevealOnScroll delay={0.15} className="lg:col-span-7 rounded-[20px] p-8 bg-white/[0.03] border border-border">
             {submitted ? (
               <div className="py-12 flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-full bg-[#D8EC8D]/20 text-[#D8EC8D] flex items-center justify-center mb-4">
+                <div className="w-16 h-16 rounded-full bg-accent/20 text-accent-text flex items-center justify-center mb-4">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <h3 className="font-heading text-2xl font-light text-white mb-2">
+                <h3 className="font-heading text-2xl font-light text-fg mb-2">
                   Message Sent Successfully
                 </h3>
                 <p className="text-sm text-zinc-300 max-w-md mb-6 font-light">
@@ -94,7 +94,7 @@ export function ContactSection() {
                 <button
                   type="button"
                   onClick={() => setSubmitted(false)}
-                  className="px-6 py-2.5 rounded-full bg-white/[0.08] text-white text-xs font-semibold hover:bg-[#D8EC8D] hover:text-[#171e00] transition-colors"
+                  className="px-6 py-2.5 rounded-full bg-white/[0.08] text-fg text-xs font-semibold hover:bg-accent hover:text-on-accent transition-colors"
                 >
                   Send Another Message
                 </button>
@@ -114,13 +114,13 @@ export function ContactSection() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-mono uppercase tracking-wider text-zinc-400 block mb-1.5">
-                      Your Name <span className="text-[#D8EC8D]">*</span>
+                      Your Name <span className="text-accent-text">*</span>
                     </label>
                     <input
                       type="text"
                       {...register("name")}
                       placeholder="Alex Taylor"
-                      className="w-full bg-[#131313] text-white text-sm px-4 py-2.5 rounded-xl border border-white/[0.08] focus:outline-none focus:border-[#D8EC8D]"
+                      className="w-full bg-surface text-fg text-sm px-4 py-2.5 rounded-xl border border-border focus:outline-none focus:border-accent"
                     />
                     {errors.name && (
                       <span className="text-xs text-red-400 mt-1 block">
@@ -131,13 +131,13 @@ export function ContactSection() {
 
                   <div>
                     <label className="text-xs font-mono uppercase tracking-wider text-zinc-400 block mb-1.5">
-                      Email Address <span className="text-[#D8EC8D]">*</span>
+                      Email Address <span className="text-accent-text">*</span>
                     </label>
                     <input
                       type="email"
                       {...register("email")}
                       placeholder="alex@example.com"
-                      className="w-full bg-[#131313] text-white text-sm px-4 py-2.5 rounded-xl border border-white/[0.08] focus:outline-none focus:border-[#D8EC8D]"
+                      className="w-full bg-surface text-fg text-sm px-4 py-2.5 rounded-xl border border-border focus:outline-none focus:border-accent"
                     />
                     {errors.email && (
                       <span className="text-xs text-red-400 mt-1 block">
@@ -150,13 +150,13 @@ export function ContactSection() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-mono uppercase tracking-wider text-zinc-400 block mb-1.5">
-                      Subject <span className="text-[#D8EC8D]">*</span>
+                      Subject <span className="text-accent-text">*</span>
                     </label>
                     <input
                       type="text"
                       {...register("subject")}
                       placeholder="API Integration or Support"
-                      className="w-full bg-[#131313] text-white text-sm px-4 py-2.5 rounded-xl border border-white/[0.08] focus:outline-none focus:border-[#D8EC8D]"
+                      className="w-full bg-surface text-fg text-sm px-4 py-2.5 rounded-xl border border-border focus:outline-none focus:border-accent"
                     />
                     {errors.subject && (
                       <span className="text-xs text-red-400 mt-1 block">
@@ -173,20 +173,20 @@ export function ContactSection() {
                       type="text"
                       {...register("company")}
                       placeholder="Agency Name"
-                      className="w-full bg-[#131313] text-white text-sm px-4 py-2.5 rounded-xl border border-white/[0.08] focus:outline-none focus:border-[#D8EC8D]"
+                      className="w-full bg-surface text-fg text-sm px-4 py-2.5 rounded-xl border border-border focus:outline-none focus:border-accent"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="text-xs font-mono uppercase tracking-wider text-zinc-400 block mb-1.5">
-                    Message Details <span className="text-[#D8EC8D]">*</span>
+                    Message Details <span className="text-accent-text">*</span>
                   </label>
                   <textarea
                     rows={4}
                     {...register("message")}
                     placeholder="Describe your requirements or inquiry..."
-                    className="w-full bg-[#131313] text-white text-sm px-4 py-2.5 rounded-xl border border-white/[0.08] focus:outline-none focus:border-[#D8EC8D] resize-none"
+                    className="w-full bg-surface text-fg text-sm px-4 py-2.5 rounded-xl border border-border focus:outline-none focus:border-accent resize-none"
                   />
                   {errors.message && (
                     <span className="text-xs text-red-400 mt-1 block">
@@ -198,7 +198,7 @@ export function ContactSection() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3.5 rounded-full bg-gradient-to-r from-[#D8EC8D] to-[#BEF264] text-[#171e00] font-bold text-sm transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50 shadow-lg shadow-[#D8EC8D]/25 hover:brightness-105"
+                  className="w-full py-3.5 rounded-full bg-accent text-on-accent font-bold text-sm transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50 shadow-lg shadow-accent/25 hover:brightness-105"
                 >
                   <Send className="w-4 h-4" />
                   <span>{isSubmitting ? "Sending..." : "Send Message"}</span>

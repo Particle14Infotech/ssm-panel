@@ -1,5 +1,7 @@
+import { ThemeProvider } from "@/context/ThemeContext";
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
+import { cookies } from "next/headers";
 import "@/styles/globals.css";
 import { landingContent } from "@/content/landing";
 
@@ -67,6 +69,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = cookies();
+  const themeCookie = cookieStore.get("smm_theme")?.value;
+  const initialTheme = themeCookie === "light" ? "light" : "dark";
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -137,11 +143,19 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en-IN" className={`dark ${poppins.variable}`} suppressHydrationWarning>
+    <html
+      lang="en-IN"
+      className={`${poppins.variable} ${initialTheme}`}
+      data-theme={initialTheme}
+      style={{ colorScheme: initialTheme }}
+      suppressHydrationWarning
+    >
       <head>
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0F0F0F" />
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F5F5F8" />
         <script
           dangerouslySetInnerHTML={{
-            __html: "document.documentElement.classList.add('js');",
+            __html: `document.documentElement.classList.add('js');(function(){try{var m=window.matchMedia('(prefers-color-scheme: dark)');var c=document.cookie.match(/(?:^|;\\s*)smm_theme=([^;]*)/);var s=null;try{s=localStorage.getItem('smm_theme')}catch(e){}var val=s||(c?decodeURIComponent(c[1]):null)||'system';var resolved=val==='system'?(m.matches?'dark':'light'):val;var r=document.documentElement;r.setAttribute('data-theme',resolved);r.style.colorScheme=resolved;if(resolved==='dark'){r.classList.add('dark');r.classList.remove('light')}else{r.classList.remove('dark');r.classList.add('light')}if(window.matchMedia('(prefers-contrast: more)').matches){r.classList.add('contrast-more')}if(window.matchMedia('(prefers-reduced-transparency: reduce)').matches){r.classList.add('transparency-reduce')}}catch(e){}})();`,
           }}
         />
         <script
@@ -149,18 +163,20 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="bg-[#131313] text-[#e5e2e1] font-sans antialiased min-h-screen selection:bg-[#d8ec8d] selection:text-[#171e00]">
+      <body className="bg-bg text-fg font-sans antialiased min-h-screen selection:bg-accent selection:text-on-accent transition-colors duration-200">
         {/* WCAG 2.2 AA Skip Link */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 z-50 px-4 py-2 bg-[#d8ec8d] text-[#171e00] font-bold rounded-full shadow-lg border border-[#d8ec8d]/40"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 z-50 px-4 py-2 bg-accent text-on-accent font-bold rounded-full shadow-lg border border-accent/40"
         >
           Skip to main content
         </a>
 
-        <main id="main-content" className="w-full min-h-screen">
-          {children}
-        </main>
+        <ThemeProvider>
+          <div id="main-content" className="w-full min-h-screen">
+            {children}
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

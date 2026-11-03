@@ -34,6 +34,8 @@ export interface PerPostDripInput {
   minGapMinutes: number;
   ratePer1000: number;
   startAt?: Date;
+  explicitRunsCount?: number;
+  explicitIntervalMinutes?: number;
 }
 
 export interface PerPostDripResult {
@@ -178,11 +180,25 @@ export function calculatePerPostDrip(input: PerPostDripInput): PerPostDripResult
   const maxFromQty = Math.floor(quantity / serviceMin);
   const maxFromGap = Math.floor(windowMinutes / minGapMinutes);
 
-  const runsCount = Math.max(1, Math.min(maxFromQty, maxRunsPerPost, maxFromGap));
-  const gapMinutes = runsCount > 1 ? Math.floor(windowMinutes / runsCount) : windowMinutes;
+  let runsCount: number;
+  if (input.explicitRunsCount && input.explicitRunsCount > 0) {
+    // If user explicitly chose 1, 2, 4, etc. runs
+    runsCount = Math.max(1, Math.min(input.explicitRunsCount, maxFromQty, maxRunsPerPost));
+  } else {
+    runsCount = Math.max(1, Math.min(maxFromQty, maxRunsPerPost, maxFromGap));
+  }
+
+  let gapMinutes: number;
+  if (input.explicitIntervalMinutes && input.explicitIntervalMinutes > 0) {
+    gapMinutes = Math.max(1, input.explicitIntervalMinutes);
+  } else {
+    gapMinutes = runsCount > 1 ? Math.floor(windowMinutes / runsCount) : windowMinutes;
+  }
 
   let warning: string | undefined = undefined;
-  if (runsCount === 1) {
+  if (input.explicitRunsCount && input.explicitRunsCount > runsCount) {
+    warning = `Requested ${input.explicitRunsCount} runs clamped to ${runsCount} runs due to service minimum (${serviceMin}) or post limits.`;
+  } else if (runsCount === 1) {
     if (quantity < serviceMin * 2) {
       warning = `Quantity (${quantity}) cannot be split into multiple runs with service minimum ${serviceMin}. A single execution will be dispatched.`;
     } else if (windowMinutes < minGapMinutes * 2) {
@@ -236,5 +252,108 @@ export function calculatePerPostDrip(input: PerPostDripInput): PerPostDripResult
     gapMinutes,
     runs,
     warning,
+  };
+}
+
+
+export interface IntradayPacingItemInput {
+  serviceId?: string;
+  serviceKind?: string;
+  totalQuantity: number;
+  durationDays: number;
+  minQty: number;
+  totalAllocatedCharge: number | Decimal;
+  startAt: Date;
+  timezone?: string;
+}
+
+export interface IntradayPacedRun {
+  seq: number;
+  dayIndex: number;
+  batchIndex: number;
+  quantity: number;
+  allocatedCharge: Decimal;
+  executeAt: Date;
+}
+
+/**
+ * Calculates continuous, natural intraday micro-batches across active hours for each day of a package.
+ * Prevents clustering all daily runs at a single wall-clock minute.
+ */
+export function calculateIntradayPacedRuns(input: IntradayPacingItemInput): {
+  runs: IntradayPacedRun[];
+  totalRuns: number;
+  totalQuantity: number;
+  totalCharge: Decimal;
+} {
+  const { totalQuantity, durationDays, minQty, totalAllocatedCharge, serviceKind, startAt } = input;
+  const runs: IntradayPacedRun[] = [];
+  let seq = 1;
+  let accumulatedCharge = new Decimal(0);
+  const totalChargeDec = new Decimal(totalAllocatedCharge);
+
+  let offsetMinutes = 0;
+  const kUpper = (serviceKind || "").toUpperCase();
+  if (kUpper.includes("LIKE")) offsetMinutes = 25;
+  else if (kUpper.includes("SHARE")) offsetMinutes = 50;
+  else if (kUpper.includes("COMMENT")) offsetMinutes = 75;
+  else if (kUpper.includes("FOLLOWER")) offsetMinutes = 15;
+
+  const days = Math.max(1, durationDays);
+  const baseDaily = Math.floor(totalQuantity / days);
+  const remDaily = totalQuantity % days;
+
+  for (let d = 0; d < days; d++) {
+    const dailyQty = d < remDaily ? baseDaily + 1 : baseDaily;
+    if (dailyQty <= 0) continue;
+
+    const providerMin = Math.max(1, minQty);
+    const maxBatches = Math.floor(dailyQty / providerMin);
+
+    let prefBatches = 4;
+    if (kUpper.includes("VIEW")) prefBatches = 8;
+    else if (kUpper.includes("LIKE")) prefBatches = 4;
+    else if (kUpper.includes("SHARE") || kUpper.includes("COMMENT")) prefBatches = 2;
+    else if (kUpper.includes("FOLLOWER")) prefBatches = 5;
+
+    const k = Math.max(1, Math.min(prefBatches, maxBatches));
+    const baseBatch = Math.floor(dailyQty / k);
+    const remBatch = dailyQty % k;
+
+    // 13 active hours = 780 mins (e.g. 09:00 to 22:00)
+    const intervalMins = Math.floor(780 / k);
+
+    for (let b = 0; b < k; b++) {
+      const batchQty = b < remBatch ? baseBatch + 1 : baseBatch;
+      const dayBase = new Date(startAt.getTime() + d * 24 * 3600 * 1000);
+      const executeAt = new Date(dayBase.getTime() + (b * intervalMins + offsetMinutes) * 60 * 1000);
+
+      let charge: Decimal;
+      if (d === days - 1 && b === k - 1) {
+        charge = totalChargeDec.minus(accumulatedCharge);
+      } else {
+        charge = totalChargeDec
+          .times(batchQty)
+          .dividedBy(totalQuantity)
+          .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+      }
+      accumulatedCharge = accumulatedCharge.plus(charge);
+
+      runs.push({
+        seq: seq++,
+        dayIndex: d + 1,
+        batchIndex: b + 1,
+        quantity: batchQty,
+        executeAt,
+        allocatedCharge: charge,
+      });
+    }
+  }
+
+  return {
+    runs,
+    totalRuns: runs.length,
+    totalQuantity,
+    totalCharge: accumulatedCharge,
   };
 }

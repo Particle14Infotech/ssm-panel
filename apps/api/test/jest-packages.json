@@ -1,7 +1,7 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": "..",
-  "testRegex": "test/(package-.*|drip-engine-.*|platform-config)\\.spec\\.ts$",
+  "testRegex": "test/(package-.*|drip-engine-.*|platform-config|provider-error-.*|delivery-pace-.*|pace-settings-.*)\\.spec\\.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },

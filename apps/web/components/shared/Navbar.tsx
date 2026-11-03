@@ -5,10 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { landingContent } from "@/content/landing";
-import { Menu, X, ArrowRight, Zap } from "lucide-react";
+import { Menu, X, ArrowRight } from "lucide-react";
 import { MagneticButton } from "@/components/motion/MagneticButton";
 import { ScrollProgress } from "@/components/motion/ScrollProgress";
 import { BrandLogo } from "@/components/shared/BrandLogo";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -81,7 +82,7 @@ export function Navbar() {
         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
-            ? "bg-[#131313]/90 backdrop-blur-xl border-b border-white/[0.08] shadow-2xl py-3"
+            ? "bg-surface/90 backdrop-blur-xl border-b border-border shadow-2xl py-3"
             : "bg-transparent py-5"
         }`}
       >
@@ -92,7 +93,7 @@ export function Navbar() {
           {/* Desktop Navigation Links */}
           <nav
             aria-label="Main Navigation"
-            className="hidden md:flex items-center p-1 rounded-xl bg-white/[0.03] border border-white/[0.08] gap-1 relative"
+            className="hidden md:flex items-center p-1 rounded-xl bg-surface-raised border border-border gap-1 relative"
             onMouseLeave={() => setHoveredLink(null)}
           >
             {landingContent.navigation.links.map((item) => {
@@ -108,7 +109,7 @@ export function Navbar() {
                   href={pathname === "/" ? `#${sectionMatch}` : item.href}
                   onMouseEnter={() => setHoveredLink(item.href)}
                   className={`relative px-4 py-2.5 min-h-[44px] flex items-center rounded-lg text-sm transition-colors duration-200 z-10 ${
-                    isActive ? "text-white font-medium" : "text-[#A1A1AA] hover:text-white"
+                    isActive ? "text-fg font-semibold" : "text-fg-muted hover:text-fg"
                   }`}
                 >
                   {(isActive || isHovered) && (
@@ -116,7 +117,7 @@ export function Navbar() {
                       layoutId="active-nav-indicator"
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                       className={`absolute inset-0 rounded-lg -z-10 ${
-                        isActive ? "bg-white/[0.09] border border-white/[0.12]" : "bg-white/[0.04]"
+                        isActive ? "bg-surface border border-border" : "bg-surface/50"
                       }`}
                     />
                   )}
@@ -128,9 +129,11 @@ export function Navbar() {
 
           {/* Right Header Actions */}
           <div className="hidden md:flex items-center gap-3">
+            <ThemeToggle variant="compact" />
+
             <Link
               href="/login"
-              className="px-4 py-2.5 min-h-[44px] flex items-center text-sm font-medium text-[#A1A1AA] hover:text-white transition-colors"
+              className="px-4 py-2.5 min-h-[44px] flex items-center text-sm font-medium text-fg-muted hover:text-fg transition-colors"
             >
               {landingContent.navigation.cta.login}
             </Link>
@@ -138,7 +141,7 @@ export function Navbar() {
             <MagneticButton>
               <Link
                 href="/register"
-                className="h-11 min-h-[44px] px-5 rounded-xl bg-[#d8ec8d] text-[#171e00] text-sm font-semibold hover:brightness-105 transition-all flex items-center gap-1.5 shadow-sm focus-visible:ring-2 focus-visible:ring-[#d8ec8d]"
+                className="h-11 min-h-[44px] px-5 rounded-xl bg-accent text-on-accent text-sm font-semibold hover:brightness-105 transition-all flex items-center gap-1.5 shadow-glow focus-visible:ring-2 focus-visible:ring-focus"
               >
                 <span>{landingContent.navigation.cta.register}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -148,16 +151,18 @@ export function Navbar() {
 
           {/* Mobile Menu Button with >= 44px tap targets */}
           <div className="flex md:hidden items-center gap-2">
+            <ThemeToggle variant="compact" />
+
             <Link
               href="/login"
-              className="min-h-[44px] px-3.5 py-2 flex items-center justify-center text-xs font-medium text-white/90 bg-[#201f1f] border border-white/10 rounded-xl"
+              className="min-h-[44px] px-3.5 py-2 flex items-center justify-center text-xs font-medium text-fg bg-surface-raised border border-border rounded-xl"
             >
               Sign In
             </Link>
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-xl bg-[#201f1f] text-white/80 hover:text-white border border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d8ec8d]"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-xl bg-surface-raised text-fg hover:text-fg border border-border focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
               aria-label="Toggle navigation menu"
               aria-expanded={mobileMenuOpen}
             >
@@ -175,10 +180,10 @@ export function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-40 bg-[#131313]/98 backdrop-blur-2xl pt-24 px-6 flex flex-col justify-between pb-8 md:hidden"
+            className="fixed inset-0 z-40 bg-surface/98 backdrop-blur-2xl pt-24 px-6 flex flex-col justify-between pb-8 md:hidden"
           >
             <div className="flex flex-col gap-2">
-              <div className="text-xs uppercase tracking-widest text-[#d8ec8d] font-mono mb-2">
+              <div className="text-xs uppercase tracking-widest text-accent-text font-mono mb-2 font-bold">
                 Menu
               </div>
               {landingContent.navigation.links.map((item, i) => (
@@ -190,8 +195,8 @@ export function Navbar() {
                 >
                   <Link
                     href={item.href}
-                    className={`text-lg py-3 min-h-[44px] border-b border-white/[0.08] flex items-center justify-between ${
-                      pathname === item.href ? "text-[#d8ec8d] font-semibold" : "text-white/80"
+                    className={`text-lg py-3 min-h-[44px] border-b border-border flex items-center justify-between ${
+                      pathname === item.href ? "text-accent-text font-semibold" : "text-fg-2"
                     }`}
                   >
                     <span>{item.label}</span>
@@ -204,13 +209,13 @@ export function Navbar() {
             <div className="flex flex-col gap-3 pt-6">
               <Link
                 href="/register"
-                className="w-full h-12 flex items-center justify-center rounded-xl bg-[#d8ec8d] text-[#171e00] font-semibold text-center shadow-lg"
+                className="w-full h-12 flex items-center justify-center rounded-xl bg-accent text-on-accent font-semibold text-center shadow-glow"
               >
                 {landingContent.navigation.cta.register}
               </Link>
               <Link
                 href="/login"
-                className="w-full h-12 flex items-center justify-center rounded-xl bg-white/[0.04] text-white font-medium text-center border border-white/10"
+                className="w-full h-12 flex items-center justify-center rounded-xl bg-surface-raised text-fg font-medium text-center border border-border"
               >
                 {landingContent.navigation.cta.login}
               </Link>

@@ -546,7 +546,7 @@ export default function AdminServicesPage() {
                             title="Click to edit profit margin %"
                           >
                             {service.marginPercent !== undefined && service.marginPercent !== null ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#D8EC8D]/15 text-[#D8EC8D] border border-[#D8EC8D]/30 group-hover/margin:border-[#D8EC8D]">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent/15 text-[#D8EC8D] border border-accent/30 group-hover/margin:border-[#D8EC8D]">
                                 +{service.marginPercent}%
                               </span>
                             ) : (
@@ -630,7 +630,7 @@ export default function AdminServicesPage() {
                             }
                             className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold transition-all ${
                               service.allowManagedDrip
-                                ? "bg-[#D8EC8D]/20 text-[#D8EC8D] border border-[#D8EC8D]/50"
+                                ? "bg-accent/20 text-[#D8EC8D] border border-[#D8EC8D]/50"
                                 : "bg-white/5 text-slate-400 border border-white/5 hover:text-white"
                             }`}
                             title="Click to toggle Panel-Managed Drip-Feed"
@@ -669,7 +669,7 @@ export default function AdminServicesPage() {
                               deleteService(service.id);
                             }
                           }}
-                          className="p-1.5 rounded-full hover:bg-rose-500/20 text-rose-400 transition-colors"
+                          className="p-1.5 rounded-full hover:bg-rose-500/20 text-danger transition-colors"
                           title="Delete Service"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -764,7 +764,7 @@ export default function AdminServicesPage() {
                   Primary Provider Node
                 </span>
                 {routePrimaryProviderId && (
-                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  <span className="text-[10px] font-mono text-success bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                     Live Bal: ₹
                     {(
                       providers.find((p) => p.id === routePrimaryProviderId)?.balance || 0

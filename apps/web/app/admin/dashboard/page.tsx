@@ -338,7 +338,7 @@ export default function AdminDashboardPage() {
                     <Sparkles className="w-3.5 h-3.5 text-[#d8ec8d]" />
                     <span>Net Yield & Margins</span>
                   </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#d8ec8d]/10 text-[#d8ec8d] border border-[#d8ec8d]/20 font-bold">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-accent/10 text-[#d8ec8d] border border-[#d8ec8d]/20 font-bold">
                     Est. 35% Surplus
                   </span>
                 </div>
@@ -433,7 +433,7 @@ export default function AdminDashboardPage() {
               <div className="grid grid-cols-2 gap-2.5">
                 <Link
                   href="/admin/orders"
-                  className="group/tile p-3 rounded-2xl bg-white/[0.02] hover:bg-[#d8ec8d]/10 border border-white/[0.08] hover:border-[#d8ec8d]/35 transition-all duration-200 flex flex-col justify-between h-24 hover:scale-[1.02] active:scale-[0.98]"
+                  className="group/tile p-3 rounded-2xl bg-white/[0.02] hover:bg-accent/10 border border-white/[0.08] hover:border-[#d8ec8d]/35 transition-all duration-200 flex flex-col justify-between h-24 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <div className="w-7 h-7 rounded-lg bg-[#d8ec8d]/15 text-[#d8ec8d] flex items-center justify-center border border-[#d8ec8d]/25 group-hover/tile:bg-[#d8ec8d] group-hover/tile:text-[#171e00] transition-colors">
                     <Activity className="w-4 h-4" />
@@ -451,7 +451,7 @@ export default function AdminDashboardPage() {
 
                 <Link
                   href="/admin/users"
-                  className="group/tile p-3 rounded-2xl bg-white/[0.02] hover:bg-[#d8ec8d]/10 border border-white/[0.08] hover:border-[#d8ec8d]/35 transition-all duration-200 flex flex-col justify-between h-24 hover:scale-[1.02] active:scale-[0.98]"
+                  className="group/tile p-3 rounded-2xl bg-white/[0.02] hover:bg-accent/10 border border-white/[0.08] hover:border-[#d8ec8d]/35 transition-all duration-200 flex flex-col justify-between h-24 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <div className="w-7 h-7 rounded-lg bg-[#d8ec8d]/15 text-[#d8ec8d] flex items-center justify-center border border-[#d8ec8d]/25 group-hover/tile:bg-[#d8ec8d] group-hover/tile:text-[#171e00] transition-colors">
                     <Users className="w-4 h-4" />
@@ -467,7 +467,7 @@ export default function AdminDashboardPage() {
 
                 <Link
                   href="/admin/tickets"
-                  className="group/tile p-3 rounded-2xl bg-white/[0.02] hover:bg-[#d8ec8d]/10 border border-white/[0.08] hover:border-[#d8ec8d]/35 transition-all duration-200 flex flex-col justify-between h-24 hover:scale-[1.02] active:scale-[0.98]"
+                  className="group/tile p-3 rounded-2xl bg-white/[0.02] hover:bg-accent/10 border border-white/[0.08] hover:border-[#d8ec8d]/35 transition-all duration-200 flex flex-col justify-between h-24 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <div className="w-7 h-7 rounded-lg bg-[#d8ec8d]/15 text-[#d8ec8d] flex items-center justify-center border border-[#d8ec8d]/25 group-hover/tile:bg-[#d8ec8d] group-hover/tile:text-[#171e00] transition-colors">
                     <MessageSquare className="w-4 h-4" />
@@ -483,7 +483,7 @@ export default function AdminDashboardPage() {
 
                 <Link
                   href="/admin/providers"
-                  className="group/tile p-3 rounded-2xl bg-white/[0.02] hover:bg-[#d8ec8d]/10 border border-white/[0.08] hover:border-[#d8ec8d]/35 transition-all duration-200 flex flex-col justify-between h-24 hover:scale-[1.02] active:scale-[0.98]"
+                  className="group/tile p-3 rounded-2xl bg-white/[0.02] hover:bg-accent/10 border border-white/[0.08] hover:border-[#d8ec8d]/35 transition-all duration-200 flex flex-col justify-between h-24 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <div className="w-7 h-7 rounded-lg bg-[#d8ec8d]/15 text-[#d8ec8d] flex items-center justify-center border border-[#d8ec8d]/25 group-hover/tile:bg-[#d8ec8d] group-hover/tile:text-[#171e00] transition-colors">
                     <Server className="w-4 h-4" />
@@ -570,7 +570,7 @@ export default function AdminDashboardPage() {
                               delay: idx * (chartRange === "7d" ? 0.05 : 0.015),
                               ease: "easeOut",
                             }}
-                            className="w-full max-w-[32px] rounded-t-lg bg-[#d8ec8d]/20 border-t border-x border-[#d8ec8d]/40 group-hover:bg-[#d8ec8d] group-hover:border-[#d8ec8d] group-hover:shadow-[0_0_20px_rgba(216,236,141,0.35)] transition-colors cursor-pointer relative"
+                            className="w-full max-w-[32px] rounded-t-lg bg-[#d8ec8d]/20 border-t border-x border-accent/40 group-hover:bg-[#d8ec8d] group-hover:border-[#d8ec8d] group-hover:shadow-[0_0_20px_rgba(216,236,141,0.35)] transition-colors cursor-pointer relative"
                           >
                             {/* Floating Glass Tooltip */}
                             <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute -top-14 left-1/2 -translate-x-1/2 bg-[#1c1b1b] border border-[#d8ec8d]/30 px-3 py-1.5 rounded-xl text-[11px] font-mono text-white whitespace-nowrap shadow-2xl z-30 transition-all duration-200">
@@ -654,7 +654,7 @@ export default function AdminDashboardPage() {
                           <div className="font-semibold text-white truncate max-w-[160px]">
                             {p.name}
                           </div>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/15 text-success border border-emerald-500/30">
                             {p.status || "ACTIVE"}
                           </span>
                         </div>
@@ -711,7 +711,7 @@ export default function AdminDashboardPage() {
                     <h2 className="text-base font-semibold tracking-wide text-white font-sans">
                       Global Orders Dispatch Queue
                     </h2>
-                    <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#d8ec8d]/10 text-[#d8ec8d] font-bold border border-[#d8ec8d]/20">
+                    <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/10 text-[#d8ec8d] font-bold border border-[#d8ec8d]/20">
                       Real-Time
                     </span>
                   </div>

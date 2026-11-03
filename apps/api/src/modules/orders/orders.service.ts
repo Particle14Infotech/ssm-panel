@@ -30,6 +30,7 @@ import {
 } from "@smm/contracts";
 import { Decimal } from "decimal.js";
 import { z } from "zod";
+import { generateQuoteHash } from "../packages/package-quote-hash.util";
 
 export const PackageProviderReconciliationInputSchema = z.discriminatedUnion(
   "outcome",
@@ -307,6 +308,108 @@ export class OrdersService {
   }
 
   /**
+   * Generates authoritative price quote and HMAC quoteHash for a single order.
+   */
+  async getQuote(
+    input: {
+      serviceId: string;
+      quantity: number;
+      target?: string;
+      isDripFeed?: boolean;
+      dripRuns?: number;
+      dripInterval?: number;
+    },
+    userId?: string
+  ) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database is disconnected. Cannot quote orders.");
+    }
+
+    if (!input.serviceId || typeof input.serviceId !== "string") {
+      throw new BadRequestException("serviceId is required.");
+    }
+    const quantity = Number(input.quantity);
+    if (!quantity || quantity <= 0 || !Number.isInteger(quantity)) {
+      throw new BadRequestException("Quantity must be a positive integer.");
+    }
+
+    const service = await this.prisma.service.findUnique({
+      where: { id: input.serviceId },
+    });
+    if (!service) {
+      throw new BadRequestException("Invalid service ID provided.");
+    }
+    if (service.status !== "ACTIVE" || service.isDeleted || service.active === false) {
+      throw new BadRequestException("Service is currently unavailable.");
+    }
+
+    const minQty = service.minQty || 1;
+    const maxQty = service.maxQty || 1000000;
+    if (quantity < minQty || quantity > maxQty) {
+      throw new BadRequestException(`Quantity must be between ${minQty} and ${maxQty}.`);
+    }
+
+    const isDripFeed = Boolean(input.isDripFeed);
+    const runs = isDripFeed && input.dripRuns ? Math.max(1, input.dripRuns) : 1;
+
+    const pricingSettings = this.pricingService
+      ? await this.pricingService.getSettings()
+      : DEFAULT_PRICING_SETTINGS;
+
+    const fxRate = service.providerCostCurrency === "USD" ? pricingSettings.usdInrRate : 1.0;
+    const costRate = service.costINR
+      ? new Decimal(service.costINR.toString()).toNumber()
+      : (service.providerCostPer1k
+          ? new Decimal(service.providerCostPer1k.toString()).mul(fxRate).toNumber()
+          : new Decimal(service.ratePer1000.toString()).toNumber());
+
+    const snapshot = calculateOrderFinancialSnapshot({
+      sellRatePer1k: service.ratePer1000,
+      costRatePer1k: costRate,
+      fxRateUsed: fxRate,
+      providerCurrency: service.providerCostCurrency || "INR",
+      quantityPerRun: quantity,
+      runs,
+      dripSurchargePercent: isDripFeed ? (pricingSettings.dripSurchargePercent || 0) : 0,
+      paymentFeePercent: pricingSettings.paymentFeePercent,
+    });
+
+    const totalCharge = snapshot.charge.toNumber();
+    const ratePer1000 = new Decimal(service.ratePer1000.toString()).toNumber();
+
+    const quoteHashObj = generateQuoteHash({
+      userId: userId || "",
+      platform: service.platform || "instagram",
+      handle: input.target || "single-order",
+      timezone: "UTC",
+      days: 1,
+      totalCharge,
+      totalRuns: runs,
+      items: [
+        {
+          serviceId: service.id,
+          totalQuantity: quantity * runs,
+          charge: totalCharge,
+          ratePer1000,
+        },
+      ],
+    });
+
+    return {
+      serviceId: service.id,
+      quantity,
+      runs,
+      ratePer1000,
+      totalCharge,
+      charge: totalCharge,
+      quoteHash: quoteHashObj.quoteHash,
+      expiresAt: quoteHashObj.expiresAt,
+      minQty,
+      maxQty,
+    };
+  }
+
+  /**
    * Dispatches a new order with atomic balance deduction and idempotency check.
    */
   async create(input: CreateOrderDto) {
@@ -363,7 +466,11 @@ export class OrdersService {
     }
 
     // Handle Custom Comments service type
-    const isCustomComments = service.serviceType === "CUSTOM_COMMENTS" || service.serviceType === "COMMENTS";
+    const isCustomComments =
+      service.serviceType === "CUSTOM_COMMENTS" ||
+      service.serviceType === "COMMENTS" ||
+      Boolean(input.comments && input.comments.trim().length > 0) ||
+      (service.name || "").toLowerCase().includes("custom comment");
     if (isCustomComments) {
       if (input.isDripFeed) {
         throw new BadRequestException("Drip-feed is not supported for custom comments.");

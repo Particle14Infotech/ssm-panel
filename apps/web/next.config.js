@@ -5,7 +5,7 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
   compress: true,
   swcMinify: true,
-  output: "standalone",
+  output: process.env.DOCKER_CONTAINER === "true" ? "standalone" : undefined,
   transpilePackages: ["@smm/contracts", "@smm/config", "three", "framer-motion"],
   images: {
     formats: ["image/avif", "image/webp"],

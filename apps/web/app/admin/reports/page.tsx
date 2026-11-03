@@ -197,7 +197,7 @@ export default function AdminReportsPage() {
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-xs font-mono mb-1.5">
-                  <span className="text-emerald-400 font-semibold">Completed ({completedOrders.length})</span>
+                  <span className="text-success font-semibold">Completed ({completedOrders.length})</span>
                   <span className="text-slate-400">
                     {filteredOrders.length > 0
                       ? `${((completedOrders.length / filteredOrders.length) * 100).toFixed(1)}%`
@@ -216,7 +216,7 @@ export default function AdminReportsPage() {
 
               <div>
                 <div className="flex justify-between text-xs font-mono mb-1.5">
-                  <span className="text-amber-400 font-semibold">Processing & In Progress ({inProgressOrders.length})</span>
+                  <span className="text-warning font-semibold">Processing & In Progress ({inProgressOrders.length})</span>
                   <span className="text-slate-400">
                     {filteredOrders.length > 0
                       ? `${((inProgressOrders.length / filteredOrders.length) * 100).toFixed(1)}%`
@@ -235,7 +235,7 @@ export default function AdminReportsPage() {
 
               <div>
                 <div className="flex justify-between text-xs font-mono mb-1.5">
-                  <span className="text-rose-400 font-semibold">Cancelled & Refunded ({cancelledOrders.length})</span>
+                  <span className="text-danger font-semibold">Cancelled & Refunded ({cancelledOrders.length})</span>
                   <span className="text-slate-400">
                     {filteredOrders.length > 0
                       ? `${((cancelledOrders.length / filteredOrders.length) * 100).toFixed(1)}%`
@@ -275,7 +275,7 @@ export default function AdminReportsPage() {
             <div className="pt-2 border-t border-white/5 grid grid-cols-2 gap-4 text-xs font-mono text-slate-400">
               <div>
                 <span className="text-slate-500">Dispatch Reliability: </span>
-                <span className="text-emerald-400 font-bold">99.2%</span>
+                <span className="text-success font-bold">99.2%</span>
               </div>
               <div>
                 <span className="text-slate-500">Provider Latency: </span>
@@ -344,18 +344,18 @@ export default function AdminReportsPage() {
             </div>
 
             <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-              <div className="text-xs font-mono text-emerald-400 uppercase">Growth Tier</div>
+              <div className="text-xs font-mono text-success uppercase">Growth Tier</div>
               <div className="text-2xl font-bold text-emerald-300 font-mono mt-1">{tierCounts.GROWTH}</div>
               <div className="text-[11px] text-slate-500 mt-0.5">5% rate discount</div>
             </div>
 
             <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-              <div className="text-xs font-mono text-sky-400 uppercase">Pro Scale Tier</div>
+              <div className="text-xs font-mono text-info uppercase">Pro Scale Tier</div>
               <div className="text-2xl font-bold text-sky-300 font-mono mt-1">{tierCounts.PRO_SCALE}</div>
               <div className="text-[11px] text-slate-500 mt-0.5">10% rate discount</div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white/5 border border-[#D8EC8D]/30 bg-[#D8EC8D]/5">
+            <div className="p-4 rounded-2xl bg-white/5 border border-accent/30 bg-[#D8EC8D]/5">
               <div className="text-xs font-mono text-[#D8EC8D] uppercase font-bold">Enterprise Tier</div>
               <div className="text-2xl font-bold text-[#D8EC8D] font-mono mt-1">{tierCounts.ENTERPRISE}</div>
               <div className="text-[11px] text-slate-400 mt-0.5">15% wholesale margin</div>

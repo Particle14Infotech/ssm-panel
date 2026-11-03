@@ -8,17 +8,17 @@ import { Reveal } from "@/components/motion/Reveal";
 
 export function Footer() {
   return (
-    <footer className="w-full bg-[#0e0e0e] border-t border-white/[0.08] text-zinc-400 pt-16 pb-12 relative z-10">
+    <footer className="w-full bg-surface border-t border-border text-fg-muted pt-16 pb-12 relative z-10">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         <Reveal delay={0.05}>
           {/* Main Footer: Stacked on phone (1 col), 2 cols on tablet, 4 columns on desktop */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 pb-12 border-b border-white/[0.08]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 pb-12 border-b border-border">
             {/* 1. Brand Column: Logo + description */}
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-2">
                 <BrandLogo variant="combined" size={32} withLink href="/" />
               </div>
-              <p className="text-sm text-[#A1A1AA] leading-relaxed max-w-sm">
+              <p className="text-sm text-fg-2 leading-relaxed max-w-sm">
                 {landingContent.footer.description}
               </p>
             </div>
@@ -26,7 +26,7 @@ export function Footer() {
             {/* 2, 3, 4: Link Columns: Product, Support, Legal */}
             {landingContent.footer.columns.map((col) => (
               <div key={col.title} className="flex flex-col gap-3">
-                <h3 className="text-xs uppercase tracking-wider font-mono text-white font-semibold">
+                <h3 className="text-xs uppercase tracking-wider font-mono text-fg font-semibold">
                   {col.title}
                 </h3>
                 <ul className="flex flex-col gap-1">
@@ -34,7 +34,7 @@ export function Footer() {
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className="inline-flex items-center min-h-[44px] py-1 text-sm text-[#A1A1AA] hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d8ec8d]"
+                        className="inline-flex items-center min-h-[44px] py-1 text-sm text-fg-2 hover:text-fg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                       >
                         {link.label}
                       </Link>
@@ -46,7 +46,7 @@ export function Footer() {
           </div>
 
           {/* Bottom Bar: Copyright & Shortened Trademark Disclaimer */}
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#71717A]">
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-fg-muted">
             <div>{landingContent.footer.copyright}</div>
             <p className="max-w-xl text-center sm:text-right leading-relaxed">
               {landingContent.footer.trademarkDisclaimer}

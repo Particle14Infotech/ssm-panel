@@ -106,7 +106,7 @@ export default function AdminProfitDashboardPage() {
                 onClick={() => setDateRange(r)}
                 className={`px-3 py-1.5 rounded-lg capitalize transition-colors ${
                   dateRange === r
-                    ? "bg-[#D8EC8D]/20 text-[#D8EC8D] font-bold"
+                    ? "bg-accent/20 text-[#D8EC8D] font-bold"
                     : "text-slate-400 hover:text-white"
                 }`}
               >
@@ -120,7 +120,7 @@ export default function AdminProfitDashboardPage() {
             onClick={() => setDripFeedOnly(!dripFeedOnly)}
             className={`px-3 py-2 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all ${
               dripFeedOnly
-                ? "bg-[#D8EC8D]/15 border-[#D8EC8D] text-white"
+                ? "bg-accent/15 border-[#D8EC8D] text-white"
                 : "bg-white/[0.02] border-white/10 text-slate-400 hover:text-white"
             }`}
           >
@@ -166,7 +166,7 @@ export default function AdminProfitDashboardPage() {
           <div className="text-2xl font-bold text-[#D8EC8D] font-mono">
             ₹{telemetry ? telemetry.netProfit.toFixed(2) : "0.00"}
           </div>
-          <div className="text-[11px] text-emerald-400 font-semibold font-mono">
+          <div className="text-[11px] text-success font-semibold font-mono">
             Margin: {telemetry ? telemetry.netMarginPercent.toFixed(1) : "0.0"}%
           </div>
         </GlassCard>
@@ -195,7 +195,7 @@ export default function AdminProfitDashboardPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Net Profit</span>
-              <span className="text-emerald-400 font-bold">
+              <span className="text-success font-bold">
                 ₹{telemetry ? (telemetry.netProfit * 0.72).toFixed(2) : "0.00"}
               </span>
             </div>
@@ -232,7 +232,7 @@ export default function AdminProfitDashboardPage() {
           </div>
           <div>
             <div className="text-slate-500 mb-0.5">Estimated Upstream Runway</div>
-            <div className="text-base font-bold text-emerald-400">&gt; 14 Days Available</div>
+            <div className="text-base font-bold text-success">&gt; 14 Days Available</div>
           </div>
           <div>
             <div className="text-slate-500 mb-0.5">Safety Buffer Threshold</div>

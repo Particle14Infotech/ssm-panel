@@ -151,7 +151,7 @@ export default function AdminTicketsPage() {
           </div>
 
           {actionSuccess && (
-            <div className="px-4 py-2 rounded-full bg-[#D8EC8D]/15 border border-[#D8EC8D]/40 text-[#D8EC8D] text-xs font-mono flex items-center gap-2 animate-in fade-in">
+            <div className="px-4 py-2 rounded-full bg-accent/15 border border-[#D8EC8D]/40 text-[#D8EC8D] text-xs font-mono flex items-center gap-2 animate-in fade-in">
               <CheckCircle2 className="w-4 h-4" />
               <span>{actionSuccess}</span>
             </div>
@@ -170,30 +170,30 @@ export default function AdminTicketsPage() {
           </div>
 
           <div className="p-4 rounded-3xl bg-[#1a1a1a]/70 border border-emerald-500/20 backdrop-blur-md">
-            <div className="flex items-center justify-between text-emerald-400 mb-1">
+            <div className="flex items-center justify-between text-success mb-1">
               <span className="text-xs font-medium">Pending Response</span>
-              <Clock className="w-4 h-4 text-emerald-400" />
+              <Clock className="w-4 h-4 text-success" />
             </div>
             <div className="text-2xl font-bold text-emerald-300 font-mono">{openCount}</div>
-            <div className="text-[11px] text-emerald-400/70 mt-0.5">Needs admin action</div>
+            <div className="text-[11px] text-success/70 mt-0.5">Needs admin action</div>
           </div>
 
           <div className="p-4 rounded-3xl bg-[#1a1a1a]/70 border border-amber-500/20 backdrop-blur-md">
-            <div className="flex items-center justify-between text-amber-400 mb-1">
+            <div className="flex items-center justify-between text-warning mb-1">
               <span className="text-xs font-medium">In Investigation</span>
-              <AlertCircle className="w-4 h-4 text-amber-400" />
+              <AlertCircle className="w-4 h-4 text-warning" />
             </div>
             <div className="text-2xl font-bold text-amber-300 font-mono">{inReviewCount}</div>
-            <div className="text-[11px] text-amber-400/70 mt-0.5">Under manual review</div>
+            <div className="text-[11px] text-warning/70 mt-0.5">Under manual review</div>
           </div>
 
           <div className="p-4 rounded-3xl bg-[#1a1a1a]/70 border border-rose-500/20 backdrop-blur-md">
-            <div className="flex items-center justify-between text-rose-400 mb-1">
+            <div className="flex items-center justify-between text-danger mb-1">
               <span className="text-xs font-medium">High / Critical</span>
-              <AlertTriangle className="w-4 h-4 text-rose-400" />
+              <AlertTriangle className="w-4 h-4 text-danger" />
             </div>
             <div className="text-2xl font-bold text-rose-300 font-mono">{criticalCount}</div>
-            <div className="text-[11px] text-rose-400/70 mt-0.5">Priority escalations</div>
+            <div className="text-[11px] text-danger/70 mt-0.5">Priority escalations</div>
           </div>
         </div>
 
@@ -450,7 +450,7 @@ export default function AdminTicketsPage() {
                         <div
                           className={`max-w-[85%] p-4 rounded-2xl text-xs leading-relaxed ${
                             isAdmin
-                              ? "bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 text-white rounded-tr-none"
+                              ? "bg-accent/15 border border-accent/30 text-white rounded-tr-none"
                               : "bg-[#252525] border border-white/10 text-slate-200 rounded-tl-none"
                           }`}
                         >

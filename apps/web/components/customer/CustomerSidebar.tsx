@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import { useCustomer } from "@/context/CustomerContext";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import {
   LayoutDashboard,
   PlusCircle,
@@ -18,9 +19,6 @@ import {
   User,
   Key,
   LogOut,
-  Zap,
-  Shield,
-  ExternalLink,
 } from "lucide-react";
 
 export function CustomerSidebar() {
@@ -33,7 +31,7 @@ export function CustomerSidebar() {
       items: [
         { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
         { name: "New Order", href: "/new-order", icon: PlusCircle },
-        { name: "Packages", href: "/packages", icon: Boxes },
+        { name: "My Packages", href: "/packages", icon: Boxes },
         { name: "Favorites", href: "/favorites", icon: Bookmark },
         { name: "Services", href: "/services-catalog", icon: Layers },
         { name: "Orders", href: "/orders", icon: ListOrdered },
@@ -57,18 +55,19 @@ export function CustomerSidebar() {
   ];
 
   return (
-    <aside className="w-64 shrink-0 hidden lg:flex flex-col justify-between bg-[#131313]/95 backdrop-blur-xl border-r border-white/10 min-h-screen sticky top-0 z-40">
-      <div>
+    <aside className="w-64 shrink-0 hidden lg:flex flex-col justify-between bg-surface border-r border-border h-full z-40 transition-colors duration-200">
+      <div className="flex flex-col flex-1 min-h-0">
         {/* Brand Header */}
-        <div className="h-16 px-5 flex items-center border-b border-white/10">
+        <div className="h-16 px-5 flex items-center justify-between border-b border-border shrink-0">
           <BrandLogo variant="combined" size={32} withLink href="/dashboard" />
+          <ThemeToggle variant="compact" />
         </div>
 
         {/* Grouped Nav Items */}
-        <div className="px-3 py-6 space-y-6">
+        <div className="px-3 py-6 space-y-6 flex-1 min-h-0 overflow-y-auto scrollbar-none">
           {navGroups.map((group) => (
             <div key={group.label} className="space-y-1">
-              <div className="px-3 pb-1 text-[10px] uppercase font-mono tracking-widest text-slate-400 font-semibold">
+              <div className="px-3 pb-1 text-[10px] uppercase font-mono tracking-widest text-fg-muted font-semibold">
                 {group.label}
               </div>
               <div className="space-y-0.5">
@@ -81,22 +80,16 @@ export function CustomerSidebar() {
                     <Link
                       key={item.name}
                       href={item.href}
-                      className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group ${
-                        isActive
-                          ? "bg-[#D8EC8D]/15 text-white shadow-sm"
-                          : "text-slate-400 hover:text-white hover:bg-white/[0.03]"
-                      }`}
-                    >
-                      {/* Left indicator for active item */}
-                      {isActive && (
-                        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#D8EC8D] rounded-r" />
-                      )}
-                      <item.icon
-                        className={`w-4 h-4 shrink-0 transition-colors ${
-                          isActive
-                            ? "text-[#D8EC8D]"
-                            : "text-slate-400 group-hover:text-white"
+                      className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group ${isActive
+                          ? "bg-accent/15 text-fg shadow-sm font-semibold border-l-2 border-accent"
+                          : "text-fg-2 hover:text-fg hover:bg-surface-raised"
                         }`}
+                    >
+                      <item.icon
+                        className={`w-4 h-4 shrink-0 transition-colors ${isActive
+                            ? "text-accent-text"
+                            : "text-fg-muted group-hover:text-fg"
+                          }`}
                       />
                       <span>{item.name}</span>
                     </Link>
@@ -109,20 +102,20 @@ export function CustomerSidebar() {
       </div>
 
       {/* Bottom User Area */}
-      <div className="p-4 border-t border-white/10">
-        <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-between gap-3">
+      <div className="p-4 border-t border-border shrink-0">
+        <div className="p-3 rounded-2xl bg-surface-raised border border-border flex items-center justify-between gap-3 transition-colors">
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-semibold text-white truncate">
+            <div className="text-xs font-semibold text-fg truncate">
               {user.name || "Customer"}
             </div>
-            <div className="text-[10px] text-slate-400 truncate font-mono">
+            <div className="text-[10px] text-accent-text truncate font-mono font-bold tabular-nums">
               ₹{user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
             </div>
           </div>
           <button
             onClick={logout}
             title="Log Out"
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
+            className="p-2 rounded-xl text-fg-muted hover:text-danger hover:bg-danger-bg transition-colors shrink-0 cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
           </button>

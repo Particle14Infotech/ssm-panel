@@ -187,7 +187,7 @@ export default function AdminCouponsPage() {
                     <td className="py-4 px-3 font-mono font-bold text-white whitespace-nowrap">
                       {coupon.code}
                     </td>
-                    <td className="py-4 px-3 font-mono font-bold text-emerald-400">
+                    <td className="py-4 px-3 font-mono font-bold text-success">
                       {coupon.discountType === "PERCENT"
                         ? `${coupon.discountValue}% Bonus`
                         : `+₹${coupon.discountValue} Flat`}

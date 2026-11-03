@@ -22,9 +22,9 @@ export default function PricingPage() {
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 mb-8">
         <Breadcrumb items={[{ label: "Pricing", href: "/pricing" }]} />
         <h1 className="font-heading text-[clamp(32px,4vw,52px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-3">
-          Pricing & <span className="text-[#D8EC8D]">Service Rates</span>
+          Pricing & <span className="text-accent-text">Service Rates</span>
         </h1>
-        <p className="text-[#A1A1AA] text-base leading-relaxed max-w-2xl">
+        <p className="text-fg-muted text-base leading-relaxed max-w-2xl">
           Transparent rates per 1,000 units with clear start times, min-max limits, and instant INR wallet top-ups.
         </p>
       </div>

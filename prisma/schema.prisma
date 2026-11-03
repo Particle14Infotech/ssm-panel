@@ -64,6 +64,7 @@ enum PackageExecutionStatus {
   PARTIAL
   FAILED
   CANCELLED
+  STALLED
   SKIPPED_PAUSED
   SKIPPED_QUOTA
   SKIPPED_TYPE
@@ -111,6 +112,31 @@ enum OrderRunStatus {
   CANCELED
 }
 
+enum ServiceKind {
+  LIKES
+  VIEWS
+  FOLLOWERS
+  SUBSCRIBERS
+  COMMENTS
+  REACH
+  IMPRESSIONS
+  SHARES
+  SAVES
+  OTHER
+}
+
+enum PackagePricingMode {
+  FIXED
+  COMPUTED
+}
+
+enum PackageMode {
+  LEGACY
+  TEMPLATE
+  CUSTOMIZED
+  CUSTOM
+}
+
 model User {
   id                         String    @id @default(uuid())
   email                      String    @unique
@@ -130,6 +156,7 @@ model User {
   deletedAt                  DateTime?
   createdAt                  DateTime  @default(now())
   updatedAt                  DateTime  @updatedAt
+  themePreference            String?   @default("system")
 
   wallet    Wallet?
   orders    Order[]
@@ -139,6 +166,7 @@ model User {
   auditLogs AuditLog[]
   emailLogs EmailLog[]
   favorites Favorite[]
+  drafts    PackageDraft[]
   packages  Package[]
 
   @@index([email, isDeleted])
@@ -204,56 +232,64 @@ model Category {
 }
 
 model Service {
-  id                       String    @id @default(uuid())
+  id                       String                @id @default(uuid())
   categoryId               String
-  category                 Category  @relation(fields: [categoryId], references: [id])
+  category                 Category              @relation(fields: [categoryId], references: [id])
   name                     String
   displayName              String?
   description              String?
   platform                 String // INSTAGRAM, YOUTUBE, TIKTOK, etc.
-  ratePer1000              Decimal   @db.Decimal(10, 2)
+  ratePer1000              Decimal               @db.Decimal(10, 2)
   minQty                   Int
   maxQty                   Int
   avgTime                  String?
   providerId               String?
-  provider                 Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  provider                 Provider?             @relation(fields: [providerId], references: [id], onDelete: SetNull)
   providerServiceId        String?
-  routingMode              String    @default("MANUAL") // MANUAL, AUTO_FAILOVER
+  routingMode              String                @default("MANUAL") // MANUAL, AUTO_FAILOVER
   backupProviderId         String?
   backupProviderServiceId  String?
-  refillable               Boolean   @default(false)
-  cancellable              Boolean   @default(false)
-  dripFeedSupported        Boolean   @default(false)
-  allowManagedDrip         Boolean   @default(false)
+  refillable               Boolean               @default(false)
+  cancellable              Boolean               @default(false)
+  dripFeedSupported        Boolean               @default(false)
+  allowManagedDrip         Boolean               @default(false)
   rawMeta                  Json?
   dripFeedMinRuns          Int?
   dripFeedMaxRuns          Int?
   dripFeedMinInterval      Int?
   dripFeedMaxInterval      Int?
-  serviceType              String    @default("DEFAULT") // DEFAULT, CUSTOM_COMMENTS, NEEDS_REVIEW
-  linkType                 String    @default("POST_OR_REEL") // PROFILE, POST_OR_REEL, CHANNEL, CUSTOM
-  providerCostPer1k        Decimal?  @db.Decimal(12, 4)
-  providerCostCurrency     String?   @default("USD")
-  costINR                  Decimal?  @db.Decimal(12, 2)
-  marginPercentOverride    Decimal?  @db.Decimal(5, 2)
-  fixedSellingRateOverride Decimal?  @db.Decimal(10, 2)
-  priceBelowCost           Boolean   @default(false)
-  priceChangeStatus        String    @default("NORMAL") // NORMAL, PENDING_APPROVAL, BELOW_COST
-  packageEligible          Boolean   @default(false)
-  active                   Boolean   @default(true)
-  status                   String    @default("ACTIVE") // ACTIVE, INACTIVE
-  isDeleted                Boolean   @default(false)
+  serviceType              String                @default("DEFAULT")
+  kind                     ServiceKind           @default(OTHER)
+  geoCountry               String?
+  geoRegion                String?
+  templateItems            PackageTemplateItem[] // DEFAULT, CUSTOM_COMMENTS, NEEDS_REVIEW
+  linkType                 String                @default("POST_OR_REEL") // PROFILE, POST_OR_REEL, CHANNEL, CUSTOM
+  providerCostPer1k        Decimal?              @db.Decimal(12, 4)
+  providerCostCurrency     String?               @default("USD")
+  costINR                  Decimal?              @db.Decimal(12, 2)
+  marginPercentOverride    Decimal?              @db.Decimal(5, 2)
+  fixedSellingRateOverride Decimal?              @db.Decimal(10, 2)
+  priceBelowCost           Boolean               @default(false)
+  priceChangeStatus        String                @default("NORMAL") // NORMAL, PENDING_APPROVAL, BELOW_COST
+  packageEligible          Boolean               @default(false)
+  active                   Boolean               @default(true)
+  status                   String                @default("ACTIVE") // ACTIVE, INACTIVE
+  isDeleted                Boolean               @default(false)
   deletedAt                DateTime?
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime  @updatedAt
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
 
   orders              Order[]
   priceHistory        ServicePriceHistory[]
   pendingPriceChanges PendingPriceChange[]
   favorites           Favorite[]
+  drafts              PackageDraft[]
   packageRules        PackageRule[]
 
   @@index([platform, categoryId, status])
+  @@index([isDeleted, active, platform])
+  @@index([isDeleted, active, categoryId])
+  @@index([isDeleted, active, ratePer1000])
   @@index([isDeleted])
   @@index([providerId])
 }
@@ -590,6 +626,11 @@ model PlatformConfig {
   maxRunsPerPost       Int      @default(10)
   defaultWindowMinutes Int      @default(180)
   limits               Json     @default("{}")
+  labels               Json?
+  dripIntervals        Int[]    @default([1, 2, 4, 8, 12, 24])
+  durationChips        Int[]    @default([1, 5, 7, 10, 14, 20, 25, 30])
+  maxExtraHours        Int      @default(24)
+  enabledTabs          String[] @default(["SINGLE", "CUSTOM_DRIP", "COMBOS", "AUTOPILOT"])
   active               Boolean  @default(true)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -607,26 +648,33 @@ model PlatformHandleBlocklist {
 }
 
 model Package {
-  id             String           @id @default(uuid())
-  userId         String
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  platform       String           @default("INSTAGRAM")
-  handle         String
-  timezone       String           @default("UTC")
-  kind           PackageRuleKind?
-  status         PackageStatus    @default(ACTIVE)
-  startAt        DateTime         @default(now())
-  endAt          DateTime
-  pausedDays     Int              @default(0)
-  reserveTotal   Decimal          @db.Decimal(12, 2)
-  idempotencyKey String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id                 String           @id @default(uuid())
+  userId             String
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform           String           @default("INSTAGRAM")
+  handle             String
+  timezone           String           @default("UTC")
+  kind               PackageRuleKind?
+  status             PackageStatus    @default(ACTIVE)
+  startAt            DateTime         @default(now())
+  endAt              DateTime
+  pausedDays         Int              @default(0)
+  mode               PackageMode      @default(LEGACY)
+  templateTierId     String?
+  priceSnapshot      Json?
+  allocationSnapshot Json?
+  slots              PackageSlot[]
+  reserveTotal       Decimal          @db.Decimal(12, 2)
+  idempotencyKey     String?
+  rescheduleCount    Int              @default(0)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
   rules      PackageRule[]
   triggers   PackageTrigger[]
   executions PackageExecution[]
   refunds    Refund[]
+  events     PackageEvent[]
 
   @@unique([userId, idempotencyKey], name: "unique_package_idempotency_per_user")
   @@index([userId, status, createdAt])
@@ -646,12 +694,15 @@ model PackageRule {
   delayMinutes      Int             @default(0)
   deliveryWindowMin Int             @default(0)
   maxPosts          Int             @default(1)
+  deliveryWindow    Json?
   maxPerDay         Int             @default(0)
   minSpacingMin     Int             @default(0)
   usedCount         Int             @default(0)
   unitCharge        Decimal         @db.Decimal(10, 2)
   rateSnapshot      Decimal         @db.Decimal(10, 2)
   reserve           Decimal         @db.Decimal(12, 2)
+  allocatedShare    Decimal?        @db.Decimal(12, 2)
+  allocationBp      Int?            @default(0)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
@@ -676,32 +727,55 @@ model PackageTrigger {
 }
 
 model PackageExecution {
-  id              String                 @id @default(uuid())
-  packageId       String
-  package         Package                @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  ruleId          String
-  rule            PackageRule            @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-  triggerId       String?
-  trigger         PackageTrigger?        @relation(fields: [triggerId], references: [id], onDelete: Cascade)
-  mediaKey        String?
-  targetUrl       String?
-  source          ExecutionSource        @default(SCHEDULE)
-  seq             Int                    @default(1)
-  quantity        Int
-  remainingQuantity Int                  @default(0)
-  allocatedCharge Decimal                @db.Decimal(10, 2)
-  executeAt       DateTime
-  status          PackageExecutionStatus @default(SCHEDULED)
-  orderId         String?                @unique
-  order           Order?                 @relation("PackageExecutionOrder")
-  skipReason      String?
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
+  id                String                 @id @default(uuid())
+  packageId         String
+  package           Package                @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  ruleId            String
+  rule              PackageRule            @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  triggerId         String?
+  trigger           PackageTrigger?        @relation(fields: [triggerId], references: [id], onDelete: Cascade)
+  mediaKey          String?
+  targetUrl         String?
+  source            ExecutionSource        @default(SCHEDULE)
+  seq               Int                    @default(1)
+  quantity          Int
+  remainingQuantity Int                    @default(0)
+  allocatedCharge   Decimal                @db.Decimal(10, 2)
+  plannedAt         DateTime?
+  executeAt         DateTime
+  dispatchedAt      DateTime?
+  status            PackageExecutionStatus @default(SCHEDULED)
+  slotId            String?
+  slot              PackageSlot?           @relation(fields: [slotId], references: [id], onDelete: SetNull)
+  orderId           String?                @unique
+  order             Order?                 @relation("PackageExecutionOrder")
+  skipReason        String?
+  attempts          Int                    @default(0)
+  nextAttemptAt     DateTime?
+  lastError         String?
+  lastErrorAt       DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
 
   @@unique([packageId, mediaKey, seq], name: "unique_package_media_seq")
   @@index([status, executeAt])
   @@index([packageId])
   @@index([ruleId])
+}
+
+model PackageEvent {
+  id          String   @id @default(uuid())
+  packageId   String
+  package     Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  eventType   String
+  actor       String
+  reason      String?
+  beforeState Json?
+  afterState  Json?
+  createdAt   DateTime @default(now())
+
+  @@index([packageId])
+  @@index([createdAt])
 }
 
 model ProcessedWebhookEvent {
@@ -725,4 +799,118 @@ model ProcessedIdempotencyKey {
 
   @@index([key])
   @@index([userId, action])
+}
+
+model PackageTemplate {
+  id           String             @id @default(uuid())
+  platform     String             @default("INSTAGRAM")
+  slug         String             @unique
+  name         String
+  description  String?
+  badge        String?
+  pricingMode  PackagePricingMode @default(FIXED)
+  active       Boolean            @default(true)
+  archived     Boolean            @default(false)
+  displayOrder Int                @default(0)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  tiers PackageTemplateTier[]
+
+  @@index([platform, active])
+}
+
+model PackageTemplateTier {
+  id           String          @id @default(uuid())
+  templateId   String
+  template     PackageTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  version      Int             @default(1)
+  name         String
+  price        Decimal         @db.Decimal(12, 2)
+  durationDays Int             @default(7)
+  soldCount    Int             @default(0)
+  active       Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  items PackageTemplateItem[]
+  sales TemplateDailySales[]
+
+  @@unique([templateId, version, name])
+}
+
+model PackageTemplateItem {
+  id           String              @id @default(uuid())
+  tierId       String
+  tier         PackageTemplateTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  serviceId    String
+  service      Service             @relation(fields: [serviceId], references: [id])
+  quantity     Int
+  kind         ServiceKind         @default(OTHER)
+  allocationBp Int                 @default(0)
+  displayOrder Int                 @default(0)
+
+  @@index([tierId])
+  @@index([serviceId])
+}
+
+model PackageSlot {
+  id             String    @id @default(uuid())
+  packageId      String
+  package        Package   @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  slotNumber     Int       @default(1)
+  targetUrl      String?
+  mediaKey       String?
+  status         String    @default("AVAILABLE")
+  linkSlotsUsed  Int       @default(0)
+  linkSlotsTotal Int       @default(1)
+  swapsUsed      Int       @default(0)
+  maxSwaps       Int       @default(2)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  executions PackageExecution[]
+
+  @@unique([packageId, slotNumber])
+  @@unique([packageId, mediaKey])
+  @@index([packageId, status])
+}
+
+model PackageDraft {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tab       String
+  platform  String   @default("INSTAGRAM")
+  stateJson Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Service   Service? @relation(fields: [serviceId], references: [id])
+  serviceId String?
+
+  @@unique([userId, tab])
+}
+
+model TemplateDailySales {
+  id        String              @id @default(uuid())
+  tierId    String
+  tier      PackageTemplateTier @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  date      String
+  count     Int                 @default(0)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@unique([tierId, date])
+}
+
+model PricingSettings {
+  id               String   @id @default(uuid())
+  marginFloor      Decimal  @default(0.15) @db.Decimal(5, 4)
+  defaultMarkup    Decimal  @default(0.30) @db.Decimal(5, 4)
+  roundingDecimals Int      @default(2)
+  cancellationFee  Decimal  @default(0.00) @db.Decimal(10, 2)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }

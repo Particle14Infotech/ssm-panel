@@ -4,7 +4,7 @@
       "C:\\Program Files\\nodejs\\node.exe",
       "D:\\projects\\internship projects\\SMM\\node_modules\\@playwright\\test\\cli.js",
       "test",
-      "e2e/q7-regression.spec.ts"
+      "e2e/delivery-window-e2e.spec.ts"
     ],
     "configFile": "D:\\projects\\internship projects\\SMM\\playwright.config.ts",
     "rootDir": "D:/projects/internship projects/SMM/e2e",
@@ -112,238 +112,106 @@
   },
   "suites": [
     {
-      "title": "q7-regression.spec.ts",
-      "file": "q7-regression.spec.ts",
+      "title": "delivery-window-e2e.spec.ts",
+      "file": "delivery-window-e2e.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Q7: End-to-End Regression Matrix (REG-01)",
-          "file": "q7-regression.spec.ts",
-          "line": 18,
+          "title": "D4 Playwright: Delivery Window Purchase and Reschedule Flow",
+          "file": "delivery-window-e2e.spec.ts",
+          "line": 7,
           "column": 6,
-          "specs": [],
-          "suites": [
+          "specs": [
             {
-              "title": "Desktop Viewport (1440x900)",
-              "file": "q7-regression.spec.ts",
-              "line": 19,
-              "column": 8,
-              "specs": [
+              "title": "1. Buy with Daytime window and verify timeline equals DB executeAt values, then change to Evening",
+              "ok": true,
+              "tags": [],
+              "tests": [
                 {
-                  "title": "1. Desktop Landing, Catalog & Public Navigation",
-                  "ok": true,
-                  "tags": [],
-                  "tests": [
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
                     {
-                      "timeout": 120000,
-                      "annotations": [],
-                      "expectedStatus": "passed",
-                      "projectId": "chromium",
-                      "projectName": "chromium",
-                      "results": [
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 26934,
+                      "errors": [],
+                      "stdout": [
                         {
-                          "workerIndex": 0,
-                          "parallelIndex": 0,
-                          "status": "passed",
-                          "duration": 1868,
-                          "errors": [],
-                          "stdout": [],
-                          "stderr": [],
-                          "retry": 0,
-                          "startTime": "2026-10-25T21:31:34.193Z",
-                          "annotations": [],
-                          "attachments": []
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/dashboard?_rsc=1ctkx - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/new-order?_rsc=1ctkx - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/packages?_rsc=1ctkx - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/services-catalog?_rsc=1ctkx - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/orders?_rsc=1ctkx - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/wallet?_rsc=1ctkx - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/transactions?_rsc=1ctkx - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/support?_rsc=1ctkx - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/profile?_rsc=1ctkx - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/new-order?_rsc=1qurj - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/packages?_rsc=1qurj - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/favorites?_rsc=1qurj - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/services-catalog?_rsc=1qurj - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/orders?_rsc=1qurj - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/wallet?_rsc=1qurj - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/transactions?_rsc=1qurj - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/support?_rsc=1qurj - net::ERR_ABORTED\n"
+                        },
+                        {
+                          "text": "[BROWSER REQ FAILED] http://localhost:3000/profile?_rsc=1qurj - net::ERR_ABORTED\n"
                         }
                       ],
-                      "status": "expected"
-                    }
-                  ],
-                  "id": "3458a26f5807431c6059-4859bdddcdeb1e1cad75",
-                  "file": "q7-regression.spec.ts",
-                  "line": 22,
-                  "column": 9
-                },
-                {
-                  "title": "2. Desktop Customer Dashboard, Wallet & Balance",
-                  "ok": true,
-                  "tags": [],
-                  "tests": [
-                    {
-                      "timeout": 120000,
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-30T20:43:19.702Z",
                       "annotations": [],
-                      "expectedStatus": "passed",
-                      "projectId": "chromium",
-                      "projectName": "chromium",
-                      "results": [
-                        {
-                          "workerIndex": 0,
-                          "parallelIndex": 0,
-                          "status": "passed",
-                          "duration": 3596,
-                          "errors": [],
-                          "stdout": [],
-                          "stderr": [],
-                          "retry": 0,
-                          "startTime": "2026-10-25T21:31:36.581Z",
-                          "annotations": [],
-                          "attachments": []
-                        }
-                      ],
-                      "status": "expected"
+                      "attachments": []
                     }
                   ],
-                  "id": "3458a26f5807431c6059-52bcfcf5efa0e86477f8",
-                  "file": "q7-regression.spec.ts",
-                  "line": 41,
-                  "column": 9
-                },
-                {
-                  "title": "3. Desktop Packages Marketplace & Quote Interface",
-                  "ok": true,
-                  "tags": [],
-                  "tests": [
-                    {
-                      "timeout": 120000,
-                      "annotations": [],
-                      "expectedStatus": "passed",
-                      "projectId": "chromium",
-                      "projectName": "chromium",
-                      "results": [
-                        {
-                          "workerIndex": 0,
-                          "parallelIndex": 0,
-                          "status": "passed",
-                          "duration": 247,
-                          "errors": [],
-                          "stdout": [],
-                          "stderr": [],
-                          "retry": 0,
-                          "startTime": "2026-10-25T21:31:40.193Z",
-                          "annotations": [],
-                          "attachments": []
-                        }
-                      ],
-                      "status": "expected"
-                    }
-                  ],
-                  "id": "3458a26f5807431c6059-b7529ba8a31c4d77219f",
-                  "file": "q7-regression.spec.ts",
-                  "line": 54,
-                  "column": 9
+                  "status": "expected"
                 }
-              ]
-            },
-            {
-              "title": "Mobile Viewport (390x844)",
-              "file": "q7-regression.spec.ts",
+              ],
+              "id": "18f845f47e7a50573380-1f972c5d42078c26d19d",
+              "file": "delivery-window-e2e.spec.ts",
               "line": 64,
-              "column": 8,
-              "specs": [
-                {
-                  "title": "4. Mobile Navigation & Responsive Header",
-                  "ok": true,
-                  "tags": [],
-                  "tests": [
-                    {
-                      "timeout": 120000,
-                      "annotations": [],
-                      "expectedStatus": "passed",
-                      "projectId": "chromium",
-                      "projectName": "chromium",
-                      "results": [
-                        {
-                          "workerIndex": 0,
-                          "parallelIndex": 0,
-                          "status": "passed",
-                          "duration": 335,
-                          "errors": [],
-                          "stdout": [],
-                          "stderr": [],
-                          "retry": 0,
-                          "startTime": "2026-10-25T21:31:40.453Z",
-                          "annotations": [],
-                          "attachments": []
-                        }
-                      ],
-                      "status": "expected"
-                    }
-                  ],
-                  "id": "3458a26f5807431c6059-9dda1ec1734fa11bef77",
-                  "file": "q7-regression.spec.ts",
-                  "line": 67,
-                  "column": 9
-                },
-                {
-                  "title": "5. Mobile Catalog & Services Layout",
-                  "ok": true,
-                  "tags": [],
-                  "tests": [
-                    {
-                      "timeout": 120000,
-                      "annotations": [],
-                      "expectedStatus": "passed",
-                      "projectId": "chromium",
-                      "projectName": "chromium",
-                      "results": [
-                        {
-                          "workerIndex": 0,
-                          "parallelIndex": 0,
-                          "status": "passed",
-                          "duration": 239,
-                          "errors": [],
-                          "stdout": [],
-                          "stderr": [],
-                          "retry": 0,
-                          "startTime": "2026-10-25T21:31:40.799Z",
-                          "annotations": [],
-                          "attachments": []
-                        }
-                      ],
-                      "status": "expected"
-                    }
-                  ],
-                  "id": "3458a26f5807431c6059-41a41d3d260d5aab1b87",
-                  "file": "q7-regression.spec.ts",
-                  "line": 78,
-                  "column": 9
-                },
-                {
-                  "title": "6. Mobile Customer Wallet & Transactions",
-                  "ok": true,
-                  "tags": [],
-                  "tests": [
-                    {
-                      "timeout": 120000,
-                      "annotations": [],
-                      "expectedStatus": "passed",
-                      "projectId": "chromium",
-                      "projectName": "chromium",
-                      "results": [
-                        {
-                          "workerIndex": 0,
-                          "parallelIndex": 0,
-                          "status": "passed",
-                          "duration": 3056,
-                          "errors": [],
-                          "stdout": [],
-                          "stderr": [],
-                          "retry": 0,
-                          "startTime": "2026-10-25T21:31:41.049Z",
-                          "annotations": [],
-                          "attachments": []
-                        }
-                      ],
-                      "status": "expected"
-                    }
-                  ],
-                  "id": "3458a26f5807431c6059-c09e34f27706a8fd8c33",
-                  "file": "q7-regression.spec.ts",
-                  "line": 88,
-                  "column": 9
-                }
-              ]
+              "column": 7
             }
           ]
         }
@@ -352,9 +220,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-10-25T21:31:33.593Z",
-    "duration": 10651.793000000001,
-    "expected": 6,
+    "startTime": "2026-10-30T20:43:18.250Z",
+    "duration": 71503.037,
+    "expected": 1,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

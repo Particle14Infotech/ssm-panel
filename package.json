@@ -19,6 +19,9 @@
     "check:emoji": "node scripts/check-emoji.mjs --fail",
     "verify:backend": "node scripts/verify-backend.js",
     "verify:security": "node scripts/security-gate.js",
+    "check:copy": "node scripts/check-forbidden-words.js",
+    "check:theme-contrast": "node scripts/check-theme-contrast.mjs",
+    "check:theme-lint": "node scripts/theme-lint.mjs",
     "smoke": "node scripts/smoke.js",
     "e2e:prod": "node scripts/e2e-prod.js",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""

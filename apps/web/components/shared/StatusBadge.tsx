@@ -27,8 +27,8 @@ interface StatusBadgeProps {
 export function StatusBadge({ status, className = "" }: StatusBadgeProps) {
   const norm = status.toUpperCase().replace(/\s+/g, "_");
 
-  let colorClasses = "bg-slate-500/10 text-slate-300 border-slate-500/20";
-  let dotColor = "bg-slate-400";
+  let colorClasses = "bg-surface-raised text-fg-muted border-border";
+  let dotColor = "bg-fg-muted";
   let label = status;
 
   switch (norm) {
@@ -36,22 +36,22 @@ export function StatusBadge({ status, className = "" }: StatusBadgeProps) {
     case "PAID":
     case "RESOLVED":
     case "SUCCESS":
-      colorClasses = "bg-emerald-500/10 text-emerald-300 border-emerald-500/30";
-      dotColor = "bg-emerald-400";
+      colorClasses = "bg-success-bg text-success border-success/30";
+      dotColor = "bg-success";
       label = norm === "PAID" ? "Paid" : norm === "RESOLVED" ? "Resolved" : "Completed";
       break;
 
     case "PROCESSING":
     case "IN_PROGRESS":
     case "ANSWERED":
-      colorClasses = "bg-[#D8EC8D]/15 text-[#D8EC8D] border-[#D8EC8D]/30";
-      dotColor = "bg-[#D8EC8D]";
+      colorClasses = "bg-info-bg text-info border-info/30";
+      dotColor = "bg-info";
       label = norm === "IN_PROGRESS" ? "In Progress" : norm === "ANSWERED" ? "Staff Reply" : "Processing";
       break;
 
     case "PARTIAL":
-      colorClasses = "bg-amber-500/15 text-amber-300 border-amber-500/30";
-      dotColor = "bg-amber-400";
+      colorClasses = "bg-warning-bg text-warning border-warning/30";
+      dotColor = "bg-warning";
       label = "Partial";
       break;
 
@@ -59,8 +59,8 @@ export function StatusBadge({ status, className = "" }: StatusBadgeProps) {
     case "CREATED":
     case "ATTEMPTED":
     case "OPEN":
-      colorClasses = "bg-amber-500/15 text-amber-300 border-amber-500/30";
-      dotColor = "bg-amber-400";
+      colorClasses = "bg-warning-bg text-warning border-warning/30";
+      dotColor = "bg-warning";
       label = norm === "OPEN" ? "Open" : norm === "CREATED" ? "Created" : "Pending";
       break;
 
@@ -69,8 +69,8 @@ export function StatusBadge({ status, className = "" }: StatusBadgeProps) {
     case "FAILED":
     case "EXPIRED":
     case "CLOSED":
-      colorClasses = "bg-rose-500/15 text-rose-300 border-rose-500/30";
-      dotColor = "bg-rose-400";
+      colorClasses = "bg-danger-bg text-danger border-danger/30";
+      dotColor = "bg-danger";
       label = norm === "CLOSED" ? "Closed" : norm === "FAILED" ? "Failed" : "Cancelled";
       break;
   }

@@ -4,6 +4,7 @@ import { encryptProviderKey, decryptProviderKey } from "../../common/crypto.util
 import { SmmProviderClient } from "./smm-provider.client";
 import { Decimal } from "decimal.js";
 import { coerceBoolean, calculateCostINR, calculateSellingRate, DEFAULT_PRICING_SETTINGS, PricingSettingsConfig } from "@smm/contracts";
+import { SMMCacheService } from "../../common/cache.service";
 
 export interface ProviderDto {
   id: string;
@@ -27,6 +28,7 @@ export interface ProviderDto {
 @Injectable()
 export class ProvidersService {
   private readonly logger = new Logger(ProvidersService.name);
+  private readonly cacheService = new SMMCacheService();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -533,6 +535,9 @@ export class ProvidersService {
       `[Provider Sync #${id}] Import complete: ${importedCount} imported, ${updatedCount} updated, ${errorsCount} errors. ` +
       `Distribution: dripFeedSupported=${dripFeedCount}, refillable=${refillCount}, cancellable=${cancelCount}`
     );
+
+    // Invalidate catalog cache so newly synced services appear instantly
+    await this.cacheService.invalidatePattern("catalog:*");
 
     // Update active service count for provider
     const totalActive = await this.prisma.service.count({

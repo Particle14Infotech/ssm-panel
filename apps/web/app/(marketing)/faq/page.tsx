@@ -40,9 +40,9 @@ export default function FaqPage() {
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 mb-8">
         <Breadcrumb items={[{ label: "FAQ", href: "/faq" }]} />
         <h1 className="font-heading text-[clamp(32px,4vw,52px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-3">
-          Frequently Asked <span className="text-[#D8EC8D]">Questions</span>
+          Frequently Asked <span className="text-accent-text">Questions</span>
         </h1>
-        <p className="text-[#A1A1AA] text-base leading-relaxed max-w-2xl">
+        <p className="text-fg-muted text-base leading-relaxed max-w-2xl">
           Clear answers about order dispatch, wallet deposits, supported payment methods, and automated refunds.
         </p>
       </div>

@@ -81,6 +81,26 @@ export class ServicesController {
     return this.servicesService.create(body);
   }
 
+
+  @Put("bulk/kinds-and-regions")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Admin Bulk Update Service Kinds and Geographic Regions" })
+  async bulkUpdateKindsAndRegions(
+    @Body()
+    body: {
+      updates: Array<{
+        id: string;
+        kind?: any;
+        geoCountry?: string | null;
+        geoRegion?: string | null;
+        packageEligible?: boolean;
+      }>;
+    }
+  ) {
+    return this.servicesService.bulkUpdateKindsAndRegions(body.updates || []);
+  }
+
   @Put(":id")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)

@@ -8,8 +8,9 @@ import { SoftMeshGradient } from "@/components/shared/SoftMeshGradient";
 export function AdminLayoutWrapper({ children }: { children: React.ReactNode }) {
   return (
     <AdminProviderWrapper>
-      <div className="min-h-screen bg-[#131313] text-slate-200 font-sans antialiased selection:bg-[#D8EC8D] selection:text-[#131313] flex flex-col relative overflow-x-hidden">
-        {/* Soft blurred 3D mesh-gradient: deep lime aura */}
+      <div className="min-h-screen bg-bg text-fg font-sans antialiased selection:bg-accent selection:text-on-accent flex flex-col relative overflow-x-clip transition-colors duration-200">
+        <div className="ambient-glow-layer" />
+        {/* Soft blurred 3D mesh-gradient */}
         <SoftMeshGradient intensity="medium" />
 
         <AdminHeader />

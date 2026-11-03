@@ -85,7 +85,7 @@ export default function ServicesCatalogPage() {
       {/* Header Clean (Telemetry pill & beam glow removed) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl font-semibold text-white tracking-tight">Services Matrix</h1>
+          <h1 className="text-3xl font-semibold text-fg tracking-tight">Services Matrix</h1>
           <p className="text-xs text-slate-400">
             Transparent pricing per 1,000 units with non-drop telemetry and warranty refills.
           </p>
@@ -119,7 +119,7 @@ export default function ServicesCatalogPage() {
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all shrink-0 flex items-center gap-2 border ${
                   isSelected
                     ? "bg-[#D8EC8D] text-[#131313] font-bold border-[#D8EC8D] shadow-sm"
-                    : "bg-white/[0.03] border-white/10 text-slate-300 hover:text-white hover:bg-white/[0.07] hover:border-white/20"
+                    : "bg-white/[0.03] border-border text-fg-2 hover:text-white hover:bg-white/[0.07] hover:border-white/20"
                 }`}
               >
                 {plat.id === "ALL" ? (
@@ -134,7 +134,7 @@ export default function ServicesCatalogPage() {
         </div>
 
         {/* Search & Category Filter Row */}
-        <div className="flex flex-col sm:flex-row items-center gap-3 pt-1 border-t border-white/5">
+        <div className="flex flex-col sm:flex-row items-center gap-3 pt-1 border-t border-slate-200/60 dark:border-white/5">
           <div className="relative flex-1 w-full">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
@@ -142,7 +142,7 @@ export default function ServicesCatalogPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by service name, ID, or description..."
-              className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
+              className="w-full bg-white/5 border border-border focus:border-[#D8EC8D]/50 rounded-xl pl-9 pr-4 py-2 text-xs text-fg placeholder-slate-400 focus:outline-none transition-all"
             />
           </div>
 
@@ -150,11 +150,11 @@ export default function ServicesCatalogPage() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full sm:w-56 bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-sans"
+              className="w-full sm:w-56 bg-white/5 border border-border focus:border-[#D8EC8D]/50 rounded-xl px-3 py-2 text-xs text-fg focus:outline-none font-sans"
             >
-              <option value="ALL" className="bg-[#131313]">All Categories ({categories.length})</option>
+              <option value="ALL" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">All Categories ({categories.length})</option>
               {categories.map((c) => (
-                <option key={c} value={c} className="bg-[#131313]">
+                <option key={c} value={c} className="bg-white text-slate-900 dark:bg-[#131313] text-fg">
                   {c}
                 </option>
               ))}
@@ -176,10 +176,72 @@ export default function ServicesCatalogPage() {
             No services match the current filter criteria.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <>
+            {/* MOBILE SERVICES CARDS (< md) */}
+            <div className="block md:hidden space-y-3">
+              {filteredServices.map((service) => (
+                <div
+                  key={service.id}
+                  className="p-4 rounded-2xl bg-white/[0.02] border border-border hover:border-accent/30 transition-all space-y-3"
+                >
+                  {/* Top Bar: Platform + ID + Warranty */}
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-white/5 pb-2.5">
+                    <div className="flex items-center gap-1.5 font-mono text-xs font-semibold text-fg">
+                      <PlatformIcon platform={service.platform} size={15} useBrandColor={true} />
+                      <span className="text-[11px] text-fg-2 font-bold uppercase">{service.platform}</span>
+                      <span className="text-fg/20">·</span>
+                      <span className="text-[10px] text-slate-400 font-mono">{formatServiceId(service.id)}</span>
+                    </div>
+
+                    {service.refillable ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono text-success bg-emerald-500/10 border border-emerald-500/20">
+                        <ShieldCheck className="w-3 h-3" />
+                        <span>30d Refill</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono text-slate-400">Non-Drop</span>
+                    )}
+                  </div>
+
+                  {/* Service Name */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-fg leading-snug">
+                      {service.name}
+                    </h3>
+                    <div className="text-[11px] text-slate-400 mt-1 font-sans">
+                      {service.categoryName}
+                    </div>
+                  </div>
+
+                  {/* Metrics & Action Grid */}
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-white/5 gap-3">
+                    <div className="space-y-0.5">
+                      <div className="text-[10px] uppercase font-mono text-slate-500 font-semibold">Rate / 1k</div>
+                      <div className="text-sm font-bold font-mono text-[#D8EC8D]">
+                        ₹{service.ratePer1000.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </div>
+                      <div className="text-[10px] font-mono text-slate-400">
+                        Min: {service.minQty.toLocaleString()} · Max: {service.maxQty.toLocaleString()}
+                      </div>
+                    </div>
+
+                    <Link
+                      href={`/new-order?serviceId=${service.id}&platform=${service.platform}`}
+                      className="px-4 py-2.5 rounded-xl btn-primary-gradient text-[#171e00] font-bold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-all shrink-0 min-h-[40px]"
+                    >
+                      <span>Order</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* DESKTOP SERVICES TABLE (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/10 text-[11px] uppercase tracking-wider text-slate-400 font-mono">
+                <tr className="border-b border-border text-[11px] uppercase tracking-wider text-slate-400 font-mono">
                   <th className="py-3 px-3">ID</th>
                   <th className="py-3 px-3">Service Name</th>
                   <th className="py-3 px-3">Rate / 1k</th>
@@ -199,14 +261,14 @@ export default function ServicesCatalogPage() {
                     {/* ID */}
                     <td className="py-3.5 px-3 font-mono font-medium text-slate-400 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-white font-semibold">{formatServiceId(service.id)}</span>
+                        <span className="text-fg font-semibold">{formatServiceId(service.id)}</span>
                         <button
                           onClick={() => handleCopyId(formatServiceId(service.id))}
-                          className="hover:text-white transition-colors"
+                          className="hover:text-slate-900 dark:hover:text-white transition-colors"
                           title="Copy ID"
                         >
                           {copiedServiceId === service.id ? (
-                            <Check className="w-3 h-3 text-emerald-400" />
+                            <Check className="w-3 h-3 text-success" />
                           ) : (
                             <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-300" />
                           )}
@@ -216,13 +278,13 @@ export default function ServicesCatalogPage() {
 
                     {/* Name & Platform with REAL Logo */}
                     <td className="py-3.5 px-3">
-                      <div className="font-medium text-white max-w-md">{service.name}</div>
+                      <div className="font-medium text-fg max-w-md">{service.name}</div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/5 text-[10px] text-slate-300 font-mono uppercase">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/[0.04] border border-slate-200/60 dark:border-white/5 text-[10px] text-fg-2 font-mono uppercase">
                           <PlatformIcon platform={service.platform} size={13} useBrandColor={true} />
                           <span>{service.platform}</span>
                         </span>
-                        <span className="text-white/20">•</span>
+                        <span className="text-fg/20">•</span>
                         <span className="text-[10px] text-slate-400">
                           {service.categoryName}
                         </span>
@@ -230,7 +292,7 @@ export default function ServicesCatalogPage() {
                     </td>
 
                     {/* Rate per 1000 */}
-                    <td className="py-3.5 px-3 font-mono font-semibold text-white whitespace-nowrap">
+                    <td className="py-3.5 px-3 font-mono font-semibold text-fg whitespace-nowrap">
                       ₹{service.ratePer1000.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </td>
 
@@ -244,7 +306,7 @@ export default function ServicesCatalogPage() {
                     {/* Warranty */}
                     <td className="py-3.5 px-3 whitespace-nowrap">
                       {service.refillable ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono text-success bg-emerald-500/10 border border-emerald-500/20">
                           <ShieldCheck className="w-3 h-3" />
                           <span>30d Refill</span>
                         </span>
@@ -259,7 +321,7 @@ export default function ServicesCatalogPage() {
                     <td className="py-3.5 px-3 text-right whitespace-nowrap">
                       <Link
                         href={`/new-order?serviceId=${service.id}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#D8EC8D]/15 hover:bg-[#D8EC8D] text-[#D8EC8D] hover:text-[#171e00] border border-[#D8EC8D]/30 text-xs font-bold hover:brightness-105 transition-all shadow-sm group-hover:border-[#D8EC8D]/60"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent/15 hover:bg-[#D8EC8D] text-[#D8EC8D] hover:text-[#171e00] border border-accent/30 text-xs font-bold hover:brightness-105 transition-all shadow-sm group-hover:border-[#D8EC8D]/60"
                       >
                         <span>Select</span>
                         <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
@@ -270,6 +332,7 @@ export default function ServicesCatalogPage() {
               </tbody>
             </table>
           </div>
+        </>
         )}
       </div>
     </motion.div>

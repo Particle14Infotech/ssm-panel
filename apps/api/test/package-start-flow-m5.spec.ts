@@ -237,8 +237,18 @@ describe("Milestone M5: Start Flow, Link Normalization, Atomic Quota & Parallel 
               return { id, ...data };
             },
           },
+          order: {
+            create: async ({ data }: any) => ({ id: `ord_${Date.now()}`, ...data }),
+            update: async () => ({}),
+          },
+          outboxEvent: {
+            create: async ({ data }: any) => ({ id: `out_${Date.now()}`, ...data }),
+          },
         };
         return fn(txMock);
+      },
+      service: {
+        findMany: async () => [],
       },
       package: {
         findFirst: async ({ where }: any) => {

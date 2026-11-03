@@ -32,8 +32,8 @@ export function DataTable<T>({
   return (
     <div className={`overflow-x-auto ${className}`}>
       <table className="w-full text-left border-collapse">
-        <thead className="sticky top-0 bg-[#131313]/95 backdrop-blur-md z-10 border-b border-white/10">
-          <tr className="text-[11px] uppercase tracking-wider text-slate-400 font-mono">
+        <thead className="sticky top-0 bg-surface z-10 border-b border-border">
+          <tr className="text-[11px] uppercase tracking-wider text-fg-2 font-mono font-semibold">
             {columns.map((col, idx) => (
               <th
                 key={idx}
@@ -50,11 +50,11 @@ export function DataTable<T>({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/5 text-xs">
+        <tbody className="divide-y divide-border/50 text-xs">
           {data.map((item, rowIdx) => (
             <tr
               key={keyExtractor(item)}
-              className="hover:bg-white/[0.03] transition-colors duration-150 group"
+              className="hover:bg-surface-raised transition-colors duration-150 group"
             >
               {columns.map((col, colIdx) => (
                 <td

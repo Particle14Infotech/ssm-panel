@@ -191,7 +191,7 @@ export function SimulatedCheckoutModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
-      <div className="bg-[#131313] border border-white/10 rounded-t-3xl sm:rounded-3xl rounded-b-none sm:rounded-b-3xl w-full max-w-lg max-h-[92vh] sm:max-h-none shadow-[0_24px_64px_rgba(0,0,0,0.8)] overflow-y-auto relative">
+      <div className="bg-surface border border-border rounded-t-3xl sm:rounded-3xl rounded-b-none sm:rounded-b-3xl w-full max-w-lg max-h-[92vh] sm:max-h-none shadow-[0_24px_64px_rgba(0,0,0,0.8)] overflow-y-auto relative">
         {/* Test Mode Ribbon */}
         {isTestMode && (
           <div className="bg-gradient-to-r from-amber-500/20 via-[#243100]/40 to-amber-500/20 border-b border-amber-500/30 px-4 py-1.5 flex items-center justify-between text-[11px] font-mono text-amber-300">
@@ -199,26 +199,26 @@ export function SimulatedCheckoutModal({
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
               TEST MODE — No Real Money Charged
             </span>
-            <span className="text-white/60">Simulator v2</span>
+            <span className="text-fg/60">Simulator v2</span>
           </div>
         )}
 
         {/* Header */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+        <div className="p-6 border-b border-border flex items-center justify-between">
           <div className="space-y-0.5">
-            <div className="text-[11px] uppercase tracking-widest font-mono text-[#D8EC8D] font-semibold flex items-center gap-1.5">
+            <div className="text-[11px] uppercase tracking-widest font-mono text-accent-text font-semibold flex items-center gap-1.5">
               <BrandLogo variant="icon" size={16} />
               <span>{BRAND_NAME} Secure Checkout</span>
             </div>
-            <div className="text-xs text-slate-400 font-mono">Order ID: {orderId}</div>
+            <div className="text-xs text-fg-muted font-mono">Order ID: {orderId}</div>
           </div>
 
           <div className="text-right">
-            <div className="text-2xl font-light text-white font-mono tracking-tight">
+            <div className="text-2xl font-light text-fg font-mono tracking-tight">
               ₹{amountRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
             </div>
             {bonusRupees > 0 && (
-              <div className="text-[10px] font-mono text-emerald-400 font-semibold">
+              <div className="text-[10px] font-mono text-success font-semibold">
                 + ₹{bonusRupees.toFixed(2)} Bonus Free
               </div>
             )}
@@ -230,14 +230,14 @@ export function SimulatedCheckoutModal({
           {step === "SELECT_METHOD" && (
             <>
               {/* Method Switcher Tabs */}
-              <div className="grid grid-cols-4 gap-2 bg-white/5 p-1 rounded-2xl">
+              <div className="grid grid-cols-4 gap-2 bg-surface-raised p-1 rounded-2xl">
                 <button
                   type="button"
                   onClick={() => { setMethod("UPI"); setErrorMessage(""); }}
                   className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1.5 ${
                     method === "UPI"
-                      ? "bg-[#D8EC8D] text-[#131313] shadow-sm font-bold"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-accent text-on-accent shadow-sm font-bold"
+                      : "text-fg-muted hover:text-fg"
                   }`}
                 >
                   <PaymentIcon method="UPI" size={16} />
@@ -249,8 +249,8 @@ export function SimulatedCheckoutModal({
                   onClick={() => { setMethod("CARD"); setErrorMessage(""); }}
                   className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1.5 ${
                     method === "CARD"
-                      ? "bg-[#D8EC8D] text-[#131313] shadow-sm font-bold"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-accent text-on-accent shadow-sm font-bold"
+                      : "text-fg-muted hover:text-fg"
                   }`}
                 >
                   <PaymentIcon method="CARD" size={16} />
@@ -262,8 +262,8 @@ export function SimulatedCheckoutModal({
                   onClick={() => { setMethod("NETBANKING"); setErrorMessage(""); }}
                   className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1.5 ${
                     method === "NETBANKING"
-                      ? "bg-[#D8EC8D] text-[#131313] shadow-sm font-bold"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-accent text-on-accent shadow-sm font-bold"
+                      : "text-fg-muted hover:text-fg"
                   }`}
                 >
                   <PaymentIcon method="NETBANKING" size={16} />
@@ -275,8 +275,8 @@ export function SimulatedCheckoutModal({
                   onClick={() => { setMethod("WALLET"); setErrorMessage(""); }}
                   className={`py-2 px-1 text-xs font-semibold rounded-xl transition-all flex flex-col items-center gap-1.5 ${
                     method === "WALLET"
-                      ? "bg-[#D8EC8D] text-[#131313] shadow-sm font-bold"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-accent text-on-accent shadow-sm font-bold"
+                      : "text-fg-muted hover:text-fg"
                   }`}
                 >
                   <PaymentIcon method="WALLET" size={16} />
@@ -288,11 +288,11 @@ export function SimulatedCheckoutModal({
               {method === "UPI" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-300 font-medium">Pay via UPI VPA or QR</span>
+                    <span className="text-fg-2 font-medium">Pay via UPI VPA or QR</span>
                     <button
                       type="button"
                       onClick={() => setShowQr(!showQr)}
-                      className="text-[#D8EC8D] hover:underline inline-flex items-center gap-1 text-[11px]"
+                      className="text-accent-text hover:underline inline-flex items-center gap-1 text-[11px]"
                     >
                       <QrCode className="w-3.5 h-3.5" />
                       <span>{showQr ? "Enter VPA Instead" : "Show QR Code"}</span>
@@ -300,18 +300,18 @@ export function SimulatedCheckoutModal({
                   </div>
 
                   {showQr ? (
-                    <div className="flex flex-col items-center justify-center p-6 bg-white/[0.03] border border-white/10 rounded-2xl space-y-3">
+                    <div className="flex flex-col items-center justify-center p-6 bg-surface-raised border border-border rounded-2xl space-y-3">
                       <div className="w-40 h-40 bg-white p-2 rounded-xl flex items-center justify-center shadow-lg">
                         <QrCode className="w-36 h-36 text-slate-900" />
                       </div>
-                      <div className="text-[11px] text-slate-400 font-mono text-center">
+                      <div className="text-[11px] text-fg-muted font-mono text-center">
                         Scan with any test UPI app to simulate instant clearance.
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       <div>
-                        <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                        <label className="text-[10px] uppercase font-mono text-fg-muted block mb-1">
                           Virtual Payment Address (VPA)
                         </label>
                         <input
@@ -319,13 +319,13 @@ export function SimulatedCheckoutModal({
                           value={vpa}
                           onChange={(e) => setVpa(e.target.value)}
                           placeholder="yourname@okhdfcbank"
-                          className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
+                          className="w-full bg-surface-raised border border-border focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-fg font-mono focus:outline-none"
                         />
                       </div>
 
                       {/* Test VPA Quick-fill */}
-                      <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl space-y-1.5">
-                        <span className="text-[10px] text-slate-400 font-mono uppercase block">Test Simulators:</span>
+                      <div className="p-3 bg-white/[0.02] border border-border rounded-xl space-y-1.5">
+                        <span className="text-[10px] text-fg-muted font-mono uppercase block">Test Simulators:</span>
                         <div className="flex gap-2 text-[11px]">
                           <button
                             type="button"
@@ -353,8 +353,8 @@ export function SimulatedCheckoutModal({
                 <div className="space-y-4 text-xs">
                   <div>
                     <div className="flex justify-between items-center mb-1">
-                      <label className="text-[10px] uppercase font-mono text-slate-400">Card Number</label>
-                      <span className="text-[10px] text-[#D8EC8D] font-mono font-semibold">
+                      <label className="text-[10px] uppercase font-mono text-fg-muted">Card Number</label>
+                      <span className="text-[10px] text-accent-text font-mono font-semibold">
                         {getCardBrand(cardNumber)}
                       </span>
                     </div>
@@ -363,37 +363,37 @@ export function SimulatedCheckoutModal({
                       value={cardNumber}
                       onChange={(e) => setCardNumber(e.target.value)}
                       placeholder="4111 1111 1111 1111"
-                      className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
+                      className="w-full bg-surface-raised border border-border focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-fg font-mono focus:outline-none"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Expiry (MM/YY)</label>
+                      <label className="text-[10px] uppercase font-mono text-fg-muted block mb-1">Expiry (MM/YY)</label>
                       <input
                         type="text"
                         value={cardExpiry}
                         onChange={(e) => setCardExpiry(e.target.value)}
                         placeholder="12/28"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none"
+                        className="w-full bg-surface-raised border border-border rounded-xl px-3.5 py-2 text-xs text-fg font-mono focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">CVV / CVC</label>
+                      <label className="text-[10px] uppercase font-mono text-fg-muted block mb-1">CVV / CVC</label>
                       <input
                         type="password"
                         maxLength={4}
                         value={cardCvv}
                         onChange={(e) => setCardCvv(e.target.value)}
                         placeholder="123"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none"
+                        className="w-full bg-surface-raised border border-border rounded-xl px-3.5 py-2 text-xs text-fg font-mono focus:outline-none"
                       />
                     </div>
                   </div>
 
                   {/* Test Card Quick Fills */}
-                  <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl space-y-1.5">
-                    <span className="text-[10px] text-slate-400 font-mono uppercase block">Test Cards:</span>
+                  <div className="p-3 bg-white/[0.02] border border-border rounded-xl space-y-1.5">
+                    <span className="text-[10px] text-fg-muted font-mono uppercase block">Test Cards:</span>
                     <div className="flex gap-2 text-[11px]">
                       <button
                         type="button"
@@ -425,7 +425,7 @@ export function SimulatedCheckoutModal({
               {/* Netbanking Form */}
               {method === "NETBANKING" && (
                 <div className="space-y-3 text-xs">
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block">Select Test Bank</label>
+                  <label className="text-[10px] uppercase font-mono text-fg-muted block">Select Test Bank</label>
                   <div className="grid grid-cols-2 gap-2">
                     {["HDFC Bank", "State Bank of India", "ICICI Bank", "Axis Bank"].map((b) => (
                       <button
@@ -434,8 +434,8 @@ export function SimulatedCheckoutModal({
                         onClick={() => setSelectedBank(b)}
                         className={`p-2.5 rounded-xl border text-left transition-all ${
                           selectedBank === b
-                            ? "bg-[#D8EC8D]/15 border-[#D8EC8D]/40 text-[#D8EC8D] font-semibold"
-                            : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
+                            ? "bg-accent/15 border-[#D8EC8D]/40 text-accent-text font-semibold"
+                            : "bg-surface-raised border-border text-fg-2 hover:bg-white/10"
                         }`}
                       >
                         {b}
@@ -448,7 +448,7 @@ export function SimulatedCheckoutModal({
               {/* Wallets Form */}
               {method === "WALLET" && (
                 <div className="space-y-3 text-xs">
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block">Select Digital Wallet</label>
+                  <label className="text-[10px] uppercase font-mono text-fg-muted block">Select Digital Wallet</label>
                   <div className="grid grid-cols-2 gap-2">
                     {["Amazon Pay Test", "Paytm Simulator", "PhonePe Wallet", "MobiKwik Test"].map((w) => (
                       <button
@@ -457,8 +457,8 @@ export function SimulatedCheckoutModal({
                         onClick={() => setSelectedWallet(w)}
                         className={`p-2.5 rounded-xl border text-left transition-all ${
                           selectedWallet === w
-                            ? "bg-[#D8EC8D]/15 border-[#D8EC8D]/40 text-[#D8EC8D] font-semibold"
-                            : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
+                            ? "bg-accent/15 border-[#D8EC8D]/40 text-accent-text font-semibold"
+                            : "bg-surface-raised border-border text-fg-2 hover:bg-white/10"
                         }`}
                       >
                         {w}
@@ -492,7 +492,7 @@ export function SimulatedCheckoutModal({
                 <button
                   type="button"
                   onClick={handleCloseAttempt}
-                  className="text-xs text-slate-400 hover:text-white transition-colors"
+                  className="text-xs text-fg-muted hover:text-fg transition-colors"
                 >
                   Cancel payment
                 </button>
@@ -503,12 +503,12 @@ export function SimulatedCheckoutModal({
           {/* Processing Screen */}
           {step === "PROCESSING" && (
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 flex items-center justify-center text-[#D8EC8D] shadow-[0_0_30px_rgba(216,236,141,0.25)]">
+              <div className="w-16 h-16 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent-text shadow-[0_0_30px_rgba(216,236,141,0.25)]">
                 <RefreshCw className="w-8 h-8 animate-spin" />
               </div>
               <div className="space-y-1">
-                <h4 className="text-base font-semibold text-white">Authorizing Payment...</h4>
-                <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
+                <h4 className="text-base font-semibold text-fg">Authorizing Payment...</h4>
+                <p className="text-xs text-fg-muted max-w-xs leading-relaxed">
                   Communicating with banking network. Please do not close or refresh this window.
                 </p>
               </div>
@@ -518,17 +518,17 @@ export function SimulatedCheckoutModal({
           {/* Success Screen */}
           {step === "SUCCESS" && (
             <div className="py-10 flex flex-col items-center justify-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-success shadow-[0_0_30px_rgba(16,185,129,0.3)]">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
               <div className="space-y-1">
-                <h4 className="text-lg font-semibold text-white">Payment Approved</h4>
-                <p className="text-xs text-slate-400 font-mono">Reference: {generatedPaymentId}</p>
+                <h4 className="text-lg font-semibold text-fg">Payment Approved</h4>
+                <p className="text-xs text-fg-muted font-mono">Reference: {generatedPaymentId}</p>
                 <p className="text-xs text-emerald-300 font-medium pt-1">
                   ₹{amountRupees.toFixed(2)} credited to your wallet balance.
                 </p>
               </div>
-              <div className="text-[11px] text-slate-400 font-mono animate-pulse">
+              <div className="text-[11px] text-fg-muted font-mono animate-pulse">
                 Auto-redirecting back to wallet...
               </div>
             </div>
@@ -537,11 +537,11 @@ export function SimulatedCheckoutModal({
           {/* Failure Screen */}
           {step === "FAILED" && (
             <div className="py-8 flex flex-col items-center justify-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shadow-[0_0_30px_rgba(244,63,94,0.3)]">
+              <div className="w-16 h-16 rounded-full bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-danger shadow-[0_0_30px_rgba(244,63,94,0.3)]">
                 <XCircle className="w-8 h-8" />
               </div>
               <div className="space-y-1">
-                <h4 className="text-base font-semibold text-white">Payment Declined</h4>
+                <h4 className="text-base font-semibold text-fg">Payment Declined</h4>
                 <p className="text-xs text-rose-300 max-w-xs">{errorMessage || "Transaction could not be completed."}</p>
               </div>
               <div className="flex items-center gap-3 pt-2">
@@ -555,7 +555,7 @@ export function SimulatedCheckoutModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold"
+                  className="px-4 py-2.5 rounded-xl bg-surface-raised hover:bg-white/10 text-fg-2 text-xs font-semibold"
                 >
                   Close
                 </button>
@@ -566,11 +566,11 @@ export function SimulatedCheckoutModal({
 
         {/* Cancellation Confirmation Overlay */}
         {showCancelConfirm && (
-          <div className="absolute inset-0 bg-[#131313]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-4 z-20">
-            <AlertCircle className="w-10 h-10 text-amber-400" />
+          <div className="absolute inset-0 bg-surface/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-4 z-20">
+            <AlertCircle className="w-10 h-10 text-warning" />
             <div className="space-y-1">
-              <h4 className="text-base font-semibold text-white">Cancel payment?</h4>
-              <p className="text-xs text-slate-400 max-w-xs">
+              <h4 className="text-base font-semibold text-fg">Cancel payment?</h4>
+              <p className="text-xs text-fg-muted max-w-xs">
                 Are you sure you want to abort this deposit session? Any entered details will not be charged.
               </p>
             </div>
@@ -578,14 +578,14 @@ export function SimulatedCheckoutModal({
               <button
                 type="button"
                 onClick={() => setShowCancelConfirm(false)}
-                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold"
+                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-fg text-xs font-semibold"
               >
                 Continue Payment
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold"
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-fg text-xs font-semibold"
               >
                 Yes, Cancel
               </button>

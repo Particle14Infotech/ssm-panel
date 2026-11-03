@@ -9,6 +9,7 @@ import {
   NotFoundException,
   UseGuards,
   BadRequestException,
+  Headers,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { OrdersService } from "./orders.service";
@@ -65,6 +66,24 @@ export class OrdersController {
     return this.ordersService.reportProblem(user.id, id, body);
   }
 
+  @Post("quote")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Get Price Quote for Single Order" })
+  async quoteOrder(
+    @Body()
+    body: {
+      serviceId: string;
+      quantity: number;
+      target?: string;
+      isDripFeed?: boolean;
+      dripRuns?: number;
+      dripInterval?: number;
+    },
+    @CurrentUser() user: CurrentUserData
+  ) {
+    return this.ordersService.getQuote(body, user.id);
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Dispatch New Order Vector (Canonical)" })
@@ -77,20 +96,23 @@ export class OrdersController {
       isDripFeed?: boolean;
       runs?: number;
       interval?: number;
+      dripRuns?: number;
+      dripInterval?: number;
       idempotencyKey?: string;
       expectedRate?: number;
       comments?: string;
     },
-    @CurrentUser() user: CurrentUserData
+    @CurrentUser() user: CurrentUserData,
+    @Headers("idempotency-key") idempotencyHeader?: string
   ) {
     return await this.ordersService.create({
       serviceId: body.serviceId,
       target: body.target,
       quantity: body.quantity,
       isDripFeed: body.isDripFeed,
-      runs: body.runs,
-      interval: body.interval,
-      idempotencyKey: body.idempotencyKey,
+      runs: body.runs || body.dripRuns,
+      interval: body.interval || body.dripInterval,
+      idempotencyKey: body.idempotencyKey || idempotencyHeader,
       expectedRate: body.expectedRate,
       comments: body.comments,
       userId: user.id,

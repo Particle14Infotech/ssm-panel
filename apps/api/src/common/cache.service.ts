@@ -1,3 +1,4 @@
+import { Injectable, Optional, Inject } from "@nestjs/common";
 import Redis from "ioredis";
 
 export interface CacheOptions {
@@ -5,12 +6,13 @@ export interface CacheOptions {
   jitterSeconds?: number;
 }
 
+@Injectable()
 export class SMMCacheService {
   private redis: any;
   private inMemoryFallback = new Map<string, { value: string; expiresAt: number }>();
   private redisAvailable = true;
 
-  constructor(redisClient?: any) {
+  constructor(@Optional() @Inject("REDIS_CLIENT") redisClient?: any) {
     if (redisClient) {
       this.redis = redisClient;
     } else {
@@ -71,7 +73,11 @@ export class SMMCacheService {
         this.inMemoryFallback.delete(key);
         return null;
       }
-      return JSON.parse(item.value);
+      try {
+        return JSON.parse(item.value);
+      } catch {
+        return null;
+      }
     }
 
     try {
@@ -111,6 +117,33 @@ export class SMMCacheService {
     if (this.redisAvailable && this.redis) {
       try {
         await this.redis.del(key);
+      } catch {}
+    }
+  }
+
+  async invalidatePattern(pattern: string): Promise<void> {
+    // In-memory pattern delete
+    const prefix = pattern.replace(/\*$/, "");
+    for (const k of this.inMemoryFallback.keys()) {
+      if (k.startsWith(prefix) || k.includes(prefix)) {
+        this.inMemoryFallback.delete(k);
+      }
+    }
+
+    // Redis pattern delete using SCAN to avoid blocking Redis event loop
+    if (this.redisAvailable && this.redis) {
+      try {
+        const stream = this.redis.scanStream({
+          match: pattern,
+          count: 100,
+        });
+        stream.on("data", async (keys: string[]) => {
+          if (keys && keys.length) {
+            const pipeline = this.redis.pipeline();
+            keys.forEach((k: string) => pipeline.del(k));
+            await pipeline.exec().catch(() => null);
+          }
+        });
       } catch {}
     }
   }

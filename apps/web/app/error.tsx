@@ -23,7 +23,7 @@ export default function GlobalError({
       <Navbar />
 
       <main className="flex-1 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 pt-36 pb-24 flex flex-col items-center text-center justify-center">
-        <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mb-6 shadow-lg shadow-rose-500/10">
+        <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-danger flex items-center justify-center mb-6 shadow-lg shadow-rose-500/10">
           <AlertTriangle className="w-7 h-7" />
         </div>
 

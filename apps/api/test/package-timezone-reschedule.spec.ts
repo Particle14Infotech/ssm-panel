@@ -1030,11 +1030,12 @@ function createPackageDispatchDatabase(
       const stagedOutbox: any[] = [];
       let nextOrderId = 1;
       const tx = {
-        $queryRawUnsafe: async (query: string) =>
-          query.includes('FROM "Package"')
-            ? [stagedPackage]
-            : stagedExecution.status === PackageExecutionStatus.SCHEDULED &&
-                stagedExecution.executeAt <= new Date()
+        $queryRawUnsafe: async (query: string) => {
+          if (query.includes('in_flight_units')) return [{ in_flight_units: 0 }];
+          if (query.includes('count')) return [{ count: 0 }];
+          if (query.includes('FROM "PackageExecution"')) {
+            return stagedExecution.status === PackageExecutionStatus.SCHEDULED &&
+              stagedExecution.executeAt <= new Date()
               ? [
                   {
                     ...stagedExecution,
@@ -1043,9 +1044,15 @@ function createPackageDispatchDatabase(
                     platform: "instagram",
                     serviceId: "service_dispatch_1",
                     providerId: null,
+                kind: "VIEWS",
+                  kind: "VIEWS",
                   },
                 ]
-              : [],
+              : [];
+          }
+          if (query.includes('FROM "Package"')) return [stagedPackage];
+          return [];
+        },
         order: {
           create: async (input: any) => {
             if (failNextOrderCreate) {
@@ -1312,6 +1319,8 @@ function createSequentialPackageDispatchDatabase(
     $transaction: async (callback: (tx: any) => Promise<unknown>) => {
       const tx = {
         $queryRawUnsafe: async (query: string, executionId?: string) => {
+          if (query.includes('in_flight_units')) return [{ in_flight_units: 0 }];
+          if (query.includes('count')) return [{ count: 0 }];
           if (
             query.includes('FROM "PackageExecution" e') &&
             executionId === state.current.id &&

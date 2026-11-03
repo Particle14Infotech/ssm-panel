@@ -327,7 +327,7 @@ export default function AdminOrdersPage() {
                       {order.isDripFeed ? (
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1.5">
-                            <span className="px-1.5 py-0.2 rounded bg-[#D8EC8D]/15 text-[#D8EC8D] text-[10px] font-semibold">
+                            <span className="px-1.5 py-0.2 rounded bg-accent/15 text-[#D8EC8D] text-[10px] font-semibold">
                               Drip-feed
                             </span>
                             <span className="font-semibold text-[#D8EC8D]">
@@ -591,7 +591,7 @@ export default function AdminOrdersPage() {
                         (reconciliationOutcome === "REJECTED" &&
                           !confirmedNoAcceptance)
                       }
-                      className="rounded-lg bg-[#D8EC8D]/15 px-3 py-2 text-[10px] font-semibold text-[#D8EC8D] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-lg bg-accent/15 px-3 py-2 text-[10px] font-semibold text-[#D8EC8D] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {isReconciling ? "Saving review..." : "Record provider review"}
                     </button>
@@ -637,7 +637,7 @@ export default function AdminOrdersPage() {
                             <td className="p-2 text-slate-400">{new Date(r.nextAttemptAt || r.scheduledAt).toLocaleTimeString()}</td>
                             <td className="p-2 text-slate-300">{r.attempts}</td>
                             <td className="p-2 text-white font-semibold">₹{r.chargeShare.toFixed(2)}</td>
-                            <td className="p-2 text-rose-400 max-w-[120px] truncate">{r.lastError || "-"}</td>
+                            <td className="p-2 text-danger max-w-[120px] truncate">{r.lastError || "-"}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -679,7 +679,7 @@ export default function AdminOrdersPage() {
                           </div>
                         )}
                         {evt.error && (
-                          <div className="text-rose-400 text-[10px]">
+                          <div className="text-danger text-[10px]">
                             Error: {evt.error}
                           </div>
                         )}

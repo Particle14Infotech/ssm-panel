@@ -12,6 +12,7 @@ export interface BrandLogoProps {
   withLink?: boolean;
   href?: string;
   showPulse?: boolean;
+  textClassName?: string;
 }
 
 export function BrandLogo({
@@ -21,20 +22,31 @@ export function BrandLogo({
   withLink = false,
   href = "/",
   showPulse = true,
+  textClassName = "",
 }: BrandLogoProps) {
   // 1. FULL HORIZONTAL LOGO (1024x245 aspect ~4.18:1)
   if (variant === "full") {
     const fullHeight = size;
     const fullWidth = Math.round(size * 4.18);
     const content = (
-      <Image
-        src="/brand/logo-full.png"
-        alt={`${BRAND_NAME} Official Logo`}
-        width={fullWidth}
-        height={fullHeight}
-        priority
-        className={`object-contain shrink-0 ${className}`}
-      />
+      <>
+        <Image
+          src="/brand/logo-full.png"
+          alt={`${BRAND_NAME} Official Logo`}
+          width={fullWidth}
+          height={fullHeight}
+          priority
+          className={`hidden dark:block object-contain shrink-0 ${className}`}
+        />
+        <Image
+          src="/brand/logo-full-light.png"
+          alt={`${BRAND_NAME} Official Logo`}
+          width={fullWidth}
+          height={fullHeight}
+          priority
+          className={`block dark:hidden object-contain shrink-0 ${className}`}
+        />
+      </>
     );
 
     if (withLink) {
@@ -82,8 +94,11 @@ export function BrandLogo({
         className="rounded-xl object-contain shrink-0 shadow-sm group-hover:scale-105 transition-transform"
       />
       <div className="flex items-center gap-1.5">
-        <span className="font-heading font-bold text-base sm:text-lg tracking-wider text-white uppercase">
-          {BRAND_NAME}
+        <span
+          style={{ color: "var(--fg)" }}
+          className={`font-heading font-bold text-base sm:text-lg tracking-wider uppercase transition-colors text-slate-900 dark:text-white ${textClassName}`}
+        >
+          {BRAND_NAME || "SMM PANEL"}
         </span>
         {showPulse && (
           <span className="w-1.5 h-1.5 rounded-full bg-[#D8EC8D] animate-pulse shrink-0" />

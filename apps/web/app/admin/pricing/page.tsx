@@ -269,8 +269,8 @@ export default function AdminPricingPage() {
         <div
           className={`p-4 rounded-xl border text-sm flex items-center gap-2 ${
             message.type === "success"
-              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-              : "bg-rose-500/10 border-rose-500/30 text-rose-400"
+              ? "bg-emerald-500/10 border-emerald-500/30 text-success"
+              : "bg-rose-500/10 border-rose-500/30 text-danger"
           }`}
         >
           {message.type === "success" ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
@@ -294,7 +294,7 @@ export default function AdminPricingPage() {
               onClick={() => setActiveTab(tab.id as any)}
               className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
                 isActive
-                  ? "bg-[#D8EC8D]/15 text-[#D8EC8D] border border-[#D8EC8D]/40"
+                  ? "bg-accent/15 text-[#D8EC8D] border border-[#D8EC8D]/40"
                   : "text-slate-400 hover:text-white hover:bg-white/5"
               }`}
             >
@@ -349,7 +349,7 @@ export default function AdminPricingPage() {
             {/* Guardrails & Floors */}
             <GlassCard className="p-5 rounded-2xl border-white/10 space-y-4">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-emerald-400" />
+                <ShieldAlert className="w-4 h-4 text-success" />
                 <span>Floors & Guardrails</span>
               </h3>
               <div className="space-y-3 text-xs">
@@ -512,7 +512,7 @@ export default function AdminPricingPage() {
                 </div>
                 <div className="flex justify-between py-1 pt-2 font-bold">
                   <span className="text-white">Estimated Net Profit</span>
-                  <span className="text-emerald-400">₹{simResult.estimatedNetProfit.toFixed(2)}</span>
+                  <span className="text-success">₹{simResult.estimatedNetProfit.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between py-1 text-slate-400">
                   <span>Net Margin</span>
@@ -539,7 +539,7 @@ export default function AdminPricingPage() {
                   <div className="flex items-center gap-3 font-mono text-slate-400 text-[11px]">
                     <span>Old Cost: ₹{Number(pending.oldCostINR).toFixed(2)}</span>
                     <ArrowRight className="w-3 h-3 text-slate-600" />
-                    <span className="text-amber-400">New Cost: ₹{Number(pending.newCostINR).toFixed(2)}</span>
+                    <span className="text-warning">New Cost: ₹{Number(pending.newCostINR).toFixed(2)}</span>
                     <span>·</span>
                     <span>Change: {pending.changePercent.toFixed(1)}%</span>
                   </div>
@@ -547,7 +547,7 @@ export default function AdminPricingPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleRejectPending(pending.id)}
-                    className="px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 text-xs font-semibold transition-colors"
+                    className="px-3 py-1.5 rounded-lg bg-rose-500/10 text-danger hover:bg-rose-500/20 text-xs font-semibold transition-colors"
                   >
                     Reject
                   </button>

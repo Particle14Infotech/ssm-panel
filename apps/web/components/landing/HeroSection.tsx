@@ -23,9 +23,9 @@ export function HeroSection() {
   const textY = useTransform(scrollYProgress, [0, 0.8], [0, shouldReduceMotion ? 0 : -28]);
 
   const iconMap = {
-    wallet: <CreditCard className="w-4 h-4 text-[#d8ec8d]" strokeWidth={1.75} />,
-    activity: <Activity className="w-4 h-4 text-[#d8ec8d]" strokeWidth={1.75} />,
-    refund: <RotateCcw className="w-4 h-4 text-[#d8ec8d]" strokeWidth={1.75} />,
+    wallet: <CreditCard className="w-4 h-4 text-accent-text" strokeWidth={1.75} />,
+    activity: <Activity className="w-4 h-4 text-accent-text" strokeWidth={1.75} />,
+    refund: <RotateCcw className="w-4 h-4 text-accent-text" strokeWidth={1.75} />,
   };
 
   const renderFactChips = (isMobileView: boolean) => (
@@ -42,7 +42,7 @@ export function HeroSection() {
           <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center flex-shrink-0">
             {iconMap[fact.icon]}
           </div>
-          <span className="text-[14px] text-[#A1A1AA] font-normal leading-snug">
+          <span className="text-[14px] text-fg-muted font-normal leading-snug">
             {fact.label}
           </span>
         </div>
@@ -64,7 +64,7 @@ export function HeroSection() {
 
       {/* ONE soft static lime radial behind the crown (low alpha, contained, no beams) */}
       <div
-        className="absolute top-1/4 right-[8%] w-[420px] h-[420px] bg-[#d8ec8d]/[0.05] blur-[120px] pointer-events-none rounded-full -z-10"
+        className="absolute top-1/4 right-[8%] w-[420px] h-[420px] bg-accent/[0.05] blur-[120px] pointer-events-none rounded-full -z-10"
         aria-hidden="true"
       />
 
@@ -77,8 +77,8 @@ export function HeroSection() {
           >
             {/* 1. Eyebrow */}
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-6">
-              <span className="w-2 h-2 rounded-full bg-[#d8ec8d]" />
-              <span className="text-[13px] font-medium text-[#d8ec8d]">
+              <span className="w-2 h-2 rounded-full bg-accent" />
+              <span className="text-[13px] font-medium text-accent-text">
                 {landingContent.hero.badge}
               </span>
             </div>
@@ -88,13 +88,13 @@ export function HeroSection() {
               as="h1"
               isLcp
               accent={landingContent.hero.accentWord}
-              className="text-[clamp(36px,5.4vw,68px)] font-semibold text-white leading-[1.06] tracking-[-0.02em] mb-6 max-w-2xl"
+              className="text-[clamp(36px,5.4vw,68px)] font-semibold text-fg leading-[1.06] tracking-[-0.02em] mb-6 max-w-2xl"
             >
               Order social growth.
             </SplitHeading>
 
             {/* 3. Subtext */}
-            <p className="text-base sm:text-lg text-[#A1A1AA] font-normal leading-[1.6] max-w-xl mb-8">
+            <p className="text-base sm:text-lg text-fg-muted font-normal leading-[1.6] max-w-xl mb-8">
               {landingContent.hero.support}
             </p>
 
@@ -104,7 +104,7 @@ export function HeroSection() {
                 <MagneticButton>
                   <Link
                     href={landingContent.hero.primaryCta.href}
-                    className="w-full sm:w-auto h-12 px-7 rounded-xl bg-[#d8ec8d] text-[#171e00] font-semibold text-sm hover:brightness-105 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-sm focus-visible:ring-2 focus-visible:ring-[#d8ec8d]"
+                    className="w-full sm:w-auto h-12 px-7 rounded-xl bg-accent text-on-accent font-semibold text-sm hover:brightness-105 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-sm focus-visible:ring-2 focus-visible:ring-focus"
                   >
                     <span>{landingContent.hero.primaryCta.label}</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -116,10 +116,10 @@ export function HeroSection() {
                 <MagneticButton>
                   <Link
                     href={landingContent.hero.secondaryCta.href}
-                    className="w-full sm:w-auto h-12 px-7 rounded-xl border border-white/[0.14] text-white font-medium text-sm hover:bg-white/[0.06] hover:border-white/25 active:scale-95 transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-white/40"
+                    className="w-full sm:w-auto h-12 px-7 rounded-xl border border-white/[0.14] text-fg font-medium text-sm hover:bg-white/[0.06] hover:border-white/25 active:scale-95 transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-white/40"
                   >
                     <span>{landingContent.hero.secondaryCta.label}</span>
-                    <ChevronRight className="w-4 h-4 text-[#A1A1AA] group-hover:translate-x-0.5 transition-transform" />
+                    <ChevronRight className="w-4 h-4 text-fg-muted group-hover:translate-x-0.5 transition-transform" />
                   </Link>
                 </MagneticButton>
               </div>

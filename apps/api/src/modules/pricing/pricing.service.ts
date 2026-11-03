@@ -10,10 +10,12 @@ import {
   PricingSettingsConfig,
 } from "@smm/contracts";
 import { Decimal } from "decimal.js";
+import { SMMCacheService } from "../../common/cache.service";
 
 @Injectable()
 export class PricingService {
   private readonly logger = new Logger(PricingService.name);
+  private readonly cacheService = new SMMCacheService();
   private cachedSettings: PricingSettingsConfig = { ...DEFAULT_PRICING_SETTINGS };
   private settingsLastLoaded = 0;
 
@@ -72,6 +74,7 @@ export class PricingService {
 
     this.cachedSettings = updated;
     this.settingsLastLoaded = Date.now();
+    await this.cacheService.invalidatePattern("catalog:*");
     return this.cachedSettings;
   }
 
@@ -413,6 +416,8 @@ export class PricingService {
         input.changedBy || "ADMIN"
       );
     }
+
+    await this.cacheService.invalidatePattern("catalog:*");
 
     return {
       preview: false,

@@ -11,19 +11,19 @@ import { motion } from "framer-motion";
 
 export function BenefitsSection() {
   const iconMap: Record<string, React.ReactNode> = {
-    refund: <RotateCcw className="w-5 h-5 text-[#d8ec8d]" strokeWidth={1.75} />,
-    activity: <Activity className="w-5 h-5 text-[#d8ec8d]" strokeWidth={1.75} />,
-    support: <LifeBuoy className="w-5 h-5 text-[#d8ec8d]" strokeWidth={1.75} />,
+    refund: <RotateCcw className="w-5 h-5 text-accent-text" strokeWidth={1.75} />,
+    activity: <Activity className="w-5 h-5 text-accent-text" strokeWidth={1.75} />,
+    support: <LifeBuoy className="w-5 h-5 text-accent-text" strokeWidth={1.75} />,
   };
 
   return (
-    <section id="why" className="w-full py-14 sm:py-20 lg:py-28 bg-[#131313] relative">
+    <section id="why" className="w-full py-14 sm:py-20 lg:py-28 bg-bg relative">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         {/* Title Block */}
         <div className="max-w-[560px] mb-10 md:mb-12 text-left">
           <Reveal delay={0.05}>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-4">
-              <span className="text-[13px] font-medium text-[#d8ec8d]">
+              <span className="text-[13px] font-medium text-accent-text">
                 {landingContent.benefits.badge}
               </span>
             </div>
@@ -31,13 +31,13 @@ export function BenefitsSection() {
 
           <SplitHeading
             as="h2"
-            className="text-[clamp(28px,3.6vw,44px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-3"
+            className="text-[clamp(28px,3.6vw,44px)] font-semibold text-fg tracking-[-0.02em] leading-tight mb-3"
           >
             {landingContent.benefits.title}
           </SplitHeading>
 
           <Reveal delay={0.15}>
-            <p className="text-base text-[#A1A1AA] font-normal leading-relaxed">
+            <p className="text-base text-fg-muted font-normal leading-relaxed">
               {landingContent.benefits.description}
             </p>
           </Reveal>
@@ -59,18 +59,18 @@ export function BenefitsSection() {
                 <div>
                   <div className="flex items-center justify-between mb-5">
                     <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
-                      {iconMap[item.icon] || <Activity className="w-5 h-5 text-[#d8ec8d]" strokeWidth={1.75} />}
+                      {iconMap[item.icon] || <Activity className="w-5 h-5 text-accent-text" strokeWidth={1.75} />}
                     </div>
-                    <span className="text-xs px-2.5 py-1 rounded-full bg-white/[0.04] text-[#d8ec8d] font-medium border border-white/[0.06]">
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-white/[0.04] text-accent-text font-medium border border-white/[0.06]">
                       {item.badge}
                     </span>
                   </div>
 
-                  <h3 className="text-[19px] sm:text-[20px] font-semibold text-white mb-2 leading-snug w-fit">
+                  <h3 className="text-[19px] sm:text-[20px] font-semibold text-fg mb-2 leading-snug w-fit">
                     {item.title}
                   </h3>
 
-                  <p className="text-sm text-[#A1A1AA] font-normal leading-relaxed">
+                  <p className="text-sm text-fg-muted font-normal leading-relaxed">
                     {item.description}
                   </p>
                 </div>

@@ -23,6 +23,10 @@ import {
   TriggerPreviewInputSchema,
   TriggerExecutionInputSchema,
   RescheduleExecutionInputSchema,
+  CustomCampaignQuoteInputSchema,
+  CustomCampaignPurchaseInputSchema,
+  ComboQuoteInputSchema,
+  ComboPurchaseInputSchema,
 } from "@smm/contracts";
 
 @ApiTags("Scheduled Packages Engine")
@@ -31,8 +35,70 @@ import {
 export class PackagesController {
   constructor(private readonly packagesService: PackagesService) {}
 
+  @Get("templates")
+  @ApiOperation({ summary: "List Active Combo Package Templates" })
+  async getPackageTemplates(@Query("platform") platform?: string) {
+    return this.packagesService.getPackageTemplates(platform);
+  }
+
+  @Post("combos/quote")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Get Price Quote and Allocation for Combo Package" })
+  async getComboQuote(
+    @CurrentUser() user: CurrentUserData,
+    @Body() body: any
+  ) {
+    const parseRes = ComboQuoteInputSchema.safeParse(body);
+    if (!parseRes.success) {
+      throw new BadRequestException(parseRes.error.errors[0]?.message || "Invalid combo quote data");
+    }
+    return this.packagesService.getComboQuote(user.id, parseRes.data);
+  }
+
+  @Post("combos/purchase")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Purchase Combo Package Bundle" })
+  async purchaseCombo(
+    @CurrentUser() user: CurrentUserData,
+    @Body() body: any
+  ) {
+    const parseRes = ComboPurchaseInputSchema.safeParse(body);
+    if (!parseRes.success) {
+      throw new BadRequestException(parseRes.error.errors[0]?.message || "Invalid combo purchase data");
+    }
+    return this.packagesService.purchaseCombo(user.id, parseRes.data);
+  }
+
+  @Post("custom-campaign/quote")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Get Price Quote and Run Allocation Preview for Custom Drip Campaign" })
+  async getCustomCampaignQuote(
+    @CurrentUser() user: CurrentUserData,
+    @Body() body: any
+  ) {
+    const parseRes = CustomCampaignQuoteInputSchema.safeParse(body);
+    if (!parseRes.success) {
+      throw new BadRequestException(parseRes.error.errors[0]?.message || "Invalid campaign quote data");
+    }
+    return this.packagesService.getCustomCampaignQuote(user.id, parseRes.data);
+  }
+
+  @Post("custom-campaign")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Create & Purchase Custom Multi-Service Campaign" })
+  async createCustomCampaign(
+    @CurrentUser() user: CurrentUserData,
+    @Body() body: any
+  ) {
+    const parseRes = CustomCampaignPurchaseInputSchema.safeParse(body);
+    if (!parseRes.success) {
+      throw new BadRequestException(parseRes.error.errors[0]?.message || "Invalid campaign data");
+    }
+    return this.packagesService.purchaseCustomCampaign(user.id, parseRes.data);
+  }
+
   @Post("quote")
-  @UseGuards(OptionalJwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Get Price Quote and Run Allocation Preview" })
   async getQuote(
     @Body() body: any,
@@ -223,6 +289,32 @@ export class PackagesController {
     return this.packagesService.triggerStart(user.id, id, parseRes.data, effectiveKey);
   }
 
+  @Post(":id/reschedule/preview")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Preview new delivery window schedule for a package" })
+  async previewReschedule(
+    @CurrentUser() user: CurrentUserData,
+    @Param("id") id: string,
+    @Body() body: any
+  ) {
+    return this.packagesService.getReschedulePreview(user.id, id, body, user.role === "ADMIN");
+  }
+
+  @Post(":id/reschedule")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Reschedule remaining pending executions with new delivery window" })
+  async reschedulePackage(
+    @CurrentUser() user: CurrentUserData,
+    @Param("id") id: string,
+    @Headers("idempotency-key") idempotencyKey: string,
+    @Body() body: any
+  ) {
+    if (!idempotencyKey || idempotencyKey.trim() === "") {
+      throw new BadRequestException("Idempotency-Key header is required for rescheduling.");
+    }
+    return this.packagesService.reschedulePackage(user.id, id, body, idempotencyKey.trim(), user.role === "ADMIN");
+  }
+
   @Post(":id/executions/:executionId/reschedule")
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Reschedule an eligible pending package execution" })
@@ -238,6 +330,40 @@ export class PackagesController {
       throw new BadRequestException(err);
     }
     return this.packagesService.rescheduleExecution(user.id, id, executionId, parseRes.data);
+  }
+
+  @Post(":id/executions/:executionId/retry")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Customer Retry/Reorder for a Failed or Partial Package Execution" })
+  async customerRetryExecution(
+    @CurrentUser() user: CurrentUserData,
+    @Param("id") id: string,
+    @Param("executionId") executionId: string,
+    @Body() body?: { targetUrl?: string }
+  ) {
+    return this.packagesService.customerRetryExecution(user.id, id, executionId, body?.targetUrl);
+  }
+
+  @Post(":id/executions/:executionId/sync")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Sync live status from upstream provider for a dispatched package execution" })
+  async customerSyncExecution(
+    @CurrentUser() user: CurrentUserData,
+    @Param("id") id: string,
+    @Param("executionId") executionId: string
+  ) {
+    return this.packagesService.customerSyncExecution(user.id, id, executionId);
+  }
+
+  @Post(":id/executions/:executionId/resolve-stalled")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Customer self-resolution for a stalled dispatched execution" })
+  async customerResolveStalledExecution(
+    @CurrentUser() user: CurrentUserData,
+    @Param("id") id: string,
+    @Param("executionId") executionId: string
+  ) {
+    return this.packagesService.customerResolveStalledExecution(user.id, id, executionId);
   }
 
   @Post(":id/trigger")

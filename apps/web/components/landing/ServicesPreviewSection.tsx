@@ -68,16 +68,16 @@ export function ServicesPreviewSection() {
         {/* Header Block */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div className="max-w-xl text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] mb-4">
-              <span className="w-2 h-2 rounded-full bg-[#d8ec8d]" />
-              <span className="text-[13px] font-medium text-[#d8ec8d]">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-border mb-4">
+              <span className="w-2 h-2 rounded-full bg-accent" />
+              <span className="text-[13px] font-medium text-accent-text">
                 Instant Estimate
               </span>
             </div>
-            <h2 className="text-[clamp(28px,3.8vw,48px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-4">
+            <h2 className="text-[clamp(28px,3.8vw,48px)] font-semibold text-fg tracking-[-0.02em] leading-tight mb-4">
               Live price calculator
             </h2>
-            <p className="text-base sm:text-lg text-[#A1A1AA] font-normal leading-relaxed">
+            <p className="text-base sm:text-lg text-fg-muted font-normal leading-relaxed">
               Calculate exact INR prices for any service before ordering. No hidden fees, instant dispatch.
             </p>
           </div>
@@ -92,16 +92,16 @@ export function ServicesPreviewSection() {
 
         {/* Empty state safeguard */}
         {services.length === 0 ? (
-          <div className="p-12 text-center rounded-2xl bg-[#1c1b1b]/80 border border-white/[0.08]">
-            <p className="text-lg text-white/80">Services opening soon</p>
+          <div className="p-12 text-center rounded-2xl bg-surface-glass border border-border">
+            <p className="text-lg text-fg-2">Services opening soon</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left 7 Columns: Calculator Interface */}
-            <div className="lg:col-span-7 bg-[#1c1b1b]/80 border border-white/[0.12] backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col gap-6">
+            <div className="lg:col-span-7 bg-surface-glass border border-border backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col gap-6">
               {/* 1. Platform Tabs */}
               <div>
-                <label className="text-xs uppercase tracking-widest text-[#A1A1AA] font-mono block mb-3">
+                <label className="text-xs uppercase tracking-widest text-fg-muted font-mono block mb-3">
                   1. Select Platform
                 </label>
                 <div className="flex flex-wrap items-center gap-2">
@@ -112,10 +112,10 @@ export function ServicesPreviewSection() {
                         key={p.id}
                         type="button"
                         onClick={() => setSelectedPlatform(p.id)}
-                        className={`min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d8ec8d] ${
+                        className={`min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
                           isSelected
-                            ? "bg-[#d8ec8d] text-[#171e00] font-semibold shadow-sm"
-                            : "bg-white/[0.03] text-white/80 hover:bg-white/[0.06] hover:text-white border border-white/[0.08]"
+                            ? "bg-accent text-on-accent font-semibold shadow-sm"
+                            : "bg-white/[0.03] text-fg-2 hover:bg-white/[0.06] hover:text-fg border border-border"
                         }`}
                       >
                         <PlatformIcon platform={p.id} size={16} />
@@ -129,7 +129,7 @@ export function ServicesPreviewSection() {
               {/* 2. Service Select */}
               {activeService && (
                 <div>
-                  <label className="text-xs uppercase tracking-widest text-[#A1A1AA] font-mono block mb-3">
+                  <label className="text-xs uppercase tracking-widest text-fg-muted font-mono block mb-3">
                     2. Choose Service
                   </label>
                   <div className="flex flex-col gap-2">
@@ -140,25 +140,25 @@ export function ServicesPreviewSection() {
                           key={s.id}
                           type="button"
                           onClick={() => setSelectedServiceId(s.id)}
-                          className={`w-full min-h-[48px] p-3.5 rounded-xl text-left border transition-all flex items-center justify-between gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d8ec8d] ${
+                          className={`w-full min-h-[48px] p-3.5 rounded-xl text-left border transition-all flex items-center justify-between gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
                             isSelected
-                              ? "bg-white/[0.08] border-[#d8ec8d]/50 text-white shadow-sm"
-                              : "bg-white/[0.02] border-white/[0.06] text-white/70 hover:bg-white/[0.04] hover:text-white"
+                              ? "bg-white/[0.08] border-accent/50 text-fg shadow-sm"
+                              : "bg-white/[0.02] border-border text-fg-muted hover:bg-white/[0.04] hover:text-fg"
                           }`}
                         >
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium text-white">
+                            <span className="text-sm font-medium text-fg">
                               {s.serviceName}
                             </span>
-                            <span className="text-xs text-[#A1A1AA] font-mono mt-0.5">
+                            <span className="text-xs text-fg-muted font-mono mt-0.5">
                               Min: {s.minQty.toLocaleString("en-IN")} · Max: {s.maxQty.toLocaleString("en-IN")}
                             </span>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <span className="text-sm font-semibold text-[#d8ec8d] font-mono">
+                            <span className="text-sm font-semibold text-accent-text font-mono">
                               {formatINR(s.ratePer1000)}
                             </span>
-                            <span className="text-xs text-[#A1A1AA] block">
+                            <span className="text-xs text-fg-muted block">
                               per 1,000
                             </span>
                           </div>
@@ -173,10 +173,10 @@ export function ServicesPreviewSection() {
               {activeService && (
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <label className="text-xs uppercase tracking-widest text-[#A1A1AA] font-mono">
+                    <label className="text-xs uppercase tracking-widest text-fg-muted font-mono">
                       3. Quantity
                     </label>
-                    <span className="text-xs font-mono text-[#d8ec8d]">
+                    <span className="text-xs font-mono text-accent-text">
                       {quantity.toLocaleString("en-IN")} units
                     </span>
                   </div>
@@ -206,7 +206,7 @@ export function ServicesPreviewSection() {
                           )
                         );
                       }}
-                      className="w-28 min-h-[44px] px-3 rounded-xl bg-white/[0.04] border border-white/[0.1] text-white text-right font-mono text-sm focus:outline-none focus:border-[#d8ec8d]"
+                      className="w-28 min-h-[44px] px-3 rounded-xl bg-white/[0.04] border border-border text-fg text-right font-mono text-sm focus:outline-none focus:border-accent"
                       aria-label="Exact quantity input"
                     />
                   </div>
@@ -217,27 +217,27 @@ export function ServicesPreviewSection() {
             {/* Right 5 Columns: Price Summary Card */}
             {activeService && (
               <div className="lg:col-span-5 flex flex-col gap-6">
-                <div className="bg-[#1c1b1b]/90 border border-white/[0.14] rounded-3xl p-6 sm:p-8 backdrop-blur-2xl shadow-2xl flex flex-col justify-between relative overflow-hidden">
+                <div className="bg-surface-glass border border-border rounded-3xl p-6 sm:p-8 backdrop-blur-2xl shadow-2xl flex flex-col justify-between relative overflow-hidden">
                   {/* Subtle lime glow accent */}
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#d8ec8d]/10 blur-3xl pointer-events-none rounded-full" />
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 blur-3xl pointer-events-none rounded-full" />
 
                   <div>
-                    <span className="text-xs uppercase tracking-widest text-[#A1A1AA] font-mono block mb-2">
+                    <span className="text-xs uppercase tracking-widest text-fg-muted font-mono block mb-2">
                       Total Estimated Price
                     </span>
-                    <div className="text-4xl sm:text-5xl font-bold text-white font-mono tracking-tight my-2">
+                    <div className="text-4xl sm:text-5xl font-bold text-fg font-mono tracking-tight my-2">
                       {formatINR(totalPrice)}
                     </div>
-                    <div className="text-xs text-[#A1A1AA] flex items-center gap-2 mt-3">
-                      <Clock className="w-3.5 h-3.5 text-[#d8ec8d]" />
+                    <div className="text-xs text-fg-muted flex items-center gap-2 mt-3">
+                      <Clock className="w-3.5 h-3.5 text-accent-text" />
                       <span>Speed: {activeService.avgSpeed}</span>
                     </div>
                   </div>
 
-                  <div className="pt-6 mt-6 border-t border-white/[0.08] flex flex-col gap-3">
+                  <div className="pt-6 mt-6 border-t border-border flex flex-col gap-3">
                     <Link
                       href="/register"
-                      className="w-full min-h-[48px] px-6 rounded-xl bg-[#d8ec8d] text-[#171e00] font-semibold text-sm hover:brightness-105 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg"
+                      className="w-full min-h-[48px] px-6 rounded-xl bg-accent text-on-accent font-semibold text-sm hover:brightness-105 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg"
                     >
                       <span>Create account to order</span>
                       <ArrowRight className="w-4 h-4" />
@@ -245,7 +245,7 @@ export function ServicesPreviewSection() {
 
                     <Link
                       href="/services"
-                      className="w-full min-h-[44px] px-4 rounded-xl text-center text-xs text-[#A1A1AA] hover:text-white transition-colors flex items-center justify-center"
+                      className="w-full min-h-[44px] px-4 rounded-xl text-center text-xs text-fg-muted hover:text-fg transition-colors flex items-center justify-center"
                     >
                       View all services in full catalog →
                     </Link>

@@ -28,7 +28,8 @@ function resolveGuardJwtSecret(): string {
 @Injectable()
 export class PackagesEnabledGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    if (process.env.PACKAGES_ENABLED === "false") {
+    const isPackagesEnabled = process.env.PACKAGES_ENABLED === "true" && (process.env.NODE_ENV !== "production" || process.env.ALLOW_PACKAGES_IN_PROD === "true");
+    if (!isPackagesEnabled) {
       throw new ServiceUnavailableException("Package functionality is disabled.");
     }
 

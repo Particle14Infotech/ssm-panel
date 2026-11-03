@@ -494,7 +494,7 @@ export function PackageOrderBuilder() {
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-16">
       {/* 1. Header & Platform Selection */}
-      <GlassCard className="p-6 md:p-8 rounded-3xl border-white/10 space-y-6 bg-white/[0.02]">
+      <GlassCard className="p-6 md:p-8 rounded-3xl border-border space-y-6 bg-white/[0.02]">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -502,15 +502,15 @@ export function PackageOrderBuilder() {
                 Step 1
               </span>
             </div>
-            <h2 className="text-xl font-bold text-white tracking-tight">Select Target Platform</h2>
+            <h2 className="text-xl font-bold text-fg tracking-tight">Select Target Platform</h2>
             <p className="text-sm text-slate-400">
               Configure scheduled growth bundles and per-post triggers for your account.
             </p>
           </div>
         </div>
 
-        {/* Platform Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        {/* Platform Row - Icons only for space optimization */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           {SUPPORTED_PLATFORMS.map((plat) => {
             const isSelected = selectedPlatform === plat.id;
             return (
@@ -518,23 +518,23 @@ export function PackageOrderBuilder() {
                 key={plat.id}
                 type="button"
                 onClick={() => setSelectedPlatform(plat.id)}
-                className={`p-3.5 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center border ${
-                  isSelected
-                    ? "bg-[#D8EC8D]/15 border-[#D8EC8D] text-white shadow-sm"
-                    : "bg-white/[0.03] border-white/5 text-slate-400 hover:text-white hover:bg-white/[0.06] hover:border-white/15"
-                }`}
+                title={plat.name}
+                aria-label={plat.name}
+                className={`p-2.5 sm:p-3 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center transition-all border ${isSelected
+                    ? "bg-[#D8EC8D] text-[#171e00] font-bold border-[#b4cf47] shadow-[0_0_15px_rgba(216,236,141,0.35)] dark:bg-accent/15 dark:text-[#D8EC8D] dark:border-[#D8EC8D]/40"
+                    : "bg-white dark:bg-white/[0.03] border-slate-200/60 dark:border-white/5 text-slate-400 hover:text-white hover:bg-white/[0.06] hover:border-white/15"
+                  }`}
               >
-                <PlatformIcon platform={plat.id} size={22} />
-                <span className="text-xs font-semibold">{plat.name}</span>
+                <PlatformIcon platform={plat.id} size={20} useBrandColor={isSelected} />
               </button>
             );
           })}
         </div>
 
         {/* Handle Input with Disclaimer */}
-        <div className="pt-2 border-t border-white/5 space-y-3">
-          <label className="block text-xs font-semibold text-slate-300">
-            Account Handle <span className="text-rose-400">*</span>
+        <div className="pt-2 border-t border-slate-200/60 dark:border-white/5 space-y-3">
+          <label className="block text-xs font-semibold text-fg-2">
+            Account Handle <span className="text-danger">*</span>
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500 font-mono text-sm">
@@ -545,10 +545,10 @@ export function PackageOrderBuilder() {
               value={handle}
               onChange={(e) => setHandle(e.target.value.replace(/^@/, "").trim())}
               placeholder={currentPlatformInfo.placeholder}
-              className="w-full pl-9 pr-4 py-3 rounded-xl bg-white/[0.04] border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#D8EC8D] transition-colors font-mono"
+              className="w-full pl-9 pr-4 py-3 rounded-xl bg-white/[0.04] border border-border text-fg placeholder-slate-500 text-sm focus:outline-none focus:border-[#D8EC8D] transition-colors font-mono"
             />
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400 bg-white/[0.02] border border-white/5 px-3 py-2 rounded-xl">
+          <div className="flex items-center gap-2 text-xs text-slate-400 bg-white/[0.02] border border-slate-200/60 dark:border-white/5 px-3 py-2 rounded-xl">
             <ShieldCheck className="w-4 h-4 text-slate-400 shrink-0" />
             <span>We do not verify account ownership. Delivery is fulfilled to the specified handle.</span>
           </div>
@@ -557,11 +557,11 @@ export function PackageOrderBuilder() {
 
       {/* Empty State when no handle entered */}
       {!handle.trim() ? (
-        <GlassCard className="p-10 rounded-3xl border-white/10 text-center space-y-3 bg-white/[0.01]">
-          <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-slate-500">
+        <GlassCard className="p-10 rounded-3xl border-border text-center space-y-3 bg-white/[0.01]">
+          <div className="w-12 h-12 rounded-2xl bg-white/5 border border-border flex items-center justify-center mx-auto text-slate-500">
             <Boxes className="w-6 h-6" />
           </div>
-          <h3 className="text-base font-semibold text-white">Add your handle to configure your package</h3>
+          <h3 className="text-base font-semibold text-fg">Add your handle to configure your package</h3>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
             Enter your platform username above to customize per-post triggers, delivery windows, and followers schedule.
           </p>
@@ -569,14 +569,14 @@ export function PackageOrderBuilder() {
       ) : (
         <>
           {/* 2. Package Configuration & Workflows */}
-          <GlassCard className="p-6 md:p-8 rounded-3xl border-white/10 space-y-6 bg-white/[0.02]">
+          <GlassCard className="p-6 md:p-8 rounded-3xl border-border space-y-6 bg-white/[0.02]">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs font-mono font-semibold text-[#D8EC8D] tracking-wider uppercase">
                   Step 2
                 </span>
               </div>
-              <h2 className="text-xl font-bold text-white tracking-tight">Configure Delivery Services</h2>
+              <h2 className="text-xl font-bold text-fg tracking-tight">Configure Delivery Services</h2>
               <p className="text-sm text-slate-400">
                 Set per-post quantities, execution delivery windows, and followers drip duration.
               </p>
@@ -584,7 +584,7 @@ export function PackageOrderBuilder() {
 
             <div className="space-y-3">
               <div>
-                <h3 className="text-xs font-semibold text-slate-300">Start with a preset</h3>
+                <h3 className="text-xs font-semibold text-fg-2">Start with a preset</h3>
                 <p className="mt-1 text-[11px] text-slate-500">
                   Presets set editable defaults. The server validates service eligibility and limits when quoting.
                 </p>
@@ -595,9 +595,9 @@ export function PackageOrderBuilder() {
                     key={preset.id}
                     type="button"
                     onClick={() => applyPreset(preset)}
-                    className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-left transition-colors hover:border-[#D8EC8D]/60 hover:bg-[#D8EC8D]/5"
+                    className="rounded-xl border border-border bg-white/[0.02] px-3 py-2 text-left transition-colors hover:border-[#D8EC8D]/60 hover:bg-[#D8EC8D]/5"
                   >
-                    <span className="block text-xs font-semibold text-white">{preset.label}</span>
+                    <span className="block text-xs font-semibold text-fg">{preset.label}</span>
                     <span className="mt-1 block text-[10px] text-slate-400">{preset.description}</span>
                   </button>
                 ))}
@@ -606,18 +606,17 @@ export function PackageOrderBuilder() {
 
             {/* Duration Selector */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300">Package Lifespan (Days)</label>
+              <label className="text-xs font-semibold text-fg-2">Package Lifespan (Days)</label>
               <div className="grid grid-cols-4 gap-2">
                 {[7, 14, 30, 60].map((d) => (
                   <button
                     key={d}
                     type="button"
                     onClick={() => setDurationDays(d)}
-                    className={`py-2 rounded-xl text-xs font-semibold border transition-all ${
-                      durationDays === d
-                        ? "bg-[#D8EC8D]/15 border-[#D8EC8D] text-white"
-                        : "bg-white/[0.02] border-white/5 text-slate-400 hover:text-white hover:bg-white/[0.05]"
-                    }`}
+                    className={`py-2 rounded-xl text-xs font-semibold border transition-all ${durationDays === d
+                        ? "bg-accent/15 border-[#D8EC8D] text-fg"
+                        : "bg-white/[0.02] border-slate-200/60 dark:border-white/5 text-slate-400 hover:text-white hover:bg-white/[0.05]"
+                      }`}
                   >
                     {d} Days
                   </button>
@@ -626,14 +625,14 @@ export function PackageOrderBuilder() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="packageTimezone" className="text-xs font-semibold text-slate-300">
+              <label htmlFor="packageTimezone" className="text-xs font-semibold text-fg-2">
                 Schedule timezone
               </label>
               <select
                 id="packageTimezone"
                 value={timezone}
                 onChange={(event) => setTimezone(event.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-[#1e2315] px-3 py-2 text-xs text-white"
+                className="w-full rounded-xl border border-border bg-slate-100 dark:bg-[#1e2315] px-3 py-2 text-xs text-fg"
               >
                 {scheduleTimezones.map((value) => (
                   <option key={value} value={value}>
@@ -649,7 +648,7 @@ export function PackageOrderBuilder() {
             {/* Post Triggers: Max Posts */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-300">Max Post Triggers Allowed</span>
+                <span className="font-semibold text-fg-2">Max Post Triggers Allowed</span>
                 <span className="font-mono text-[#D8EC8D] font-bold">{maxPostsToProcess} Posts</span>
               </div>
               <input
@@ -665,7 +664,7 @@ export function PackageOrderBuilder() {
             {/* Per-Post Workflows */}
             <div className="space-y-4 pt-2">
               {/* Likes Rule */}
-              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <input
@@ -676,7 +675,7 @@ export function PackageOrderBuilder() {
                       onChange={(e) => setLikesEnabled(e.target.checked)}
                       className="w-4 h-4 accent-[#D8EC8D] rounded"
                     />
-                    <label htmlFor="likesEnabled" className={`text-sm font-semibold text-white ${likeService ? "cursor-pointer" : "cursor-not-allowed"}`}>
+                    <label htmlFor="likesEnabled" className={`text-sm font-semibold text-fg ${likeService ? "cursor-pointer" : "cursor-not-allowed"}`}>
                       Post Likes / Reactions
                     </label>
                   </div>
@@ -699,10 +698,10 @@ export function PackageOrderBuilder() {
                       id="likeService"
                       value={likeService.id}
                       onChange={(event) => setSelectedLikeServiceId(event.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-[#1e2315] px-3 py-2 text-white"
+                      className="w-full rounded-xl border border-border bg-surface-raised px-3 py-2 text-fg focus:outline-none focus:border-focus"
                     >
                       {servicesFor(isLikeService).map((service) => (
-                        <option key={service.id} value={service.id}>
+                        <option key={service.id} value={service.id} className="bg-surface text-fg">
                           {serviceOptionLabel(service)}
                         </option>
                       ))}
@@ -711,7 +710,7 @@ export function PackageOrderBuilder() {
                 )}
 
                 {likesEnabled && likeService && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-7 pt-2 border-t border-white/5 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-7 pt-2 border-t border-border text-xs">
                     <div className="space-y-1">
                       <label className="text-slate-400">Quantity per Post</label>
                       <input
@@ -721,7 +720,7 @@ export function PackageOrderBuilder() {
                         step={50}
                         value={likesPerPost}
                         onChange={(e) => setLikesPerPost(parseInt(e.target.value, 10) || 50)}
-                        className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white font-mono"
+                        className="w-full px-3 py-2 rounded-xl bg-surface-raised border border-border text-fg font-mono focus:outline-none focus:border-focus"
                       />
                     </div>
                     <div className="space-y-1">
@@ -729,13 +728,13 @@ export function PackageOrderBuilder() {
                       <select
                         value={likesWindow}
                         onChange={(e) => setLikesWindow(parseInt(e.target.value, 10))}
-                        className="w-full px-3 py-2 rounded-xl bg-[#1e2315] border border-white/10 text-white font-mono"
+                        className="w-full px-3 py-2 rounded-xl bg-surface-raised border border-border text-fg font-mono focus:outline-none focus:border-focus"
                       >
-                        <option value={1440}>1 Day (24 hrs drip)</option>
-                        <option value={2880}>2 Days (48 hrs drip)</option>
-                        <option value={4320}>3 Days (72 hrs drip)</option>
-                        <option value={7200}>5 Days (120 hrs drip)</option>
-                        <option value={10080}>7 Days (1 week drip)</option>
+                        <option value={1440} className="bg-surface text-fg">1 Day (24 hrs drip)</option>
+                        <option value={2880} className="bg-surface text-fg">2 Days (48 hrs drip)</option>
+                        <option value={4320} className="bg-surface text-fg">3 Days (72 hrs drip)</option>
+                        <option value={7200} className="bg-surface text-fg">5 Days (120 hrs drip)</option>
+                        <option value={10080} className="bg-surface text-fg">7 Days (1 week drip)</option>
                       </select>
                     </div>
                   </div>
@@ -743,7 +742,7 @@ export function PackageOrderBuilder() {
               </div>
 
               {/* Views Rule */}
-              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <input
@@ -754,7 +753,7 @@ export function PackageOrderBuilder() {
                       onChange={(e) => setViewsEnabled(e.target.checked)}
                       className="w-4 h-4 accent-[#D8EC8D] rounded"
                     />
-                    <label htmlFor="viewsEnabled" className={`text-sm font-semibold text-white ${viewService ? "cursor-pointer" : "cursor-not-allowed"}`}>
+                    <label htmlFor="viewsEnabled" className={`text-sm font-semibold text-fg ${viewService ? "cursor-pointer" : "cursor-not-allowed"}`}>
                       Post Video / Reel Views
                     </label>
                   </div>
@@ -777,10 +776,10 @@ export function PackageOrderBuilder() {
                       id="viewService"
                       value={viewService.id}
                       onChange={(event) => setSelectedViewServiceId(event.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-[#1e2315] px-3 py-2 text-white"
+                      className="w-full rounded-xl border border-border bg-surface-raised px-3 py-2 text-fg focus:outline-none focus:border-focus"
                     >
                       {servicesFor(isViewService).map((service) => (
-                        <option key={service.id} value={service.id}>
+                        <option key={service.id} value={service.id} className="bg-surface text-fg">
                           {serviceOptionLabel(service)}
                         </option>
                       ))}
@@ -789,7 +788,7 @@ export function PackageOrderBuilder() {
                 )}
 
                 {viewsEnabled && viewService && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-7 pt-2 border-t border-white/5 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-7 pt-2 border-t border-border text-xs">
                     <div className="space-y-1">
                       <label className="text-slate-400">Quantity per Post</label>
                       <input
@@ -799,7 +798,7 @@ export function PackageOrderBuilder() {
                         step={100}
                         value={viewsPerPost}
                         onChange={(e) => setViewsPerPost(parseInt(e.target.value, 10) || 100)}
-                        className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white font-mono"
+                        className="w-full px-3 py-2 rounded-xl bg-surface-raised border border-border text-fg font-mono focus:outline-none focus:border-focus"
                       />
                     </div>
                     <div className="space-y-1">
@@ -807,13 +806,13 @@ export function PackageOrderBuilder() {
                       <select
                         value={viewsWindow}
                         onChange={(e) => setViewsWindow(parseInt(e.target.value, 10))}
-                        className="w-full px-3 py-2 rounded-xl bg-[#1e2315] border border-white/10 text-white font-mono"
+                        className="w-full px-3 py-2 rounded-xl bg-surface-raised border border-border text-fg font-mono focus:outline-none focus:border-focus"
                       >
-                        <option value={1440}>1 Day (24 hrs drip)</option>
-                        <option value={2880}>2 Days (48 hrs drip)</option>
-                        <option value={4320}>3 Days (72 hrs drip)</option>
-                        <option value={7200}>5 Days (120 hrs drip)</option>
-                        <option value={10080}>7 Days (1 week drip)</option>
+                        <option value={1440} className="bg-surface text-fg">1 Day (24 hrs drip)</option>
+                        <option value={2880} className="bg-surface text-fg">2 Days (48 hrs drip)</option>
+                        <option value={4320} className="bg-surface text-fg">3 Days (72 hrs drip)</option>
+                        <option value={7200} className="bg-surface text-fg">5 Days (120 hrs drip)</option>
+                        <option value={10080} className="bg-surface text-fg">7 Days (1 week drip)</option>
                       </select>
                     </div>
                   </div>
@@ -824,7 +823,7 @@ export function PackageOrderBuilder() {
               {likesEnabled && viewsEnabled && likesPerPost > viewsPerPost && !balanceHintDismissed && (
                 <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2.5">
-                    <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
+                    <AlertTriangle className="w-4 h-4 shrink-0 text-warning mt-0.5" />
                     <span>
                       Notice: Likes quantity ({formatIndianNumber(likesPerPost)}) exceeds Views quantity ({formatIndianNumber(viewsPerPost)}) in this order. Posts typically display more views than likes.
                     </span>
@@ -832,7 +831,7 @@ export function PackageOrderBuilder() {
                   <button
                     type="button"
                     onClick={() => setBalanceHintDismissed(true)}
-                    className="p-1 text-amber-400 hover:text-white rounded hover:bg-white/10 shrink-0"
+                    className="p-1 text-warning hover:text-white rounded hover:bg-white/10 shrink-0"
                     title="Dismiss notice"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -841,7 +840,7 @@ export function PackageOrderBuilder() {
               )}
 
               {/* Followers Drip Rule */}
-              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <input
@@ -852,7 +851,7 @@ export function PackageOrderBuilder() {
                       onChange={(e) => setFollowersEnabled(e.target.checked)}
                       className="w-4 h-4 accent-[#D8EC8D] rounded"
                     />
-                    <label htmlFor="followersEnabled" className={`text-sm font-semibold text-white ${followerService ? "cursor-pointer" : "cursor-not-allowed"}`}>
+                    <label htmlFor="followersEnabled" className={`text-sm font-semibold text-fg ${followerService ? "cursor-pointer" : "cursor-not-allowed"}`}>
                       Followers / Subscribers Time-Interval Drip
                     </label>
                   </div>
@@ -875,10 +874,10 @@ export function PackageOrderBuilder() {
                       id="followerService"
                       value={followerService.id}
                       onChange={(event) => setSelectedFollowerServiceId(event.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-[#1e2315] px-3 py-2 text-white"
+                      className="w-full rounded-xl border border-border bg-surface-raised px-3 py-2 text-fg focus:outline-none focus:border-focus"
                     >
                       {servicesFor(isFollowerService).map((service) => (
-                        <option key={service.id} value={service.id}>
+                        <option key={service.id} value={service.id} className="bg-surface text-fg">
                           {serviceOptionLabel(service)}
                         </option>
                       ))}
@@ -887,7 +886,7 @@ export function PackageOrderBuilder() {
                 )}
 
                 {followersEnabled && followerService && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-7 pt-2 border-t border-white/5 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-7 pt-2 border-t border-border text-xs">
                     <div className="space-y-1">
                       <label className="text-slate-400">Total Followers across {durationDays} Days</label>
                       <input
@@ -897,7 +896,7 @@ export function PackageOrderBuilder() {
                         step={100}
                         value={followersTotalQty}
                         onChange={(e) => setFollowersTotalQty(parseInt(e.target.value, 10) || 100)}
-                        className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white font-mono"
+                        className="w-full px-3 py-2 rounded-xl bg-surface-raised border border-border text-fg font-mono focus:outline-none focus:border-focus"
                       />
                     </div>
                     <div className="space-y-1">
@@ -905,11 +904,11 @@ export function PackageOrderBuilder() {
                       <select
                         value={followersInterval}
                         onChange={(e) => setFollowersInterval(parseInt(e.target.value, 10))}
-                        className="w-full px-3 py-2 rounded-xl bg-[#1e2315] border border-white/10 text-white font-mono"
+                        className="w-full px-3 py-2 rounded-xl bg-surface-raised border border-border text-fg font-mono focus:outline-none focus:border-focus"
                       >
-                        <option value={6}>Every 6 Hours</option>
-                        <option value={12}>Every 12 Hours</option>
-                        <option value={24}>Every 24 Hours (Daily)</option>
+                        <option value={6} className="bg-surface text-fg">Every 6 Hours</option>
+                        <option value={12} className="bg-surface text-fg">Every 12 Hours</option>
+                        <option value={24} className="bg-surface text-fg">Every 24 Hours (Daily)</option>
                       </select>
                     </div>
                   </div>
@@ -923,10 +922,10 @@ export function PackageOrderBuilder() {
             <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 font-semibold">
-                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <AlertTriangle className="w-4 h-4 text-danger shrink-0" />
                   <span>Unable to calculate quote.</span>
                 </div>
-                <div className="text-rose-400/80">
+                <div className="text-danger/80">
                   {errorMessage}
                   {errorRequestId && (
                     <span className="font-mono ml-2 text-[11px] text-rose-300">
@@ -948,23 +947,23 @@ export function PackageOrderBuilder() {
 
           {/* 3. Honest Quote Breakdown & Purchase */}
           {quote && (
-            <GlassCard className="p-6 md:p-8 rounded-3xl border-white/10 space-y-6 bg-white/[0.02]">
+            <GlassCard className="p-6 md:p-8 rounded-3xl border-border space-y-6 bg-white/[0.02]">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-mono font-semibold text-[#D8EC8D] tracking-wider uppercase">
                     Step 3
                   </span>
                 </div>
-                <h2 className="text-xl font-bold text-white tracking-tight">Review Package Quote</h2>
+                <h2 className="text-xl font-bold text-fg tracking-tight">Review Package Quote</h2>
                 <p className="text-sm text-slate-400">
                   Itemized pricing showing rate per 1,000, quantity, max posts, and total reserve.
                 </p>
               </div>
 
               {/* Itemized Table */}
-              <div className="rounded-2xl border border-white/10 overflow-hidden">
+              <div className="rounded-2xl border border-border overflow-hidden">
                 <table className="w-full text-left text-xs font-mono">
-                  <thead className="bg-white/5 border-b border-white/10 text-slate-400">
+                  <thead className="bg-white/5 border-b border-border text-slate-400">
                     <tr>
                       <th className="p-3 font-semibold">Service</th>
                       <th className="p-3 font-semibold text-right">Rate / 1,000</th>
@@ -976,7 +975,7 @@ export function PackageOrderBuilder() {
                   <tbody className="divide-y divide-white/5 text-slate-200">
                     {quote.items.map((item, idx) => (
                       <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="p-3 font-sans font-medium text-white">{item.serviceName}</td>
+                        <td className="p-3 font-sans font-medium text-fg">{item.serviceName}</td>
                         <td className="p-3 text-right">₹{item.ratePer1000.toFixed(2)}</td>
                         <td className="p-3 text-right">
                           {formatIndianNumber(item.quantityPerPost || item.totalQuantity)}
@@ -999,30 +998,72 @@ export function PackageOrderBuilder() {
                       key={idx}
                       className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2"
                     >
-                      <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                      <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
                       <span>{w}</span>
                     </div>
                   ))}
                 </div>
               )}
 
-              <div className="rounded-2xl border border-white/10 overflow-hidden">
-                <div className="px-4 py-3 bg-white/5 border-b border-white/10 flex items-center justify-between gap-3">
+              {/* Delivery pace & timeline */}
+              <div className="rounded-2xl border border-border overflow-hidden">
+                <div className="px-4 py-3 bg-white/5 border-b border-border flex items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-semibold text-white">Delivery timeline</h3>
-                    <p className="text-xs text-slate-400">Scheduled distribution drawn directly from quote timeline ({quote.timezone || timezone}).</p>
+                    <h3 className="text-sm font-semibold text-fg">Delivery pace & timeline</h3>
+                    <p className="text-xs text-slate-400">Scheduled distribution ({quote.timezone || timezone}).</p>
                   </div>
                   <Calendar className="w-4 h-4 text-[#D8EC8D] shrink-0" />
                 </div>
                 {quote.timeline && quote.timeline.length > 0 ? (
                   <div className="p-4 space-y-4">
+                    {/* Delivery Pace & Finish Summary Box */}
+                    {(() => {
+                      const timelineRuns = quote.timeline || [];
+                      const firstRun = timelineRuns[0];
+                      const lastRun = timelineRuns[timelineRuns.length - 1];
+                      const estFinish = lastRun ? new Date(lastRun.scheduledAt) : null;
+                      const totalQty = timelineRuns.reduce((sum, r) => sum + (r.quantity || 0), 0);
+                      const durHours = firstRun && lastRun
+                        ? Math.max(1, Math.round((new Date(lastRun.scheduledAt).getTime() - new Date(firstRun.scheduledAt).getTime()) / (1000 * 60 * 60)))
+                        : (durationDays * 24);
+                      const pacePerHour = Math.min(150, Math.max(1, Math.round(totalQty / durHours)));
+                      const isSpread = totalQty > pacePerHour || timelineRuns.length > 1;
+
+                      return (
+                        <div className="p-3.5 rounded-xl bg-surface-raised border border-border space-y-2.5">
+                          <div className="grid grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <span className="text-[10px] uppercase font-mono text-slate-400 block">Delivery pace</span>
+                              <span className="font-semibold text-fg font-mono">up to {pacePerHour} per hour</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-[10px] uppercase font-mono text-slate-400 block">Estimated finish</span>
+                              <span className="font-semibold text-[#D8EC8D] font-mono">
+                                {estFinish && !Number.isNaN(estFinish.getTime())
+                                  ? estFinish.toLocaleString(undefined, { timeZone: quote.timezone || timezone, month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                                  : "Calculating"}
+                              </span>
+                            </div>
+                          </div>
+                          {isSpread && (
+                            <div className="p-2.5 rounded-lg bg-white/[0.03] border border-border text-[11px] text-slate-300 flex items-center gap-2">
+                              <Clock className="w-3.5 h-3.5 text-[#D8EC8D] shrink-0" />
+                              <span>
+                                To keep delivery at or below {pacePerHour} per hour, this order will take about {durHours} hours.
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     {/* Visual Timeline Distribution Chart (Derived from real quote.timeline) */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
                         <span>Timeline Schedule Chart ({quote.timeline.length} runs)</span>
                         <span>Max per run: {formatIndianNumber(Math.max(...quote.timeline.map((r) => r.quantity), 1))} units</span>
                       </div>
-                      <div className="h-28 w-full bg-white/[0.02] border border-white/5 rounded-xl p-3 flex items-end gap-1.5 overflow-x-auto">
+                      <div className="h-28 w-full bg-white/[0.02] border border-slate-200/60 dark:border-white/5 rounded-xl p-3 flex items-end gap-1.5 overflow-x-auto">
                         {quote.timeline.map((run, i) => {
                           const maxRunQty = Math.max(...quote.timeline.map((r) => r.quantity), 1);
                           const heightPct = Math.max(12, Math.round((run.quantity / maxRunQty) * 100));
@@ -1036,7 +1077,7 @@ export function PackageOrderBuilder() {
                                 style={{ height: `${heightPct}%` }}
                                 className="w-full bg-[#D8EC8D]/70 hover:bg-[#D8EC8D] rounded-t transition-all cursor-pointer relative"
                               >
-                                <div className="hidden group-hover:block absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-[#191919] border border-white/20 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap z-20 font-mono">
+                                <div className="hidden group-hover:block absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-white dark:bg-[#191919] border border-slate-300 dark:border-white/20 text-fg text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap z-20 font-mono">
                                   {run.serviceName}: {formatIndianNumber(run.quantity)}
                                 </div>
                               </div>
@@ -1056,7 +1097,7 @@ export function PackageOrderBuilder() {
                         return (
                           <li key={`${run.serviceId}-${run.runIndex}-${index}`} className="py-2.5 flex items-center justify-between gap-4 text-xs">
                             <div className="min-w-0">
-                              <p className="text-white truncate">{run.serviceName}</p>
+                              <p className="text-fg truncate">{run.serviceName}</p>
                               <p className="text-slate-400 text-[11px]">
                                 {isValidTime
                                   ? scheduledAt.toLocaleString(undefined, { timeZone: quote.timezone || timezone, dateStyle: "medium", timeStyle: "short" })
@@ -1091,9 +1132,9 @@ export function PackageOrderBuilder() {
               )}
 
               {/* Total & Disclaimer */}
-              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/5 space-y-2">
+              <div className="p-5 rounded-2xl bg-white/[0.03] border border-slate-200/60 dark:border-white/5 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-slate-300">Total Upfront Reserve</span>
+                  <span className="text-sm font-semibold text-fg-2">Total Upfront Reserve</span>
                   <span className="text-2xl font-bold font-mono text-[#D8EC8D]">
                     ₹{quote.totalCharge.toFixed(2)}
                   </span>
@@ -1104,7 +1145,7 @@ export function PackageOrderBuilder() {
               </div>
 
               {/* Required Consent Checkbox */}
-              <div className="flex items-start gap-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+              <div className="flex items-start gap-3 p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5">
                 <input
                   type="checkbox"
                   id="consentRules"
@@ -1112,7 +1153,7 @@ export function PackageOrderBuilder() {
                   onChange={(e) => setConsentRulesUnderstood(e.target.checked)}
                   className="w-4 h-4 mt-0.5 accent-[#D8EC8D] rounded"
                 />
-                <label htmlFor="consentRules" className="text-xs text-slate-300 cursor-pointer leading-relaxed">
+                <label htmlFor="consentRules" className="text-xs text-fg-2 cursor-pointer leading-relaxed">
                   I understand the platform terms of service and agree to the delivery rules. We do not verify account ownership. Delivery is fulfilled strictly to the public handle and post links provided.
                 </label>
               </div>
@@ -1121,7 +1162,7 @@ export function PackageOrderBuilder() {
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
                 <div className="text-xs text-slate-400 font-mono">
                   Wallet Balance:{" "}
-                  <span className={hasSufficientBalance ? "text-white" : "text-rose-400 font-bold"}>
+                  <span className={hasSufficientBalance ? "text-fg" : "text-danger font-bold"}>
                     ₹{user.balance.toFixed(2)}
                   </span>
                 </div>
@@ -1130,11 +1171,10 @@ export function PackageOrderBuilder() {
                   type="button"
                   disabled={!consentRulesUnderstood || !hasSufficientBalance || !hasScheduleTimeline || calculating || purchasing}
                   onClick={() => setConfirmModalOpen(true)}
-                  className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-sm ${
-                    consentRulesUnderstood && hasSufficientBalance && hasScheduleTimeline && !purchasing
+                  className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-sm ${consentRulesUnderstood && hasSufficientBalance && hasScheduleTimeline && !purchasing
                       ? "bg-[#D8EC8D] text-[#131313] hover:brightness-105"
                       : "bg-white/10 text-slate-500 cursor-not-allowed"
-                  }`}
+                    }`}
                 >
                   <span>{purchasing ? "Creating Package..." : "Purchase Growth Package"}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -1143,46 +1183,80 @@ export function PackageOrderBuilder() {
             </GlassCard>
           )}
 
-          {/* Confirmation Modal */}
-          {confirmModalOpen && quote && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-              <div className="w-full max-w-lg p-6 rounded-3xl bg-[#191e12] border border-white/10 space-y-6 shadow-2xl">
-                <div className="space-y-1">
-                  <h3 className="text-lg font-bold text-white">Confirm Package Purchase</h3>
-                  <p className="text-xs text-slate-400">
-                    A reserve of ₹{quote.totalCharge.toFixed(2)} will be debited from your wallet.
-                  </p>
+          {/* MOBILE STICKY RESERVE & PURCHASE BAR (< 1100px) */}
+          {quote && (
+            <div className="min-[1100px]:hidden fixed bottom-[60px] lg:bottom-0 left-0 right-0 z-30 p-3 bg-white/95 dark:bg-[#191919]/95 border-t border-border backdrop-blur-xl shadow-[0_-8px_20px_rgba(0,0,0,0.6)]">
+              <div className="max-w-md mx-auto flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-[10px] text-slate-400">Total Reserve</div>
+                  <div className="text-lg font-bold text-[#D8EC8D] font-mono">₹{quote.totalCharge.toFixed(2)}</div>
                 </div>
 
-                <div className="space-y-2 p-4 rounded-2xl bg-white/[0.03] border border-white/5 text-xs font-mono">
+                <button
+                  type="button"
+                  disabled={!consentRulesUnderstood || !hasSufficientBalance || !hasScheduleTimeline || calculating || purchasing}
+                  onClick={() => setConfirmModalOpen(true)}
+                  className={`py-2.5 px-5 rounded-xl font-bold text-xs min-h-[44px] flex items-center gap-1.5 shadow-sm active:scale-95 transition-all ${consentRulesUnderstood && hasSufficientBalance && hasScheduleTimeline && !purchasing
+                      ? "bg-[#D8EC8D] text-[#131313] hover:brightness-105"
+                      : "bg-white/10 text-slate-500 cursor-not-allowed"
+                    }`}
+                >
+                  <span>{purchasing ? "Creating..." : "Purchase"}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Confirmation Modal (Bottom Sheet on Mobile, Centered on Desktop) */}
+          {confirmModalOpen && quote && (
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm">
+              <div className="w-full max-w-lg p-5 sm:p-6 rounded-t-3xl sm:rounded-3xl bg-white dark:bg-[#191e12] border border-border space-y-5 sm:space-y-6 shadow-2xl max-h-[88vh] overflow-y-auto">
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <div className="space-y-0.5">
+                    <h3 className="text-base sm:text-lg font-bold text-fg">Confirm Package Purchase</h3>
+                    <p className="text-[11px] sm:text-xs text-slate-400">
+                      A reserve of ₹{quote.totalCharge.toFixed(2)} will be debited from your wallet.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmModalOpen(false)}
+                    className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-2 p-3.5 sm:p-4 rounded-2xl bg-white/[0.03] border border-slate-200/60 dark:border-white/5 text-xs font-mono">
                   <div className="flex justify-between text-slate-400">
                     <span>Target Handle:</span>
-                    <span className="text-white">@{handle} ({selectedPlatform})</span>
+                    <span className="text-fg">@{handle} ({selectedPlatform})</span>
                   </div>
                   <div className="flex justify-between text-slate-400">
                     <span>Lifespan:</span>
-                    <span className="text-white">{durationDays} Days</span>
+                    <span className="text-fg">{durationDays} Days</span>
                   </div>
                   <div className="flex justify-between text-slate-400">
                     <span>Max Posts:</span>
-                    <span className="text-white">{maxPostsToProcess} Posts</span>
+                    <span className="text-fg">{maxPostsToProcess} Posts</span>
                   </div>
-                  <div className="flex justify-between text-[#D8EC8D] pt-2 border-t border-white/5 font-bold">
+                  <div className="flex justify-between text-[#D8EC8D] pt-2 border-t border-slate-200/60 dark:border-white/5 font-bold">
                     <span>Total Upfront:</span>
                     <span>₹{quote.totalCharge.toFixed(2)}</span>
                   </div>
                 </div>
 
-                <div className="text-xs text-slate-400 italic">
+                <div className="text-[11px] sm:text-xs text-slate-400 italic leading-relaxed">
                   Maximum total; unused balance is automatically refunded to your wallet upon package completion or cancellation. We do not verify account ownership. Delivery is fulfilled strictly to the public handle and post links provided.
                 </div>
 
-                <div className="flex gap-3 justify-end">
+                <div className="flex gap-3 justify-end pt-1">
                   <button
                     type="button"
                     disabled={purchasing}
                     onClick={() => setConfirmModalOpen(false)}
-                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold"
+                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-fg-2 text-xs font-semibold min-h-[44px]"
                   >
                     Cancel
                   </button>
@@ -1190,7 +1264,7 @@ export function PackageOrderBuilder() {
                     type="button"
                     disabled={purchasing}
                     onClick={handlePurchase}
-                    className="px-6 py-2.5 rounded-xl bg-[#D8EC8D] text-[#131313] text-xs font-bold hover:brightness-105"
+                    className="px-6 py-2.5 rounded-xl bg-[#D8EC8D] text-[#131313] text-xs font-bold hover:brightness-105 min-h-[44px] flex items-center justify-center"
                   >
                     {purchasing ? "Debiting & Creating..." : "Confirm & Pay"}
                   </button>

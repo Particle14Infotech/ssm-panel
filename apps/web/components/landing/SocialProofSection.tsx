@@ -11,7 +11,7 @@ export function SocialProofSection() {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <section className="w-full py-7 border-y border-white/[0.08] bg-[#161616]/40 overflow-hidden relative">
+    <section className="w-full py-7 border-y border-border bg-surface-glass overflow-hidden relative">
       {/* Soft edge gradient fade masks */}
       <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-[#131313] to-transparent z-10 pointer-events-none" />
       <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-[#131313] to-transparent z-10 pointer-events-none" />
@@ -38,10 +38,10 @@ export function SocialProofSection() {
           {platforms.map((platform) => (
             <div
               key={`primary-${platform.id}`}
-              className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] flex-shrink-0 hover:border-white/[0.18] hover:bg-white/[0.04] transition-all cursor-default"
+              className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/[0.02] border border-border flex-shrink-0 hover:border-white/[0.18] hover:bg-white/[0.04] transition-all cursor-default"
             >
               <PlatformIcon platform={platform.id} size={20} />
-              <span className="text-sm font-medium text-white/90">
+              <span className="text-sm font-medium text-fg">
                 {platform.name}
               </span>
             </div>
@@ -52,10 +52,10 @@ export function SocialProofSection() {
             <div
               key={`dup-${platform.id}`}
               aria-hidden="true"
-              className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] flex-shrink-0 hover:border-white/[0.18] hover:bg-white/[0.04] transition-all cursor-default"
+              className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/[0.02] border border-border flex-shrink-0 hover:border-white/[0.18] hover:bg-white/[0.04] transition-all cursor-default"
             >
               <PlatformIcon platform={platform.id} size={20} />
-              <span className="text-sm font-medium text-white/90">
+              <span className="text-sm font-medium text-fg">
                 {platform.name}
               </span>
             </div>

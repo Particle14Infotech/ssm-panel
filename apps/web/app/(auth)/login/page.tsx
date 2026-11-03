@@ -106,14 +106,14 @@ export default function LoginPage() {
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 -left-20 w-96 h-96 rounded-full bg-[#243100]/40 blur-[140px] pointer-events-none" />
       <div className="absolute bottom-1/4 -right-20 w-96 h-96 rounded-full bg-[#bd0183]/15 blur-[140px] pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-[#d8ec8d]/10 blur-[160px] pointer-events-none -z-10" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-accent/10 blur-[160px] pointer-events-none -z-10" />
 
       {/* Unified Outer Frame with Clean Boundaries */}
       <div className="w-full max-w-5xl rounded-3xl p-6 sm:p-10 lg:p-12 bg-[#191919]/60 border border-white/[0.08] backdrop-blur-2xl shadow-[0_32px_64px_rgba(0,0,0,0.7)] relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         {/* Left Column: 3D Rotating Crown & Brand showcase on desktop */}
         <div className="lg:col-span-5 flex flex-col items-center lg:items-start text-center lg:text-left justify-center px-2">
           <div className="mb-4">
-            <BrandLogo variant="combined" size={38} withLink href="/" />
+            <BrandLogo variant="combined" size={38} withLink href="/" textClassName="text-white" />
           </div>
 
           {/* Real 3D Rotating Crown Showcase with perfect proportional dimensions */}

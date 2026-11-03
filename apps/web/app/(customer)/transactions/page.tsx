@@ -52,14 +52,14 @@ export default function TransactionsPage() {
       {/* Top Header Clean (Badge removed) */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-light text-white">Transaction Ledger</h1>
+          <h1 className="text-3xl font-light text-fg">Transaction Ledger</h1>
           <p className="text-xs text-slate-400 mt-0.5">
             Cryptographically audited append-only accounting. Every credit and debit is immutable.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="px-4 py-2 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-2">
+          <div className="px-4 py-2 rounded-2xl bg-white/5 border border-border flex items-center gap-2">
             <span className="text-xs font-mono text-slate-400">Balance:</span>
             <span className="text-sm font-bold text-[#D8EC8D] font-mono">
               ₹{user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
@@ -76,7 +76,7 @@ export default function TransactionsPage() {
       </div>
 
       {/* Filter Strip */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#1c1b1b] border border-white/10 p-3 rounded-2xl">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-[#1c1b1b] border border-border p-3 rounded-2xl">
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -84,7 +84,7 @@ export default function TransactionsPage() {
             placeholder="Search by Txn ID or Ref..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-white placeholder:text-slate-400/50 focus:outline-none focus:border-[#D8EC8D]/50"
+            className="w-full pl-9 pr-4 py-1.5 rounded-full bg-white/5 border border-border text-xs text-fg placeholder:text-slate-400/50 focus:outline-none focus:border-[#D8EC8D]/50"
           />
         </div>
 
@@ -99,7 +99,7 @@ export default function TransactionsPage() {
               className={`px-3 py-1 rounded-full text-xs font-mono transition-all cursor-pointer ${
                 selectedType === type
                   ? "bg-[#D8EC8D] text-[#131313] font-bold shadow-sm"
-                  : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+                  : "bg-surface-raised text-slate-700 text-fg-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10"
               }`}
             >
               {type}
@@ -109,7 +109,7 @@ export default function TransactionsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-[#1c1b1b] border border-white/10 rounded-3xl overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
+      <div className="bg-white dark:bg-[#1c1b1b] border border-border rounded-3xl overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
         {transactions.length === 0 ? (
           <div className="py-6">
             <EmptyState
@@ -124,7 +124,7 @@ export default function TransactionsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[750px]">
               <thead>
-                <tr className="bg-[#131313] text-slate-400 text-[11px] uppercase tracking-wider font-mono border-b border-white/10">
+                <tr className="bg-white dark:bg-[#131313] text-slate-400 text-[11px] uppercase tracking-wider font-mono border-b border-border">
                   <th className="py-3 px-4">Transaction ID</th>
                   <th className="py-3 px-4">Reference ID</th>
                   <th className="py-3 px-4">Method / Channel</th>
@@ -152,15 +152,15 @@ export default function TransactionsPage() {
                         transition={{ duration: 0.15 }}
                         className="transition-colors"
                       >
-                        <td className="py-3 px-4 text-white font-semibold flex items-center gap-1.5">
+                        <td className="py-3 px-4 text-fg font-semibold flex items-center gap-1.5">
                           {isCredit ? (
-                            <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-400" />
+                            <ArrowDownLeft className="w-3.5 h-3.5 text-success" />
                           ) : (
-                            <ArrowUpRight className="w-3.5 h-3.5 text-rose-400" />
+                            <ArrowUpRight className="w-3.5 h-3.5 text-danger" />
                           )}
                           <span>{formatTxnId(tx.id)}</span>
                         </td>
-                        <td className="py-3 px-4 text-white">
+                        <td className="py-3 px-4 text-fg">
                           <div className="flex items-center gap-1.5">
                             <PaymentIcon method={tx.method} size={15} />
                             <span>{tx.method}</span>
@@ -172,18 +172,18 @@ export default function TransactionsPage() {
                         <td className="py-3 px-4 text-right text-[#D8EC8D]">
                           {tx.bonus > 0 ? `+₹${tx.bonus.toFixed(2)}` : "—"}
                         </td>
-                        <td className={`py-3 px-4 text-right font-bold tabular-nums ${isCredit ? "text-emerald-400" : "text-rose-400"}`}>
+                        <td className={`py-3 px-4 text-right font-bold tabular-nums ${isCredit ? "text-success" : "text-danger"}`}>
                           {isCredit ? `+₹${tx.amount.toFixed(2)}` : `-₹${Math.abs(tx.amount).toFixed(2)}`}
                         </td>
                         <td className="py-3 px-4 text-center">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-success border border-emerald-500/30">
                             {tx.status}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-right">
                           <button
                             onClick={() => setReceiptTxn(tx)}
-                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all inline-flex items-center gap-1 text-[11px] cursor-pointer"
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-fg-2 hover:text-white transition-all inline-flex items-center gap-1 text-[11px] cursor-pointer"
                             title="Download / View Receipt"
                           >
                             <FileText className="w-3.5 h-3.5" />
@@ -203,12 +203,12 @@ export default function TransactionsPage() {
       {/* Branded Downloadable Receipt Modal */}
       {receiptTxn && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#1c1b1b] border border-white/15 rounded-3xl p-6 md:p-8 max-w-md w-full space-y-6 shadow-2xl relative text-left">
+          <div className="bg-white dark:bg-[#1c1b1b] border border-border rounded-3xl p-6 md:p-8 max-w-md w-full space-y-6 shadow-2xl relative text-left">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#D8EC8D]" />
-                <h3 className="text-lg font-semibold text-white tracking-tight">{BRAND_NAME}</h3>
+                <h3 className="text-lg font-semibold text-fg tracking-tight">{BRAND_NAME}</h3>
               </div>
               <span className="text-[10px] uppercase font-mono px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold">
                 Payment Receipt
@@ -220,25 +220,25 @@ export default function TransactionsPage() {
               <div className="bg-white/[0.03] rounded-2xl p-4 space-y-2.5">
                 <div className="flex justify-between text-slate-400">
                   <span>Receipt Number</span>
-                  <span className="text-white font-semibold">RCPT-{receiptTxn.id.substring(0, 10).toUpperCase()}</span>
+                  <span className="text-fg font-semibold">RCPT-{receiptTxn.id.substring(0, 10).toUpperCase()}</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>Payment Reference</span>
-                  <span className="text-white">{receiptTxn.referenceId}</span>
+                  <span className="text-fg">{receiptTxn.referenceId}</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>Date & Time</span>
-                  <span className="text-white">
+                  <span className="text-fg">
                     {new Date(receiptTxn.createdAt).toLocaleDateString("en-IN")} {new Date(receiptTxn.createdAt).toLocaleTimeString()}
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>Payment Method</span>
-                  <span className="text-white font-bold">{receiptTxn.method}</span>
+                  <span className="text-fg font-bold">{receiptTxn.method}</span>
                 </div>
-                <div className="border-t border-white/10 pt-2 flex justify-between text-slate-400">
+                <div className="border-t border-border pt-2 flex justify-between text-slate-400">
                   <span>Amount Deposited</span>
-                  <span className="text-white tabular-nums">₹{Math.abs(receiptTxn.amount).toFixed(2)}</span>
+                  <span className="text-fg tabular-nums">₹{Math.abs(receiptTxn.amount).toFixed(2)}</span>
                 </div>
                 {receiptTxn.bonus > 0 && (
                   <div className="flex justify-between text-[#D8EC8D]">
@@ -246,15 +246,15 @@ export default function TransactionsPage() {
                     <span className="tabular-nums">+ ₹{receiptTxn.bonus.toFixed(2)}</span>
                   </div>
                 )}
-                <div className="border-t border-white/10 pt-2 flex justify-between items-baseline">
-                  <span className="text-white font-bold">Total Credited</span>
-                  <span className="text-lg font-bold text-emerald-400 tabular-nums">
+                <div className="border-t border-border pt-2 flex justify-between items-baseline">
+                  <span className="text-fg font-bold">Total Credited</span>
+                  <span className="text-lg font-bold text-success tabular-nums">
                     ₹{(Math.abs(receiptTxn.amount) + (receiptTxn.bonus || 0)).toFixed(2)} INR
                   </span>
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-[11px] text-slate-400 leading-relaxed text-center">
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 text-[11px] text-slate-400 leading-relaxed text-center">
                 This is a system-generated electronic receipt issued by {BRAND_NAME}.
                 Cryptographically audited and recorded on immutable ledger.
               </div>
@@ -265,7 +265,7 @@ export default function TransactionsPage() {
               <button
                 type="button"
                 onClick={handlePrintReceipt}
-                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white flex items-center gap-1.5 transition-all"
+                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-fg flex items-center gap-1.5 transition-all"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Print / Save PDF</span>

@@ -18,16 +18,16 @@ export default function PrivacyPage() {
       <Reveal y={0} delay={0.05}>
         <div className="mb-10">
           <Breadcrumb items={[{ label: "Privacy Policy", href: "/legal/privacy" }]} />
-          <span className="text-xs font-mono uppercase tracking-widest text-[#D8EC8D]">
+          <span className="text-xs font-mono uppercase tracking-widest text-accent-text">
             Data Protection
           </span>
           <h1 className="font-heading text-4xl font-semibold text-white mt-2 mb-4">
             Privacy Policy
           </h1>
-          <p className="text-xs font-mono text-[#A1A1AA]">Last Updated: January 2025</p>
+          <p className="text-xs font-mono text-fg-muted">Last Updated: January 2025</p>
         </div>
 
-        <div className="rounded-[20px] bg-white/[0.03] border border-white/[0.08] p-8 flex flex-col gap-6 text-sm text-[#A1A1AA] leading-relaxed">
+        <div className="rounded-[20px] bg-white/[0.03] border border-white/[0.08] p-8 flex flex-col gap-6 text-sm text-fg-muted leading-relaxed">
           <div>
             <h2 className="text-base font-semibold text-white mb-2">1. Information Collection</h2>
             <p>

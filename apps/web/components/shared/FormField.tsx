@@ -21,15 +21,15 @@ export function FormField({
 }: FormFieldProps) {
   return (
     <div className={`space-y-1.5 ${className}`}>
-      <label className="block text-xs font-medium text-zinc-300">
+      <label className="block text-xs font-medium text-fg-2">
         {label}
-        {required && <span className="text-[#D8EC8D] ml-1">*</span>}
+        {required && <span className="text-accent-text ml-1">*</span>}
       </label>
       {children}
       {error ? (
-        <p className="text-[11px] text-rose-400 font-mono">{error}</p>
+        <p className="text-[11px] text-danger font-mono">{error}</p>
       ) : helperText ? (
-        <p className="text-[11px] text-zinc-400 font-mono">{helperText}</p>
+        <p className="text-[11px] text-fg-muted font-mono">{helperText}</p>
       ) : null}
     </div>
   );

@@ -120,7 +120,7 @@ export default function AdminUsersPage() {
                       {user.totalOrders}
                     </td>
                     <td className="py-4 px-3 whitespace-nowrap">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#D8EC8D]/15 text-[#D8EC8D] border border-[#D8EC8D]/30">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent/15 text-[#D8EC8D] border border-accent/30">
                         {user.tier}
                       </span>
                     </td>

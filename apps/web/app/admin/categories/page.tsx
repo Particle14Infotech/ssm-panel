@@ -155,8 +155,8 @@ export default function AdminCategoriesPage() {
                       onClick={() => toggleStatus(c.id)}
                       className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                         c.status === "ACTIVE"
-                          ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                          : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                          ? "bg-emerald-500/15 text-success border border-emerald-500/30"
+                          : "bg-rose-500/15 text-danger border border-rose-500/30"
                       }`}
                     >
                       {c.status}

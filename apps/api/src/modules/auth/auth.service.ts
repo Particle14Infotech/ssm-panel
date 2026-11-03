@@ -22,7 +22,8 @@ function getAuthJwtSecret(): string {
   return secret;
 }
 
-const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || "7d") as any;
+const rawJwtExpires = process.env.JWT_EXPIRES_IN;
+const JWT_EXPIRES_IN = (rawJwtExpires && rawJwtExpires.trim().length > 0 ? rawJwtExpires : "7d") as any;
 const REFRESH_EXPIRES_DAYS = Number(process.env.REFRESH_EXPIRES_DAYS) || 30;
 
 export const SANDBOX_AUTH_USERS = new Map<string, any>();

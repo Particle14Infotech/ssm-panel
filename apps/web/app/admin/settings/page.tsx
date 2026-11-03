@@ -136,7 +136,7 @@ export default function AdminSettingsPage() {
           </div>
 
           {saveSuccess && (
-            <div className="px-4 py-2 rounded-full bg-[#D8EC8D]/15 border border-[#D8EC8D]/40 text-[#D8EC8D] text-xs font-mono flex items-center gap-2 animate-in fade-in">
+            <div className="px-4 py-2 rounded-full bg-accent/15 border border-[#D8EC8D]/40 text-[#D8EC8D] text-xs font-mono flex items-center gap-2 animate-in fade-in">
               <CheckCircle2 className="w-4 h-4" />
               <span>Platform settings committed successfully!</span>
             </div>
@@ -146,7 +146,7 @@ export default function AdminSettingsPage() {
         {/* Maintenance Warning Banner if active */}
         {settings.maintenanceMode && (
           <div className="p-4 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-200 flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+            <AlertTriangle className="w-5 h-5 text-warning shrink-0" />
             <div className="text-xs">
               <span className="font-bold">Maintenance Mode is ACTIVE: </span>
               Public users cannot submit new orders or initiate deposits. Only administrative consoles remain accessible.
@@ -221,7 +221,7 @@ export default function AdminSettingsPage() {
           <div className="p-6 rounded-3xl bg-[#1a1a1a]/80 border border-white/10 backdrop-blur-md space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2.5">
-                <DollarSign className="w-5 h-5 text-emerald-400" />
+                <DollarSign className="w-5 h-5 text-success" />
                 <h3 className="text-base font-bold text-white tracking-tight">Deposit Thresholds & Reseller Margins</h3>
               </div>
               <span className="text-xs font-mono text-slate-500">SRS SEC 19, 20</span>
@@ -264,7 +264,7 @@ export default function AdminSettingsPage() {
           <div className="p-6 rounded-3xl bg-[#1a1a1a]/80 border border-white/10 backdrop-blur-md space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2.5">
-                <Sliders className="w-5 h-5 text-sky-400" />
+                <Sliders className="w-5 h-5 text-info" />
                 <h3 className="text-base font-bold text-white tracking-tight">Automation & System Switches</h3>
               </div>
               <span className="text-xs font-mono text-slate-500">SRS SEC 17, 43</span>

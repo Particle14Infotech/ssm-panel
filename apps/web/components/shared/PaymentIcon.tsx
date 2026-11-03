@@ -234,7 +234,7 @@ export function PaymentIcon({
   // 10. WALLETS (General)
   if (norm === "wallets" || norm === "wallet") {
     return (
-      <div className={`p-1 rounded-lg bg-[#D8EC8D]/10 border border-[#D8EC8D]/30 text-[#D8EC8D] shrink-0 ${className}`}>
+      <div className={`p-1 rounded-lg bg-accent/10 border border-accent/30 text-[#D8EC8D] shrink-0 ${className}`}>
         <WalletIcon style={{ width: dim, height: dim }} />
       </div>
     );

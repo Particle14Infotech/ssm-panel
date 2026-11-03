@@ -13,6 +13,11 @@ import pino from "pino";
 import { Decimal } from "decimal.js";
 import { decryptProviderKey } from "./crypto.util";
 import {
+  classifyProviderError,
+  ProviderErrorDisposition,
+  normalizeTargetUrl,
+  canDispatchUnitsOnLink,
+  DEFAULT_CATCHUP_MAX_PER_TICK,
   EmailProvider,
   ResendProvider,
   LogOnlyEmailProvider,
@@ -64,15 +69,97 @@ export class SMMWorkerEngine {
   private emailQueue: Queue | null = null;
   private emailWorker: BullWorker | null = null;
   private emailProvider: EmailProvider = new LogOnlyEmailProvider();
+  private isCanaryHealthy: boolean = true;
+  private lastCanaryRunAt: Date | null = null;
+
+  /**
+   * I3 Query Canary: Runs all critical raw SQL queries with harmless parameters.
+   * If any query fails (e.g. enum/typecast error 42883), sets health red and halts dispatching.
+   */
+  async runQueryCanary(): Promise<boolean> {
+    try {
+      // 1. Canary for Limiter In-Flight Query
+      await prisma.$queryRawUnsafe(
+        `SELECT COALESCE(SUM(o.quantity), 0)::int as in_flight_units
+         FROM "Order" o
+         JOIN "Service" s ON s.id = o."serviceId"
+         WHERE o.status IN ('PENDING', 'PROCESSING', 'IN_PROGRESS')
+           AND regexp_replace(regexp_replace(lower(trim(trailing '/' from o.target)), '^https?://(www\\.)?', ''), '/+$', '') = $1
+           AND s.kind::text = $2`,
+        "canary.test.internal",
+        "DEFAULT"
+      );
+
+      // 2. Canary for Enum comparison
+      await prisma.$queryRawUnsafe(
+        `SELECT COALESCE(SUM(o.quantity), 0)::int as in_flight_units
+         FROM "Order" o
+         JOIN "Service" s ON s.id = o."serviceId"
+         WHERE o.status IN ('PENDING', 'PROCESSING', 'IN_PROGRESS')
+           AND regexp_replace(regexp_replace(lower(trim(trailing '/' from o.target)), '^https?://(www\\.)?', ''), '/+$', '') = $1
+           AND s.kind::text = $2`,
+        "canary.test.internal",
+        "LIKES"
+      );
+
+      // 3. Canary for Candidate Selection Query
+      const terminalStatuses = `'COMPLETED','PARTIAL','FAILED','CANCELLED','SKIPPED_PAUSED','SKIPPED_QUOTA','SKIPPED_TYPE','SKIPPED_DELETED','SKIPPED_LIMIT','STALLED'`;
+      await prisma.$queryRawUnsafe(
+        `WITH candidates AS (
+          SELECT e.id, e."packageId",
+                 ROW_NUMBER() OVER (PARTITION BY e."packageId" ORDER BY e."executeAt" ASC) AS rn
+          FROM "PackageExecution" e
+          JOIN "Package" p ON p.id = e."packageId"
+          WHERE e.status = 'SCHEDULED'
+            AND e."executeAt" <= $1
+            AND (
+              e.seq <= 1
+              OR e.source != 'SCHEDULE'
+              OR EXISTS (
+                SELECT 1 FROM "PackageExecution" pred
+                WHERE pred."packageId" = e."packageId"
+                  AND pred."ruleId" = e."ruleId"
+                  AND pred.source = 'SCHEDULE'
+                  AND pred.seq = e.seq - 1
+                  AND pred.status::text IN (${terminalStatuses})
+              )
+            )
+        )
+        SELECT c.id, c."packageId"
+        FROM candidates c
+        WHERE c.rn <= $2
+        LIMIT 1`,
+        new Date(),
+        1
+      );
+
+      this.isCanaryHealthy = true;
+      this.lastCanaryRunAt = new Date();
+      logger.info("[Query Canary] All critical raw queries passed canary health check.");
+      return true;
+    } catch (canaryErr: any) {
+      this.isCanaryHealthy = false;
+      this.lastCanaryRunAt = new Date();
+      logger.fatal(
+        { err: canaryErr.message },
+        "[Query Canary] CRITICAL FAILURE: Raw SQL query canary failed. Halting package dispatch."
+      );
+      return false;
+    }
+  }
 
   async start() {
     this.isRunning = true;
     logger.info("[Worker] SMM PANEL Production Worker initializing (BullMQ Engine & Status Sync Daemon)");
 
-    // 1. Verify Database connectivity
+    // 1. Verify Database connectivity & execute boot Query Canary
     try {
       await prisma.$connect();
       logger.info("[Postgres] Database connected successfully");
+      const canaryPassed = await this.runQueryCanary();
+      if (!canaryPassed) {
+        logger.error("[Worker] Canary failed at boot; package dispatch disabled until healthy.");
+      }
     } catch (err: any) {
       logger.fatal({ err: err.message }, "[FATAL] PostgreSQL unreachable on worker boot");
       process.exit(1);
@@ -211,6 +298,16 @@ export class SMMWorkerEngine {
         logger.error({ err }, "Package execution dispatcher cycle error");
       }
     }, 10000);
+
+    // 8. I3 Query Canary Daemon (every 10 minutes)
+    setInterval(async () => {
+      if (!this.isRunning) return;
+      try {
+        await this.runQueryCanary();
+      } catch (canaryLoopErr: any) {
+        logger.error({ err: canaryLoopErr.message }, "[Worker] Query canary interval error");
+      }
+    }, 10 * 60 * 1000);
 
     // Initial triggers (safely handled without terminating boot)
     try {
@@ -355,7 +452,10 @@ export class SMMWorkerEngine {
       },
     });
 
-    const isPackagesEnabled = process.env.PACKAGES_ENABLED !== "false";
+    const isPackagesEnabled =
+      process.env.NODE_ENV !== "production"
+        ? process.env.PACKAGES_ENABLED === "true"
+        : (process.env.PACKAGES_ENABLED === "true" && (process.env.ALLOW_PACKAGES_IN_PROD === "true" || process.env.PACKAGES_PRODUCTION_ALLOWED === "true"));
     if (order?.packageExecutionId && !isPackagesEnabled) {
       logger.info(`[Worker] Package order #${order.id} not dispatched because PACKAGES_ENABLED is off.`);
       return;
@@ -365,7 +465,7 @@ export class SMMWorkerEngine {
       return;
     }
 
-    logger.info(`[Worker Engine] Dispatching Order #${order.id} (Service: ${order.service.name})`);
+    logger.info(`[Worker Engine] Dispatching Order #${order.id} (Service: ${order.service?.name || "Service"})`);
 
     // Managed drip-feed orders are dispatched run-by-run through the scheduler
     if ((order as any).dripMode === "MANAGED") {
@@ -430,6 +530,57 @@ export class SMMWorkerEngine {
       } catch (err: any) {
         logger.error(`[Worker Engine] Upstream provider dispatch failed for #${order.id}: ${err.message}`);
         if (isPackageExecutionOrder) {
+          const classification = classifyProviderError(err, { stage: "AFTER_SEND" });
+          if (classification.disposition === ProviderErrorDisposition.DEFINITE_REJECTION) {
+            logger.warn(
+              `[Worker Engine] Provider definite rejection for package execution order #${order.id}: ${classification.normalizedMessage}. Triggering run failure & refund.`
+            );
+            await this.handleFinalOrderFailure(order.id, classification.normalizedMessage);
+            await database.packageExecution.updateMany({
+              where: {
+                id: order.packageExecutionId!,
+                orderId: order.id,
+              },
+              data: {
+                status: PackageExecutionStatus.FAILED,
+                skipReason: `Provider rejection: ${classification.normalizedMessage.slice(0, 150)}`,
+              },
+            });
+            return;
+          } else if (classification.disposition === ProviderErrorDisposition.RETRY_LATER) {
+            const delaySec = classification.retryDelaySeconds || 900;
+            const nextAttempt = new Date(Date.now() + delaySec * 1000);
+            logger.info(
+              `[Worker Engine] Transient provider response for #${order.id}: ${classification.normalizedMessage}. Rescheduling execution to ${nextAttempt.toISOString()}.`
+            );
+            await database.$transaction(async (tx) => {
+              await tx.packageExecution.updateMany({
+                where: {
+                  id: order.packageExecutionId!,
+                  orderId: order.id,
+                },
+                data: {
+                  status: PackageExecutionStatus.SCHEDULED,
+                  executeAt: nextAttempt,
+                  orderId: null,
+                  skipReason: `Transient: ${classification.normalizedMessage.slice(0, 120)}. Next attempt in ${Math.round(delaySec / 60)}m.`,
+                },
+              });
+              await tx.order.update({
+                where: { id: order.id },
+                data: { status: OrderStatus.CANCELLED },
+              });
+              await tx.orderStatusHistory.create({
+                data: {
+                  orderId: order.id,
+                  status: OrderStatus.CANCELLED,
+                  notes: `Unsubmitted child order rolled back for retry: ${classification.normalizedMessage}`,
+                },
+              });
+            });
+            return;
+          }
+
           await database.$transaction(async (tx) => {
             await tx.packageExecution.updateMany({
               where: {
@@ -566,16 +717,16 @@ export class SMMWorkerEngine {
       }),
       ...(isPackageExecutionOrder
         ? [
-            database.packageExecution.updateMany({
-              where: {
-                id: order.packageExecutionId!,
-                orderId: order.id,
-                status: PackageExecutionStatus.DISPATCHED,
-                skipReason: PACKAGE_PROVIDER_OUTCOME_UNCERTAIN_REASON,
-              },
-              data: { skipReason: null },
-            }),
-          ]
+          database.packageExecution.updateMany({
+            where: {
+              id: order.packageExecutionId!,
+              orderId: order.id,
+              status: PackageExecutionStatus.DISPATCHED,
+              skipReason: PACKAGE_PROVIDER_OUTCOME_UNCERTAIN_REASON,
+            },
+            data: { skipReason: null },
+          }),
+        ]
         : []),
     ]);
 
@@ -685,6 +836,72 @@ export class SMMWorkerEngine {
    * Periodic daemon polling non-final orders and updating statuses
    */
   async syncNonFinalOrders(database: PrismaClient = prisma) {
+    // 0. Hardened Auto-Recovery for Stalled PENDING / unconfirmed PROCESSING package child orders (> 5 mins)
+    // I2 Rule: Before re-queueing an order without providerOrderId, verify it is not actively in flight in Outbox.
+    // If ambiguous or unreachable, alert and do not double-dispatch.
+    try {
+      const staleUnconfirmedOrders = await database.order.findMany({
+        where: {
+          packageExecutionId: { not: null },
+          status: { in: [OrderStatus.PENDING, OrderStatus.PROCESSING] },
+          providerOrderId: null,
+          createdAt: { lte: new Date(Date.now() - 5 * 60 * 1000) },
+        },
+        take: 10,
+      });
+
+      for (const staleOrder of staleUnconfirmedOrders) {
+        // Check if there is an active Outbox event in flight
+        const activeOutbox = await database.outboxEvent.findFirst({
+          where: {
+            aggregate: "ORDER",
+            eventType: "ORDER_CREATED",
+            status: OutboxStatus.PENDING,
+          },
+        });
+
+        // If outbox event is still pending or processing, outcome is ambiguous -> alert and DO NOT cancel/re-queue
+        if (activeOutbox && (activeOutbox.payload as any)?.orderId === staleOrder.id) {
+          logger.warn(
+            { orderId: staleOrder.id },
+            `[Worker Watchdog] Order #${staleOrder.id} has an active OUTBOX event in flight. Deferring recovery to prevent double-dispatch.`
+          );
+          continue;
+        }
+
+        logger.warn(
+          `[Worker Watchdog] Package child order #${staleOrder.id} verified unconfirmed without providerOrderId > 5m. Recovering execution #${staleOrder.packageExecutionId}.`
+        );
+        await database.$transaction(async (tx) => {
+          await tx.order.update({
+            where: { id: staleOrder.id },
+            data: { status: OrderStatus.CANCELLED },
+          });
+          await tx.orderStatusHistory.create({
+            data: {
+              orderId: staleOrder.id,
+              status: OrderStatus.CANCELLED,
+              notes: `Stalled in ${staleOrder.status} without upstream order confirmation > 5m. Verified no active outbox dispatch in flight.`,
+            },
+          });
+          await tx.packageExecution.updateMany({
+            where: {
+              id: staleOrder.packageExecutionId!,
+              orderId: staleOrder.id,
+            },
+            data: {
+              status: PackageExecutionStatus.SCHEDULED,
+              orderId: null,
+              executeAt: new Date(),
+              skipReason: "Auto-recovered from unconfirmed dispatch state; re-queued for execution.",
+            },
+          });
+        });
+      }
+    } catch (pendErr: any) {
+      logger.error(`[Worker Watchdog] Error recovering stale unconfirmed package orders: ${pendErr.message}`);
+    }
+
     const activeOrders = await database.order.findMany({
       where: {
         status: { in: [OrderStatus.PROCESSING, OrderStatus.IN_PROGRESS] },
@@ -738,12 +955,73 @@ export class SMMWorkerEngine {
             },
             data: { skipReason: PACKAGE_PROVIDER_STATUS_STALLED_REASON },
           });
-          if (stalled.count > 0) {
+          if (stalled && (stalled as any).count > 0) {
             logger.warn(
               `[Worker Watchdog] Paused provider status polling for package order #${order.id} after 24 hours without a terminal result.`
             );
           }
           continue;
+        }
+
+        // Optimized Package Stalled Dispatch Watchdog (3-4 hours instead of 24h deadlock)
+        const PACKAGE_STALL_HOURS = Number(process.env.PACKAGE_STALL_HOURS) || 3;
+        const packageStallThresholdMs = PACKAGE_STALL_HOURS * 60 * 60 * 1000;
+        const packageAutoResolveMs = (PACKAGE_STALL_HOURS + 1) * 60 * 60 * 1000;
+
+        if (
+          order.packageExecutionId &&
+          order.providerOrderId &&
+          order.packageExecution?.status === PackageExecutionStatus.DISPATCHED
+        ) {
+          if (orderAgeMs >= packageStallThresholdMs && order.provider && order.provider.active) {
+            try {
+              const apiKey = decryptProviderKey(order.provider.apiKeyEncrypted);
+              const statusRes = await this.callUpstreamOrderStatus(
+                order.provider.apiUrl,
+                apiKey,
+                order.providerOrderId,
+                order.provider.id
+              );
+
+              if (statusRes && !statusRes.error) {
+                const raw = (statusRes.status || "").toLowerCase();
+                const remains = statusRes.remains !== undefined ? parseInt(String(statusRes.remains), 10) : order.remains;
+                if (raw.includes("complete")) {
+                  await this.applyStatusTransition(order, statusRes);
+                  await this.syncPackageExecutionStatus(order.id, database);
+                  continue;
+                } else if (raw.includes("partial") || (remains < order.quantity)) {
+                  logger.info(
+                    `[Worker Watchdog] Package order #${order.id} partially delivered (${order.quantity - remains}/${order.quantity}) after ${Math.round(orderAgeMs / 60000)}m. Finalizing as PARTIAL to unblock schedule.`
+                  );
+                  await this.applyStatusTransition(order, { ...statusRes, status: "partial", remains });
+                  await this.syncPackageExecutionStatus(order.id, database);
+                  continue;
+                }
+              }
+            } catch (probeErr: any) {
+              logger.warn(`[Worker Watchdog] Could not probe provider for package order #${order.id}: ${probeErr.message}`);
+            }
+
+            if (orderAgeMs >= packageAutoResolveMs) {
+              logger.warn(
+                `[Worker Watchdog] Package execution order #${order.id} stalled for ${Math.round(orderAgeMs / 3600000)}h with no completion. Auto-resolving as PARTIAL and issuing refund to unblock schedule.`
+              );
+              await this.handlePartialRefund(order, order.remains ?? order.quantity, order.startCount ?? 0);
+              await database.packageExecution.updateMany({
+                where: {
+                  id: order.packageExecutionId,
+                  orderId: order.id,
+                  status: PackageExecutionStatus.DISPATCHED,
+                },
+                data: {
+                  status: PackageExecutionStatus.PARTIAL,
+                  skipReason: `Auto-resolved after ${Math.round(orderAgeMs / 3600000)}h of provider inactivity to unblock subsequent package runs.`,
+                },
+              });
+              continue;
+            }
+          }
         }
 
         if (orderAgeMs > stuckThresholdMs) {
@@ -919,7 +1197,7 @@ export class SMMWorkerEngine {
    */
   async applyStatusTransition(
     order: any,
-    statusRes: { status?: string; start_count?: number | string; remains?: number | string; charge?: number | string; currency?: string; [key: string]: any }
+    statusRes: { status?: string; start_count?: number | string; remains?: number | string; charge?: number | string; currency?: string;[key: string]: any }
   ) {
     const rawStatus = (statusRes.status || "").toLowerCase();
     let newStatus: OrderStatus = order.status;
@@ -1214,11 +1492,11 @@ export class SMMWorkerEngine {
   /**
    * Dispatches a single OrderRun to the upstream provider
    */
-   async dispatchSingleRun(run: any) {
-     if (run.status !== "DISPATCHING") {
-       logger.warn(`[Drip Scheduler] Refusing to dispatch unclaimed run #${run.id}.`);
-       return;
-     }
+  async dispatchSingleRun(run: any) {
+    if (run.status !== "DISPATCHING") {
+      logger.warn(`[Drip Scheduler] Refusing to dispatch unclaimed run #${run.id}.`);
+      return;
+    }
 
     const order = await prisma.order.findUnique({
       where: { id: run.orderId },
@@ -1617,31 +1895,31 @@ export class SMMWorkerEngine {
       await database.provider.updateMany({
         where: success
           ? {
-              id: providerId,
-              OR: [
-                { consecutiveStatusFailures: { gt: 0 } },
-                { lastStatusCheckAt: null },
-                { lastStatusCheckAt: { lte: new Date(now.getTime() - 5 * 60 * 1000) } },
-              ],
-            }
+            id: providerId,
+            OR: [
+              { consecutiveStatusFailures: { gt: 0 } },
+              { lastStatusCheckAt: null },
+              { lastStatusCheckAt: { lte: new Date(now.getTime() - 5 * 60 * 1000) } },
+            ],
+          }
           : {
-              id: providerId,
-              OR: [
-                { lastStatusCheckAt: null },
-                { lastStatusCheckAt: { lte: new Date(now.getTime() - 60 * 1000) } },
-              ],
-            },
+            id: providerId,
+            OR: [
+              { lastStatusCheckAt: null },
+              { lastStatusCheckAt: { lte: new Date(now.getTime() - 60 * 1000) } },
+            ],
+          },
         data: success
           ? {
-              consecutiveStatusFailures: 0,
-              lastStatusCheckAt: now,
-              lastStatusCheckError: null,
-            }
+            consecutiveStatusFailures: 0,
+            lastStatusCheckAt: now,
+            lastStatusCheckError: null,
+          }
           : {
-              consecutiveStatusFailures: { increment: 1 },
-              lastStatusCheckAt: now,
-              lastStatusCheckError: error?.slice(0, 500) || "Provider status check failed.",
-            },
+            consecutiveStatusFailures: { increment: 1 },
+            lastStatusCheckAt: now,
+            lastStatusCheckError: error?.slice(0, 500) || "Provider status check failed.",
+          },
       });
     } catch (telemetryError: any) {
       logger.warn(
@@ -1817,7 +2095,15 @@ export class SMMWorkerEngine {
    * Package/execution row locks serialize rescheduling and dispatch; order, state, and outbox writes commit together.
    */
   async pollAndDispatchPackageExecutions(database: PrismaClient = prisma) {
-    const isPackagesEnabled = process.env.PACKAGES_ENABLED !== "false";
+    if (!this.isCanaryHealthy) {
+      logger.warn("[Package Engine] Dispatch skipped: Query canary is unhealthy.");
+      return { dispatchedCount: 0, errorsCount: 1 };
+    }
+
+    const isPackagesEnabled =
+      process.env.NODE_ENV !== "production"
+        ? process.env.PACKAGES_ENABLED === "true"
+        : (process.env.PACKAGES_ENABLED === "true" && (process.env.ALLOW_PACKAGES_IN_PROD === "true" || process.env.PACKAGES_PRODUCTION_ALLOWED === "true"));
     if (!isPackagesEnabled) {
       return { dispatchedCount: 0, errorsCount: 0 };
     }
@@ -1827,24 +2113,114 @@ export class SMMWorkerEngine {
       ? allowlistEnv.split(",").map((id) => id.trim()).filter(Boolean)
       : null;
 
-    const whereClause: any = {
-      status: PackageExecutionStatus.SCHEDULED,
-      executeAt: { lte: new Date() },
-    };
-    if (allowedUserIds) {
-      whereClause.package = { userId: { in: allowedUserIds } };
+    const maxOverduePerTick = parseInt(process.env.DELIVERY_PACE_CATCHUP_K || String(DEFAULT_CATCHUP_MAX_PER_TICK), 10);
+    const maxAttemptsBeforeStall = parseInt(process.env.DISPATCH_MAX_ATTEMPTS || "5", 10);
+    const globalTickBudget = parseInt(process.env.DISPATCH_TICK_BUDGET || "25", 10);
+    const now = new Date();
+
+    let dueCandidates: Array<{ id: string; packageId: string }> = [];
+
+    // Fallback for in-memory or simplified test mock database without raw SQL engine
+    if (typeof database.$queryRawUnsafe !== "function") {
+      if (typeof (database as any).packageExecution?.findMany === "function") {
+        dueCandidates = await (database as any).packageExecution.findMany({
+          where: {
+            status: PackageExecutionStatus.SCHEDULED,
+            executeAt: { lte: now },
+          },
+          take: globalTickBudget,
+        });
+      } else {
+        return { dispatchedCount: 0, errorsCount: 0 };
+      }
     }
 
-    const dueCandidates = await database.packageExecution.findMany({
-      where: whereClause,
-      select: { id: true, packageId: true },
-      take: 25,
-      orderBy: { executeAt: "asc" },
-    });
+    // ── I1: Dispatchable-only candidate selection via SQL ──
+    // Non-dispatchable executions (predecessor-blocked, in backoff, stalled) never occupy the window.
+    // Per-package fairness: at most K candidates per package (ROW_NUMBER partitioned by packageId).
+    // FOR UPDATE OF e SKIP LOCKED prevents double-dispatch across worker instances.
+    const terminalStatuses = `'COMPLETED','PARTIAL','FAILED','CANCELLED','SKIPPED_PAUSED','SKIPPED_QUOTA','SKIPPED_TYPE','SKIPPED_DELETED','SKIPPED_LIMIT','STALLED'`;
+
+    // Dynamic column check: backwards-compatible before/after migration 20261102150000
+    let hasBackoffCols = false;
+    try {
+      const colCheck = await database.$queryRawUnsafe<any[]>(`
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'PackageExecution' AND column_name = 'nextAttemptAt'
+        LIMIT 1
+      `);
+      hasBackoffCols = Array.isArray(colCheck) && colCheck.length > 0;
+    } catch {
+      hasBackoffCols = false;
+    }
+
+    const userFilter = allowedUserIds
+      ? `AND p."userId" IN (${allowedUserIds.map((_, i) => `$${i + 3}`).join(",")})`
+      : "";
+
+    const backoffFilter = hasBackoffCols
+      ? `AND (e."nextAttemptAt" IS NULL OR e."nextAttemptAt" <= $1) AND e.attempts < $2`
+      : "";
+
+    const candidateSQL = `
+      WITH candidates AS (
+        SELECT e.id, e."packageId",
+               ROW_NUMBER() OVER (PARTITION BY e."packageId" ORDER BY e."executeAt" ASC) AS rn
+        FROM "PackageExecution" e
+        JOIN "Package" p ON p.id = e."packageId"
+        WHERE e.status = 'SCHEDULED'
+          AND e."executeAt" <= $1
+          ${backoffFilter}
+          AND (
+            e.source != 'SCHEDULE'
+            OR NOT EXISTS (
+              SELECT 1 FROM "PackageExecution" pred
+              WHERE pred."packageId" = e."packageId"
+                AND pred."ruleId" = e."ruleId"
+                AND pred.source = 'SCHEDULE'
+                AND pred.seq < e.seq
+                AND pred.status::text NOT IN (${terminalStatuses})
+            )
+          )
+          ${userFilter}
+      )
+      SELECT c.id, c."packageId"
+      FROM candidates c
+      WHERE c.rn <= $${allowedUserIds ? allowedUserIds.length + 3 : 3}
+      ORDER BY c.rn ASC
+      LIMIT ${globalTickBudget}
+    `;
+
+    // now already declared above
+    const queryParams: any[] = [now, maxAttemptsBeforeStall];
+    if (allowedUserIds) {
+      queryParams.push(...allowedUserIds);
+    }
+    queryParams.push(maxOverduePerTick); // K per package
+
+    if (dueCandidates.length === 0 && typeof database.$queryRawUnsafe === "function") {
+      try {
+        dueCandidates = await database.$queryRawUnsafe<Array<{ id: string; packageId: string }>>(
+          candidateSQL,
+          ...queryParams
+        );
+      } catch (queryErr: any) {
+        logger.error(
+          { err: queryErr.message },
+          "[Package Engine] CRITICAL: Candidate selection query failed. Dispatch tick skipped."
+        );
+        return { dispatchedCount: 0, errorsCount: 1 };
+      }
+    }
+
     let dispatchedCount = 0;
     let errorsCount = 0;
+    const packageDispatchesInTick = new Map<string, number>();
 
-    for (const candidate of dueCandidates) {
+    for (const candidate of (dueCandidates || [])) {
+      if ((packageDispatchesInTick.get(candidate.packageId) || 0) >= maxOverduePerTick) {
+        continue;
+      }
       try {
         const dispatched = await database.$transaction(async (tx) => {
           const [pkg] = await tx.$queryRawUnsafe<Array<{
@@ -1875,11 +2251,12 @@ export class SMMWorkerEngine {
             platform: string;
             serviceId: string;
             providerId: string | null;
+            kind: string | null;
           }>>(
             `SELECT e.id, e."packageId", e."ruleId", e.source, e.seq, e.quantity,
                     e."allocatedCharge", e."executeAt", e."skipReason", e."targetUrl",
                     p."userId", p.handle, p.platform,
-                    r."serviceId", s."providerId"
+                    r."serviceId", s."providerId", s.kind
              FROM "PackageExecution" e
              JOIN "Package" p ON p.id = e."packageId"
              JOIN "PackageRule" r ON r.id = e."ruleId"
@@ -1974,10 +2351,11 @@ export class SMMWorkerEngine {
                 }
               }
 
-              const predecessorAllowsNextRun = new Set<PackageExecutionStatus>([
+              const predecessorAllowsNextRun = new Set<string>([
                 PackageExecutionStatus.COMPLETED,
                 PackageExecutionStatus.PARTIAL,
                 PackageExecutionStatus.CANCELLED,
+                PackageExecutionStatus.STALLED,
                 PackageExecutionStatus.SKIPPED_PAUSED,
                 PackageExecutionStatus.SKIPPED_QUOTA,
                 PackageExecutionStatus.SKIPPED_TYPE,
@@ -2022,6 +2400,60 @@ export class SMMWorkerEngine {
             } else {
               target = `https://instagram.com/${rawHandle}`;
             }
+          }
+
+          const normLink = normalizeTargetUrl(target);
+
+          // 1. Concurrency serialization: at most one active order per (provider, link, service)
+          if (execution.providerId) {
+            const [activeOverlap] = await tx.$queryRawUnsafe<Array<{ count: number }>>(
+              `SELECT COUNT(*)::int as count
+               FROM "Order"
+               WHERE "providerId" = $1
+                 AND "serviceId" = $2
+                 AND status IN ('PENDING', 'PROCESSING', 'IN_PROGRESS')
+                 AND regexp_replace(regexp_replace(lower(trim(trailing '/' from target)), '^https?://(www\\.)?', ''), '/+$', '') = $3`,
+              execution.providerId,
+              execution.serviceId,
+              normLink
+            );
+            if (activeOverlap && Number(activeOverlap.count) > 0) {
+              return false;
+            }
+          }
+
+          // 2. Dispatcher limiter: units in flight per (platform, link, kind)
+          const [inFlight] = await tx.$queryRawUnsafe<Array<{ in_flight_units: number }>>(
+            `SELECT COALESCE(SUM(o.quantity), 0)::int as in_flight_units
+             FROM "Order" o
+             JOIN "Service" s ON s.id = o."serviceId"
+             WHERE o.status IN ('PENDING', 'PROCESSING', 'IN_PROGRESS')
+               AND regexp_replace(regexp_replace(lower(trim(trailing '/' from o.target)), '^https?://(www\\.)?', ''), '/+$', '') = $1
+               AND s.kind::text = $2`,
+            normLink,
+            execution.kind || "DEFAULT"
+          );
+          const currentInFlight = (inFlight && inFlight.in_flight_units != null && !Number.isNaN(Number(inFlight.in_flight_units))) ? Number(inFlight.in_flight_units) : 0;
+          const paceCheck = canDispatchUnitsOnLink(
+            currentInFlight,
+            execution.quantity,
+            execution.kind,
+            {
+              LIKES: parseInt(process.env.PACE_CAP_LIKES || "1000", 10),
+              VIEWS: parseInt(process.env.PACE_CAP_VIEWS || "25000", 10),
+              SHARES: parseInt(process.env.PACE_CAP_SHARES || "500", 10),
+              COMMENTS: parseInt(process.env.PACE_CAP_COMMENTS || "200", 10),
+              SAVES: parseInt(process.env.PACE_CAP_SAVES || "500", 10),
+              FOLLOWERS: parseInt(process.env.PACE_CAP_FOLLOWERS || "2000", 10),
+              DEFAULT: parseInt(process.env.PACE_CAP_DEFAULT || "5000", 10),
+            }
+          );
+          if (!paceCheck.allowed) {
+            await tx.packageExecution.updateMany({
+              where: { id: execution.id, status: PackageExecutionStatus.SCHEDULED },
+              data: { skipReason: paceCheck.reason },
+            });
+            return false;
           }
 
           const claim = await tx.packageExecution.updateMany({
@@ -2090,13 +2522,77 @@ export class SMMWorkerEngine {
           return true;
         });
 
-        if (dispatched) dispatchedCount++;
+        if (dispatched) {
+          dispatchedCount++;
+          packageDispatchesInTick.set(
+            candidate.packageId,
+            (packageDispatchesInTick.get(candidate.packageId) || 0) + 1
+          );
+        }
       } catch (dispatchError: any) {
         errorsCount++;
+        const sanitisedError = (dispatchError.message || "Unknown dispatch error").substring(0, 500);
         logger.error(
-          { err: dispatchError.message },
+          { err: sanitisedError, executionId: candidate.id },
           `[Package Engine] Error dispatching execution #${candidate.id}`
         );
+
+        // ── I1: Deterministic backoff & poison-pill isolation ──
+        // Increment attempts, compute deterministic backoff, and mark STALLED after N failures.
+        try {
+          if (hasBackoffCols) {
+            const currentExec = await database.packageExecution.findUnique({
+              where: { id: candidate.id },
+              select: { attempts: true },
+            });
+            const newAttempts = (currentExec?.attempts ?? 0) + 1;
+            const backoffScheduleSeconds = [30, 60, 120, 300, 600, 1800]; // Deterministic backoff schedule
+            const backoffSeconds = backoffScheduleSeconds[Math.min(newAttempts - 1, backoffScheduleSeconds.length - 1)];
+
+            if (newAttempts >= maxAttemptsBeforeStall) {
+              // Poison-pill: mark as STALLED so it never re-enters the candidate window
+              await database.packageExecution.updateMany({
+                where: { id: candidate.id, status: PackageExecutionStatus.SCHEDULED },
+                data: {
+                  status: PackageExecutionStatus.STALLED,
+                  attempts: newAttempts,
+                  lastError: sanitisedError,
+                  lastErrorAt: new Date(),
+                  skipReason: `Stalled after ${newAttempts} failed dispatch attempts. Last error: ${sanitisedError.substring(0, 200)}`,
+                },
+              });
+              logger.warn(
+                { executionId: candidate.id, attempts: newAttempts },
+                `[Package Engine] Execution #${candidate.id} marked STALLED after ${newAttempts} attempts`
+              );
+            } else {
+              // Backoff: set nextAttemptAt so it is excluded from the candidate window until the backoff expires
+              const nextAttemptAt = new Date(Date.now() + backoffSeconds * 1000);
+              await database.packageExecution.updateMany({
+                where: { id: candidate.id, status: PackageExecutionStatus.SCHEDULED },
+                data: {
+                  attempts: newAttempts,
+                  nextAttemptAt,
+                  lastError: sanitisedError,
+                  lastErrorAt: new Date(),
+                  skipReason: `Dispatch attempt ${newAttempts} failed. Next retry at ${nextAttemptAt.toISOString()}`,
+                },
+              });
+            }
+          } else {
+            await database.packageExecution.updateMany({
+              where: { id: candidate.id, status: PackageExecutionStatus.SCHEDULED },
+              data: {
+                skipReason: `Dispatch attempt failed: ${sanitisedError.substring(0, 200)}`,
+              },
+            });
+          }
+        } catch (backoffErr: any) {
+          logger.error(
+            { err: backoffErr.message, executionId: candidate.id },
+            `[Package Engine] Failed to record backoff for execution #${candidate.id}`
+          );
+        }
       }
     }
 

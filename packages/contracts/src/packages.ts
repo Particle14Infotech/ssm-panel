@@ -362,6 +362,18 @@ export const TriggerExecutionInputSchema = z.object({
         ruleId: z.string(),
         quantity: z.number().int().positive(),
         deliveryWindowMin: z.number().int().positive().optional(),
+        runsCount: z.number().int().min(1).max(30).optional(),
+        intervalMinutes: z.number().int().min(1).optional(),
+      })
+    )
+    .optional(),
+  extraServices: z
+    .array(
+      z.object({
+        serviceId: z.string(),
+        quantity: z.number().int().positive(),
+        runsCount: z.number().int().min(1).max(30).optional(),
+        intervalMinutes: z.number().int().min(1).optional(),
       })
     )
     .optional(),
@@ -372,3 +384,119 @@ export const RescheduleExecutionInputSchema = z.object({
   executeAt: z.string().datetime({ offset: true, message: "executeAt must be an ISO-8601 timestamp with an offset" }),
 });
 export type RescheduleExecutionInput = z.infer<typeof RescheduleExecutionInputSchema>;
+
+export const CustomCampaignItemInputSchema = z.object({
+  serviceId: z.string().min(1, "serviceId is required"),
+  categoryKey: z.string().optional(),
+  name: z.string().optional(),
+  kind: z.string().optional(),
+  quantity: z.number().int().positive("Quantity must be a positive integer"),
+  intervalHours: z.number().int().min(1).max(72).optional(),
+  customComments: z.array(z.string().trim()).optional(),
+  targetMentions: z.array(z.string().trim()).optional(),
+});
+export type CustomCampaignItemInput = z.infer<typeof CustomCampaignItemInputSchema>;
+
+export const CustomCampaignQuoteInputSchema = z
+  .object({
+    targetUrl: z.string().url("A valid target link is required").optional().or(z.literal("")),
+    profileUrl: z.string().url("A valid profile link is required").optional().or(z.literal("")),
+    mediaUrl: z.string().url().optional().or(z.literal("")),
+    platform: SupportedPlatformSchema.default("instagram"),
+    durationDays: z.number().int().min(1).max(30).default(7),
+    extraHours: z.number().int().min(0).max(72).optional().default(0),
+    geoCountry: z.string().optional(),
+    geoRegion: z.string().optional(),
+    pacingStrategy: z.enum(["ORGANIC_CURVE", "EVEN", "INTERVAL"]).default("EVEN"),
+    services: z.array(CustomCampaignItemInputSchema).min(1, "At least one service must be selected"),
+    timezone: IanaTimezoneSchema.default("UTC"),
+  })
+  .refine(
+    (data) =>
+      Boolean(
+        (data.targetUrl && data.targetUrl.trim() !== "") ||
+          (data.profileUrl && data.profileUrl.trim() !== "") ||
+          (data.mediaUrl && data.mediaUrl.trim() !== "")
+      ),
+    {
+      message: "At least one target URL (Profile URL or Post/Reel URL) is required",
+      path: ["targetUrl"],
+    }
+  );
+export type CustomCampaignQuoteInput = z.infer<typeof CustomCampaignQuoteInputSchema>;
+
+export const CustomCampaignPurchaseInputSchema = CustomCampaignQuoteInputSchema.and(
+  z.object({
+    quoteHash: z.string().min(1, "quoteHash is required"),
+    idempotencyKey: z.string().optional(),
+  })
+);
+export type CustomCampaignPurchaseInput = z.infer<typeof CustomCampaignPurchaseInputSchema>;
+
+/**
+ * Distributes a target quantity over N days using an organic growth curve or even spread.
+ * Uses Hamilton/Hare-Niemeyer apportionment method to guarantee zero remainder loss.
+ */
+export function distributeOrganicPacing(
+  totalQuantity: number,
+  days: number,
+  strategy: "ORGANIC_CURVE" | "EVEN" = "ORGANIC_CURVE"
+): number[] {
+  if (days <= 0) return [totalQuantity];
+  if (totalQuantity <= 0) return Array(days).fill(0);
+  if (days === 1) return [totalQuantity];
+
+  let rawWeights: number[] = [];
+  if (strategy === "EVEN") {
+    rawWeights = Array(days).fill(1 / days);
+  } else {
+    // Standard organic social velocity curve: higher on days 1-2, gradual decay
+    // weights normalized to day count
+    const baseWeights = [20, 18, 15, 13, 11, 9, 8, 7, 5, 4];
+    rawWeights = Array.from({ length: days }, (_, i) => {
+      if (i < baseWeights.length) return baseWeights[i];
+      return Math.max(2, 4 - Math.floor((i - 10) * 0.2));
+    });
+  }
+
+  const weightSum = rawWeights.reduce((a, b) => a + b, 0);
+  const normalized = rawWeights.map((w) => w / weightSum);
+
+  // Hamilton apportionment:
+  const exactShares = normalized.map((p) => p * totalQuantity);
+  const integerParts = exactShares.map((s) => Math.floor(s));
+  let allocated = integerParts.reduce((a, b) => a + b, 0);
+  let remainder = totalQuantity - allocated;
+
+  const fractionals = exactShares.map((s, idx) => ({ idx, fraction: s - Math.floor(s) }));
+  fractionals.sort((a, b) => b.fraction - a.fraction);
+
+  for (let i = 0; i < remainder; i++) {
+    const targetIdx = fractionals[i % days].idx;
+    integerParts[targetIdx] += 1;
+  }
+
+  return integerParts;
+}
+
+
+export const ComboCustomizationItemSchema = z.object({
+  serviceId: z.string().min(1, "serviceId is required"),
+  quantity: z.number().int().positive("quantity must be positive"),
+});
+export type ComboCustomizationItem = z.infer<typeof ComboCustomizationItemSchema>;
+
+export const ComboQuoteInputSchema = z.object({
+  templateId: z.string().min(1, "templateId is required"),
+  tierId: z.string().min(1, "tierId is required"),
+  targetUrl: z.string().url("A valid target link is required"),
+  couponCode: z.string().trim().optional(),
+  customizations: z.array(ComboCustomizationItemSchema).optional(),
+});
+export type ComboQuoteInput = z.infer<typeof ComboQuoteInputSchema>;
+
+export const ComboPurchaseInputSchema = ComboQuoteInputSchema.extend({
+  quoteHash: z.string().min(1, "quoteHash is required"),
+  idempotencyKey: z.string().optional(),
+});
+export type ComboPurchaseInput = z.infer<typeof ComboPurchaseInputSchema>;

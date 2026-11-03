@@ -46,12 +46,12 @@ function VerifyContent() {
 
   return (
     <div className="w-full max-w-xl mx-auto px-4 py-16 flex flex-col items-center justify-center min-h-[70vh]">
-      <div className="w-full bg-[#1c1b1b] border border-white/10 rounded-3xl p-8 md:p-10 shadow-2xl backdrop-blur-xl text-center">
+      <div className="w-full bg-white dark:bg-[#1c1b1b] border border-border rounded-3xl p-8 md:p-10 shadow-2xl backdrop-blur-xl text-center">
         {status === "POLLING" && (
           <div className="flex flex-col items-center py-6">
             <Loader2 className="w-12 h-12 text-[#D8EC8D] animate-spin mb-4" />
-            <h2 className="text-2xl font-light text-white mb-2">Verifying Payment Session...</h2>
-            <p className="text-xs font-mono text-[#c7c8b6]">
+            <h2 className="text-2xl font-light text-fg mb-2">Verifying Payment Session...</h2>
+            <p className="text-xs font-mono text-slate-600 dark:text-[#c7c8b6]">
               Polling gateway ledger for Ref ID: <span className="text-[#D8EC8D]">{ref}</span>
             </p>
           </div>
@@ -59,24 +59,24 @@ function VerifyContent() {
 
         {status === "SUCCESS" && (
           <div className="flex flex-col items-center py-4">
-            <div className="w-16 h-16 rounded-full bg-[#D8EC8D]/15 text-[#D8EC8D] flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(216,236,141,0.25)]">
+            <div className="w-16 h-16 rounded-full bg-accent/15 text-[#D8EC8D] flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(216,236,141,0.25)]">
               <CheckCircle2 className="w-8 h-8" />
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#201f1f] text-xs font-mono text-[#D8EC8D] mb-4 border border-white/10">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-[#201f1f] text-xs font-mono text-emerald-800 dark:text-[#D8EC8D] mb-4 border border-border">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Deposit Ledger Confirmed</span>
             </div>
 
-            <h1 className="text-3xl font-light text-white mb-2">Funds Credited Successfully!</h1>
-            <p className="text-sm text-[#c7c8b6] font-light mb-6">
+            <h1 className="text-3xl font-light text-fg mb-2">Funds Credited Successfully!</h1>
+            <p className="text-sm text-slate-600 dark:text-[#c7c8b6] font-light mb-6">
               Your deposit and applicable tier bonus have been credited to your internal liquidity balance.
             </p>
 
-            <div className="w-full bg-[#201f1f] rounded-2xl p-4 mb-6 text-left border border-white/5 space-y-2 font-mono text-xs">
-              <div className="flex justify-between text-[#c7c8b6]">
+            <div className="w-full bg-slate-50 dark:bg-[#201f1f] rounded-2xl p-4 mb-6 text-left border border-slate-200/80 dark:border-white/5 space-y-2 font-mono text-xs">
+              <div className="flex justify-between text-slate-600 dark:text-[#c7c8b6]">
                 <span>Deposit Base:</span>
-                <span className="text-white">₹{creditAmount.toFixed(2)}</span>
+                <span className="text-fg">₹{creditAmount.toFixed(2)}</span>
               </div>
               {bonusAmount > 0 && (
                 <div className="flex justify-between text-[#D8EC8D]">
@@ -84,7 +84,7 @@ function VerifyContent() {
                   <span>+₹{bonusAmount.toFixed(2)}</span>
                 </div>
               )}
-              <div className="border-t border-white/10 pt-2 flex justify-between text-sm font-bold text-white">
+              <div className="border-t border-border pt-2 flex justify-between text-sm font-bold text-fg">
                 <span>New Wallet Balance:</span>
                 <span className="text-[#D8EC8D]">
                   ₹<CountUpNumber value={user.balance} decimals={2} />
@@ -104,18 +104,18 @@ function VerifyContent() {
 
         {status === "FAILED" && (
           <div className="flex flex-col items-center py-4">
-            <div className="w-16 h-16 rounded-full bg-rose-500/15 text-rose-400 flex items-center justify-center mb-6">
+            <div className="w-16 h-16 rounded-full bg-rose-500/15 text-danger flex items-center justify-center mb-6">
               <AlertCircle className="w-8 h-8" />
             </div>
 
-            <h1 className="text-2xl font-light text-white mb-2">Payment Verification Incomplete</h1>
-            <p className="text-sm text-[#c7c8b6] font-light mb-6">
+            <h1 className="text-2xl font-light text-fg mb-2">Payment Verification Incomplete</h1>
+            <p className="text-sm text-slate-600 dark:text-[#c7c8b6] font-light mb-6">
               The gateway session could not be completed or was cancelled. No funds were debited from your account.
             </p>
 
             <Link
               href="/app/wallet"
-              className="w-full py-3.5 rounded-full bg-[#201f1f] text-white hover:bg-white hover:text-black transition-all text-sm font-semibold"
+              className="w-full py-3.5 rounded-full bg-[#201f1f] text-fg hover:bg-white hover:text-black transition-all text-sm font-semibold"
             >
               Try Another Payment Method
             </Link>
@@ -130,7 +130,7 @@ export default function WalletVerifyPage() {
   return (
     <Suspense
       fallback={
-        <div className="w-full min-h-[50vh] flex items-center justify-center text-white font-mono text-xs">
+        <div className="w-full min-h-[50vh] flex items-center justify-center text-fg font-mono text-xs">
           Loading verification...
         </div>
       }

@@ -47,11 +47,11 @@ export default function AboutPage() {
         <Breadcrumb items={[{ label: "About", href: "/about" }]} />
 
         <div className="mb-12">
-          <p className="text-xs uppercase tracking-widest font-mono text-[#D8EC8D] font-semibold">
+          <p className="text-xs uppercase tracking-widest font-mono text-accent-text font-semibold">
             PLATFORM ARCHITECTURE
           </p>
           <h1 className="font-heading text-3xl sm:text-5xl font-light text-white tracking-tight mt-2">
-            Engineering for <span className="text-[#D8EC8D] font-normal">Real Money Safety</span>
+            Engineering for <span className="text-accent-text font-normal">Real Money Safety</span>
           </h1>
           <p className="text-zinc-300 text-base sm:text-lg mt-4 leading-relaxed font-light">
             SMM Panel is built on the principle of technical transparency. We do not use fake order counters, synthetic testimonials, or arbitrary service delays. The platform operates as a high-throughput router connecting social creators and marketing agencies directly with direct provider endpoints.
@@ -66,7 +66,7 @@ export default function AboutPage() {
                 key={pillar.title}
                 className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-md flex flex-col gap-3"
               >
-                <div className="w-10 h-10 rounded-xl bg-[#D8EC8D]/10 border border-[#D8EC8D]/20 flex items-center justify-center text-[#D8EC8D]">
+                <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent-text">
                   <Icon className="w-5 h-5" />
                 </div>
                 <h2 className="text-lg font-semibold text-white">{pillar.title}</h2>
@@ -76,7 +76,7 @@ export default function AboutPage() {
           })}
         </div>
 
-        <div className="p-8 rounded-2xl bg-gradient-to-b from-[#D8EC8D]/10 to-transparent border border-[#D8EC8D]/20 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="p-8 rounded-2xl bg-gradient-to-b from-[#D8EC8D]/10 to-transparent border border-accent/20 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-6">
           <div>
             <h3 className="text-lg font-semibold text-white">Ready to get started?</h3>
             <p className="text-sm text-zinc-300 mt-1 font-light">

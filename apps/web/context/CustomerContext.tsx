@@ -56,6 +56,7 @@ interface CustomerContextType {
   favoriteSuggestions: FavoriteSuggestion[];
   packages: any[];
   isLoading: boolean;
+  isServicesLoading: boolean;
   logout: () => void;
   refreshData: () => Promise<void>;
   refreshFavorites: () => Promise<void>;
@@ -64,6 +65,7 @@ interface CustomerContextType {
   resumePackage: (packageId: string) => Promise<boolean>;
   fetchPackageQuote: (input: PackageQuoteInput) => Promise<PackageQuoteResponse | null>;
   purchasePackage: (input: PackagePurchaseInput) => Promise<{ success: boolean; package?: any; error?: string }>;
+  createCustomCampaign: (input: any) => Promise<{ success: boolean; packageId?: string; data?: any; error?: string }>;
   cancelPackage: (packageId: string) => Promise<{ success: boolean; refundedAmount?: number; error?: string }>;
   addFavorite: (input: CreateFavoriteInput) => Promise<{ success: boolean; favorite?: FavoriteItem; error?: string }>;
   removeFavorite: (id: string) => Promise<{ success: boolean; error?: string }>;
@@ -107,6 +109,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile>(EMPTY_USER);
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
+  const [isServicesLoading, setIsServicesLoading] = useState<boolean>(true);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
@@ -135,47 +138,52 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshData = useCallback(async () => {
-    // 1. Always fetch public services catalog so new-order and packages work for any session
-    try {
-      const servicesRes = await fetch(`${API_BASE}/services`, { cache: "no-store" });
-      if (servicesRes.ok) {
-        const rawServices = await servicesRes.json();
-        if (Array.isArray(rawServices)) {
-          setServices(
-            rawServices.map((s: any) => ({
-              id: s.id,
-              categoryId: s.categoryId || "general",
-              categoryName: s.category?.name || "General Services",
-              name: s.name,
-              displayName: s.displayName,
-              platform: s.platform,
-              ratePer1000: Number(s.ratePer1000),
-              minQty: s.minQty,
-              maxQty: s.maxQty,
-              packageEligible: s.packageEligible !== false,
-              avgProcessingSpeed: "15 - 30 mins",
-              avgStartTime: "0 - 15 mins",
-              refillable: s.refillable,
-              cancellable: s.cancellable,
-              description: s.description || "",
-              status: s.status,
-              serviceType: s.serviceType || "DEFAULT",
-              dripFeedSupported: s.dripFeedSupported ?? false,
-              allowManagedDrip: s.allowManagedDrip ?? (s.serviceType !== "CUSTOM_COMMENTS" && !s.name?.toLowerCase().includes("comment")),
-              dripFeedMinRuns: s.dripFeedMinRuns ?? null,
-              dripFeedMaxRuns: s.dripFeedMaxRuns ?? null,
-              dripFeedMinInterval: s.dripFeedMinInterval ?? null,
-              dripFeedMaxInterval: s.dripFeedMaxInterval ?? null,
-            }))
-          );
+    // 1. Single unified public services fetch
+    const servicesFetchPromise = (async () => {
+      try {
+        const servicesRes = await fetch(`${API_BASE}/services`);
+        if (servicesRes.ok) {
+          const rawServices = await servicesRes.json();
+          if (Array.isArray(rawServices)) {
+            setServices(
+              rawServices.map((s: any) => ({
+                id: s.id,
+                categoryId: s.categoryId || "general",
+                categoryName: s.categoryName || s.category?.name || "General Services",
+                name: s.name,
+                displayName: s.displayName,
+                platform: s.platform,
+                ratePer1000: Number(s.ratePer1000),
+                minQty: s.minQty,
+                maxQty: s.maxQty,
+                packageEligible: s.packageEligible !== false,
+                avgProcessingSpeed: "15 - 30 mins",
+                avgStartTime: "0 - 15 mins",
+                refillable: s.refillable,
+                cancellable: s.cancellable,
+                description: s.description || "",
+                status: s.status,
+                serviceType: s.serviceType || "DEFAULT",
+                dripFeedSupported: s.dripFeedSupported ?? false,
+                allowManagedDrip: s.allowManagedDrip ?? (s.serviceType !== "CUSTOM_COMMENTS" && !s.name?.toLowerCase().includes("comment")),
+                dripFeedMinRuns: s.dripFeedMinRuns ?? null,
+                dripFeedMaxRuns: s.dripFeedMaxRuns ?? null,
+                dripFeedMinInterval: s.dripFeedMinInterval ?? null,
+                dripFeedMaxInterval: s.dripFeedMaxInterval ?? null,
+              }))
+            );
+          }
         }
+      } catch (err) {
+        console.warn("Public services fetch failed:", err);
+      } finally {
+        setIsServicesLoading(false);
       }
-    } catch (err) {
-      console.warn("Public services fetch failed:", err);
-    }
+    })();
 
     const token = getAuthToken();
     if (!token) {
+      await servicesFetchPromise;
       setUser(EMPTY_USER);
       setOrders([]);
       setTransactions([]);
@@ -192,10 +200,17 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
 
-      // 1. Fetch Profile and Balance concurrently
-      const [profileRes, balanceRes] = await Promise.all([
+      // 2. Fetch Profile, Balance, Orders, Ledger, Tickets, Favorites, Packages in single parallel batch
+      const [profileRes, balanceRes, ordersRes, ledgerRes, ticketsRes, favoritesRes, suggestionsRes, packagesRes] = await Promise.all([
         fetch(`${API_BASE}/users/me`, { headers: authHeaders, cache: "no-store" }),
         fetch(`${API_BASE}/wallet/balance`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/orders`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/wallet/ledger`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/tickets`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/favorites`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/favorites/suggestions`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`${API_BASE}/packages`, { headers: authHeaders, cache: "no-store" }),
+        servicesFetchPromise,
       ]);
 
       if ((profileRes.status === 401 || balanceRes.status === 401) && !token.startsWith("jwt_demo_")) {
@@ -236,17 +251,6 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
           } catch {}
         }
       }
-
-      // 2. Fetch Orders, Ledger, Tickets, Services, Favorites, Packages concurrently
-      const [ordersRes, ledgerRes, ticketsRes, servicesRes, favoritesRes, suggestionsRes, packagesRes] = await Promise.all([
-        fetch(`${API_BASE}/orders`, { headers: authHeaders, cache: "no-store" }),
-        fetch(`${API_BASE}/wallet/ledger`, { headers: authHeaders, cache: "no-store" }),
-        fetch(`${API_BASE}/tickets`, { headers: authHeaders, cache: "no-store" }),
-        fetch(`${API_BASE}/services`, { cache: "no-store" }),
-        fetch(`${API_BASE}/favorites`, { headers: authHeaders, cache: "no-store" }),
-        fetch(`${API_BASE}/favorites/suggestions`, { headers: authHeaders, cache: "no-store" }),
-        fetch(`${API_BASE}/packages`, { headers: authHeaders, cache: "no-store" }),
-      ]);
 
       if (ordersRes.ok) {
         const rawOrders = await ordersRes.json();
@@ -325,167 +329,6 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
             }))
           );
         }
-      }
-
-      if (servicesRes.ok) {
-        const rawServices = await servicesRes.json();
-        if (Array.isArray(rawServices)) {
-          setServices(
-            rawServices.map((s: any) => ({
-              id: s.id,
-              categoryId: s.categoryId || "general",
-              categoryName: s.categoryName || s.category?.name || "General Services",
-              name: s.name,
-              displayName: s.displayName,
-              platform: s.platform,
-              ratePer1000: Number(s.ratePer1000),
-              minQty: s.minQty,
-              maxQty: s.maxQty,
-              packageEligible: s.packageEligible !== false,
-              avgProcessingSpeed: "15 - 30 mins",
-              avgStartTime: "0 - 15 mins",
-              refillable: s.refillable,
-              cancellable: s.cancellable,
-              description: s.description || "",
-              status: s.status,
-              serviceType: s.serviceType || "DEFAULT",
-              dripFeedSupported: s.dripFeedSupported ?? false,
-              allowManagedDrip: s.allowManagedDrip ?? (s.serviceType !== "CUSTOM_COMMENTS" && !s.name?.toLowerCase().includes("comment")),
-              dripFeedMinRuns: s.dripFeedMinRuns ?? null,
-              dripFeedMaxRuns: s.dripFeedMaxRuns ?? null,
-              dripFeedMinInterval: s.dripFeedMinInterval ?? null,
-              dripFeedMaxInterval: s.dripFeedMaxInterval ?? null,
-            }))
-          );
-        }
-      } else {
-        setServices((prev) => (prev.length > 0 ? prev : [
-          {
-            id: "1043",
-            categoryId: "instagram-growth",
-            categoryName: "Instagram Growth",
-            name: "Instagram Likes [High Quality • Instant]",
-            displayName: "Instagram Likes",
-            platform: "INSTAGRAM",
-            ratePer1000: 54.0,
-            minQty: 50,
-            maxQty: 100000,
-            packageEligible: true,
-            avgProcessingSpeed: "0 - 15 mins",
-            avgStartTime: "0 - 5 mins",
-            refillable: false,
-            cancellable: true,
-            description: "High quality Instagram likes for posts and reels.",
-            status: "ACTIVE",
-            serviceType: "LIKES",
-            dripFeedSupported: true,
-            allowManagedDrip: true,
-            dripFeedMinRuns: 2,
-            dripFeedMaxRuns: 100,
-            dripFeedMinInterval: 10,
-            dripFeedMaxInterval: 1440,
-          },
-          {
-            id: "1042",
-            categoryId: "instagram-growth",
-            categoryName: "Instagram Growth",
-            name: "Instagram Followers [High Quality • 30D Refill]",
-            displayName: "Instagram Followers",
-            platform: "INSTAGRAM",
-            ratePer1000: 65.0,
-            minQty: 100,
-            maxQty: 100000,
-            packageEligible: true,
-            avgProcessingSpeed: "0 - 15 mins",
-            avgStartTime: "0 - 5 mins",
-            refillable: true,
-            cancellable: true,
-            description: "High retention real profiles with automated 30 days refill policy.",
-            status: "ACTIVE",
-            serviceType: "DEFAULT",
-            dripFeedSupported: true,
-            allowManagedDrip: true,
-            dripFeedMinRuns: 2,
-            dripFeedMaxRuns: 100,
-            dripFeedMinInterval: 10,
-            dripFeedMaxInterval: 1440,
-          },
-          {
-            id: "1044",
-            categoryId: "instagram-growth",
-            categoryName: "Instagram Growth",
-            name: "Instagram Reels Views [High Retention • Explore Boost]",
-            displayName: "Instagram Reels Views",
-            platform: "INSTAGRAM",
-            ratePer1000: 24.0,
-            minQty: 500,
-            maxQty: 5000000,
-            packageEligible: true,
-            avgProcessingSpeed: "0 - 5 mins",
-            avgStartTime: "0 - 5 mins",
-            refillable: true,
-            cancellable: true,
-            description: "Direct delivery high retention video views for Reels explore boost.",
-            status: "ACTIVE",
-            serviceType: "DEFAULT",
-            dripFeedSupported: true,
-            allowManagedDrip: true,
-            dripFeedMinRuns: 2,
-            dripFeedMaxRuns: 100,
-            dripFeedMinInterval: 10,
-            dripFeedMaxInterval: 1440,
-          },
-          {
-            id: "2015",
-            categoryId: "youtube-views",
-            categoryName: "YouTube Views",
-            name: "YouTube 4K Views [Suggested Videos & High Retention]",
-            displayName: "YouTube 4K Views",
-            platform: "YOUTUBE",
-            ratePer1000: 140.0,
-            minQty: 1000,
-            maxQty: 1000000,
-            packageEligible: true,
-            avgProcessingSpeed: "15 - 30 mins",
-            avgStartTime: "0 - 15 mins",
-            refillable: true,
-            cancellable: true,
-            description: "Non-drop high CTR views suitable for channel reach.",
-            status: "ACTIVE",
-            serviceType: "DEFAULT",
-            dripFeedSupported: true,
-            allowManagedDrip: true,
-            dripFeedMinRuns: 2,
-            dripFeedMaxRuns: 100,
-            dripFeedMinInterval: 10,
-            dripFeedMaxInterval: 1440,
-          },
-          {
-            id: "3010",
-            categoryId: "telegram-growth",
-            categoryName: "Telegram Growth",
-            name: "Telegram Channel Members [Global Non-Drop 60D]",
-            displayName: "Telegram Channel Members",
-            platform: "TELEGRAM",
-            ratePer1000: 120.0,
-            minQty: 100,
-            maxQty: 200000,
-            packageEligible: true,
-            avgProcessingSpeed: "0 - 10 mins",
-            avgStartTime: "0 - 10 mins",
-            refillable: true,
-            cancellable: true,
-            description: "Clean channel members with 60 days replacement window.",
-            status: "ACTIVE",
-            serviceType: "DEFAULT",
-            dripFeedSupported: true,
-            allowManagedDrip: true,
-            dripFeedMinRuns: 2,
-            dripFeedMaxRuns: 100,
-            dripFeedMinInterval: 10,
-            dripFeedMaxInterval: 1440,
-          },
-        ]));
       }
 
       if (favoritesRes && favoritesRes.ok) {
@@ -874,6 +717,29 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const createCustomCampaign = async (input: any) => {
+    const token = getAuthToken();
+    if (!token) return { success: false, error: "Please log in to purchase a custom package." };
+    try {
+      const res = await fetch(`${API_BASE}/packages/custom-campaign`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(input),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        await refreshData();
+        return { success: true, packageId: data.packageId, data };
+      }
+      return { success: false, error: data.message || "Failed to launch custom package." };
+    } catch (err: any) {
+      return { success: false, error: err.message || "Network error while launching custom package." };
+    }
+  };
+
   const cancelPackage = async (packageId: string) => {
     const token = getAuthToken();
     if (!token) return { success: false, error: "Please log in." };
@@ -947,6 +813,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         favoriteSuggestions,
         packages,
         isLoading,
+        isServicesLoading,
         logout,
         refreshData,
         refreshFavorites,
@@ -955,6 +822,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         resumePackage,
         fetchPackageQuote,
         purchasePackage,
+        createCustomCampaign,
         cancelPackage,
         addFavorite,
         removeFavorite,

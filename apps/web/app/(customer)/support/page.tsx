@@ -115,7 +115,7 @@ function SupportContent() {
             <span className="w-2 h-2 rounded-full bg-[#D8EC8D] animate-pulse" />
             <span className="uppercase tracking-widest font-semibold">Support Desk</span>
           </div>
-          <h1 className="text-3xl font-semibold text-white tracking-tight">Support Tickets</h1>
+          <h1 className="text-3xl font-semibold text-fg tracking-tight">Support Tickets</h1>
           <p className="text-xs text-slate-400">
             Direct communication with support staff for order refills, balance issues, and inquiries.
           </p>
@@ -141,7 +141,7 @@ function SupportContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search tickets..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#D8EC8D]/50"
+              className="w-full bg-white/5 border border-border rounded-xl pl-9 pr-3 py-2 text-xs text-fg placeholder-slate-400 focus:outline-none focus:border-[#D8EC8D]/50"
             />
           </div>
 
@@ -172,8 +172,8 @@ function SupportContent() {
                     }}
                     className={`w-full p-4 rounded-2xl text-left border transition-all flex flex-col gap-2 ${
                       isSelected
-                        ? "bg-[#D8EC8D]/15 border-[#D8EC8D]/40 shadow-[0_0_15px_rgba(216,236,141,0.15)]"
-                        : "bg-white/[0.02] border-white/5 hover:border-white/15"
+                        ? "bg-accent/15 border-[#D8EC8D]/40 shadow-[0_0_15px_rgba(216,236,141,0.15)]"
+                        : "bg-white/[0.02] border-slate-200/60 dark:border-white/5 hover:border-white/15"
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -182,7 +182,7 @@ function SupportContent() {
                       </span>
                       <StatusBadge status={ticket.status} />
                     </div>
-                    <div className="text-xs font-semibold text-white truncate">{ticket.subject}</div>
+                    <div className="text-xs font-semibold text-fg truncate">{ticket.subject}</div>
                     <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
                       <span>{ticket.department}</span>
                       <span>{new Date(ticket.lastReplyAt).toLocaleDateString()}</span>
@@ -198,9 +198,9 @@ function SupportContent() {
         <div className="lg:col-span-8">
           {isCreatingTicket ? (
             <div className="glass-panel p-6 md:p-8 space-y-6">
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center justify-between border-b border-border pb-4">
                 <div className="space-y-0.5">
-                  <h2 className="text-base font-semibold text-white">Create New Support Ticket</h2>
+                  <h2 className="text-base font-semibold text-fg">Create New Support Ticket</h2>
                   <p className="text-xs text-slate-400">Fill out details below for prompt resolution.</p>
                 </div>
                 <button
@@ -220,7 +220,7 @@ function SupportContent() {
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder="e.g. Order #1042 refill request / Payment balance query"
                     required
-                    className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none"
+                    className="w-full bg-white/5 border border-border focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-fg focus:outline-none"
                   />
                 </FormField>
 
@@ -229,12 +229,12 @@ function SupportContent() {
                     <select
                       value={department}
                       onChange={(e) => setDepartment(e.target.value as TicketDepartment)}
-                      className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none font-sans"
+                      className="w-full bg-white/5 border border-border focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-fg focus:outline-none font-sans"
                     >
-                      <option value="GENERAL_SUPPORT" className="bg-[#131313]">General Support</option>
-                      <option value="ORDER_ISSUES" className="bg-[#131313]">Order Issues & Refills</option>
-                      <option value="BILLING" className="bg-[#131313]">Billing & Deposits</option>
-                      <option value="API_INTEGRATION" className="bg-[#131313]">API & Reseller Setup</option>
+                      <option value="GENERAL_SUPPORT" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">General Support</option>
+                      <option value="ORDER_ISSUES" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">Order Issues & Refills</option>
+                      <option value="BILLING" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">Billing & Deposits</option>
+                      <option value="API_INTEGRATION" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">API & Reseller Setup</option>
                     </select>
                   </FormField>
 
@@ -244,7 +244,7 @@ function SupportContent() {
                       value={orderId}
                       onChange={(e) => setOrderId(e.target.value)}
                       placeholder="e.g. 1042 or ord_XXXXXX"
-                      className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none"
+                      className="w-full bg-white/5 border border-border focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-fg font-mono focus:outline-none"
                     />
                   </FormField>
                 </div>
@@ -256,7 +256,7 @@ function SupportContent() {
                     onChange={(e) => setInitialMessage(e.target.value)}
                     placeholder="Describe your issue or question in detail..."
                     required
-                    className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none resize-none"
+                    className="w-full bg-white/5 border border-border focus:border-[#D8EC8D]/50 rounded-xl px-3.5 py-2.5 text-xs text-fg focus:outline-none resize-none"
                   />
                 </FormField>
 
@@ -271,7 +271,7 @@ function SupportContent() {
                   <button
                     type="button"
                     onClick={() => setIsCreatingTicket(false)}
-                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold"
+                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-fg-2 text-xs font-semibold"
                   >
                     Cancel
                   </button>
@@ -288,7 +288,7 @@ function SupportContent() {
           ) : activeTicket ? (
             <div className="glass-panel p-6 md:p-8 space-y-6 flex flex-col h-full min-h-[560px]">
               {/* Ticket Header */}
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center justify-between border-b border-border pb-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-mono font-semibold text-[#D8EC8D]">
@@ -296,7 +296,7 @@ function SupportContent() {
                     </span>
                     <StatusBadge status={activeTicket.status} />
                   </div>
-                  <h2 className="text-lg font-semibold text-white">{activeTicket.subject}</h2>
+                  <h2 className="text-lg font-semibold text-fg">{activeTicket.subject}</h2>
                 </div>
                 <div className="text-right text-[11px] font-mono text-slate-400">
                   <div>Department: {activeTicket.department}</div>
@@ -316,7 +316,7 @@ function SupportContent() {
                       <div
                         className={`max-w-[85%] rounded-2xl p-4 text-xs space-y-1 ${
                           isStaff
-                            ? "bg-white/[0.04] border border-white/10 text-slate-200"
+                            ? "bg-white/[0.04] border border-border text-slate-200"
                             : "bg-[#D8EC8D] text-[#131313] font-medium shadow-md shadow-[#D8EC8D]/20"
                         }`}
                       >
@@ -332,13 +332,13 @@ function SupportContent() {
               </div>
 
               {/* Reply Box */}
-              <form onSubmit={handleSendReply} className="pt-2 border-t border-white/10 flex gap-2">
+              <form onSubmit={handleSendReply} className="pt-2 border-t border-border flex gap-2">
                 <input
                   type="text"
                   value={replyMessage}
                   onChange={(e) => setReplyMessage(e.target.value)}
                   placeholder="Type your response to support staff..."
-                  className="flex-1 bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                  className="flex-1 bg-white/5 border border-border focus:border-[#D8EC8D]/50 rounded-xl px-4 py-2.5 text-xs text-fg focus:outline-none"
                 />
                 <button
                   type="submit"
@@ -353,7 +353,7 @@ function SupportContent() {
           ) : (
             <div className="glass-panel p-12 text-center space-y-3">
               <HelpCircle className="w-8 h-8 text-[#D8EC8D] mx-auto" />
-              <h3 className="text-sm font-semibold text-white">Select a Ticket</h3>
+              <h3 className="text-sm font-semibold text-fg">Select a Ticket</h3>
               <p className="text-xs text-slate-400">Choose a ticket from the sidebar or open a new one.</p>
             </div>
           )}

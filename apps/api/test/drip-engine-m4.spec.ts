@@ -405,6 +405,32 @@ describe("Milestone M4: Time-Interval Drip Engine & Worker Scheduler", () => {
         expect(result).toBe(baselinePerPost);
       }
     });
+
+    it("respects explicitRunsCount and explicitIntervalMinutes when specified by user", () => {
+      const fixedStart = new Date("2026-10-28T10:00:00.000Z");
+      const res = calculatePerPostDrip({
+        quantity: 600,
+        serviceMin: 50,
+        serviceMax: 10000,
+        maxRunsPerPost: 10,
+        windowMinutes: 1440,
+        minGapMinutes: 15,
+        ratePer1000: 20.0,
+        startAt: fixedStart,
+        explicitRunsCount: 3,
+        explicitIntervalMinutes: 120, // 2 hours
+      });
+
+      expect(res.runsCount).toBe(3);
+      expect(res.gapMinutes).toBe(120);
+      expect(res.runs).toHaveLength(3);
+      expect(res.runs[0].quantity).toBe(200);
+      expect(res.runs[1].quantity).toBe(200);
+      expect(res.runs[2].quantity).toBe(200);
+      expect(res.runs[0].executeAt.toISOString()).toBe("2026-10-28T10:00:00.000Z");
+      expect(res.runs[1].executeAt.toISOString()).toBe("2026-10-28T12:00:00.000Z");
+      expect(res.runs[2].executeAt.toISOString()).toBe("2026-10-28T14:00:00.000Z");
+    });
   });
 
   describe("3. Worker Scheduler Dispatch & Prepaid Child Orders", () => {

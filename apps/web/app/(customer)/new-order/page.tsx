@@ -32,6 +32,7 @@ import {
   Bookmark,
   Zap,
   Boxes,
+  Sparkles,
 } from "lucide-react";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
@@ -39,6 +40,9 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { CountUpNumber } from "@/components/motion/CountUpNumber";
 import { motion, AnimatePresence } from "framer-motion";
 import { PackageOrderBuilder } from "@/components/customer/PackageOrderBuilder";
+import { CustomPackageBuilder } from "@/components/customer/CustomPackageBuilder";
+import { NewOrderSkeleton } from "@/components/skeletons/NewOrderSkeleton";
+import { NewOrderShell } from "@/components/customer/new-order/NewOrderShell";
 
 // Helper: Format numbers with Indian numbering system (e.g. 1,00,000)
 function formatIndianNumber(num: number): string {
@@ -110,7 +114,7 @@ function NewOrderContent() {
   const initialServiceParam = searchParams.get("service") || searchParams.get("serviceId");
   const initialPlatformParam = searchParams.get("platform");
 
-  const { user, services, createOrder, favorites, orders } = useCustomer();
+  const { user, services, createOrder, favorites, orders, isServicesLoading } = useCustomer();
 
   // Load last platform or query param
   const initialPlatform = initialPlatformParam
@@ -140,14 +144,19 @@ function NewOrderContent() {
   const [successOrder, setSuccessOrder] = useState<any | null>(null);
   const [dripScheduleMode, setDripScheduleMode] = useState<"DAYS" | "CUSTOM">("DAYS");
   const [loadedFromFavorite, setLoadedFromFavorite] = useState<string | null>(null);
-  const [orderMode, setOrderMode] = useState<"SINGLE" | "PACKAGE">(
-    searchParams.get("tab") === "package" ? "PACKAGE" : "SINGLE"
-  );
+  const [orderMode, setOrderMode] = useState<"SINGLE" | "CUSTOM_PACKAGE" | "RETAINER">(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "custom-package" || tab === "custom") return "CUSTOM_PACKAGE";
+    if (tab === "package" || tab === "retainer") return "RETAINER";
+    return "SINGLE";
+  });
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "package") {
-      setOrderMode("PACKAGE");
+    if (tab === "custom-package" || tab === "custom") {
+      setOrderMode("CUSTOM_PACKAGE");
+    } else if (tab === "package" || tab === "retainer") {
+      setOrderMode("RETAINER");
     } else if (tab === "single") {
       setOrderMode("SINGLE");
     }
@@ -631,52 +640,72 @@ function NewOrderContent() {
     return groups;
   }, [categoryFilteredServices, comboboxSearch]);
 
+  if (services.length === 0 && isServicesLoading) {
+    return <NewOrderSkeleton />;
+  }
+
   return (
     <div className="w-full max-w-[1180px] mx-auto pb-24 md:pb-12 text-slate-200">
       {/* Page Header: Clean, plain, no duplicate balance chips */}
       <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">New order</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-fg">New order</h1>
         <p className="text-sm text-slate-400 mt-1">Choose a service, add your link and quantity.</p>
       </div>
 
-      {/* Mode Switcher Tabs: Single Order vs Package (Drip-feed) */}
-      <div className="flex items-center gap-2 p-1 bg-white/[0.04] border border-white/10 rounded-2xl w-fit mb-8">
+      {/* Mode Switcher Tabs: Single Order vs Combo Package vs Custom Package */}
+      <div className="grid grid-cols-3 sm:flex items-center gap-1.5 p-1 bg-white/[0.04] border border-border rounded-2xl w-full sm:w-fit mb-8">
         <button
           type="button"
           onClick={() => setOrderMode("SINGLE")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+          className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-semibold transition-all ${
             orderMode === "SINGLE"
               ? "bg-[#D8EC8D] text-[#171e00] shadow-sm font-bold"
               : "text-slate-400 hover:text-white hover:bg-white/5"
           }`}
         >
-          <Zap className="w-4 h-4" />
-          Single Order
+          <Zap className="w-4 h-4 shrink-0" />
+          <span>Single Order</span>
         </button>
+
         <button
           type="button"
-          onClick={() => setOrderMode("PACKAGE")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-            orderMode === "PACKAGE"
+          onClick={() => setOrderMode("RETAINER")}
+          className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+            orderMode === "RETAINER"
               ? "bg-[#D8EC8D] text-[#171e00] shadow-sm font-bold"
               : "text-slate-400 hover:text-white hover:bg-white/5"
           }`}
         >
-          <Boxes className="w-4 h-4" />
-          Combo Package
+          <Boxes className="w-4 h-4 shrink-0" />
+          <span>Combo Package</span>
           <span
-            className={`text-[10px] px-1.5 py-0.5 rounded-md ${
-              orderMode === "PACKAGE"
+            className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded-md ${
+              orderMode === "RETAINER"
                 ? "bg-[#171e00]/20 text-[#171e00] font-bold"
-                : "bg-[#D8EC8D]/15 text-[#D8EC8D]"
+                : "bg-accent/15 text-[#D8EC8D]"
             }`}
           >
             Multi-Day
           </span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => setOrderMode("CUSTOM_PACKAGE")}
+          className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+            orderMode === "CUSTOM_PACKAGE"
+              ? "bg-[#D8EC8D] text-[#171e00] shadow-sm font-bold"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <Sparkles className="w-4 h-4 shrink-0" />
+          <span>Custom Package</span>
+        </button>
       </div>
 
-      {orderMode === "PACKAGE" ? (
+      {orderMode === "CUSTOM_PACKAGE" ? (
+        <CustomPackageBuilder />
+      ) : orderMode === "RETAINER" ? (
         <PackageOrderBuilder />
       ) : (
         <>
@@ -689,15 +718,15 @@ function NewOrderContent() {
             exit={{ opacity: 0, scale: 0.96 }}
             className="mb-8"
           >
-            <GlassCard className="p-6 md:p-8 border-[#D8EC8D]/30 bg-[#191919]/90">
+            <GlassCard className="p-6 md:p-8 border-accent/30 bg-white/95 dark:bg-[#191919]/90">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-[#D8EC8D]/15 text-[#D8EC8D] flex items-center justify-center shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-accent/15 text-[#D8EC8D] flex items-center justify-center shrink-0">
                     <CheckCircle2 className="w-6 h-6" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-semibold text-base">Order placed successfully</span>
+                      <span className="text-fg font-semibold text-base">Order placed successfully</span>
                       <StatusBadge status="PENDING" />
                     </div>
                     <p className="text-xs text-slate-400 font-mono mt-0.5">
@@ -708,7 +737,7 @@ function NewOrderContent() {
                 <div className="flex items-center gap-3 w-full md:w-auto">
                   <Link
                     href={`/orders`}
-                    className="flex-1 md:flex-initial px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white text-center transition-colors min-h-[44px] flex items-center justify-center"
+                    className="flex-1 md:flex-initial px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-border text-xs font-medium text-fg text-center transition-colors min-h-[44px] flex items-center justify-center"
                   >
                     View order
                   </Link>
@@ -729,10 +758,10 @@ function NewOrderContent() {
       {errorMessage && (
         <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+            <AlertTriangle className="w-4 h-4 shrink-0 text-danger" />
             <span>{errorMessage}</span>
           </div>
-          <button onClick={() => setErrorMessage(null)} className="text-rose-400 hover:text-white">
+          <button onClick={() => setErrorMessage(null)} className="text-danger hover:text-white">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -744,7 +773,7 @@ function NewOrderContent() {
         <form onSubmit={handleInitiateOrder} className="w-full max-w-[760px] space-y-6">
           {/* Favorite Pre-fill Alert Banner */}
           {loadedFromFavorite && (
-            <div className="p-3.5 rounded-xl bg-[#D8EC8D]/10 border border-[#D8EC8D]/30 flex items-center justify-between text-xs text-[#D8EC8D]">
+            <div className="p-3.5 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-between text-xs text-[#D8EC8D]">
               <div className="flex items-center gap-2.5">
                 <Bookmark className="w-4 h-4 shrink-0" />
                 <span>
@@ -778,8 +807,8 @@ function NewOrderContent() {
                       onClick={() => dispatch({ type: "SET_PLATFORM", platform: p.id })}
                       className={`min-h-[44px] px-4 py-2 rounded-xl border text-sm font-medium flex items-center gap-2.5 shrink-0 transition-all select-none ${
                         isSelected
-                          ? "bg-[#D8EC8D]/10 border-[#D8EC8D] text-white"
-                          : "bg-white/[0.02] border-white/10 text-slate-400 hover:text-white hover:border-white/20"
+                          ? "bg-accent/10 border-[#D8EC8D] text-fg"
+                          : "bg-white/[0.02] border-border text-slate-400 hover:text-white hover:border-white/20"
                       }`}
                     >
                       <PlatformIcon platform={p.id} size={18} />
@@ -787,7 +816,7 @@ function NewOrderContent() {
                       {count > 0 && (
                         <span
                           className={`text-xs px-1.5 py-0.5 rounded-full ${
-                            isSelected ? "bg-[#D8EC8D]/20 text-[#D8EC8D]" : "bg-white/5 text-slate-500"
+                            isSelected ? "bg-accent/20 text-[#D8EC8D]" : "bg-white/5 text-slate-500"
                           }`}
                         >
                           {count}
@@ -815,13 +844,13 @@ function NewOrderContent() {
                     localStorage.setItem("smm_last_category", val);
                   } catch {}
                 }}
-                className="w-full min-h-[50px] px-4 py-2.5 pr-10 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-white/20 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#D8EC8D]/40 transition-all font-medium appearance-none cursor-pointer"
+                className="w-full min-h-[50px] px-4 py-2.5 pr-10 rounded-2xl bg-white dark:bg-[#18181B] border border-border hover:border-slate-400 dark:hover:border-white/20 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#D8EC8D]/40 transition-all font-medium appearance-none cursor-pointer"
               >
-                <option value="ALL" className="bg-[#191919] text-white">
+                <option value="ALL" className="bg-white dark:bg-[#18181B] text-slate-900 dark:text-white">
                   All Categories ({filteredServices.length} services)
                 </option>
                 {categoryList.map((cat) => (
-                  <option key={cat.id} value={cat.id} className="bg-[#191919] text-white">
+                  <option key={cat.id} value={cat.id} className="bg-white dark:bg-[#18181B] text-slate-900 dark:text-white">
                     {cat.name} ({cat.count})
                   </option>
                 ))}
@@ -843,13 +872,13 @@ function NewOrderContent() {
               <button
                 type="button"
                 onClick={() => setComboboxOpen(!comboboxOpen)}
-                className="w-full min-h-[52px] p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-white/20 text-left transition-all flex items-center justify-between gap-3 focus:outline-none focus:ring-2 focus:ring-[#D8EC8D]/40"
+                className="w-full min-h-[52px] p-3.5 rounded-2xl bg-white/[0.03] border border-border hover:border-white/20 text-left transition-all flex items-center justify-between gap-3 focus:outline-none focus:ring-2 focus:ring-[#D8EC8D]/40"
               >
                 <div className="min-w-0 flex-1">
                   <div className="text-xs text-slate-400 mb-0.5">
                     {activeService?.categoryName || "Catalog Service"}
                   </div>
-                  <div className="text-sm font-medium text-white truncate">
+                  <div className="text-sm font-medium text-fg truncate">
                     {cleanedNameInfo.displayName || "Select a service..."}
                   </div>
                 </div>
@@ -870,17 +899,17 @@ function NewOrderContent() {
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="absolute z-40 left-0 right-0 mt-2 rounded-2xl bg-[#191919] border border-white/15 shadow-2xl overflow-hidden"
+                    className="absolute z-40 left-0 right-0 mt-2 rounded-2xl bg-white dark:bg-[#191919] border border-border shadow-2xl overflow-hidden"
                   >
                     {/* Search input */}
-                    <div className="p-3 border-b border-white/10 flex items-center gap-2 bg-white/[0.02]">
+                    <div className="p-3 border-b border-border flex items-center gap-2 bg-white/[0.02]">
                       <Search className="w-4 h-4 text-slate-400 shrink-0" />
                       <input
                         type="text"
                         value={comboboxSearch}
                         onChange={(e) => setComboboxSearch(e.target.value)}
                         placeholder="Search service name, speed, refill..."
-                        className="w-full bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none"
+                        className="w-full bg-transparent text-sm text-fg placeholder-slate-500 focus:outline-none"
                         autoFocus
                       />
                       {comboboxSearch && (
@@ -917,12 +946,12 @@ function NewOrderContent() {
                                     }}
                                     className={`w-full p-2.5 rounded-xl text-left transition-all flex items-start justify-between gap-3 ${
                                       isSvcSelected
-                                        ? "bg-[#D8EC8D]/15 border border-[#D8EC8D]/40 text-white"
-                                        : "hover:bg-white/5 text-slate-300"
+                                        ? "bg-accent/15 border border-[#D8EC8D]/40 text-fg"
+                                        : "hover:bg-white/5 text-fg-2"
                                     }`}
                                   >
                                     <div className="min-w-0 flex-1">
-                                      <div className="text-xs font-medium text-white truncate">
+                                      <div className="text-xs font-medium text-fg truncate">
                                         {cleaned.displayName}
                                       </div>
                                       <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-slate-400">
@@ -930,7 +959,7 @@ function NewOrderContent() {
                                         <span>·</span>
                                         <span>Max: {formatIndianNumber(svc.maxQty)}</span>
                                         {svc.refillable && (
-                                          <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 text-[10px]">
+                                          <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 text-success text-[10px]">
                                             Refill
                                           </span>
                                         )}
@@ -940,7 +969,7 @@ function NewOrderContent() {
                                           </span>
                                         )}
                                         {svc.dripFeedSupported && (
-                                          <span className="px-1.5 py-0.2 rounded bg-[#D8EC8D]/10 text-[#D8EC8D] text-[10px]">
+                                          <span className="px-1.5 py-0.2 rounded bg-accent/10 text-[#D8EC8D] text-[10px]">
                                             Drip-feed
                                           </span>
                                         )}
@@ -967,29 +996,29 @@ function NewOrderContent() {
 
             {/* Selected Service Detail Card: 4 Key Facts */}
             {activeService && (
-              <GlassCard className="mt-3 p-4 rounded-2xl border-white/5 bg-white/[0.02]">
+              <GlassCard className="mt-3 p-4 rounded-2xl border-slate-200/60 dark:border-white/5 bg-white/[0.02]">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
                   <div>
                     <div className="text-slate-500 text-[11px]">Price / 1,000</div>
-                    <div className="font-semibold text-white font-mono mt-0.5">
+                    <div className="font-semibold text-fg font-mono mt-0.5">
                       ₹{Number(activeService.ratePer1000).toFixed(2)}
                     </div>
                   </div>
                   <div>
                     <div className="text-slate-500 text-[11px]">Min - Max</div>
-                    <div className="font-semibold text-white font-mono mt-0.5">
+                    <div className="font-semibold text-fg font-mono mt-0.5">
                       {formatIndianNumber(minQty)} - {formatIndianNumber(maxQty)}
                     </div>
                   </div>
                   <div>
                     <div className="text-slate-500 text-[11px]">Start / Avg Time</div>
-                    <div className="font-semibold text-white mt-0.5">
+                    <div className="font-semibold text-fg mt-0.5">
                       {activeService.avgStartTime || "15 - 30 mins"}
                     </div>
                   </div>
                   <div>
                     <div className="text-slate-500 text-[11px]">Refill & Cancel</div>
-                    <div className="font-semibold text-white mt-0.5">
+                    <div className="font-semibold text-fg mt-0.5">
                       {activeService.refillable ? "Refill: Yes" : "Refill: No"} ·{" "}
                       {activeService.cancellable ? "Cancel: Yes" : "Cancel: No"}
                     </div>
@@ -998,7 +1027,7 @@ function NewOrderContent() {
 
                 {/* Clean Description */}
                 {activeService.description && activeService.description.trim() !== "" && (
-                  <div className="border-t border-white/5 pt-2.5 text-xs text-slate-400 leading-relaxed">
+                  <div className="border-t border-slate-200/60 dark:border-white/5 pt-2.5 text-xs text-slate-400 leading-relaxed">
                     {activeService.description}
                   </div>
                 )}
@@ -1015,7 +1044,7 @@ function NewOrderContent() {
             {/* Link input with dynamic label and paste button */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-medium text-white">{linkLabel}</label>
+                <label className="text-xs font-medium text-fg">{linkLabel}</label>
                 <span className="text-[11px] text-slate-500">The account must be public.</span>
               </div>
               <div className="relative">
@@ -1036,16 +1065,16 @@ function NewOrderContent() {
                     }
                   }}
                   placeholder={linkPlaceholder}
-                  className={`w-full min-h-[48px] px-3.5 py-2.5 pr-20 rounded-xl bg-white/[0.03] border text-sm text-white placeholder-slate-500 focus:outline-none transition-all ${
+                  className={`w-full min-h-[48px] px-3.5 py-2.5 pr-20 rounded-xl bg-white/[0.03] border text-sm text-fg placeholder-slate-500 focus:outline-none transition-all ${
                     state.targetUrl && !linkValidation.isValid
                       ? "border-rose-500/50 focus:ring-2 focus:ring-rose-500/20"
-                      : "border-white/10 focus:border-[#D8EC8D]/50 focus:ring-2 focus:ring-[#D8EC8D]/20"
+                      : "border-border focus:border-[#D8EC8D]/50 focus:ring-2 focus:ring-[#D8EC8D]/20"
                   }`}
                 />
                 <button
                   type="button"
                   onClick={handlePaste}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-slate-300 font-medium transition-colors flex items-center gap-1.5"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-fg-2 font-medium transition-colors flex items-center gap-1.5"
                 >
                   <Clipboard className="w-3.5 h-3.5 text-slate-400" />
                   <span>Paste</span>
@@ -1053,7 +1082,7 @@ function NewOrderContent() {
               </div>
               {/* Inline format validation error */}
               {state.targetUrl && !linkValidation.isValid && linkValidation.error && (
-                <div className="mt-1.5 text-xs text-rose-400 flex items-center gap-1.5">
+                <div className="mt-1.5 text-xs text-danger flex items-center gap-1.5">
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                   <span>{linkValidation.error}</span>
                 </div>
@@ -1064,7 +1093,7 @@ function NewOrderContent() {
             {isCustomComments ? (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-medium text-white">Custom Comments (one per line)</label>
+                  <label className="text-xs font-medium text-fg">Custom Comments (one per line)</label>
                   <span className="text-xs font-mono text-[#D8EC8D]">
                     {commentsList.length} {commentsList.length === 1 ? "comment" : "comments"}
                   </span>
@@ -1074,10 +1103,10 @@ function NewOrderContent() {
                   value={state.comments}
                   onChange={(e) => dispatch({ type: "SET_COMMENTS", comments: e.target.value })}
                   placeholder="Great post!&#10;Awesome content!&#10;Keep it up!"
-                  className="w-full p-3 rounded-xl bg-white/[0.03] border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#D8EC8D]/50 focus:ring-2 focus:ring-[#D8EC8D]/20"
+                  className="w-full p-3 rounded-xl bg-white/[0.03] border border-border text-sm text-fg placeholder-slate-500 focus:outline-none focus:border-[#D8EC8D]/50 focus:ring-2 focus:ring-[#D8EC8D]/20"
                 />
                 {hasDuplicateComments && (
-                  <div className="mt-1.5 text-xs text-amber-400 flex items-center gap-1.5">
+                  <div className="mt-1.5 text-xs text-warning flex items-center gap-1.5">
                     <Info className="w-3.5 h-3.5 shrink-0" />
                     <span>Duplicate comments detected. Each line should ideally be unique.</span>
                   </div>
@@ -1086,7 +1115,7 @@ function NewOrderContent() {
             ) : (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-medium text-white">Quantity</label>
+                  <label className="text-xs font-medium text-fg">Quantity</label>
                   <span className="text-[11px] text-slate-500 font-mono">
                     Min: {formatIndianNumber(minQty)} · Max: {formatIndianNumber(maxQty)}
                   </span>
@@ -1096,7 +1125,7 @@ function NewOrderContent() {
                   <button
                     type="button"
                     onClick={() => dispatch({ type: "SET_QUANTITY", quantity: Math.max(minQty, state.quantity - 100) })}
-                    className="min-h-[44px] min-w-[44px] rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white flex items-center justify-center font-bold text-base transition-colors"
+                    className="min-h-[44px] min-w-[44px] rounded-xl bg-white/5 hover:bg-white/10 border border-border text-fg flex items-center justify-center font-bold text-base transition-colors"
                   >
                     -
                   </button>
@@ -1106,12 +1135,12 @@ function NewOrderContent() {
                     onChange={(e) => dispatch({ type: "SET_QUANTITY", quantity: parseInt(e.target.value, 10) || 0 })}
                     min={minQty}
                     max={maxQty}
-                    className="flex-1 min-h-[44px] px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-sm text-white font-mono focus:outline-none focus:border-[#D8EC8D]/50 focus:ring-2 focus:ring-[#D8EC8D]/20"
+                    className="flex-1 min-h-[44px] px-3.5 py-2 rounded-xl bg-white/[0.03] border border-border text-sm text-fg font-mono focus:outline-none focus:border-[#D8EC8D]/50 focus:ring-2 focus:ring-[#D8EC8D]/20"
                   />
                   <button
                     type="button"
                     onClick={() => dispatch({ type: "SET_QUANTITY", quantity: Math.min(maxQty, state.quantity + 100) })}
-                    className="min-h-[44px] min-w-[44px] rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white flex items-center justify-center font-bold text-base transition-colors"
+                    className="min-h-[44px] min-w-[44px] rounded-xl bg-white/5 hover:bg-white/10 border border-border text-fg flex items-center justify-center font-bold text-base transition-colors"
                   >
                     +
                   </button>
@@ -1127,8 +1156,8 @@ function NewOrderContent() {
                         onClick={() => dispatch({ type: "SET_QUANTITY", quantity: preset })}
                         className={`text-xs px-2.5 py-1 rounded-lg border font-mono transition-colors ${
                           state.quantity === preset
-                            ? "bg-[#D8EC8D]/20 border-[#D8EC8D] text-white"
-                            : "bg-white/[0.02] border-white/10 text-slate-400 hover:text-white"
+                            ? "bg-accent/20 border-[#D8EC8D] text-fg"
+                            : "bg-white/[0.02] border-border text-slate-400 hover:text-white"
                         }`}
                       >
                         {formatIndianNumber(preset)}
@@ -1139,7 +1168,7 @@ function NewOrderContent() {
 
                 {/* Bounds error */}
                 {!quantityValid && (
-                  <div className="mt-1.5 text-xs text-rose-400 flex items-center gap-1.5">
+                  <div className="mt-1.5 text-xs text-danger flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                     <span>Quantity must be between {formatIndianNumber(minQty)} and {formatIndianNumber(maxQty)}.</span>
                   </div>
@@ -1162,7 +1191,7 @@ function NewOrderContent() {
                 >
                   <AlertTriangle
                     className={`w-4 h-4 shrink-0 mt-0.5 ${
-                      w.level === "danger" ? "text-rose-400" : "text-amber-400"
+                      w.level === "danger" ? "text-danger" : "text-warning"
                     }`}
                   />
                   <div className="flex-1 min-w-0">
@@ -1173,7 +1202,7 @@ function NewOrderContent() {
                     >
                       {w.level === "danger" ? "High Risk" : "Heads Up"}
                     </div>
-                    <div className="text-[11px] text-slate-300 leading-relaxed">
+                    <div className="text-[11px] text-fg-2 leading-relaxed">
                       {w.message}
                     </div>
                     <div className="text-[11px] text-slate-400 mt-1">
@@ -1186,55 +1215,55 @@ function NewOrderContent() {
           )}
 
           {/* Gradual delivery promotion to Combo Package (Multi-Day) tab */}
-          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-[#D8EC8D]/10 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
                 <Boxes className="w-4 h-4 text-[#D8EC8D]" />
               </div>
               <div>
-                <div className="text-xs font-medium text-white">Looking for gradual (drip-feed) delivery?</div>
+                <div className="text-xs font-medium text-fg">Looking for gradual (drip-feed) delivery?</div>
                 <div className="text-[11px] text-slate-400">Use our Combo Package (Multi-Day) for automated daily spread and scheduled pacing.</div>
               </div>
             </div>
             <button
               type="button"
-              onClick={() => setOrderMode("PACKAGE")}
+              onClick={() => setOrderMode("CUSTOM_PACKAGE")}
               className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-medium text-[#D8EC8D] transition-colors self-start sm:self-auto shrink-0"
             >
-              Switch to Combo Package
+              Switch to Custom Package
             </button>
           </div>
         </form>
 
         {/* RIGHT COLUMN: STICKY SUMMARY (360px on Desktop >= 1100px) */}
         <div className="hidden min-[1100px]:block sticky top-6 w-[360px]">
-          <GlassCard className="p-6 rounded-2xl border-white/10 space-y-5 bg-[#191919]/90 backdrop-blur-xl">
+          <GlassCard className="p-6 rounded-2xl border-border space-y-5 bg-white/95 dark:bg-[#191919]/90 backdrop-blur-xl">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Order Summary</h3>
 
             {/* Service & Link overview */}
             <div className="space-y-3 text-xs">
               <div>
                 <div className="text-slate-500 mb-0.5">Service</div>
-                <div className="font-medium text-white truncate">{cleanedNameInfo.displayName}</div>
+                <div className="font-medium text-fg truncate">{cleanedNameInfo.displayName}</div>
               </div>
 
               <div>
                 <div className="text-slate-500 mb-0.5">Target link</div>
-                <div className="font-mono text-slate-300 truncate">
+                <div className="font-mono text-fg-2 truncate">
                   {state.targetUrl.trim() || "Not specified"}
                 </div>
               </div>
 
-              <div className="flex justify-between items-center py-2 border-y border-white/5 font-mono">
+              <div className="flex justify-between items-center py-2 border-y border-slate-200/60 dark:border-white/5 font-mono">
                 <span className="text-slate-400">Quantity</span>
-                <span className="text-white font-semibold">
+                <span className="text-fg font-semibold">
                   {formatIndianNumber(totalUnits)}
                 </span>
               </div>
 
               <div className="flex justify-between items-center font-mono">
                 <span className="text-slate-400">Rate per 1,000</span>
-                <span className="text-slate-300">₹{Number(unitRate).toFixed(2)}</span>
+                <span className="text-fg-2">₹{Number(unitRate).toFixed(2)}</span>
               </div>
 
               {/* Price Breakdown - visible only when there's a quantity */}
@@ -1242,34 +1271,34 @@ function NewOrderContent() {
                 <div className="relative group">
                   <button
                     type="button"
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 hover:border-white/10 transition-colors cursor-pointer"
                   >
                     <span className="text-xs text-slate-400 flex items-center gap-1.5">
                       Price breakdown
                       <Info className="w-3 h-3 text-slate-500" />
                     </span>
-                    <span className="text-xs font-mono text-slate-300">
+                    <span className="text-xs font-mono text-fg-2">
                       ₹{Number(unitRate * state.quantity / 1000).toFixed(2)}
                     </span>
                   </button>
                   {/* Popover on hover */}
                   <div className="absolute bottom-full left-0 right-0 mb-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-20">
-                    <div className="p-3 rounded-xl bg-[#1c1c1c] border border-white/10 shadow-xl backdrop-blur-xl space-y-1.5 text-xs font-mono">
+                    <div className="p-3 rounded-xl bg-white dark:bg-[#1c1c1c] border border-border shadow-xl backdrop-blur-xl space-y-1.5 text-xs font-mono">
                       <div className="flex justify-between text-slate-400">
                         <span>Rate / 1,000</span>
-                        <span className="text-white">₹{Number(unitRate).toFixed(2)}</span>
+                        <span className="text-fg">₹{Number(unitRate).toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-slate-400">
                         <span>Quantity</span>
-                        <span className="text-white">{formatIndianNumber(state.quantity)}</span>
+                        <span className="text-fg">{formatIndianNumber(state.quantity)}</span>
                       </div>
                       {state.isDripFeed && isDripSupported && (
                         <div className="flex justify-between text-slate-400">
                           <span>Drip runs</span>
-                          <span className="text-white">× {state.dripRuns}</span>
+                          <span className="text-fg">× {state.dripRuns}</span>
                         </div>
                       )}
-                      <div className="border-t border-white/5 pt-1.5 mt-1.5 flex justify-between text-slate-200 font-semibold">
+                      <div className="border-t border-slate-200/60 dark:border-white/5 pt-1.5 mt-1.5 flex justify-between text-slate-200 font-semibold">
                         <span>Total</span>
                         <span className="text-[#D8EC8D]">₹{totalPrice.toFixed(2)}</span>
                       </div>
@@ -1280,21 +1309,21 @@ function NewOrderContent() {
             </div>
 
             {/* Price Total Card with Number Tween */}
-            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
+            <div className="p-4 rounded-xl bg-white/[0.03] border border-border">
               <div className="text-xs text-slate-400 mb-1">Total charge</div>
               <div className="text-2xl font-bold text-[#D8EC8D] font-mono flex items-center">
                 <span>₹</span>
                 <CountUpNumber value={totalPrice} decimals={2} duration={0.4} />
               </div>
 
-              <div className="border-t border-white/5 mt-3 pt-3 space-y-1.5 text-xs font-mono">
+              <div className="border-t border-slate-200/60 dark:border-white/5 mt-3 pt-3 space-y-1.5 text-xs font-mono">
                 <div className="flex justify-between text-slate-400">
                   <span>Wallet balance</span>
-                  <span className="text-white">₹{user.balance.toFixed(2)}</span>
+                  <span className="text-fg">₹{user.balance.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Balance after order</span>
-                  <span className={hasSufficientFunds ? "text-emerald-400 font-semibold" : "text-rose-400 font-semibold"}>
+                  <span className={hasSufficientFunds ? "text-success font-semibold" : "text-danger font-semibold"}>
                     ₹{remainingBalance.toFixed(2)}
                   </span>
                 </div>
@@ -1303,8 +1332,8 @@ function NewOrderContent() {
 
             {/* Validation Checklist if invalid */}
             {!isFormValid && validationErrors.length > 0 && (
-              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1 text-xs text-amber-400/90">
-                <div className="font-semibold text-slate-300 mb-1">Before you order:</div>
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 space-y-1 text-xs text-warning/90">
+                <div className="font-semibold text-fg-2 mb-1">Before you order:</div>
                 {validationErrors.map((err, i) => (
                   <div key={i} className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400/80 shrink-0" />
@@ -1318,7 +1347,7 @@ function NewOrderContent() {
             {!hasSufficientFunds && (
               <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 space-y-2">
                 <div className="text-xs text-rose-300 flex items-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-danger" />
                   <span>Short by ₹{shortfall.toFixed(2)}</span>
                 </div>
                 <button
@@ -1346,7 +1375,7 @@ function NewOrderContent() {
             {/* Plain policy guarantee */}
             <div className="text-[11px] text-slate-500 space-y-1.5 pt-1 leading-relaxed">
               <div className="flex items-start gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                <ShieldCheck className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
                 <span>If an order is cancelled or only partly delivered, the unused amount returns to your wallet.</span>
               </div>
               <div className="flex items-start gap-1.5">
@@ -1359,7 +1388,7 @@ function NewOrderContent() {
       </div>
 
       {/* MOBILE STICKY BOTTOM BAR (< 1100px) */}
-      <div className="min-[1100px]:hidden fixed bottom-0 left-0 right-0 z-30 p-3 bg-[#191919]/95 border-t border-white/10 backdrop-blur-xl">
+      <div className="min-[1100px]:hidden fixed bottom-[60px] lg:bottom-0 left-0 right-0 z-30 p-3 bg-white/95 dark:bg-[#191919]/95 border-t border-border backdrop-blur-xl shadow-[0_-8px_20px_rgba(0,0,0,0.6)]">
         <div className="max-w-md mx-auto flex items-center justify-between gap-3">
           <div>
             <div className="text-[10px] text-slate-400">Total Price</div>
@@ -1371,7 +1400,7 @@ function NewOrderContent() {
               <button
                 type="button"
                 onClick={handleAddFundsDeepLink}
-                className="py-2.5 px-4 rounded-xl btn-primary-gradient text-[#171e00] font-bold text-xs min-h-[44px] flex items-center gap-1.5"
+                className="py-2.5 px-4 rounded-xl btn-primary-gradient text-[#171e00] font-bold text-xs min-h-[44px] flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
                 <span>Add ₹{shortfall.toFixed(2)}</span>
@@ -1381,7 +1410,7 @@ function NewOrderContent() {
                 type="button"
                 onClick={handleInitiateOrder}
                 disabled={!isFormValid || submitting}
-                className="py-2.5 px-5 rounded-xl btn-primary-gradient text-[#171e00] font-bold text-xs min-h-[44px] flex items-center gap-1.5 disabled:opacity-40"
+                className="py-2.5 px-5 rounded-xl btn-primary-gradient text-[#171e00] font-bold text-xs min-h-[44px] flex items-center gap-1.5 disabled:opacity-40 shadow-sm active:scale-95 transition-transform"
               >
                 <span>Place order</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -1391,47 +1420,48 @@ function NewOrderContent() {
         </div>
       </div>
 
-      {/* CONFIRM ORDER SHEET MODAL */}
+      {/* CONFIRM ORDER SHEET MODAL (Bottom Sheet on Mobile, Centered on Desktop) */}
       <AnimatePresence>
         {confirmModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md rounded-2xl bg-[#191919] border border-white/15 p-6 shadow-2xl space-y-5"
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="w-full max-w-md rounded-t-3xl sm:rounded-2xl bg-white dark:bg-[#191919] border border-border p-5 sm:p-6 shadow-2xl space-y-4 sm:space-y-5 max-h-[88vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-white">Confirm your order</h3>
-                <button onClick={() => setConfirmModalOpen(false)} className="text-slate-400 hover:text-white">
-                  <X className="w-4 h-4" />
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <h3 className="text-base font-bold text-fg">Confirm your order</h3>
+                <button onClick={() => setConfirmModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="space-y-3 text-xs bg-white/[0.02] p-4 rounded-xl border border-white/5">
+              <div className="space-y-3 text-xs bg-white/[0.02] p-4 rounded-xl border border-slate-200/60 dark:border-white/5">
                 <div>
                   <span className="text-slate-500 block mb-0.5">Service</span>
-                  <span className="text-white font-medium">{cleanedNameInfo.displayName}</span>
+                  <span className="text-fg font-medium">{cleanedNameInfo.displayName}</span>
                 </div>
                 <div>
                   <span className="text-slate-500 block mb-0.5">Target link</span>
-                  <span className="font-mono text-slate-300 break-all">{state.targetUrl}</span>
+                  <span className="font-mono text-fg-2 break-all">{state.targetUrl}</span>
                 </div>
-                <div className="flex justify-between py-1.5 border-t border-white/5">
+                <div className="flex justify-between py-1.5 border-t border-slate-200/60 dark:border-white/5">
                   <span className="text-slate-500">Plan</span>
-                  <span className="text-white font-mono">
+                  <span className="text-fg font-mono">
                     {state.isDripFeed && isDripSupported
                       ? `${formatIndianNumber(state.quantity)} × ${state.dripRuns} runs (every ${formatDuration(state.dripInterval)})`
                       : `${formatIndianNumber(totalUnits)} units`}
                   </span>
                 </div>
-                <div className="flex justify-between py-1.5 border-t border-white/5">
+                <div className="flex justify-between py-1.5 border-t border-slate-200/60 dark:border-white/5">
                   <span className="text-slate-500">Total charge</span>
                   <span className="text-[#D8EC8D] font-bold font-mono">₹{totalPrice.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between py-1.5 border-t border-white/5">
+                <div className="flex justify-between py-1.5 border-t border-slate-200/60 dark:border-white/5">
                   <span className="text-slate-500">Balance after order</span>
-                  <span className="text-emerald-400 font-mono">₹{remainingBalance.toFixed(2)}</span>
+                  <span className="text-success font-mono">₹{remainingBalance.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -1439,7 +1469,7 @@ function NewOrderContent() {
                 <button
                   type="button"
                   onClick={() => setConfirmModalOpen(false)}
-                  className="flex-1 min-h-[44px] py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-medium text-slate-300 transition-colors"
+                  className="flex-1 min-h-[44px] py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-medium text-fg-2 transition-colors"
                 >
                   Edit
                 </button>
@@ -1469,16 +1499,19 @@ function NewOrderContent() {
   );
 }
 
+function NewOrderRouter() {
+  const searchParams = useSearchParams();
+  const isLegacy = searchParams.get("legacy") === "1";
+  if (isLegacy) {
+    return <NewOrderContent />;
+  }
+  return <NewOrderShell />;
+}
+
 export default function NewOrderPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-[400px] flex items-center justify-center text-slate-400 font-mono text-xs">
-          Loading order console...
-        </div>
-      }
-    >
-      <NewOrderContent />
+    <Suspense fallback={<NewOrderSkeleton />}>
+      <NewOrderRouter />
     </Suspense>
   );
 }

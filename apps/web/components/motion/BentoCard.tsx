@@ -130,7 +130,7 @@ export function BentoCard({
 
       {/* 4. Highlight corner ambient glow */}
       {highlight && (
-        <div className="pointer-events-none absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[#d8ec8d]/10 blur-3xl z-0" />
+        <div className="pointer-events-none absolute -top-16 -right-16 w-44 h-44 rounded-full bg-accent/10 blur-3xl z-0" />
       )}
 
       {/* 5. Card Content Layer */}

@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCustomer } from "@/context/CustomerContext";
-import { BRAND_NAME } from "@/lib/brand";
 import { BrandLogo } from "@/components/shared/BrandLogo";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import {
   Wallet,
   Bell,
@@ -15,13 +15,14 @@ import {
   Menu,
   X,
   Plus,
-  Shield,
   Layers,
   ListOrdered,
   PlusCircle,
   HelpCircle,
   Receipt,
   Key,
+  Boxes,
+  Bookmark,
   ChevronDown,
 } from "lucide-react";
 
@@ -35,6 +36,8 @@ export function CustomerHeader() {
   const mobileNavLinks = [
     { name: "Dashboard", href: "/dashboard", icon: Layers },
     { name: "New Order", href: "/new-order", icon: PlusCircle },
+    { name: "My Packages", href: "/packages", icon: Boxes },
+    { name: "Favorites", href: "/favorites", icon: Bookmark },
     { name: "Services", href: "/services-catalog", icon: Layers },
     { name: "Orders", href: "/orders", icon: ListOrdered },
     { name: "Add Funds", href: "/wallet", icon: Wallet },
@@ -46,47 +49,56 @@ export function CustomerHeader() {
 
   return (
     <>
-      <header className="h-16 bg-[#131313]/90 backdrop-blur-xl border-b border-white/10 sticky top-0 z-30 px-4 md:px-8 flex items-center justify-between gap-4">
-        {/* Left: Mobile Menu Toggle & Search Bar */}
-        <div className="flex items-center gap-3 flex-1 max-w-md">
+      <header className="h-16 shrink-0 bg-surface backdrop-blur-xl border-b border-border sticky top-0 z-50 px-3 sm:px-4 md:px-8 flex items-center justify-between gap-2 sm:gap-4 transition-colors shadow-xs text-fg">
+        {/* Left: Mobile Menu Toggle & Brand / Search Bar */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 max-w-md">
           <button
             type="button"
             onClick={() => setMobileDrawerOpen(true)}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors lg:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D8EC8D]"
+            className="min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center p-2 rounded-xl text-fg-muted hover:text-fg hover:bg-surface-raised transition-colors lg:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-focus shrink-0"
             aria-label="Open Navigation Drawer"
           >
             <Menu className="w-5 h-5" />
           </button>
 
+          {/* Mobile Brand Logo & Title */}
+          <div className="lg:hidden flex items-center shrink-0">
+            <BrandLogo variant="combined" size={26} withLink href="/dashboard" />
+          </div>
+
           {/* Quick Search */}
           <div className="relative w-full hidden sm:block">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-fg-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder="Search services, orders, IDs..."
-              className="w-full bg-white/[0.03] border border-white/10 focus:border-[#D8EC8D]/50 rounded-xl pl-9 pr-4 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
+              className="w-full bg-surface-raised border border-border focus:border-focus rounded-xl pl-9 pr-4 py-1.5 text-xs text-fg placeholder:text-fg-muted focus:outline-none transition-all"
             />
           </div>
         </div>
 
         {/* Right: Balance Chip + Add Funds, Notifications, User Menu */}
-        <div className="flex items-center gap-3 shrink-0">
-          {/* Balance Chip */}
-          <div className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-xl p-1 pr-1.5 pl-3">
-            <div className="flex items-baseline gap-1.5 font-sans">
-              <span className="text-[11px] text-slate-400 uppercase tracking-wide font-medium">Bal:</span>
-              <span className="text-xs font-semibold text-white tabular-nums tracking-tight">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Balance Chip (No-wrap per T3 rules) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-surface-raised border border-border rounded-xl p-1 pr-1.5 pl-2.5 sm:pl-3 whitespace-nowrap transition-colors">
+            <div className="flex items-baseline gap-1 font-sans whitespace-nowrap">
+              <span className="text-[10px] sm:text-[11px] text-fg-muted uppercase tracking-wide font-medium">Bal:</span>
+              <span className="text-xs font-semibold text-fg tabular-nums tracking-tight">
                 ₹{user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </span>
             </div>
             <Link
               href="/wallet"
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg btn-primary-gradient hover:brightness-105 text-[#171e00] text-[11px] font-bold transition-all shadow-sm"
+              className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg bg-accent text-on-accent hover:brightness-105 text-[10px] sm:text-[11px] font-bold transition-all shadow-glow whitespace-nowrap"
+              aria-label="Add funds to wallet"
             >
               <Plus className="w-3 h-3" />
-              <span>Add funds</span>
+              <span className="hidden xs:inline">Add</span>
             </Link>
           </div>
+
+          {/* Accessible Theme Toggle */}
+          <ThemeToggle variant="compact" />
 
           {/* Notifications Trigger */}
           <div className="relative">
@@ -96,21 +108,22 @@ export function CustomerHeader() {
                 setNotificationsOpen(!notificationsOpen);
                 setUserDropdownOpen(false);
               }}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors relative"
+              aria-label="Notifications"
+              className="p-2 rounded-xl text-fg-muted hover:text-fg hover:bg-surface-raised transition-colors relative"
             >
               <Bell className="w-4 h-4" />
-              <span className="w-1.5 h-1.5 rounded-full bg-[#D8EC8D] absolute top-1.5 right-1.5" />
+              <span className="w-1.5 h-1.5 rounded-full bg-accent absolute top-1.5 right-1.5 shadow-glow" />
             </button>
 
             {notificationsOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-[#131313] border border-white/15 rounded-2xl p-4 shadow-2xl z-50 space-y-3">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                  <span className="text-xs font-semibold text-white">Notifications</span>
-                  <span className="text-[10px] font-mono text-[#D8EC8D]">All caught up</span>
+              <div className="absolute right-0 mt-2 w-80 bg-surface border border-border text-fg rounded-2xl p-4 shadow-2xl z-50 space-y-3">
+                <div className="flex items-center justify-between border-b border-border pb-2">
+                  <span className="text-xs font-semibold text-fg">Notifications</span>
+                  <span className="text-[10px] font-mono text-accent-text">All caught up</span>
                 </div>
                 <div className="py-6 text-center space-y-1">
-                  <p className="text-xs text-slate-300">No new alerts</p>
-                  <p className="text-[11px] text-slate-400">Order updates and balance alerts will appear here.</p>
+                  <p className="text-xs text-fg-2">No new alerts</p>
+                  <p className="text-[11px] text-fg-muted">Order updates and balance alerts will appear here.</p>
                 </div>
               </div>
             )}
@@ -124,36 +137,37 @@ export function CustomerHeader() {
                 setUserDropdownOpen(!userDropdownOpen);
                 setNotificationsOpen(false);
               }}
-              className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white/5 transition-colors"
+              aria-label="User account menu"
+              className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-surface-raised transition-colors"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 flex items-center justify-center text-[#D8EC8D] text-xs font-semibold font-mono">
+              <div className="w-8 h-8 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent-text text-xs font-semibold font-mono">
                 {user.name ? user.name.charAt(0).toUpperCase() : "U"}
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+              <ChevronDown className="w-3.5 h-3.5 text-fg-muted hidden sm:block" />
             </button>
 
             {userDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-[#131313] border border-white/15 rounded-2xl p-2 shadow-2xl z-50 space-y-1">
-                <div className="px-3 py-2 border-b border-white/10">
-                  <div className="text-xs font-semibold text-white truncate">{user.name}</div>
-                  <div className="text-[10px] text-slate-400 truncate">{user.email}</div>
+              <div className="absolute right-0 mt-2 w-56 bg-surface border border-border text-fg rounded-2xl p-2 shadow-2xl z-50 space-y-1">
+                <div className="px-3 py-2 border-b border-border">
+                  <div className="text-xs font-semibold text-fg truncate">{user.name}</div>
+                  <div className="text-[10px] text-fg-muted truncate">{user.email}</div>
                 </div>
 
                 <Link
                   href="/profile"
                   onClick={() => setUserDropdownOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-fg-2 hover:text-fg hover:bg-surface-raised transition-colors"
                 >
-                  <User className="w-4 h-4 text-slate-400" />
+                  <User className="w-4 h-4 text-fg-muted" />
                   <span>Account & Profile</span>
                 </Link>
 
                 <Link
                   href="/wallet"
                   onClick={() => setUserDropdownOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-fg-2 hover:text-fg hover:bg-surface-raised transition-colors"
                 >
-                  <Wallet className="w-4 h-4 text-slate-400" />
+                  <Wallet className="w-4 h-4 text-fg-muted" />
                   <span>Billing & Wallet</span>
                 </Link>
 
@@ -163,9 +177,9 @@ export function CustomerHeader() {
                     setUserDropdownOpen(false);
                     logout();
                   }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-rose-400 hover:bg-rose-500/10 transition-colors text-left"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-danger hover:bg-danger-bg transition-colors text-left"
                 >
-                  <LogOut className="w-4 h-4 text-rose-400" />
+                  <LogOut className="w-4 h-4 text-danger" />
                   <span>Sign Out</span>
                 </button>
               </div>
@@ -184,13 +198,13 @@ export function CustomerHeader() {
           />
 
           {/* Drawer Menu */}
-          <div className="fixed top-0 bottom-0 left-0 w-72 bg-[#131313] border-r border-white/10 p-6 flex flex-col justify-between shadow-2xl z-50">
+          <div className="fixed top-0 bottom-0 left-0 w-72 bg-surface border-r border-border p-6 flex flex-col justify-between shadow-2xl z-50">
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <BrandLogo variant="combined" size={28} withLink href="/dashboard" />
                 <button
                   onClick={() => setMobileDrawerOpen(false)}
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 focus:outline-none"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl text-fg-muted hover:text-fg hover:bg-surface-raised focus:outline-none transition-colors"
                   aria-label="Close Navigation Drawer"
                 >
                   <X className="w-5 h-5" />
@@ -198,17 +212,17 @@ export function CustomerHeader() {
               </div>
 
               {/* Mobile Balance Pill */}
-              <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-between">
+              <div className="p-3 rounded-2xl bg-surface-raised border border-border flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] text-slate-400 uppercase font-mono">Current Balance</div>
-                  <div className="text-sm font-semibold text-white font-mono">
+                  <div className="text-[10px] text-fg-muted uppercase font-mono">Current Balance</div>
+                  <div className="text-sm font-semibold text-fg font-mono tabular-nums">
                     ₹{user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </div>
                 </div>
                 <Link
                   href="/wallet"
                   onClick={() => setMobileDrawerOpen(false)}
-                  className="min-h-[44px] px-3.5 flex items-center justify-center rounded-xl btn-primary-gradient text-[#171e00] text-xs font-bold hover:brightness-105 transition-colors"
+                  className="min-h-[44px] px-3.5 flex items-center justify-center rounded-xl bg-accent text-on-accent text-xs font-bold hover:brightness-105 transition-colors shadow-glow"
                 >
                   Add Funds
                 </Link>
@@ -225,11 +239,11 @@ export function CustomerHeader() {
                       onClick={() => setMobileDrawerOpen(false)}
                       className={`flex items-center gap-3 px-3 py-3 min-h-[44px] rounded-xl text-xs font-medium transition-all ${
                         isActive
-                          ? "bg-[#D8EC8D]/15 text-white"
-                          : "text-slate-400 hover:text-white hover:bg-white/5"
+                          ? "bg-accent/15 text-fg font-semibold border-l-2 border-accent"
+                          : "text-fg-2 hover:text-fg hover:bg-surface-raised"
                       }`}
                     >
-                      <item.icon className="w-4 h-4 text-[#D8EC8D]" />
+                      <item.icon className={`w-4 h-4 ${isActive ? "text-accent-text" : "text-fg-muted"}`} />
                       <span>{item.name}</span>
                     </Link>
                   );
@@ -242,7 +256,7 @@ export function CustomerHeader() {
                 setMobileDrawerOpen(false);
                 logout();
               }}
-              className="flex items-center gap-2 px-3 py-3 min-h-[44px] text-xs font-medium text-rose-400 hover:bg-rose-500/10 rounded-xl"
+              className="flex items-center gap-2 px-3 py-3 min-h-[44px] text-xs font-medium text-danger hover:bg-danger-bg rounded-xl"
             >
               <LogOut className="w-4 h-4" />
               <span>Log Out</span>

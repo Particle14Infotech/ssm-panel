@@ -189,4 +189,81 @@ describe("New Order Redesign & Hygiene Unit Tests", () => {
       expect(res).toBeDefined();
     });
   });
+
+  describe("5. Authoritative Single Order Quote (POST /orders/quote)", () => {
+    let mockPrisma: any;
+    let ordersService: OrdersService;
+
+    beforeEach(() => {
+      mockPrisma = {
+        isConnected: true,
+        service: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: "srv-quote-1",
+            status: "ACTIVE",
+            isDeleted: false,
+            active: true,
+            platform: "INSTAGRAM",
+            ratePer1000: new Decimal("45.50"),
+            minQty: 10,
+            maxQty: 50000,
+          }),
+        },
+      };
+      ordersService = new OrdersService(mockPrisma, {} as any);
+    });
+
+    it("generates an authoritative quote with charge and HMAC quoteHash", async () => {
+      const quote = await ordersService.getQuote(
+        {
+          serviceId: "srv-quote-1",
+          quantity: 2000,
+          target: "https://instagram.com/reel/123",
+        },
+        "usr-1"
+      );
+
+      expect(quote).toBeDefined();
+      expect(quote.serviceId).toBe("srv-quote-1");
+      expect(quote.quantity).toBe(2000);
+      expect(quote.ratePer1000).toBe(45.5);
+      expect(quote.totalCharge).toBe(91); // 2000 * 45.50 / 1000 = 91.00
+      expect(quote.quoteHash).toBeDefined();
+      expect(typeof quote.quoteHash).toBe("string");
+      expect(quote.expiresAt).toBeDefined();
+    });
+
+    it("multiplies charge by runs when drip feed is specified", async () => {
+      const quote = await ordersService.getQuote(
+        {
+          serviceId: "srv-quote-1",
+          quantity: 1000,
+          isDripFeed: true,
+          dripRuns: 5,
+        },
+        "usr-1"
+      );
+
+      expect(quote.runs).toBe(5);
+      expect(quote.totalCharge).toBe(227.5); // 1000 * 5 * 45.50 / 1000 = 227.50
+    });
+
+    it("rejects quantity below minQty with BadRequestException", async () => {
+      await expect(
+        ordersService.getQuote({
+          serviceId: "srv-quote-1",
+          quantity: 5, // min is 10
+        })
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("rejects quantity above maxQty with BadRequestException", async () => {
+      await expect(
+        ordersService.getQuote({
+          serviceId: "srv-quote-1",
+          quantity: 60000, // max is 50000
+        })
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
 });

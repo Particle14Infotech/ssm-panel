@@ -49,7 +49,7 @@ export function SpotlightCard({
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`relative overflow-hidden rounded-[20px] border border-white/[0.08] bg-white/[0.03] transition-colors hover:border-white/[0.18] active:scale-[0.99] transition-transform ${className}`}
+      className={`relative overflow-hidden rounded-[20px] border border-border bg-surface-glass backdrop-blur-md transition-colors hover:border-border-control active:scale-[0.99] transition-transform ${className}`}
     >
       {/* 1. Desktop cursor-tracking spotlight */}
       {!isTouch && !shouldReduceMotion && isHovered && position && (

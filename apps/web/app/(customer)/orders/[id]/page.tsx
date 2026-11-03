@@ -52,13 +52,18 @@ export default function OrderDetailPage() {
 
   const totalAimUnits = (order as any).totalQuantity ?? order.quantity;
   const remains = order.remains ?? 0;
-  const deliveredUnits = Math.max(0, totalAimUnits - remains);
-  const progressPercent = totalAimUnits > 0
-    ? Math.min(100, Math.round((deliveredUnits / totalAimUnits) * 100))
-    : 0;
+  const deliveredUnits = order.status === "COMPLETED" ? totalAimUnits : Math.max(0, totalAimUnits - remains);
+  const progressPercent = order.status === "COMPLETED"
+    ? 100
+    : (totalAimUnits > 0 ? Math.min(100, Math.round((deliveredUnits / totalAimUnits) * 100)) : 0);
+
+  const paceCap = 150;
+  const durHours = Math.max(1, Math.ceil(totalAimUnits / paceCap));
+  const finishDate = new Date(new Date(order.createdAt).getTime() + durHours * 60 * 60 * 1000);
 
   const pkgRun = (order as any).packageExecution || (order as any).packageRun;
   const parentPackage = pkgRun?.package;
+  const nextDispatch = pkgRun?.executeAt ? new Date(pkgRun.executeAt) : null;
   const pkgRunIndex = pkgRun?.seq ?? pkgRun?.runIndex ?? 1;
   const pkgTotalRuns =
     parentPackage?.totalRuns ??
@@ -89,14 +94,14 @@ export default function OrderDetailPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/orders"
-            className="p-2 rounded-full liquid-glass-pill hover:bg-white/20 text-white transition-all"
+            className="p-2 rounded-full liquid-glass-pill hover:bg-white/20 text-fg transition-all"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-light text-white">Order {formatOrderId(order.id)}</h1>
-              <span className="px-3 py-0.5 rounded-full text-xs font-mono font-bold bg-[#D8EC8D]/15 text-[#D8EC8D] border border-[#D8EC8D]/30">
+              <h1 className="text-2xl font-light text-fg">Order {formatOrderId(order.id)}</h1>
+              <span className="px-3 py-0.5 rounded-full text-xs font-mono font-bold bg-accent/15 text-[#D8EC8D] border border-accent/30">
                 {order.status}
               </span>
               {(order as any).isPrepaid && (
@@ -117,7 +122,7 @@ export default function OrderDetailPage() {
             <button
               onClick={handleRefill}
               disabled={refilling}
-              className="px-4 py-2 rounded-full bg-[#201f1f] text-white border border-white/10 hover:bg-white hover:text-black text-xs font-semibold flex items-center gap-1.5 transition-all"
+              className="px-4 py-2 rounded-full bg-[#201f1f] text-fg border border-border hover:bg-white hover:text-black text-xs font-semibold flex items-center gap-1.5 transition-all"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refilling ? "animate-spin" : ""}`} />
               <span>Request Refill</span>
@@ -159,16 +164,16 @@ export default function OrderDetailPage() {
                 </span>
                 <span className="text-[#D8EC8D] font-bold text-sm">{progressPercent}%</span>
               </div>
-              <div className="w-full h-3 rounded-full bg-[#201f1f] overflow-hidden p-0.5 border border-white/5">
+              <div className="w-full h-3 rounded-full bg-[#201f1f] overflow-hidden p-0.5 border border-slate-200/60 dark:border-white/5">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-[#D8EC8D] to-[#BEF264] transition-all duration-700"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <div className="grid grid-cols-3 gap-2 text-center text-[11px] font-mono text-[#c7c8b6] mt-3 pt-3 border-t border-white/5">
+              <div className="grid grid-cols-3 gap-2 text-center text-[11px] font-mono text-[#c7c8b6] mt-3 pt-3 border-t border-slate-200/60 dark:border-white/5">
                 <div>
                   <span className="text-[10px] uppercase text-[#a0a28f] block">Start Count</span>
-                  <span className="font-semibold text-white">{order.startCount ?? 0}</span>
+                  <span className="font-semibold text-fg">{order.startCount ?? 0}</span>
                 </div>
                 <div>
                   <span className="text-[10px] uppercase text-[#a0a28f] block">Delivered Aim</span>
@@ -181,24 +186,36 @@ export default function OrderDetailPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-white/10">
-              <div className="bg-[#201f1f] p-4 rounded-2xl border border-white/5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-border">
+              <div className="bg-[#201f1f] p-4 rounded-2xl border border-slate-200/60 dark:border-white/5">
                 <span className="text-[10px] uppercase font-mono text-[#c7c8b6] block">Aim Target</span>
-                <span className="text-xl font-light text-white">{totalAimUnits.toLocaleString()}</span>
+                <span className="text-xl font-light text-fg">{totalAimUnits.toLocaleString()}</span>
               </div>
-              <div className="bg-[#201f1f] p-4 rounded-2xl border border-white/5">
+              <div className="bg-[#201f1f] p-4 rounded-2xl border border-slate-200/60 dark:border-white/5">
                 <span className="text-[10px] uppercase font-mono text-[#c7c8b6] block">Total Charge</span>
                 <span className="text-xl font-light text-[#D8EC8D]">
                   {(order as any).isPrepaid ? "Prepaid (₹0.00)" : `₹${order.charge.toFixed(2)}`}
                 </span>
               </div>
-              <div className="bg-[#201f1f] p-4 rounded-2xl border border-white/5">
-                <span className="text-[10px] uppercase font-mono text-[#c7c8b6] block">Platform</span>
-                <span className="text-xl font-light text-white uppercase">{order.platform}</span>
+              <div className="bg-[#201f1f] p-4 rounded-2xl border border-slate-200/60 dark:border-white/5">
+                <span className="text-[10px] uppercase font-mono text-[#c7c8b6] block">Delivery Pace</span>
+                <span className="text-sm font-semibold text-fg font-mono mt-1 block">up to {paceCap}/hr</span>
+              </div>
+              <div className="bg-[#201f1f] p-4 rounded-2xl border border-slate-200/60 dark:border-white/5">
+                <span className="text-[10px] uppercase font-mono text-[#c7c8b6] block">
+                  {order.status === "COMPLETED" ? "Status" : (nextDispatch ? "Next Dispatch" : "Estimated Finish")}
+                </span>
+                <span className="text-xs font-semibold text-[#D8EC8D] font-mono mt-1 block">
+                  {order.status === "COMPLETED"
+                    ? "Completed"
+                    : (nextDispatch
+                      ? nextDispatch.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      : finishDate.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }))}
+                </span>
               </div>
             </div>
 
-            <div className="bg-[#201f1f] p-4 rounded-2xl border border-white/5 space-y-2">
+            <div className="bg-[#201f1f] p-4 rounded-2xl border border-slate-200/60 dark:border-white/5 space-y-2">
               <span className="text-xs uppercase font-mono text-[#c7c8b6]">Target Link</span>
               <a
                 href={order.target}
@@ -221,7 +238,7 @@ export default function OrderDetailPage() {
                     <Boxes className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white">Part of Growth Package</h3>
+                    <h3 className="text-sm font-semibold text-fg">Part of Growth Package</h3>
                     <p className="text-xs text-purple-300/80 font-mono">
                       {parentPackage.name ||
                         (parentPackage.platform && parentPackage.handle
@@ -281,11 +298,11 @@ export default function OrderDetailPage() {
                   <Wallet className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white">Wallet & Recharge</h3>
+                  <h3 className="text-sm font-semibold text-fg">Wallet & Recharge</h3>
                   <p className="text-xs text-emerald-300/80">Available Account Balance</p>
                 </div>
               </div>
-              <span className="text-lg font-mono font-bold text-emerald-400">
+              <span className="text-lg font-mono font-bold text-success">
                 ₹{(user?.balance ?? 0).toFixed(2)}
               </span>
             </div>
@@ -307,7 +324,7 @@ export default function OrderDetailPage() {
 
           {/* Audit & Event Timeline */}
           <div className="glass-panel rounded-3xl p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)]">
-            <h2 className="text-base font-medium text-white mb-4 flex items-center gap-2">
+            <h2 className="text-base font-medium text-fg mb-4 flex items-center gap-2">
               <Activity className="w-4 h-4 text-[#D8EC8D]" />
               <span>Audit & Event Timeline</span>
             </h2>
@@ -315,7 +332,7 @@ export default function OrderDetailPage() {
             <div className="space-y-4 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-white/10 pl-6">
               <div className="relative">
                 <span className="absolute -left-[19px] top-1 w-2.5 h-2.5 rounded-full bg-[#D8EC8D]" />
-                <div className="text-xs font-semibold text-white">Order Placed & Wallet Debited</div>
+                <div className="text-xs font-semibold text-fg">Order Placed & Wallet Debited</div>
                 <div className="text-[11px] font-mono text-[#c7c8b6]">{new Date(order.createdAt).toLocaleTimeString()}</div>
                 <p className="text-xs text-[#c7c8b6] mt-0.5">
                   {(order as any).isPrepaid
@@ -326,14 +343,14 @@ export default function OrderDetailPage() {
 
               <div className="relative">
                 <span className="absolute -left-[19px] top-1 w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                <div className="text-xs font-semibold text-white">Dispatched to High-Speed Node</div>
+                <div className="text-xs font-semibold text-fg">Dispatched to High-Speed Node</div>
                 <div className="text-[11px] font-mono text-[#c7c8b6]">Node AP-S1 Mumbai Shard</div>
                 <p className="text-xs text-[#c7c8b6] mt-0.5">Encrypted API outbox relay synchronized.</p>
               </div>
 
               <div className="relative">
                 <span className={`absolute -left-[19px] top-1 w-2.5 h-2.5 rounded-full ${order.status === "COMPLETED" ? "bg-emerald-400" : "bg-amber-400 animate-pulse"}`} />
-                <div className="text-xs font-semibold text-white">Current Status: {order.status}</div>
+                <div className="text-xs font-semibold text-fg">Current Status: {order.status}</div>
                 <div className="text-[11px] font-mono text-[#c7c8b6]">{new Date(order.updatedAt).toLocaleTimeString()}</div>
                 <p className="text-xs text-[#c7c8b6] mt-0.5">Automated telemetry polling active.</p>
               </div>

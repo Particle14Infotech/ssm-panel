@@ -275,7 +275,7 @@ export function Landing3DCanvas() {
     >
       {/* Static poster fading out immediately on first frame */}
       <div
-        className={`absolute inset-0 bg-[#0e0e0e] transition-opacity duration-200 pointer-events-none z-20 ${
+        className={`absolute inset-0 bg-bg transition-opacity duration-200 pointer-events-none z-20 ${
           isLoaded ? "opacity-0" : "opacity-100"
         }`}
       />

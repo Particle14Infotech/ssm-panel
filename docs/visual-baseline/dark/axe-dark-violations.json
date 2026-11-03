@@ -1,0 +1,234 @@
+[
+  {
+    "route": "landing",
+    "path": "/",
+    "contrastViolationsCount": 3,
+    "violations": [
+      {
+        "target": [
+          ".pr-14"
+        ],
+        "html": "<p class=\"text-sm text-[#71717A] text-center mt-8 leading-relaxed pr-14 sm:pr-0\">Instagram, YouTube, Telegram, TikTok, F",
+        "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.77 (foreground color: #71717a, background color: #151515, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".pt-8.sm\\:flex-row.text-\\[\\#71717A\\] > div"
+        ],
+        "html": "<div>© 2026 SMM Panel. All rights reserved.</div>",
+        "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.99 (foreground color: #71717a, background color: #0e0e0e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".sm\\:text-right"
+        ],
+        "html": "<p class=\"max-w-xl text-center sm:text-right leading-relaxed\">Instagram, YouTube, Telegram, TikTok, Facebook, and X are ",
+        "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.99 (foreground color: #71717a, background color: #0e0e0e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+      }
+    ]
+  },
+  {
+    "route": "contact",
+    "path": "/contact",
+    "contrastViolationsCount": 2,
+    "violations": [
+      {
+        "target": [
+          ".pt-8 > div"
+        ],
+        "html": "<div>© 2026 SMM Panel. All rights reserved.</div>",
+        "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.99 (foreground color: #71717a, background color: #0e0e0e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".max-w-xl"
+        ],
+        "html": "<p class=\"max-w-xl text-center sm:text-right leading-relaxed\">Instagram, YouTube, Telegram, TikTok, Facebook, and X are ",
+        "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.99 (foreground color: #71717a, background color: #0e0e0e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+      }
+    ]
+  },
+  {
+    "route": "terms",
+    "path": "/terms",
+    "contrastViolationsCount": 2,
+    "violations": [
+      {
+        "target": [
+          ".pt-8 > div"
+        ],
+        "html": "<div>© 2026 SMM Panel. All rights reserved.</div>",
+        "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.99 (foreground color: #71717a, background color: #0e0e0e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".max-w-xl"
+        ],
+        "html": "<p class=\"max-w-xl text-center sm:text-right leading-relaxed\">Instagram, YouTube, Telegram, TikTok, Facebook, and X are ",
+        "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.99 (foreground color: #71717a, background color: #0e0e0e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+      }
+    ]
+  },
+  {
+    "route": "privacy",
+    "path": "/privacy",
+    "contrastViolationsCount": 2,
+    "violations": [
+      {
+        "target": [
+          ".pt-8 > div"
+        ],
+        "html": "<div>© 2026 SMM Panel. All rights reserved.</div>",
+        "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.99 (foreground color: #71717a, background color: #0e0e0e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".max-w-xl"
+        ],
+        "html": "<p class=\"max-w-xl text-center sm:text-right leading-relaxed\">Instagram, YouTube, Telegram, TikTok, Facebook, and X are ",
+        "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.99 (foreground color: #71717a, background color: #0e0e0e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+      }
+    ]
+  },
+  {
+    "route": "refund",
+    "path": "/refund",
+    "contrastViolationsCount": 2,
+    "violations": [
+      {
+        "target": [
+          ".pt-8 > div"
+        ],
+        "html": "<div>© 2026 SMM Panel. All rights reserved.</div>",
+        "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.99 (foreground color: #71717a, background color: #0e0e0e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".max-w-xl"
+        ],
+        "html": "<p class=\"max-w-xl text-center sm:text-right leading-relaxed\">Instagram, YouTube, Telegram, TikTok, Facebook, and X are ",
+        "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.99 (foreground color: #71717a, background color: #0e0e0e, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+      }
+    ]
+  },
+  {
+    "route": "login",
+    "path": "/login",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "register",
+    "path": "/register",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "dashboard",
+    "path": "/dashboard",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "new-order",
+    "path": "/new-order?tab=single",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "new-order-custom-drip",
+    "path": "/new-order?tab=custom_drip",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "new-order-combos",
+    "path": "/new-order?tab=combos",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "new-order-autopilot",
+    "path": "/new-order?tab=autopilot",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "packages",
+    "path": "/packages",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "favorites",
+    "path": "/favorites",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "services-catalog",
+    "path": "/services-catalog",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "orders",
+    "path": "/orders",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "wallet",
+    "path": "/wallet",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "transactions",
+    "path": "/transactions",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "support",
+    "path": "/support",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "profile",
+    "path": "/profile",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "admin-dashboard",
+    "path": "/admin/dashboard",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "admin-services",
+    "path": "/admin/services",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "admin-orders",
+    "path": "/admin/orders",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "admin-users",
+    "path": "/admin/users",
+    "contrastViolationsCount": 0,
+    "violations": []
+  },
+  {
+    "route": "admin-settings",
+    "path": "/admin/settings",
+    "contrastViolationsCount": 0,
+    "violations": []
+  }
+]

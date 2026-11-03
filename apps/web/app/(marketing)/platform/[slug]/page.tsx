@@ -273,13 +273,13 @@ export default function PlatformPage({ params }: { params: { slug: string } }) {
 
         {/* Hero Banner */}
         <div className="mb-14 rounded-3xl p-8 md:p-12 bg-[#1c1b1b]/80 border border-white/10 backdrop-blur-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-[#D8EC8D]/10 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute top-0 right-0 w-80 h-80 bg-accent/10 rounded-full blur-[100px] pointer-events-none" />
 
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-[#D8EC8D]/20 border border-[#D8EC8D]/30 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-accent/20 border border-accent/30 flex items-center justify-center">
               <PlatformIcon platform={p.slug} size={20} />
             </div>
-            <span className="text-xs uppercase tracking-widest font-mono text-[#D8EC8D] font-semibold">
+            <span className="text-xs uppercase tracking-widest font-mono text-accent-text font-semibold">
               {p.name} Service Catalog • From {p.minPrice} / 1K
             </span>
           </div>
@@ -326,13 +326,13 @@ export default function PlatformPage({ params }: { params: { slug: string } }) {
 
             <div className="rounded-2xl p-6 sm:p-8 bg-[#1c1b1b]/60 border border-white/10 backdrop-blur-md">
               <h2 className="font-heading text-xl font-medium text-white mb-4 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-[#D8EC8D]" />
+                <Shield className="w-5 h-5 text-accent-text" />
                 <span>Account & Order Guidelines</span>
               </h2>
               <ul className="space-y-3">
                 {p.orderNotes.map((note, i) => (
                   <li key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-zinc-300 font-light">
-                    <CheckCircle2 className="w-4 h-4 text-[#D8EC8D] shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-accent-text shrink-0 mt-0.5" />
                     <span>{note}</span>
                   </li>
                 ))}
@@ -346,8 +346,8 @@ export default function PlatformPage({ params }: { params: { slug: string } }) {
                 key={idx}
                 className="rounded-2xl p-6 bg-[#1c1b1b]/60 border border-white/10 backdrop-blur-md"
               >
-                <div className="w-8 h-8 rounded-lg bg-[#D8EC8D]/15 border border-[#D8EC8D]/20 flex items-center justify-center mb-3">
-                  <Zap className="w-4 h-4 text-[#D8EC8D]" />
+                <div className="w-8 h-8 rounded-lg bg-accent/15 border border-accent/20 flex items-center justify-center mb-3">
+                  <Zap className="w-4 h-4 text-accent-text" />
                 </div>
                 <h3 className="font-heading text-base font-medium text-white mb-1.5">
                   {feat.title}
@@ -362,7 +362,7 @@ export default function PlatformPage({ params }: { params: { slug: string } }) {
 
         {/* Platform-Specific FAQ */}
         <div className="rounded-3xl p-8 sm:p-10 bg-[#1c1b1b]/80 border border-white/10 backdrop-blur-xl mb-14">
-          <div className="flex items-center gap-2 mb-6 text-xs uppercase tracking-widest font-mono text-[#D8EC8D]">
+          <div className="flex items-center gap-2 mb-6 text-xs uppercase tracking-widest font-mono text-accent-text">
             <HelpCircle className="w-4 h-4" />
             <span>Frequently Asked Questions • {p.name}</span>
           </div>

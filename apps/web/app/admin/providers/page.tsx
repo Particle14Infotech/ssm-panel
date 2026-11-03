@@ -171,7 +171,7 @@ export default function AdminProvidersPage() {
 
         {/* Global Import Notice */}
         {importNotice && (
-          <div className="p-4 rounded-2xl bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 text-[#D8EC8D] text-xs flex items-center justify-between">
+          <div className="p-4 rounded-2xl bg-accent/15 border border-accent/30 text-[#D8EC8D] text-xs flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0 text-[#D8EC8D]" />
               <span>{importNotice}</span>
@@ -269,7 +269,7 @@ export default function AdminProvidersPage() {
         {editingProvider && (
           <form
             onSubmit={handleSaveEdit}
-            className="bg-[#131313] border border-[#D8EC8D]/30 rounded-3xl p-6 md:p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-4"
+            className="bg-[#131313] border border-accent/30 rounded-3xl p-6 md:p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] space-y-4"
           >
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
@@ -533,7 +533,7 @@ export default function AdminProvidersPage() {
                     <button
                       onClick={() => handleImport(p.id)}
                       disabled={importingId === p.id}
-                      className="px-3 py-1 rounded-full bg-[#D8EC8D]/15 hover:bg-[#D8EC8D] text-[#D8EC8D] hover:text-[#171e00] text-xs font-bold transition-all inline-flex items-center gap-1.5 border border-[#D8EC8D]/30"
+                      className="px-3 py-1 rounded-full bg-accent/15 hover:bg-[#D8EC8D] text-[#D8EC8D] hover:text-[#171e00] text-xs font-bold transition-all inline-flex items-center gap-1.5 border border-accent/30"
                       title="Fetch latest services from upstream API"
                     >
                       <DownloadCloud className={`w-3.5 h-3.5 ${importingId === p.id ? "animate-bounce" : ""}`} />

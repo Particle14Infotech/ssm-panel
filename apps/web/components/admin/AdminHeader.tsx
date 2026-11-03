@@ -14,7 +14,6 @@ import {
   RefreshCw,
   Menu,
   X,
-  Check,
   MessageSquare,
   LogOut,
   BarChart3,
@@ -24,6 +23,7 @@ import {
 
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import { useAdmin } from "@/context/AdminContext";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 export function AdminHeader() {
   const pathname = usePathname();
@@ -67,22 +67,22 @@ export function AdminHeader() {
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[#131313]/90 backdrop-blur-xl border-b border-white/10 shadow-[0_1px_16px_rgba(0,0,0,0.7)]">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl border-b border-border shadow-lg">
       <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-2">
         {/* Top Header Row */}
         <div className="h-12 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <BrandLogo variant="combined" size={30} withLink href="/admin/dashboard" />
 
-            <div className="h-4 w-px bg-white/15 hidden sm:block" />
+            <div className="h-4 w-px bg-border hidden sm:block" />
 
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full liquid-glass-pill text-slate-300 text-xs font-mono">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#D8EC8D] animate-pulse" />
-              <span className="text-[10px] uppercase tracking-widest text-[#D8EC8D] font-bold">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-surface-raised border border-border text-fg-2 text-xs font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shadow-glow" />
+              <span className="text-[10px] uppercase tracking-widest text-accent-text font-bold">
                 ROOT ADMIN CONSOLE
               </span>
-              <span className="text-white/20">•</span>
-              <span className="text-[11px]">System Active</span>
+              <span className="text-fg-muted/40">•</span>
+              <span className="text-[11px] text-fg-muted">System Active</span>
             </div>
           </div>
 
@@ -92,25 +92,28 @@ export function AdminHeader() {
               type="button"
               onClick={handleLiveSync}
               disabled={isSyncing}
-              className={`px-3.5 py-1.5 rounded-full liquid-glass-pill text-xs font-mono flex items-center gap-2 transition-all hover:border-[#D8EC8D]/50 hover:bg-white/5 active:scale-95 cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full bg-surface-raised border border-border text-xs font-mono flex items-center gap-2 transition-all hover:border-accent/40 active:scale-95 cursor-pointer ${
                 isSyncing ? "opacity-75 cursor-wait" : ""
               }`}
               title="Sync platform metrics, orders, and upstream provider balances"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-[#D8EC8D] ${isSyncing ? "animate-spin" : ""}`} />
-              <span className="text-[#D8EC8D] font-semibold">
+              <RefreshCw className={`w-3.5 h-3.5 text-accent-text ${isSyncing ? "animate-spin" : ""}`} />
+              <span className="text-accent-text font-semibold">
                 {isSyncing ? "Syncing..." : syncSuccess ? "Synced" : "Live Sync"}
               </span>
-              {syncSuccess && <span className="w-1.5 h-1.5 rounded-full bg-[#D8EC8D] animate-ping" />}
+              {syncSuccess && <span className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />}
             </button>
 
+            {/* Accessible Theme Toggle */}
+            <ThemeToggle variant="compact" />
+
             {/* Admin Avatar */}
-            <div className="flex items-center gap-2 pl-2 border-l border-white/10">
+            <div className="flex items-center gap-2 pl-2 border-l border-border">
               <div className="hidden md:flex flex-col text-right">
-                <span className="text-xs font-bold text-white leading-tight">Administrator</span>
-                <span className="text-[10px] text-[#D8EC8D] font-mono">Super Admin</span>
+                <span className="text-xs font-bold text-fg leading-tight">Administrator</span>
+                <span className="text-[10px] text-accent-text font-mono">Super Admin</span>
               </div>
-              <div className="w-8 h-8 rounded-xl btn-primary-gradient text-[#171e00] flex items-center justify-center font-bold text-xs">
+              <div className="w-8 h-8 rounded-xl bg-accent text-on-accent shadow-glow flex items-center justify-center font-bold text-xs">
                 AD
               </div>
             </div>
@@ -119,7 +122,7 @@ export function AdminHeader() {
             <button
               type="button"
               onClick={logout}
-              className="px-3 py-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 hover:text-white hover:border-rose-500/50 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 ml-1"
+              className="px-3 py-1.5 rounded-full border border-danger/30 bg-danger-bg text-danger hover:bg-danger hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 ml-1"
               title="Sign out of Admin Console"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -128,7 +131,7 @@ export function AdminHeader() {
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D8EC8D]"
+              className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5 rounded-xl bg-surface-raised border border-border text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
               aria-label="Toggle admin navigation menu"
               aria-expanded={mobileMenuOpen}
             >
@@ -138,7 +141,7 @@ export function AdminHeader() {
         </div>
 
         {/* Bottom Nav Row */}
-        <div className="hidden lg:flex items-center gap-1.5 pt-2 pb-1 overflow-x-auto scrollbar-none border-t border-white/5 mt-1">
+        <div className="hidden lg:flex items-center gap-1.5 pt-2 pb-1 overflow-x-auto scrollbar-none border-t border-border mt-1">
           {adminNav.map((item) => {
             const isActive = pathname === item.href || (item.href !== "/admin/dashboard" && pathname?.startsWith(item.href));
             return (
@@ -147,11 +150,11 @@ export function AdminHeader() {
                 href={item.href}
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all flex items-center gap-1.5 whitespace-nowrap ${
                   isActive
-                    ? "btn-primary-gradient text-[#171e00] font-bold shadow-[0_0_15px_rgba(216,236,141,0.25)]"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                    ? "bg-accent text-on-accent font-bold shadow-glow"
+                    : "text-fg-muted hover:text-fg hover:bg-surface-raised"
                 }`}
               >
-                <item.icon className={`w-3.5 h-3.5 ${isActive ? "text-[#171e00]" : "text-slate-400"}`} />
+                <item.icon className={`w-3.5 h-3.5 ${isActive ? "text-on-accent" : "text-fg-muted"}`} />
                 <span>{item.name}</span>
               </Link>
             );
@@ -160,7 +163,7 @@ export function AdminHeader() {
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-[#131313] border-t border-white/15 px-2 py-4 grid grid-cols-2 gap-2 mt-2">
+          <div className="lg:hidden bg-surface border-t border-border px-2 py-4 grid grid-cols-2 gap-2 mt-2">
             {adminNav.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -170,8 +173,8 @@ export function AdminHeader() {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`p-3 rounded-2xl flex items-center gap-2 text-xs font-semibold ${
                     isActive
-                      ? "btn-primary-gradient text-[#171e00] font-bold"
-                      : "bg-white/5 text-slate-400 hover:text-white"
+                      ? "bg-accent text-on-accent font-bold shadow-glow"
+                      : "bg-surface-raised text-fg-muted hover:text-fg"
                   }`}
                 >
                   <item.icon className="w-4 h-4" />
@@ -185,7 +188,7 @@ export function AdminHeader() {
                 setMobileMenuOpen(false);
                 logout();
               }}
-              className="col-span-2 mt-2 p-3 rounded-2xl flex items-center justify-center gap-2 text-xs font-semibold border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 hover:text-white transition-all cursor-pointer"
+              className="col-span-2 mt-2 p-3 rounded-2xl flex items-center justify-center gap-2 text-xs font-semibold border border-danger/30 bg-danger-bg text-danger hover:bg-danger hover:text-white transition-all cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
               <span>Sign Out (Admin Logout)</span>

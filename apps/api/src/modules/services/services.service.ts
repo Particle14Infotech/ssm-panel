@@ -1,7 +1,8 @@
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException, Optional } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { ServiceItem, ServicePlatform } from "@smm/contracts";
 import { Decimal } from "decimal.js";
+import { SMMCacheService } from "../../common/cache.service";
 
 export const SANDBOX_CATEGORIES = [
   { id: "cat_ig", name: "Instagram Followers & Engagement", slug: "instagram-followers", sortOrder: 1, serviceCount: 2 },
@@ -165,12 +166,33 @@ export const SANDBOX_SERVICES: any[] = [
 @Injectable()
 export class ServicesService {
   private readonly logger = new Logger(ServicesService.name);
+  private readonly cacheService: SMMCacheService;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() cache?: SMMCacheService
+  ) {
+    this.cacheService = cache || new SMMCacheService();
+  }
+
+  async invalidateCatalogCache(): Promise<void> {
+    try {
+      await this.cacheService.invalidatePattern("catalog:*");
+      this.logger.log("[Cache] Invalidated catalog cache (catalog:*)");
+    } catch (err: any) {
+      this.logger.warn(`Failed to invalidate catalog cache: ${err?.message}`);
+    }
+  }
 
   async getPlatforms(): Promise<string[]> {
+    const cacheKey = "catalog:platforms";
+    const cached = await this.cacheService.get<string[]>(cacheKey);
+    if (cached) return cached;
+
     if (!this.prisma.isConnected) {
-      return ["INSTAGRAM", "YOUTUBE", "TIKTOK", "TELEGRAM", "X_TWITTER", "FACEBOOK", "SPOTIFY"];
+      const fallback = ["INSTAGRAM", "YOUTUBE", "TIKTOK", "TELEGRAM", "X_TWITTER", "FACEBOOK", "SPOTIFY"];
+      await this.cacheService.set(cacheKey, fallback, { ttlSeconds: 300, jitterSeconds: 30 });
+      return fallback;
     }
 
     try {
@@ -180,16 +202,23 @@ export class ServicesService {
         distinct: ["platform"],
       });
       const platforms = distinctPlatforms.map((p) => p.platform);
-      return platforms.length > 0
+      const result = platforms.length > 0
         ? platforms
         : ["INSTAGRAM", "YOUTUBE", "TIKTOK", "TELEGRAM", "X_TWITTER", "FACEBOOK", "SPOTIFY"];
+      await this.cacheService.set(cacheKey, result, { ttlSeconds: 300, jitterSeconds: 30 });
+      return result;
     } catch {
       return ["INSTAGRAM", "YOUTUBE", "TIKTOK", "TELEGRAM", "X_TWITTER", "FACEBOOK", "SPOTIFY"];
     }
   }
 
   async getCategories() {
+    const cacheKey = "catalog:categories";
+    const cached = await this.cacheService.get<any[]>(cacheKey);
+    if (cached) return cached;
+
     if (!this.prisma.isConnected) {
+      await this.cacheService.set(cacheKey, SANDBOX_CATEGORIES, { ttlSeconds: 300, jitterSeconds: 30 });
       return SANDBOX_CATEGORIES;
     }
 
@@ -203,13 +232,16 @@ export class ServicesService {
         orderBy: { sortOrder: "asc" },
       });
 
-      return categories.map((cat) => ({
+      const result = categories.map((cat) => ({
         id: cat.id,
         name: cat.name,
         slug: cat.slug,
         sortOrder: cat.sortOrder,
         serviceCount: cat._count.services,
       }));
+
+      await this.cacheService.set(cacheKey, result, { ttlSeconds: 300, jitterSeconds: 30 });
+      return result;
     } catch (err: any) {
       this.logger.error(`Error fetching categories: ${err.message}`);
       return [];
@@ -217,6 +249,10 @@ export class ServicesService {
   }
 
   async getGroupedCatalog(platform?: string) {
+    const cacheKey = `catalog:grouped:${platform || "ALL"}`;
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     if (!this.prisma.isConnected) {
       const filtered = platform && platform !== "ALL"
         ? SANDBOX_SERVICES.filter((s) => s.platform === platform || (platform === "X" && s.platform === "X_TWITTER"))
@@ -234,7 +270,9 @@ export class ServicesService {
         };
       }).filter((cat) => cat.serviceCount > 0);
 
-      return { categories };
+      const result = { categories };
+      await this.cacheService.set(cacheKey, result, { ttlSeconds: 300, jitterSeconds: 30 });
+      return result;
     }
 
     try {
@@ -324,7 +362,9 @@ export class ServicesService {
         });
       }
 
-      return { categories: activeGroupedCategories };
+      const result = { categories: activeGroupedCategories };
+      await this.cacheService.set(cacheKey, result, { ttlSeconds: 300, jitterSeconds: 30 });
+      return result;
     } catch (err: any) {
       this.logger.error(`Error in getGroupedCatalog: ${err.message}`);
       return { categories: [] };
@@ -334,6 +374,7 @@ export class ServicesService {
   async createCategory(input: { name: string; slug?: string; sortOrder?: number }) {
     const slug = input.slug || input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     if (!this.prisma.isConnected) {
+      await this.invalidateCatalogCache();
       return { success: true, category: { id: `cat_${Date.now()}`, name: input.name, slug } };
     }
 
@@ -343,6 +384,7 @@ export class ServicesService {
       create: { name: input.name, slug, sortOrder: input.sortOrder || 0 },
     });
 
+    await this.invalidateCatalogCache();
     return { success: true, category };
   }
 
@@ -353,6 +395,16 @@ export class ServicesService {
     sortBy?: string,
     packageEligible?: boolean | string
   ): Promise<ServiceItem[]> {
+    const isSearch = Boolean(query && query.trim());
+    const cacheKey = !isSearch
+      ? `catalog:services:${platform || "ALL"}:${categoryId || "ALL"}:${sortBy || "DEFAULT"}:${packageEligible ?? "ALL"}`
+      : null;
+
+    if (cacheKey) {
+      const cached = await this.cacheService.get<ServiceItem[]>(cacheKey);
+      if (cached) return cached;
+    }
+
     if (!this.prisma.isConnected) {
       let filtered = [...SANDBOX_SERVICES];
       if (platform && platform !== "ALL") {
@@ -365,6 +417,9 @@ export class ServicesService {
       if (query) {
         const q = query.toLowerCase();
         filtered = filtered.filter((s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q));
+      }
+      if (cacheKey) {
+        await this.cacheService.set(cacheKey, filtered, { ttlSeconds: 300, jitterSeconds: 30 });
       }
       return filtered as any[];
     }
@@ -427,7 +482,7 @@ export class ServicesService {
 
       const providerMap = new Map((providers || []).map((p) => [p.id, p.name]));
 
-      return services.map((s) => {
+      const mappedResult = services.map((s) => {
         let linkType = s.linkType;
         if (!linkType) {
           const lower = (s.name || "").toLowerCase();
@@ -488,6 +543,12 @@ export class ServicesService {
           status: (s.status === "ACTIVE" ? "ACTIVE" : "DISABLED") as any,
         };
       });
+
+      if (cacheKey) {
+        await this.cacheService.set(cacheKey, mappedResult, { ttlSeconds: 300, jitterSeconds: 30 });
+      }
+
+      return mappedResult;
     } catch (err: any) {
       this.logger.error(`Error querying services: ${err.message}`);
       return [];
@@ -618,15 +679,21 @@ export class ServicesService {
         providerServiceId: input.providerServiceId || null,
         backupProviderId: input.backupProviderId || null,
         backupProviderServiceId: input.backupProviderServiceId || null,
+        kind: input.kind || "OTHER",
+        geoCountry: input.geoCountry || null,
+        geoRegion: input.geoRegion || null,
+        packageEligible: Boolean(input.packageEligible),
       },
       include: { category: true },
     });
 
+    await this.invalidateCatalogCache();
     return { success: true, service: created };
   }
 
   async update(id: string, input: any) {
     if (!this.prisma.isConnected) {
+      await this.invalidateCatalogCache();
       return { success: true, service: { id, ...input } };
     }
 
@@ -695,6 +762,10 @@ export class ServicesService {
     if (input.backupProviderId !== undefined) data.backupProviderId = input.backupProviderId;
     if (input.backupProviderServiceId !== undefined) data.backupProviderServiceId = input.backupProviderServiceId;
     if (input.priceBelowCost !== undefined) data.priceBelowCost = Boolean(input.priceBelowCost);
+    if (input.kind !== undefined) data.kind = input.kind;
+    if (input.geoCountry !== undefined) data.geoCountry = input.geoCountry;
+    if (input.geoRegion !== undefined) data.geoRegion = input.geoRegion;
+    if (input.packageEligible !== undefined) data.packageEligible = Boolean(input.packageEligible);
 
     const updated = await this.prisma.service.update({
       where: { id },
@@ -702,11 +773,50 @@ export class ServicesService {
       include: { category: true },
     });
 
+    await this.invalidateCatalogCache();
     return { success: true, service: updated };
+  }
+
+  
+  async bulkUpdateKindsAndRegions(
+    updates: Array<{
+      id: string;
+      kind?: any;
+      geoCountry?: string | null;
+      geoRegion?: string | null;
+      packageEligible?: boolean;
+    }>
+  ) {
+    if (!this.prisma.isConnected) {
+      await this.invalidateCatalogCache();
+      return { success: true, updatedCount: updates.length };
+    }
+
+    let count = 0;
+    await this.prisma.$transaction(async (tx) => {
+      for (const item of updates) {
+        const data: any = {};
+        if (item.kind !== undefined) data.kind = item.kind;
+        if (item.geoCountry !== undefined) data.geoCountry = item.geoCountry;
+        if (item.geoRegion !== undefined) data.geoRegion = item.geoRegion;
+        if (item.packageEligible !== undefined) data.packageEligible = Boolean(item.packageEligible);
+
+        await tx.service.update({
+          where: { id: item.id },
+          data,
+        });
+        count++;
+      }
+    });
+
+    await this.invalidateCatalogCache();
+    await this.cacheService.invalidatePattern("new_order:bootstrap:*");
+    return { success: true, updatedCount: count };
   }
 
   async remove(id: string) {
     if (!this.prisma.isConnected) {
+      await this.invalidateCatalogCache();
       return true;
     }
 
@@ -715,6 +825,7 @@ export class ServicesService {
         where: { id },
         data: { isDeleted: true, deletedAt: new Date(), active: false },
       });
+      await this.invalidateCatalogCache();
       return true;
     } catch {
       return false;

@@ -231,9 +231,9 @@ export default function AdminSystemHealthPage() {
               </span>
             </div>
             <div className="text-xs text-slate-400 font-mono space-y-0.5">
-              <div>Late (&gt;10m): <span className={comp?.dripFeed?.lateRuns ? "text-amber-400 font-bold" : "text-white"}>{comp?.dripFeed?.lateRuns ?? 0}</span></div>
+              <div>Late (&gt;10m): <span className={comp?.dripFeed?.lateRuns ? "text-warning font-bold" : "text-white"}>{comp?.dripFeed?.lateRuns ?? 0}</span></div>
               <div>Uncertain: <span className={comp?.dripFeed?.uncertainRuns ? "text-purple-400 font-bold" : "text-white"}>{comp?.dripFeed?.uncertainRuns ?? 0}</span></div>
-              <div>Failed: <span className={comp?.dripFeed?.failedRuns ? "text-rose-400 font-bold" : "text-white"}>{comp?.dripFeed?.failedRuns ?? 0}</span></div>
+              <div>Failed: <span className={comp?.dripFeed?.failedRuns ? "text-danger font-bold" : "text-white"}>{comp?.dripFeed?.failedRuns ?? 0}</span></div>
             </div>
           </div>
         </div>
@@ -340,7 +340,7 @@ export default function AdminSystemHealthPage() {
                   />
                 </div>
                 {(comp?.email?.sentToday ?? 0) >= 80 && (
-                  <div className="text-amber-400 text-[10px]">Warning: 80% quota threshold reached</div>
+                  <div className="text-warning text-[10px]">Warning: 80% quota threshold reached</div>
                 )}
               </div>
 
@@ -348,7 +348,7 @@ export default function AdminSystemHealthPage() {
                 <div className="text-slate-400 text-[10px] uppercase font-semibold">Queue & Suppression Metrics</div>
                 <div className="text-slate-300 space-y-1">
                   <div>Pending in Queue: <span className="text-white font-bold">{comp?.email?.pendingCount ?? 0}</span></div>
-                  <div>Failed Today: <span className={(comp?.email?.failedToday ?? 0) > 0 ? "text-red-400 font-bold" : "text-emerald-400 font-bold"}>{comp?.email?.failedToday ?? 0}</span></div>
+                  <div>Failed Today: <span className={(comp?.email?.failedToday ?? 0) > 0 ? "text-red-400 font-bold" : "text-success font-bold"}>{comp?.email?.failedToday ?? 0}</span></div>
                   <div>Suppression List: <span className="text-white font-bold">{comp?.email?.suppressedCount ?? 0}</span> addresses</div>
                 </div>
               </div>
@@ -359,7 +359,7 @@ export default function AdminSystemHealthPage() {
                   <div className="text-slate-300 space-y-0.5 text-[11px]">
                     <div className="text-white font-bold truncate">To: {comp.email.lastDispatch.to}</div>
                     <div>Type: <span className="text-[#D8EC8D]">{comp.email.lastDispatch.type}</span></div>
-                    <div>Status: <span className={comp.email.lastDispatch.status === "SENT" || comp.email.lastDispatch.status === "DELIVERED" ? "text-emerald-400" : "text-amber-400"}>{comp.email.lastDispatch.status}</span></div>
+                    <div>Status: <span className={comp.email.lastDispatch.status === "SENT" || comp.email.lastDispatch.status === "DELIVERED" ? "text-success" : "text-warning"}>{comp.email.lastDispatch.status}</span></div>
                     {comp.email.lastDispatch.providerMessageId && (
                       <div className="text-[10px] text-slate-400 truncate">MsgId: {comp.email.lastDispatch.providerMessageId}</div>
                     )}

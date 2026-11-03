@@ -104,17 +104,17 @@ export default function FavoritesPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
-            <div className="w-8 h-8 rounded-lg bg-[#D8EC8D]/10 border border-[#D8EC8D]/30 flex items-center justify-center text-[#D8EC8D]">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/30 flex items-center justify-center text-[#D8EC8D]">
               <Bookmark className="w-4 h-4" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">Saved Favorites</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-fg">Saved Favorites</h1>
           </div>
           <p className="text-sm text-slate-400">
             One-click reorder templates for your high-frequency links and campaigns.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-slate-300">
+          <div className="px-3 py-1.5 rounded-lg bg-white/5 border border-border text-xs font-mono text-fg-2">
             {favorites.length} / 50 saved
           </div>
           <Link
@@ -132,7 +132,7 @@ export default function FavoritesPage() {
         <section aria-labelledby="suggestions-heading" className="space-y-3">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-[#D8EC8D]" />
-            <h2 id="suggestions-heading" className="text-sm font-semibold uppercase tracking-wider text-slate-300">
+            <h2 id="suggestions-heading" className="text-sm font-semibold uppercase tracking-wider text-fg-2">
               Frequently Reordered (Past 90 Days)
             </h2>
           </div>
@@ -143,7 +143,7 @@ export default function FavoritesPage() {
               return (
                 <GlassCard
                   key={key}
-                  className="p-4 rounded-2xl border-white/10 flex flex-col justify-between relative overflow-hidden bg-white/[0.02]"
+                  className="p-4 rounded-2xl border-border flex flex-col justify-between relative overflow-hidden bg-white/[0.02]"
                 >
                   <button
                     type="button"
@@ -160,7 +160,7 @@ export default function FavoritesPage() {
                         Ordered {sug.orderCount} times
                       </span>
                     </div>
-                    <div className="text-sm font-medium text-white line-clamp-1">
+                    <div className="text-sm font-medium text-fg line-clamp-1">
                       {sug.serviceName}
                     </div>
                     <div className="text-xs text-slate-400 font-mono truncate" title={sug.targetUrl}>
@@ -173,7 +173,7 @@ export default function FavoritesPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="pt-4 mt-3 border-t border-white/5 flex items-center justify-between">
+                  <div className="pt-4 mt-3 border-t border-slate-200/60 dark:border-white/5 flex items-center justify-between">
                     <button
                       type="button"
                       disabled={isSaving}
@@ -185,7 +185,7 @@ export default function FavoritesPage() {
                     </button>
                     <Link
                       href={`/new-order?service=${sug.serviceId}&target=${encodeURIComponent(sug.targetUrl)}&quantity=${sug.avgQuantity}`}
-                      className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-white"
+                      className="inline-flex items-center gap-1 text-xs text-fg-muted hover:text-slate-900 dark:hover:text-white font-medium"
                     >
                       <span>Order</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -205,12 +205,12 @@ export default function FavoritesPage() {
         </h2>
 
         {favorites.length === 0 ? (
-          <GlassCard className="p-12 rounded-3xl border-white/10 text-center space-y-4 bg-white/[0.02]">
-            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-slate-500">
+          <GlassCard className="p-12 rounded-3xl border-border text-center space-y-4 bg-white/[0.02]">
+            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-border flex items-center justify-center mx-auto text-slate-500">
               <Bookmark className="w-8 h-8" />
             </div>
             <div className="max-w-md mx-auto space-y-1.5">
-              <h3 className="text-lg font-semibold text-white">No favorites saved yet</h3>
+              <h3 className="text-lg font-semibold text-fg">No favorites saved yet</h3>
               <p className="text-sm text-slate-400">
                 Save your frequently ordered targets from your Orders history or New Order screen to reorder with a single click.
               </p>
@@ -235,7 +235,7 @@ export default function FavoritesPage() {
               return (
                 <GlassCard
                   key={fav.id}
-                  className="p-5 rounded-2xl border-white/10 flex flex-col justify-between space-y-4 hover:border-white/20 transition-all bg-white/[0.02]"
+                  className="p-5 rounded-2xl border-border flex flex-col justify-between space-y-4 hover:border-white/20 transition-all bg-white/[0.02]"
                 >
                   <div className="space-y-3">
                     {/* Top Row: Platform & Status */}
@@ -248,12 +248,12 @@ export default function FavoritesPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         {isServiceActive ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-success border border-emerald-500/20">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                             ACTIVE
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-amber-500/10 text-warning border border-amber-500/20">
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                             OFFLINE
                           </span>
@@ -263,7 +263,7 @@ export default function FavoritesPage() {
 
                     {/* Title */}
                     <div>
-                      <div className="text-base font-semibold text-white line-clamp-1" title={displayName}>
+                      <div className="text-base font-semibold text-fg line-clamp-1" title={displayName}>
                         {displayName}
                       </div>
                       {fav.customName && fav.service?.name && (
@@ -274,7 +274,7 @@ export default function FavoritesPage() {
                     </div>
 
                     {/* Target link */}
-                    <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-1">
+                    <div className="p-2.5 rounded-xl bg-white/[0.03] border border-slate-200/60 dark:border-white/5 space-y-1">
                       <div className="text-[10px] uppercase font-mono tracking-wider text-slate-500">
                         Target Link / Handle
                       </div>
@@ -294,13 +294,13 @@ export default function FavoritesPage() {
 
                     {/* Specs / Configuration */}
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="p-2 rounded-lg bg-white/[0.02] border border-white/5">
+                      <div className="p-2 rounded-lg bg-white/[0.02] border border-slate-200/60 dark:border-white/5">
                         <div className="text-[10px] uppercase font-mono text-slate-500">Quantity</div>
-                        <div className="font-mono text-white font-semibold mt-0.5">
+                        <div className="font-mono text-fg font-semibold mt-0.5">
                           {formatIndianNumber(fav.defaultQuantity)}
                         </div>
                       </div>
-                      <div className="p-2 rounded-lg bg-white/[0.02] border border-white/5">
+                      <div className="p-2 rounded-lg bg-white/[0.02] border border-slate-200/60 dark:border-white/5">
                         <div className="text-[10px] uppercase font-mono text-slate-500">Current Rate</div>
                         <div className="font-mono text-[#D8EC8D] font-semibold mt-0.5">
                           {fav.service?.ratePer1000 ? `₹${fav.service.ratePer1000.toFixed(2)}/1k` : "—"}
@@ -320,7 +320,7 @@ export default function FavoritesPage() {
                   </div>
 
                   {/* Actions footer */}
-                  <div className="pt-3 border-t border-white/5 flex items-center justify-between gap-3">
+                  <div className="pt-3 border-t border-slate-200/60 dark:border-white/5 flex items-center justify-between gap-3">
                     <button
                       type="button"
                       disabled={isDeleting}

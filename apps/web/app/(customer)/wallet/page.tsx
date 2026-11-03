@@ -102,13 +102,13 @@ export default function WalletPage() {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className="w-full bg-[#131313] min-h-screen pb-24 text-slate-100"
+      className="w-full bg-white dark:bg-[#131313] min-h-screen pb-24 text-fg"
     >
       <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-8 space-y-8">
         {/* Header Clean (Badge removed) */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="space-y-1">
-            <h1 className="text-3xl md:text-4xl font-semibold text-white tracking-tight">Add Funds & Billing</h1>
+            <h1 className="text-3xl md:text-4xl font-semibold text-fg tracking-tight">Add Funds & Billing</h1>
             <p className="text-xs text-slate-400">
               Add spendable liquidity, unlock tier bonus credits, and view payment receipts.
             </p>
@@ -119,12 +119,12 @@ export default function WalletPage() {
         {successTxn && (
           <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-3xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-2xl">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-success flex items-center justify-center shrink-0">
                 <CheckCircle2 className="w-7 h-7" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Deposit Credited Successfully!</h3>
-                <p className="text-xs text-slate-300 mt-0.5">
+                <h3 className="text-lg font-bold text-fg">Deposit Credited Successfully!</h3>
+                <p className="text-xs text-fg-2 mt-0.5">
                   Payment <span className="font-mono text-emerald-300">{successTxn.paymentId}</span> for ₹{successTxn.amount.toFixed(2)} has been credited and added to your balance.
                 </p>
               </div>
@@ -141,17 +141,17 @@ export default function WalletPage() {
         {/* Dual Column: Balance Overview & Deposit Form */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Top Up Gateway Selector (7 cols) */}
-          <div className="lg:col-span-7 bg-[#1c1b1b] border border-white/10 rounded-3xl p-6 md:p-8 space-y-6 shadow-xl">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="lg:col-span-7 bg-white dark:bg-[#1c1b1b] border border-border rounded-3xl p-6 md:p-8 space-y-6 shadow-xl">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-medium text-white">Choose Deposit Amount & Method</h2>
+                  <h2 className="text-xl font-medium text-fg">Choose Deposit Amount & Method</h2>
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Automated balance crediting with zero gateway processing surcharge.
                 </p>
               </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-mono font-semibold">
+              <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-success text-[10px] font-mono font-semibold">
                 0% Fee
               </span>
             </div>
@@ -169,8 +169,8 @@ export default function WalletPage() {
                     onClick={() => setSelectedMethod(gw.id)}
                     className={`relative p-3.5 sm:p-4 rounded-2xl text-left border transition-all flex flex-col justify-between gap-3 overflow-hidden ${
                       isSelected
-                        ? "bg-[#D8EC8D]/15 border-[#D8EC8D] ring-1 ring-[#D8EC8D]/40 shadow-sm"
-                        : "bg-white/[0.03] border-white/10 hover:border-white/20 hover:bg-white/[0.06]"
+                        ? "bg-accent/15 border-[#D8EC8D] ring-1 ring-[#D8EC8D]/40 shadow-sm"
+                        : "bg-white/[0.03] border-border hover:border-white/20 hover:bg-white/[0.06]"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-1.5 w-full min-h-[26px]">
@@ -179,7 +179,7 @@ export default function WalletPage() {
                       </div>
                       <span
                         className={`text-[9px] px-2 py-0.5 rounded-full font-mono font-semibold whitespace-nowrap shrink-0 transition-colors ${
-                          isSelected ? "bg-[#D8EC8D] text-[#131313] font-bold" : "bg-white/10 text-slate-300"
+                          isSelected ? "bg-[#D8EC8D] text-[#131313] font-bold" : "bg-white/10 text-fg-2"
                         }`}
                       >
                         {gw.badge}
@@ -187,7 +187,7 @@ export default function WalletPage() {
                     </div>
 
                     <div className="min-w-0 mt-1 space-y-1">
-                      <div className="text-xs sm:text-sm font-semibold text-white tracking-tight leading-tight">
+                      <div className="text-xs sm:text-sm font-semibold text-fg tracking-tight leading-tight">
                         {gw.name}
                       </div>
                       <div className="text-[11px] text-slate-400 leading-snug">
@@ -205,7 +205,7 @@ export default function WalletPage() {
                 Deposit Amount (INR)
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-light text-white font-mono">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-light text-fg font-mono">
                   ₹
                 </span>
                 <input
@@ -214,7 +214,7 @@ export default function WalletPage() {
                   step={100}
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}
-                  className="w-full bg-white/5 border border-white/10 focus:border-[#D8EC8D]/50 text-white font-mono text-2xl font-light pl-10 pr-4 py-3 rounded-2xl focus:outline-none transition-all"
+                  className="w-full bg-white/5 border border-border focus:border-[#D8EC8D]/50 text-fg font-mono text-2xl font-light pl-10 pr-4 py-3 rounded-2xl focus:outline-none transition-all"
                 />
               </div>
 
@@ -228,7 +228,7 @@ export default function WalletPage() {
                     className={`px-4 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all shrink-0 ${
                       amount === preset
                         ? "bg-[#D8EC8D] text-[#131313] shadow-md shadow-[#D8EC8D]/20 font-bold"
-                        : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+                        : "bg-surface-raised text-slate-700 text-fg-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10"
                     }`}
                   >
                     ₹{preset.toLocaleString("en-IN")}
@@ -238,14 +238,14 @@ export default function WalletPage() {
             </div>
 
             {/* Dynamic Bonus Banner */}
-            <div className="bg-gradient-to-r from-[#243100]/40 via-[#D8EC8D]/10 to-transparent border border-[#D8EC8D]/30 rounded-2xl p-4 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-[#243100]/40 via-[#D8EC8D]/10 to-transparent border border-accent/30 rounded-2xl p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Sparkles className="w-5 h-5 text-[#D8EC8D] shrink-0" />
                 <div>
-                  <div className="text-xs font-semibold text-white">
+                  <div className="text-xs font-semibold text-fg">
                     {bonusPercent > 0 ? `${bonusPercent}% Tier Bonus Applied!` : "Deposit ₹500+ to unlock 5% Bonus!"}
                   </div>
-                  <div className="text-[11px] text-slate-300">
+                  <div className="text-[11px] text-fg-2">
                     You receive ₹{totalCredit.toFixed(2)} total spendable credit.
                   </div>
                 </div>
@@ -287,14 +287,14 @@ export default function WalletPage() {
           {/* Right Column: Balance Summary & Tier Card (5 cols) */}
           <div className="lg:col-span-5 space-y-6">
             {/* Wallet Balance Hero Card */}
-            <div className="bg-[#1c1b1b] border border-white/10 rounded-3xl p-6 md:p-8 space-y-6 relative overflow-hidden shadow-xl">
+            <div className="bg-white dark:bg-[#1c1b1b] border border-border rounded-3xl p-6 md:p-8 space-y-6 relative overflow-hidden shadow-xl">
 
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center justify-between border-b border-border pb-4">
                 <div className="flex items-center gap-2">
                   <Wallet className="w-5 h-5 text-[#D8EC8D]" />
-                  <h3 className="text-base font-medium text-white">Current Balance</h3>
+                  <h3 className="text-base font-medium text-fg">Current Balance</h3>
                 </div>
-                <span className="px-3 py-1 rounded-full bg-[#D8EC8D]/15 text-[#D8EC8D] text-[10px] font-mono font-bold">
+                <span className="px-3 py-1 rounded-full bg-accent/15 text-[#D8EC8D] text-[10px] font-mono font-bold">
                   INR WALLET
                 </span>
               </div>
@@ -304,7 +304,7 @@ export default function WalletPage() {
                   Available Spending Liquidity
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-extralight text-white font-mono tracking-tight">
+                  <span className="text-4xl font-extralight text-fg font-mono tracking-tight">
                     ₹{user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
                   <span className="text-xs font-mono text-[#D8EC8D]">INR</span>
@@ -312,24 +312,24 @@ export default function WalletPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-2 text-xs font-mono">
-                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-3.5">
+                <div className="bg-white/[0.03] border border-slate-200/60 dark:border-white/5 rounded-2xl p-3.5">
                   <span className="text-[10px] text-slate-400 uppercase block">Total Spent</span>
-                  <span className="text-white font-bold text-sm">₹{user.totalSpent.toLocaleString("en-IN")}</span>
+                  <span className="text-fg font-bold text-sm">₹{user.totalSpent.toLocaleString("en-IN")}</span>
                 </div>
-                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-3.5">
+                <div className="bg-white/[0.03] border border-slate-200/60 dark:border-white/5 rounded-2xl p-3.5">
                   <span className="text-[10px] text-slate-400 uppercase block">Total Orders</span>
-                  <span className="text-white font-bold text-sm">{user.totalOrders} Orders</span>
+                  <span className="text-fg font-bold text-sm">{user.totalOrders} Orders</span>
                 </div>
               </div>
 
-              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-2 text-xs text-slate-400">
+              <div className="bg-white/[0.02] border border-slate-200/60 dark:border-white/5 rounded-2xl p-4 space-y-2 text-xs text-slate-400">
                 <div className="flex items-center justify-between">
                   <span>Settlement SLA</span>
-                  <span className="text-emerald-400 font-mono font-semibold">Direct Clearance</span>
+                  <span className="text-success font-mono font-semibold">Direct Clearance</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>GST Invoice</span>
-                  <span className="text-white font-mono font-semibold">Automated Download</span>
+                  <span className="text-fg font-mono font-semibold">Automated Download</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Security</span>
@@ -341,10 +341,10 @@ export default function WalletPage() {
         </div>
 
         {/* Transactions Statements Table */}
-        <div className="bg-[#1c1b1b] border border-white/10 rounded-3xl p-4 md:p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] overflow-hidden space-y-4">
+        <div className="bg-white dark:bg-[#1c1b1b] border border-border rounded-3xl p-4 md:p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] overflow-hidden space-y-4">
           <div className="flex items-center justify-between px-2">
             <div>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-white">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-fg">
                 Recent Transaction Statements
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -356,72 +356,136 @@ export default function WalletPage() {
           <div className="overflow-x-auto">
             {transactions.length === 0 ? (
               <div className="py-12 text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-slate-400">
+                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-border flex items-center justify-center mx-auto text-slate-400">
                   <Wallet className="w-6 h-6" />
                 </div>
-                <p className="text-sm text-slate-300">No deposit transactions yet</p>
+                <p className="text-sm text-fg-2">No deposit transactions yet</p>
                 <p className="text-xs text-slate-500">Add funds using UPI or Card to get started.</p>
               </div>
             ) : (
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/10 text-[11px] uppercase tracking-wider text-slate-400 font-mono">
-                    <th className="py-3 px-3">Transaction ID</th>
-                    <th className="py-3 px-3">Date</th>
-                    <th className="py-3 px-3">Method</th>
-                    <th className="py-3 px-3">Amount Deposited</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3 text-right">Receipt</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5 text-xs">
+              <>
+                {/* MOBILE TRANSACTIONS CARDS (< md) */}
+                <div className="block md:hidden space-y-3">
                   {transactions.map((txn) => (
-                    <tr key={txn.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-4 px-3 font-mono font-semibold text-white whitespace-nowrap">
-                        {formatTxnId(txn.id)}
-                      </td>
-                      <td className="py-4 px-3 font-mono text-[11px] text-slate-400 whitespace-nowrap">
-                        {new Date(txn.createdAt).toLocaleDateString("en-IN", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      <td className="py-4 px-3 font-medium text-white">
-                        <div className="flex items-center gap-2">
-                          <PaymentIcon method={txn.method} size={18} />
-                          <span>{txn.method}</span>
-                        </div>
-                      </td>
-                        ₹{txn.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="py-4 px-3 whitespace-nowrap">
+                    <div
+                      key={txn.id}
+                      className="p-4 rounded-2xl bg-white/[0.02] border border-border space-y-3"
+                    >
+                      <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-white/5 pb-2.5">
+                        <span className="font-mono text-xs font-bold text-fg">
+                          {formatTxnId(txn.id)}
+                        </span>
                         {txn.status === "SUCCESS" ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                             Success
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/30">
                             <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
                             Failed
                           </span>
                         )}
-                      </td>
-                      <td className="py-4 px-3 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => setInvoiceModalTxn(txn)}
-                          className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-medium transition-all inline-flex items-center gap-1.5 border border-white/5"
-                        >
-                          <FileText className="w-3.5 h-3.5 text-[#D8EC8D]" />
-                          <span>View Receipt</span>
-                        </button>
-                      </td>
-                    </tr>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <div className="text-lg font-bold font-mono text-[#D8EC8D]">
+                            +₹{txn.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-fg-2">
+                            <PaymentIcon method={txn.method} size={16} />
+                            <span>{txn.method}</span>
+                          </div>
+                        </div>
+
+                        <div className="text-right space-y-2">
+                          <div className="text-[11px] font-mono text-slate-400">
+                            {new Date(txn.createdAt).toLocaleDateString("en-IN", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </div>
+                          <button
+                            onClick={() => setInvoiceModalTxn(txn)}
+                            className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-fg text-xs font-medium transition-all inline-flex items-center gap-1.5 border border-slate-200/60 dark:border-white/5"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-[#D8EC8D]" />
+                            <span>Receipt</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+
+                {/* DESKTOP TRANSACTIONS TABLE (>= md) */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-border text-[11px] uppercase tracking-wider text-slate-400 font-mono">
+                        <th className="py-3 px-3">Transaction ID</th>
+                        <th className="py-3 px-3">Date</th>
+                        <th className="py-3 px-3">Method</th>
+                        <th className="py-3 px-3">Amount Deposited</th>
+                        <th className="py-3 px-3">Status</th>
+                        <th className="py-3 px-3 text-right">Receipt</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5 text-xs">
+                      {transactions.map((txn) => (
+                        <tr key={txn.id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="py-4 px-3 font-mono font-semibold text-fg whitespace-nowrap">
+                            {formatTxnId(txn.id)}
+                          </td>
+                          <td className="py-4 px-3 font-mono text-[11px] text-slate-400 whitespace-nowrap">
+                            {new Date(txn.createdAt).toLocaleDateString("en-IN", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </td>
+                          <td className="py-4 px-3 font-medium text-fg">
+                            <div className="flex items-center gap-2">
+                              <PaymentIcon method={txn.method} size={18} />
+                              <span>{txn.method}</span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-3 font-mono font-semibold text-[#D8EC8D] whitespace-nowrap">
+                            ₹{txn.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-4 px-3 whitespace-nowrap">
+                            {txn.status === "SUCCESS" ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                Success
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                                Failed
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-4 px-3 text-right whitespace-nowrap">
+                            <button
+                              onClick={() => setInvoiceModalTxn(txn)}
+                              className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-fg text-xs font-medium transition-all inline-flex items-center gap-1.5 border border-slate-200/60 dark:border-white/5"
+                            >
+                              <FileText className="w-3.5 h-3.5 text-[#D8EC8D]" />
+                              <span>View Receipt</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -439,15 +503,15 @@ export default function WalletPage() {
         onClose={() => setCheckoutModalOpen(false)}
       />
 
-      {/* Invoice Modal */}
+      {/* Invoice Modal (Bottom Sheet on Mobile, Centered on Desktop) */}
       {invoiceModalTxn && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#1c1b1b] border border-white/15 rounded-3xl p-6 md:p-8 max-w-lg w-full space-y-6 shadow-2xl relative text-xs">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white dark:bg-[#1c1b1b] border border-border rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 md:p-8 max-w-lg w-full space-y-5 sm:space-y-6 shadow-2xl relative text-xs max-h-[88vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <div className="flex items-center gap-2">
                 <BrandLogo variant="icon" size={28} />
                 <div>
-                  <h3 className="text-base font-semibold text-white">{BRAND_NAME} Tax Invoice</h3>
+                  <h3 className="text-base font-semibold text-fg">{BRAND_NAME} Tax Invoice</h3>
                   <div className="text-[10px] font-mono text-slate-400">
                     Receipt {formatInvoiceId(invoiceModalTxn.id)}
                   </div>
@@ -466,34 +530,34 @@ export default function WalletPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <span className="text-slate-400 text-[10px] block">ISSUED TO</span>
-                  <span className="text-white font-bold">{user.name}</span>
+                  <span className="text-fg font-bold">{user.name}</span>
                   <div className="text-slate-400 text-[11px]">{user.email}</div>
                 </div>
                 <div className="text-right">
                   <span className="text-slate-400 text-[10px] block">ISSUED BY</span>
-                  <span className="text-white font-bold">{BRAND_NAME} PVT LTD</span>
+                  <span className="text-fg font-bold">{BRAND_NAME} PVT LTD</span>
                   <div className="text-slate-400 text-[11px]">GSTIN: 27AABCA1234F1Z8</div>
                 </div>
               </div>
 
-              <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 space-y-2">
+              <div className="bg-white/[0.03] border border-slate-200/60 dark:border-white/5 rounded-2xl p-4 space-y-2">
                 <div className="flex justify-between text-slate-400">
                   <span>Payment Gateway</span>
-                  <span className="text-white">{invoiceModalTxn.method}</span>
+                  <span className="text-fg">{invoiceModalTxn.method}</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>Reference ID</span>
-                  <span className="text-white truncate max-w-[200px]">{invoiceModalTxn.referenceId}</span>
+                  <span className="text-fg truncate max-w-[200px]">{invoiceModalTxn.referenceId}</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>Date & Time</span>
-                  <span className="text-white">{new Date(invoiceModalTxn.createdAt).toLocaleString()}</span>
+                  <span className="text-fg">{new Date(invoiceModalTxn.createdAt).toLocaleString()}</span>
                 </div>
-                <div className="border-t border-white/10 pt-2 flex justify-between text-white font-semibold">
+                <div className="border-t border-border pt-2 flex justify-between text-fg font-semibold">
                   <span>Base Amount</span>
                   <span>₹{invoiceModalTxn.amount.toFixed(2)}</span>
                 </div>
-                <div className="border-t border-white/10 pt-2 flex justify-between text-[#D8EC8D] text-sm font-bold">
+                <div className="border-t border-border pt-2 flex justify-between text-[#D8EC8D] text-sm font-bold">
                   <span>Total Wallet Credit</span>
                   <span>₹{invoiceModalTxn.amount.toFixed(2)}</span>
                 </div>

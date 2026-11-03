@@ -22,9 +22,9 @@ export default function ServicesPage() {
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 mb-8">
         <Breadcrumb items={[{ label: "Services", href: "/services" }]} />
         <h1 className="font-heading text-[clamp(32px,4vw,52px)] font-semibold text-white tracking-[-0.02em] leading-tight mb-3">
-          Services Catalog & <span className="text-[#D8EC8D]">Rates</span>
+          Services Catalog & <span className="text-accent-text">Rates</span>
         </h1>
-        <p className="text-[#A1A1AA] text-base leading-relaxed max-w-2xl">
+        <p className="text-fg-muted text-base leading-relaxed max-w-2xl">
           Upfront rates per 1,000 units in INR, clear speed estimates, and automatic refunds on unfulfilled units.
         </p>
       </div>

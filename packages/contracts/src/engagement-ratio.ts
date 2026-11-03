@@ -10,7 +10,7 @@
  *   - Comments ordered > Likes ordered   → suggest like bundle first
  *   - Shares ordered  > Views ordered    → suggest view bundle first
  *
- * This module is pure logic with zero side effects — safe for unit testing.
+ * This module is pure logic with zero side effects — ideal for unit testing.
  */
 
 export interface RatioCheckInput {
@@ -93,8 +93,8 @@ export function checkEngagementRatio(input: RatioCheckInput): RatioWarning[] {
       const suggestedViews = Math.ceil(qty / 2); // At least half as many views as likes
       warnings.push({
         level: "danger",
-        message: `Ordering ${qty.toLocaleString("en-IN")} likes with only ${existing.views.toLocaleString("en-IN")} views may trigger platform detection.`,
-        suggestion: `Consider adding at least ${suggestedViews.toLocaleString("en-IN")} views first to maintain a natural ratio.`,
+        message: `Ordering ${qty.toLocaleString("en-IN")} likes with only ${existing.views.toLocaleString("en-IN")} views exceeds standard balance.`,
+        suggestion: `Consider adding at least ${suggestedViews.toLocaleString("en-IN")} views first to balance the ratio.`,
         triggerMetric: "likes",
         lowMetric: "views",
         suggestedQuantity: suggestedViews,
@@ -102,8 +102,8 @@ export function checkEngagementRatio(input: RatioCheckInput): RatioWarning[] {
     } else if (qty > 1.5 * existing.views) {
       warnings.push({
         level: "warning",
-        message: `Your likes-to-views ratio is above average. Most organic content has fewer likes than views.`,
-        suggestion: `Adding some views alongside likes helps maintain a natural engagement pattern.`,
+        message: `Your likes-to-views ratio is above average. Standard distribution typically includes more views than likes.`,
+        suggestion: `Adding views alongside likes maintains an even engagement distribution.`,
         triggerMetric: "likes",
         lowMetric: "views",
       });
@@ -116,8 +116,8 @@ export function checkEngagementRatio(input: RatioCheckInput): RatioWarning[] {
     if (effectiveLikes > 0 && qty > effectiveLikes) {
       warnings.push({
         level: "warning",
-        message: `Ordering ${qty.toLocaleString("en-IN")} comments with only ${effectiveLikes.toLocaleString("en-IN")} likes looks unnatural.`,
-        suggestion: `Add likes before or alongside comments. A natural ratio is 5-10 likes per comment.`,
+        message: `Ordering ${qty.toLocaleString("en-IN")} comments with only ${effectiveLikes.toLocaleString("en-IN")} likes is outside standard balance.`,
+        suggestion: `Add likes before or alongside comments. A balanced ratio is 5-10 likes per comment.`,
         triggerMetric: "comments",
         lowMetric: "likes",
         suggestedQuantity: qty * 5,
@@ -130,8 +130,8 @@ export function checkEngagementRatio(input: RatioCheckInput): RatioWarning[] {
     if (qty > existing.views) {
       warnings.push({
         level: "danger",
-        message: `Ordering ${qty.toLocaleString("en-IN")} shares with only ${existing.views.toLocaleString("en-IN")} views is a red flag for platforms.`,
-        suggestion: `Add views first. A natural ratio is at most 1 share per 10 views.`,
+        message: `Ordering ${qty.toLocaleString("en-IN")} shares with only ${existing.views.toLocaleString("en-IN")} views exceeds standard ratio.`,
+        suggestion: `Add views first. A balanced ratio is at most 1 share per 10 views.`,
         triggerMetric: "shares",
         lowMetric: "views",
         suggestedQuantity: qty * 10,
