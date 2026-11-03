@@ -3017,7 +3017,7 @@ export class PackagesService {
         data: { balance: newBalance },
       });
 
-      const pkgId = `pkg_drip_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const pkgId = `pkg_drip_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
       await tx.ledgerEntry.create({
         data: {
           walletId: wallet.id,
@@ -3474,7 +3474,7 @@ export class PackagesService {
         data: { balance: newBalance },
       });
 
-      const pkgId = `pkg_combo_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const pkgId = `pkg_combo_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
       await tx.ledgerEntry.create({
         data: {
           walletId: wallet.id,

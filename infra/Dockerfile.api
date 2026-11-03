@@ -24,4 +24,4 @@ RUN mkdir -p /app/node_modules/@smm /app/apps/api/node_modules/@smm /app/apps/se
     ln -sf /app/packages/contracts /app/apps/server/node_modules/@smm/contracts
 
 EXPOSE 4000
-CMD ["node", "scripts/start-service.js"]
+CMD ["node", "apps/api/dist/main.js"]

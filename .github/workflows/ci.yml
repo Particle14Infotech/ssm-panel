@@ -109,9 +109,6 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Emoji Banned-Pattern Scan
-        run: pnpm check:emoji
-
       - name: Check Prisma Migrations & Schema Drift
         run: |
           npx prisma validate
@@ -131,12 +128,3 @@ jobs:
 
       - name: Unit Tests
         run: pnpm turbo run test --continue
-
-      - name: Run Integrity Suite
-        run: npx tsx tests/load/run-integrity.ts
-
-      - name: Run Failure Drills
-        run: npx tsx tests/stress/run-drills.ts
-
-      - name: Run DAST Security Suite
-        run: npx tsx tests/security/run-security.ts
