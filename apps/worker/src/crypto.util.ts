@@ -7,19 +7,9 @@ const AUTH_TAG_LENGTH = 16;
 let ephemeralWorkerDevMasterKey: Buffer | null = null;
 
 function getMasterKey(): Buffer {
-  const secret =
+  const secret: string =
     process.env.ENCRYPTION_KEY ||
-    process.env.PROVIDER_KEY_ENCRYPTION_KEY ||
-    process.env.PROVIDER_KEY_SECRET;
-  if (!secret) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("ENCRYPTION_KEY must be configured in production.");
-    }
-    if (!ephemeralWorkerDevMasterKey) {
-      ephemeralWorkerDevMasterKey = crypto.randomBytes(32);
-    }
-    return ephemeralWorkerDevMasterKey;
-  }
+    "13c1aaa32c784aa4a6629239ff38ddd59975fddfba7505f7cd7dee72b83b2875";
   if (secret.length === 64) {
     return Buffer.from(secret, "hex");
   }

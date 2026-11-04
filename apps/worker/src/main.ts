@@ -1222,8 +1222,21 @@ export class SMMWorkerEngine {
     else if (rawStatus.includes("process")) newStatus = OrderStatus.PROCESSING;
     else if (rawStatus.includes("fail")) newStatus = OrderStatus.FAILED;
 
-    const startCount = statusRes.start_count !== undefined ? parseInt(String(statusRes.start_count), 10) : order.startCount;
-    const remains = statusRes.remains !== undefined ? parseInt(String(statusRes.remains), 10) : order.remains;
+    let startCount = order.startCount ?? 0;
+    if (statusRes.start_count !== undefined && statusRes.start_count !== null && String(statusRes.start_count).trim() !== "") {
+      const parsedStart = parseInt(String(statusRes.start_count), 10);
+      if (!isNaN(parsedStart)) {
+        startCount = parsedStart;
+      }
+    }
+
+    let remains = order.remains;
+    if (statusRes.remains !== undefined && statusRes.remains !== null && String(statusRes.remains).trim() !== "") {
+      const parsedRemains = parseInt(String(statusRes.remains), 10);
+      if (!isNaN(parsedRemains)) {
+        remains = parsedRemains;
+      }
+    }
 
     // Check if status or counters changed
     if (newStatus === order.status && remains === order.remains && startCount === order.startCount) {
