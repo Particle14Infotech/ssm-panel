@@ -3609,11 +3609,99 @@ export class PackagesService {
   }
 
   async customerRetryExecution(userId: string, packageId: string, executionId: string, targetUrl?: string) {
-    return {
-      success: true,
-      executionId,
-      message: "Execution retry initiated",
-    };
+    const execution = await this.prisma.packageExecution.findFirst({
+      where: {
+        id: executionId,
+        packageId,
+        package: { userId },
+      },
+      include: {
+        package: true,
+      },
+    });
+
+    if (!execution) {
+      throw new NotFoundException("Package execution not found.");
+    }
+
+    const retryableStatuses: PackageExecutionStatus[] = [
+      PackageExecutionStatus.FAILED,
+      PackageExecutionStatus.PARTIAL,
+    ];
+
+    if (!retryableStatuses.includes(execution.status as PackageExecutionStatus) && execution.skipReason !== "STALLED") {
+      throw new BadRequestException(`Execution is not in a failed or retryable state (current status: ${execution.status}).`);
+    }
+
+    return await this.prisma.$transaction(async (tx) => {
+      // 1. Check if previous run was refunded to user's wallet
+      let wasRefunded = false;
+      if (execution.orderId) {
+        const refundEntry = await tx.ledgerEntry.findFirst({
+          where: { orderId: execution.orderId, type: "REFUND" },
+        });
+        if (refundEntry) {
+          wasRefunded = true;
+        }
+      }
+
+      // 2. If it was refunded, charge the wallet back for the allocated amount
+      const chargeAmount = new Decimal(execution.allocatedCharge.toString());
+      if (wasRefunded && chargeAmount.greaterThan(0)) {
+        const [walletRow] = await tx.$queryRawUnsafe<any[]>(
+          `SELECT id, balance FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
+          userId
+        );
+        if (!walletRow) {
+          throw new BadRequestException("User wallet not found.");
+        }
+
+        const currentBalance = new Decimal(walletRow.balance.toString());
+        if (currentBalance.lessThan(chargeAmount)) {
+          throw new BadRequestException(
+            `Insufficient wallet balance (₹${currentBalance.toFixed(2)}) to retry execution (requires ₹${chargeAmount.toFixed(2)}). Please add funds.`
+          );
+        }
+
+        const newBalance = currentBalance.minus(chargeAmount);
+        await tx.wallet.update({
+          where: { id: walletRow.id },
+          data: { balance: newBalance },
+        });
+
+        await tx.ledgerEntry.create({
+          data: {
+            walletId: walletRow.id,
+            amount: chargeAmount.negated(),
+            type: TransactionType.PACKAGE_PURCHASE,
+            description: `Retry package execution #${execution.seq} on ${targetUrl?.trim() || execution.targetUrl || execution.package.handle}`,
+            referenceId: `retry_${execution.id}_${Date.now()}`,
+          },
+        });
+      }
+
+      // 3. Reset execution to SCHEDULED so worker picks it up immediately
+      const updated = await tx.packageExecution.update({
+        where: { id: execution.id },
+        data: {
+          status: PackageExecutionStatus.SCHEDULED,
+          executeAt: new Date(),
+          orderId: null,
+          attempts: 0,
+          skipReason: null,
+          lastError: null,
+          lastErrorAt: null,
+          targetUrl: targetUrl?.trim() || execution.targetUrl,
+        },
+      });
+
+      return {
+        success: true,
+        executionId: updated.id,
+        status: updated.status,
+        message: "Execution retry initiated successfully",
+      };
+    });
   }
 
   async customerSyncExecution(userId: string, packageId: string, executionId: string) {

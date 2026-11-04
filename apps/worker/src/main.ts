@@ -516,12 +516,21 @@ export class SMMWorkerEngine {
     if (order.provider && order.provider.active) {
       try {
         const apiKey = decryptProviderKey(order.provider.apiKeyEncrypted);
+        let dispatchQuantity = order.quantity;
+        const minQty = order.service?.minQty || 1;
+        if (isPackageExecutionOrder && dispatchQuantity < minQty) {
+          logger.warn(
+            `[Worker Engine] Package execution order #${order.id} quantity (${dispatchQuantity}) is below service minimum (${minQty}). Clamping dispatch quantity to ${minQty} to prevent upstream rejection.`
+          );
+          dispatchQuantity = minQty;
+        }
+
         providerOrderId = await this.callUpstreamAddOrder(
           order.provider.apiUrl,
           apiKey,
           order.service.providerServiceId || order.service.id,
           order.target,
-          order.quantity,
+          dispatchQuantity,
           order.isDripFeed ? order.runs : undefined,
           order.isDripFeed ? order.intervalMinutes : undefined,
           order.id,
@@ -613,12 +622,17 @@ export class SMMWorkerEngine {
             if (backupProvider && backupProvider.active && service.backupProviderServiceId) {
               logger.warn(`[Worker Engine] Primary provider failed for #${order.id} (${err.message}). Attempting auto-failover to Backup Provider #${backupProvider.id} (${backupProvider.name})`);
               const backupApiKey = decryptProviderKey(backupProvider.apiKeyEncrypted);
+              let backupDispatchQty = order.quantity;
+              const backupMinQty = service?.minQty || 1;
+              if (isPackageExecutionOrder && backupDispatchQty < backupMinQty) {
+                backupDispatchQty = backupMinQty;
+              }
               providerOrderId = await this.callUpstreamAddOrder(
                 backupProvider.apiUrl,
                 backupApiKey,
                 service.backupProviderServiceId,
                 order.target,
-                order.quantity,
+                backupDispatchQty,
                 order.isDripFeed ? order.runs : undefined,
                 order.isDripFeed ? order.intervalMinutes : undefined,
                 order.id,
@@ -2469,6 +2483,12 @@ export class SMMWorkerEngine {
             },
           });
           if (claim.count !== 1) return false;
+
+          // Clear any dangling 1:1 relation on this execution from prior attempts/cancellations
+          await tx.order.updateMany({
+            where: { packageExecutionId: execution.id },
+            data: { packageExecutionId: null },
+          });
 
           const childOrder = await tx.order.create({
             data: {
