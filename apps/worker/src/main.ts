@@ -902,14 +902,9 @@ export class SMMWorkerEngine {
       logger.error(`[Worker Watchdog] Error recovering stale unconfirmed package orders: ${pendErr.message}`);
     }
 
-    const activeOrders = await database.order.findMany({
+    const rawActiveOrders = await database.order.findMany({
       where: {
         status: { in: [OrderStatus.PROCESSING, OrderStatus.IN_PROGRESS] },
-        NOT: {
-          packageExecution: {
-            is: { skipReason: PACKAGE_PROVIDER_STATUS_STALLED_REASON },
-          },
-        },
       },
       include: {
         provider: true,
@@ -917,9 +912,13 @@ export class SMMWorkerEngine {
           select: { status: true, skipReason: true },
         },
       },
-      take: 20,
+      take: 50,
       orderBy: { updatedAt: "asc" },
     });
+
+    const activeOrders = rawActiveOrders.filter(
+      (order) => order.packageExecution?.skipReason !== PACKAGE_PROVIDER_STATUS_STALLED_REASON
+    );
 
     if (activeOrders.length === 0) return;
 

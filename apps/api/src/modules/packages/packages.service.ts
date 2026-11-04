@@ -12,6 +12,7 @@ import {
 } from "@nestjs/common";
 import * as crypto from "crypto";
 import { PrismaService } from "../../common/prisma.service";
+import { decryptProviderKey } from "../../common/crypto.util";
 import { SMMCacheService } from "../../common/cache.service";
 import { PackagesQuoteService } from "./packages-quote.service";
 import { PlatformsService } from "../platforms/platforms.service";
@@ -3616,11 +3617,101 @@ export class PackagesService {
   }
 
   async customerSyncExecution(userId: string, packageId: string, executionId: string) {
-    return {
-      success: true,
-      executionId,
-      message: "Execution sync scheduled",
-    };
+    const execution = await this.prisma.packageExecution.findFirst({
+      where: {
+        id: executionId,
+        packageId,
+        package: { userId },
+      },
+      include: {
+        order: {
+          include: { provider: true },
+        },
+      },
+    });
+
+    if (!execution || !execution.order) {
+      throw new NotFoundException("Execution or linked order not found.");
+    }
+
+    const order = execution.order;
+    if (!order.provider || !order.providerOrderId || !order.provider.active) {
+      return { success: true, executionId, message: "No active upstream order to sync." };
+    }
+
+    try {
+      const apiKey = decryptProviderKey(order.provider.apiKeyEncrypted);
+      const fd = new URLSearchParams({
+        key: apiKey,
+        action: "status",
+        order: order.providerOrderId,
+      });
+
+      const res = await fetch(order.provider.apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: fd.toString(),
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!res.ok) {
+        return { success: false, executionId, message: "Upstream provider request failed." };
+      }
+
+      const statusRes = (await res.json()) as any;
+      const rawStatus = (statusRes.status || "").toLowerCase();
+      const startCount = statusRes.start_count !== undefined && statusRes.start_count !== ""
+        ? parseInt(String(statusRes.start_count), 10)
+        : order.startCount;
+      const remains = statusRes.remains !== undefined && statusRes.remains !== ""
+        ? parseInt(String(statusRes.remains), 10)
+        : order.remains;
+
+      let newOrderStatus: OrderStatus = order.status;
+      let newExecStatus: PackageExecutionStatus = execution.status;
+
+      if (rawStatus.includes("complete")) {
+        newOrderStatus = OrderStatus.COMPLETED;
+        newExecStatus = PackageExecutionStatus.COMPLETED;
+      } else if (rawStatus.includes("partial")) {
+        newOrderStatus = OrderStatus.PARTIAL;
+        newExecStatus = PackageExecutionStatus.PARTIAL;
+      } else if (rawStatus.includes("cancel")) {
+        newOrderStatus = OrderStatus.CANCELLED;
+        newExecStatus = PackageExecutionStatus.CANCELLED;
+      } else if (rawStatus.includes("progress")) {
+        newOrderStatus = OrderStatus.IN_PROGRESS;
+      }
+
+      await this.prisma.$transaction([
+        this.prisma.order.update({
+          where: { id: order.id },
+          data: {
+            status: newOrderStatus,
+            remains,
+            startCount,
+            ...(statusRes.charge ? { actualProviderCost: new Decimal(String(statusRes.charge)) } : {}),
+          },
+        }),
+        this.prisma.packageExecution.update({
+          where: { id: execution.id },
+          data: {
+            status: newExecStatus,
+            remainingQuantity: remains,
+          },
+        }),
+      ]);
+
+      return {
+        success: true,
+        executionId,
+        status: newExecStatus,
+        message: `Status updated: ${newExecStatus} (Remains: ${remains})`,
+      };
+    } catch (err: any) {
+      this.logger.error(`Failed to live sync execution #${executionId}: ${err.message}`);
+      return { success: false, executionId, message: `Sync failed: ${err.message}` };
+    }
   }
 
   async customerResolveStalledExecution(userId: string, packageId: string, executionId: string) {
