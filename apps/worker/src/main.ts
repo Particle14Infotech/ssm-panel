@@ -103,7 +103,7 @@ export class SMMWorkerEngine {
       );
 
       // 3. Canary for Candidate Selection Query
-      const terminalStatuses = `'COMPLETED','PARTIAL','FAILED','CANCELLED','SKIPPED_PAUSED','SKIPPED_QUOTA','SKIPPED_TYPE','SKIPPED_DELETED','SKIPPED_LIMIT','STALLED'`;
+      const terminalStatuses = `'COMPLETED','PARTIAL','CANCELLED','SKIPPED_PAUSED','SKIPPED_QUOTA','SKIPPED_TYPE','SKIPPED_DELETED','SKIPPED_LIMIT','STALLED'`;
       await prisma.$queryRawUnsafe(
         `WITH candidates AS (
           SELECT e.id, e."packageId",
@@ -399,6 +399,8 @@ export class SMMWorkerEngine {
           } else {
             await this.dispatchOrderToProvider(payload.orderId);
           }
+        } else if (event.eventType === "ORDER_REFILL_REQUESTED" && payload?.orderId) {
+          await this.dispatchRefillToProvider(payload.orderId, payload.providerOrderId);
         }
 
         await prisma.outboxEvent.update({
@@ -745,6 +747,62 @@ export class SMMWorkerEngine {
     ]);
 
     logger.info(`[Worker Engine] Order #${order.id} transitioned to PROCESSING (Upstream ID: ${providerOrderId})`);
+  }
+
+  /**
+   * Submits a refill request for an order to the upstream SMM provider
+   */
+  async dispatchRefillToProvider(orderId: string, providerOrderIdOverride?: string) {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { provider: true, service: true },
+    });
+    if (!order || !order.provider) {
+      logger.warn(`[Worker Refill] Order #${orderId} has no provider.`);
+      return;
+    }
+    const providerOrderId = providerOrderIdOverride || order.providerOrderId;
+    if (!providerOrderId) {
+      logger.warn(`[Worker Refill] Order #${orderId} has no providerOrderId.`);
+      return;
+    }
+
+    try {
+      const apiKey = decryptProviderKey(order.provider.apiKeyEncrypted);
+      const params = new URLSearchParams();
+      params.append("key", apiKey);
+      params.append("action", "refill");
+      params.append("order", String(providerOrderId));
+
+      const response = await fetch(order.provider.apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params.toString(),
+      });
+
+      const data: any = await response.json().catch(() => ({ error: "Invalid JSON response" }));
+      logger.info(`[Worker Refill] Upstream refill response for Order #${orderId} (Provider #${providerOrderId}): ${JSON.stringify(data)}`);
+
+      if (data.refill) {
+        await prisma.orderStatusHistory.create({
+          data: {
+            orderId: order.id,
+            status: order.status,
+            notes: `Refill confirmed by upstream. Refill ID: ${data.refill}`,
+          },
+        });
+      } else if (data.error) {
+        await prisma.orderStatusHistory.create({
+          data: {
+            orderId: order.id,
+            status: order.status,
+            notes: `Refill attempt response: ${data.error}`,
+          },
+        });
+      }
+    } catch (err: any) {
+      logger.error({ err: err.message }, `[Worker Refill] Error submitting refill for Order #${orderId}`);
+    }
   }
 
   /**
@@ -2165,7 +2223,7 @@ export class SMMWorkerEngine {
     // Non-dispatchable executions (predecessor-blocked, in backoff, stalled) never occupy the window.
     // Per-package fairness: at most K candidates per package (ROW_NUMBER partitioned by packageId).
     // FOR UPDATE OF e SKIP LOCKED prevents double-dispatch across worker instances.
-    const terminalStatuses = `'COMPLETED','PARTIAL','FAILED','CANCELLED','SKIPPED_PAUSED','SKIPPED_QUOTA','SKIPPED_TYPE','SKIPPED_DELETED','SKIPPED_LIMIT','STALLED'`;
+    const terminalStatuses = `'COMPLETED','PARTIAL','CANCELLED','SKIPPED_PAUSED','SKIPPED_QUOTA','SKIPPED_TYPE','SKIPPED_DELETED','SKIPPED_LIMIT','STALLED'`;
 
     // Dynamic column check: backwards-compatible before/after migration 20261102150000
     let hasBackoffCols = false;
