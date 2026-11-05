@@ -3304,6 +3304,8 @@ export class PackagesService {
         serviceName: it.service.displayName || it.service.name,
         kind: it.kind,
         quantity: qty,
+        minQty: it.service.minQty,
+        maxQty: it.service.maxQty,
         ratePer1000: Number(it.service.ratePer1000),
         retailCharge: retailCharge.toNumber(),
       };
@@ -3542,13 +3544,22 @@ export class PackagesService {
           },
         });
 
+        let serviceMinQty = (item as any).minQty;
+        if (!serviceMinQty) {
+          const s = await tx.service.findUnique({
+            where: { id: item.serviceId },
+            select: { minQty: true },
+          });
+          serviceMinQty = s?.minQty || 10;
+        }
+
         // Calculate smooth continuous intraday micro-batches across active hours
         const pacedResult = calculateIntradayPacedRuns({
           serviceId: item.serviceId,
           serviceKind: item.kind,
           totalQuantity: item.quantity,
           durationDays,
-          minQty: (item as any).minQty || 10,
+          minQty: serviceMinQty,
           totalAllocatedCharge: item.allocatedCharge,
           startAt,
           timezone: pkg.timezone || "UTC",
