@@ -65,6 +65,28 @@ function formatExecutionSchedule(executeAt?: string | Date) {
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
+function formatExecutionCompletedAt(completedAt?: string | Date) {
+  if (!completedAt) return null;
+  const d = new Date(completedAt);
+  if (isNaN(d.getTime())) return null;
+
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+
+  const timeStr = d.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  if (isToday) return `Completed Today, ${timeStr}`;
+  if (isYesterday) return `Completed Yesterday, ${timeStr}`;
+  return `Completed ${d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}, ${timeStr}`;
+}
+
 interface RuleSelectionState {
   enabled: boolean;
   quantity: number;
@@ -2229,6 +2251,14 @@ export default function PackageDetailPage() {
                                       {formatExecutionSchedule(e.executeAt)}
                                     </span>
                                   )}
+                                  {e.status === "COMPLETED" && (e.order?.updatedAt || e.updatedAt) && (
+                                    <span
+                                      className="text-[10px] font-mono pl-0.5 text-slate-400"
+                                      title={new Date(e.order?.updatedAt || e.updatedAt).toLocaleString("en-IN")}
+                                    >
+                                      {formatExecutionCompletedAt(e.order?.updatedAt || e.updatedAt)}
+                                    </span>
+                                  )}
                                 </>
                               );
                             })()}
@@ -2271,12 +2301,12 @@ export default function PackageDetailPage() {
                                 <span>Resolve</span>
                               </button>
                             </div>
-                          ) : e.childOrderId ? (
+                          ) : (e.orderId || e.order?.id || e.childOrderId) ? (
                             <Link
                               href="/orders"
                               className="px-2.5 py-1 rounded-md bg-accent/10 hover:bg-accent/20 text-[11px] font-mono text-[#D8EC8D] font-semibold border border-accent/20 transition-all inline-block"
                             >
-                              #{e.childOrderId.slice(0, 8)}
+                              #{String(e.orderId || e.order?.id || e.childOrderId).slice(0, 8)}
                             </Link>
                           ) : (
                             <span className="text-slate-500 font-mono text-xs">Queued</span>
