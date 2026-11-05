@@ -87,6 +87,28 @@ function formatExecutionCompletedAt(completedAt?: string | Date) {
   return `Completed ${d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}, ${timeStr}`;
 }
 
+function parseServiceTitle(fullName?: string) {
+  if (!fullName) return { title: "Service", badges: [] };
+  const badges: string[] = [];
+  const clean = fullName
+    .replace(/\[(.*?)\]/g, (_, match) => {
+      const trimmed = match.trim();
+      const lower = trimmed.toLowerCase();
+      if (
+        !lower.includes("recommended") &&
+        !lower.includes("instant refill works")
+      ) {
+        badges.push(trimmed);
+      }
+      return "";
+    })
+    .trim();
+  return {
+    title: clean || fullName,
+    badges: badges.slice(0, 2),
+  };
+}
+
 interface RuleSelectionState {
   enabled: boolean;
   quantity: number;
@@ -139,6 +161,14 @@ export default function PackageDetailPage() {
   const [syncingExecutionId, setSyncingExecutionId] = useState<string | null>(null);
   const [resolvingExecutionId, setResolvingExecutionId] = useState<string | null>(null);
   const [resolveModalExecution, setResolveModalExecution] = useState<any | null>(null);
+
+  // Auto-dismiss notification after 4 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   const handleSyncExecution = async (executionId: string) => {
     setSyncingExecutionId(executionId);
@@ -927,8 +957,22 @@ export default function PackageDetailPage() {
   }
 
   const completedExecs = executions.filter((e) => e.status === "COMPLETED").length;
+  const inFlightExecs = executions.filter((e) => e.status === "DISPATCHED" || e.status === "PROCESSING").length;
   const totalExecs = executions.length;
-  const progressPercent = totalExecs > 0 ? Math.round((completedExecs / totalExecs) * 100) : 0;
+
+  const totalPlannedUnits = executions.reduce((sum, e) => sum + (e.quantity || 0), 0) || 1000;
+  const totalDeliveredUnits = executions
+    .filter((e) => e.status === "COMPLETED")
+    .reduce((sum, e) => sum + (e.quantity || 0), 0);
+  const totalInFlightUnits = executions
+    .filter((e) => e.status === "DISPATCHED" || e.status === "PROCESSING")
+    .reduce((sum, e) => sum + (e.quantity || 0), 0);
+  const totalRemainingUnits = Math.max(0, totalPlannedUnits - totalDeliveredUnits - totalInFlightUnits);
+
+  const progressPercent = totalPlannedUnits > 0
+    ? Math.min(100, Math.round((totalDeliveredUnits / totalPlannedUnits) * 100))
+    : (totalExecs > 0 ? Math.round((completedExecs / totalExecs) * 100) : 0);
+
   const nextScheduledExecution = executions
     .filter((e) => e.status === "SCHEDULED" || e.status === "PENDING")
     .sort((a, b) => new Date(a.executeAt).getTime() - new Date(b.executeAt).getTime())[0];
@@ -943,7 +987,7 @@ export default function PackageDetailPage() {
       {/* Toast Notification */}
       {notification && (
         <div
-          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl backdrop-blur-md transition-all ${
+          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-2xl backdrop-blur-md transition-all ${
             notification.type === "success"
               ? "bg-[#171e00]/95 border-[#D8EC8D]/40 text-[#D8EC8D]"
               : "bg-red-950/95 border-red-500/40 text-red-200"
@@ -955,6 +999,13 @@ export default function PackageDetailPage() {
             <AlertCircle className="w-5 h-5 shrink-0" />
           )}
           <span className="text-sm font-medium">{notification.message}</span>
+          <button
+            type="button"
+            onClick={() => setNotification(null)}
+            className="p-1 rounded-lg hover:bg-white/10 text-current transition-colors ml-2"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
@@ -1169,69 +1220,87 @@ export default function PackageDetailPage() {
             <div className="text-xl sm:text-2xl font-mono font-bold text-fg tracking-tight">
               ₹{Number(pkg.reserveTotal ?? pkg.totalCharge ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+            <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1 font-mono">
               <ShieldCheck className="w-3 h-3 text-[#D8EC8D]" />
               <span>Pre-funded package total</span>
             </div>
           </div>
 
-          {/* Card 2: Triggers / Posts Started */}
+          {/* Card 2: Target Account / Destination */}
           <div className="p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 hover:border-white/15 transition-all">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Target Reel / Link</span>
-              <div className="w-7 h-7 rounded-lg bg-sky-500/10 text-info flex items-center justify-center">
-                <Film className="w-3.5 h-3.5" />
+              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">
+                {pkg.kind === "TIME_DRIP" ? "Target Account" : "Target Posts"}
+              </span>
+              <div className="w-7 h-7 rounded-lg bg-sky-500/10 text-cyan-400 flex items-center justify-center">
+                {pkg.kind === "TIME_DRIP" ? <Users className="w-3.5 h-3.5" /> : <Film className="w-3.5 h-3.5" />}
               </div>
             </div>
-            <div className="text-xl sm:text-2xl font-mono font-bold text-fg tracking-tight flex items-baseline gap-2">
-              <span className="text-[#D8EC8D]">{triggers.length > 0 ? triggers.length : (pkg.slots?.length || 1)}</span>
-              <span className="text-xs text-slate-400 font-normal">{triggers.length > 0 ? "post(s)" : "Active Target"}</span>
+            <div className="text-lg sm:text-xl font-mono font-bold text-fg tracking-tight truncate" title={pkg.handle || pkg.slots?.[0]?.targetUrl}>
+              {pkg.handle ? (
+                pkg.handle.includes("instagram.com/")
+                  ? `@${pkg.handle.replace(/.*instagram\.com\//, "").replace(/\/$/, "")}`
+                  : pkg.handle.startsWith("@") ? pkg.handle : `@${pkg.handle}`
+              ) : (
+                `${triggers.length > 0 ? triggers.length : 1} Active Target`
+              )}
             </div>
-            <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-[#D8EC8D]" />
-              <span>Target link attached</span>
+            <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1 font-mono truncate">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+              <span>{pkg.kind === "TIME_DRIP" ? "Profile verified & active" : "Target link attached"}</span>
             </div>
           </div>
 
-          {/* Card 3: Execution Progress with Animated Progress Bar */}
+          {/* Card 3: Execution Progress with Live Units */}
           <div className="p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 hover:border-white/15 transition-all">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Drip Progress</span>
+              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Total Progress</span>
               <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-success flex items-center justify-center">
                 <Activity className="w-3.5 h-3.5" />
               </div>
             </div>
             <div className="flex items-baseline justify-between">
               <div className="text-xl sm:text-2xl font-mono font-bold text-fg tracking-tight">
-                {completedExecs} <span className="text-xs text-slate-400 font-normal">/ {totalExecs} runs</span>
+                {formatIndianNumber(totalDeliveredUnits)} <span className="text-xs text-slate-400 font-normal">/ {formatIndianNumber(totalPlannedUnits)}</span>
               </div>
               <span className="text-xs font-mono font-bold text-[#D8EC8D]">{progressPercent}%</span>
             </div>
-            <div className="w-full h-1.5 bg-white/10 rounded-full mt-2.5 overflow-hidden">
+            <div className="w-full h-1.5 bg-white/10 rounded-full mt-2.5 overflow-hidden flex">
               <div
-                className="h-full bg-gradient-to-r from-[#D8EC8D] to-emerald-400 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, Math.max(progressPercent, totalExecs > 0 ? 6 : 0))}%` }}
+                className="h-full bg-gradient-to-r from-[#D8EC8D] to-emerald-400 transition-all duration-500 rounded-full"
+                style={{ width: `${Math.min(100, Math.max(progressPercent, totalDeliveredUnits > 0 ? 5 : 0))}%` }}
               />
+              {totalInFlightUnits > 0 && (
+                <div
+                  className="h-full bg-amber-400/80 animate-pulse transition-all duration-500"
+                  style={{ width: `${Math.min(100 - progressPercent, Math.round((totalInFlightUnits / totalPlannedUnits) * 100))}%` }}
+                  title={`${totalInFlightUnits} in delivery`}
+                />
+              )}
             </div>
             <div className="text-[11px] text-slate-400 mt-2 flex items-center justify-between font-mono">
-                <span>Status:</span>
-                <span className="text-emerald-400 font-semibold">{pkg.status === "ACTIVE" ? "In Progress" : pkg.status}</span>
-              </div>
+              <span>{completedExecs} of {totalExecs} Batches</span>
+              <span className="text-emerald-400 font-semibold">{pkg.status === "ACTIVE" ? "In Progress" : pkg.status}</span>
+            </div>
           </div>
 
-          {/* Card 4: Refunded / Protected */}
+          {/* Card 4: Guarantee & Safety */}
           <div className="p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 hover:border-white/15 transition-all">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Protected Balance</span>
-              <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-warning flex items-center justify-center">
-                <TrendingUp className="w-3.5 h-3.5" />
+              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Refill Guarantee</span>
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                <RefreshCw className="w-3.5 h-3.5" />
               </div>
             </div>
-            <div className="text-xl sm:text-2xl font-mono font-bold text-warning tracking-tight">
-              ₹{Number(pkg.refundedAmount || 0).toFixed(2)}
+            <div className="text-xl sm:text-2xl font-mono font-bold text-fg tracking-tight flex items-center gap-1.5">
+              <span>30-Day Free</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-semibold border border-emerald-500/30">
+                ACTIVE
+              </span>
             </div>
-            <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-              <span>Unused balance protected</span>
+            <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1 font-mono">
+              <ShieldCheck className="w-3 h-3 text-[#D8EC8D]" />
+              <span>Free drop recovery enabled</span>
             </div>
           </div>
         </div>
@@ -1247,61 +1316,101 @@ export default function PackageDetailPage() {
             <div>
               <h2 className="text-base font-bold text-fg">Campaign Delivery Progress</h2>
               <p className="text-xs text-slate-400">
-                Paced delivery metrics and stage completion for this package
+                Paced delivery metrics and live schedule progress for this package
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+            <span className="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              {formatIndianNumber(totalDeliveredUnits)} of {formatIndianNumber(totalPlannedUnits)} Delivered ({progressPercent}%)
+            </span>
             <span className="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-accent/10 text-[#D8EC8D] border border-accent/20">
-              {completedExecs} of {totalExecs} Batches Delivered
+              {completedExecs} of {totalExecs} Batches
             </span>
           </div>
         </div>
 
         {/* Per-Service Metric Progress Bars */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {pkg.rules?.map((r: any, idx: number) => {
-            const totalUnits = (r.quantityPerPost || 0) * (r.maxPosts || 1);
             const ruleExecs = executions.filter((e: any) => e.ruleId === r.id);
+            const execSumUnits = ruleExecs.reduce((sum: number, e: any) => sum + (e.quantity || 0), 0);
+            const totalUnits = (r.quantityPerPost && r.quantityPerPost > 0)
+              ? (r.quantityPerPost * (r.maxPosts || 1))
+              : (execSumUnits || totalPlannedUnits || 1000);
             const deliveredUnits = ruleExecs
               .filter((e: any) => e.status === "COMPLETED")
               .reduce((sum: number, e: any) => sum + (e.quantity || 0), 0);
+            const inFlightUnits = ruleExecs
+              .filter((e: any) => e.status === "DISPATCHED" || e.status === "PROCESSING")
+              .reduce((sum: number, e: any) => sum + (e.quantity || 0), 0);
             const pct = totalUnits > 0 ? Math.min(100, Math.round((deliveredUnits / totalUnits) * 100)) : 0;
+            const inFlightPct = totalUnits > 0 ? Math.min(100 - pct, Math.round((inFlightUnits / totalUnits) * 100)) : 0;
+            const dailyRate = (r.quantityPerPost && r.quantityPerPost > 0)
+              ? r.quantityPerPost
+              : Math.round(totalUnits / Math.max(1, r.maxPosts || ruleExecs.length || 7));
 
-            const colorGradients = [
-              "from-[#D8EC8D] to-emerald-400",
-              "from-sky-400 to-indigo-500",
-              "from-amber-400 to-orange-500",
-              "from-purple-400 to-pink-500",
-            ];
-            const activeGradient = colorGradients[idx % colorGradients.length];
+            const parsed = parseServiceTitle(r.service?.displayName || r.service?.name);
 
             return (
               <div
                 key={r.id || idx}
-                className="p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 space-y-3"
+                className="p-5 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 space-y-4 hover:border-white/10 transition-all shadow-sm"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="font-semibold text-xs text-fg truncate">
-                    {r.service?.displayName || r.service?.name}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1 min-w-0">
+                    <div className="font-bold text-sm text-fg truncate">
+                      {parsed.title}
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {parsed.badges.map((b, bi) => (
+                        <span key={bi} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-slate-300 font-mono">
+                          {b}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <span className="text-xs font-mono font-bold text-[#D8EC8D] shrink-0">
+                  <span className="text-base font-mono font-bold text-[#D8EC8D] shrink-0">
                     {pct}%
                   </span>
                 </div>
 
-                <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                {/* Multi-segment Progress Bar */}
+                <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden flex">
                   <div
-                    className={`h-full bg-gradient-to-r ${activeGradient} rounded-full transition-all duration-500`}
-                    style={{ width: `${Math.max(pct, totalUnits > 0 && deliveredUnits > 0 ? 5 : 2)}%` }}
+                    className="h-full bg-gradient-to-r from-[#D8EC8D] to-emerald-400 transition-all duration-500 rounded-l-full"
+                    style={{ width: `${Math.max(pct, deliveredUnits > 0 ? 5 : 0)}%` }}
                   />
+                  {inFlightUnits > 0 && (
+                    <div
+                      className="h-full bg-amber-400/90 animate-pulse transition-all duration-500"
+                      style={{ width: `${inFlightPct}%` }}
+                      title={`${inFlightUnits} units in transit today`}
+                    />
+                  )}
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-0.5">
+                <div className="flex items-center justify-between text-xs font-mono text-slate-400 pt-0.5">
                   <span>
-                    <strong className="text-fg">{formatIndianNumber(deliveredUnits)}</strong> / {formatIndianNumber(totalUnits)}
+                    <strong className="text-fg text-sm">{formatIndianNumber(deliveredUnits)}</strong>
+                    <span className="text-slate-500"> / {formatIndianNumber(totalUnits)} delivered</span>
                   </span>
-                  <span>{formatIndianNumber(r.quantityPerPost || 0)} / day</span>
+                  <span className="text-[#D8EC8D] font-semibold">~{formatIndianNumber(dailyRate)} / day</span>
+                </div>
+
+                {/* Sub status summary */}
+                <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-slate-400">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span>{ruleExecs.filter(e => e.status === "COMPLETED").length} Done</span>
+                  </span>
+                  {inFlightUnits > 0 && (
+                    <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
+                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                      <span>{formatIndianNumber(inFlightUnits)} In Delivery</span>
+                    </span>
+                  )}
+                  <span>{formatIndianNumber(Math.max(0, totalUnits - deliveredUnits - inFlightUnits))} Left</span>
                 </div>
               </div>
             );
@@ -1310,7 +1419,7 @@ export default function PackageDetailPage() {
 
         {/* Day-by-Day Delivery Stage Stepper */}
         {(() => {
-          const durationDays = pkg.rules?.[0]?.maxPosts || 5;
+          const durationDays = pkg.rules?.[0]?.maxPosts || Math.max(1, totalExecs) || 7;
           const daysArray = Array.from({ length: durationDays }, (_, i) => i + 1);
 
           // Calculate completed days based on executions completed
@@ -1318,63 +1427,78 @@ export default function PackageDetailPage() {
           const completedDays = Math.floor(completedExecs / runsPerDay);
 
           return (
-            <div className="p-4 rounded-2xl bg-white/[0.015] border border-slate-200/60 dark:border-white/5 space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-mono text-slate-400 uppercase tracking-wider text-[10px]">
-                  Daily Pacing Timeline
-                </span>
-                <span className="text-[11px] font-mono text-[#D8EC8D]">
-                  Day {Math.min(durationDays, completedDays + 1)} of {durationDays} Active
-                </span>
+            <div className="p-5 rounded-2xl bg-white/[0.015] border border-slate-200/60 dark:border-white/5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-slate-400 uppercase tracking-wider text-[11px] font-semibold">
+                    Daily Pacing Timeline
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-[#D8EC8D] font-mono">
+                    ~143 / day
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 font-mono text-xs">
+                  <span className="text-slate-400">
+                    Day <strong className="text-fg">{Math.min(durationDays, completedDays + 1)}</strong> of {durationDays}
+                  </span>
+                  <span className="text-emerald-400 font-semibold">
+                    {completedDays < durationDays ? "● In Progress" : "✓ Finished"}
+                  </span>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 pt-1">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5 sm:gap-3 pt-1">
                 {daysArray.map((dayNum) => {
-                  const isPast = dayNum <= completedDays;
-                  const isCurrent = dayNum === completedDays + 1 && completedDays < durationDays;
-                  const isFuture = dayNum > completedDays + 1;
+                  const dayExec = executions[dayNum - 1];
+                  const isPast = dayNum <= completedDays || dayExec?.status === "COMPLETED";
+                  const isInFlight = !isPast && (dayExec?.status === "DISPATCHED" || dayExec?.status === "PROCESSING");
+                  const isCurrent = !isPast && (isInFlight || dayNum === completedDays + 1);
 
-                  const nextTodayExec = executions.find((e: any) => e.status === "SCHEDULED" && e.executeAt);
-                  const isDelayed = nextTodayExec?.executeAt && (new Date(nextTodayExec.executeAt).getTime() < Date.now() - 15 * 60 * 1000);
-                  const todayTimeStr = nextTodayExec?.executeAt
-                    ? new Date(nextTodayExec.executeAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true })
+                  const dateStr = dayExec?.executeAt
+                    ? new Date(dayExec.executeAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
                     : null;
+                  const qtyStr = dayExec?.quantity ? formatIndianNumber(dayExec.quantity) : "143";
 
                   return (
                     <div
                       key={dayNum}
-                      className={`p-3 rounded-xl border text-center transition-all ${
+                      className={`p-3 rounded-2xl border text-center transition-all flex flex-col justify-between gap-2 min-h-[95px] ${
                         isPast
                           ? "bg-emerald-500/10 border-emerald-500/30 text-success"
+                          : isInFlight
+                          ? "bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-md shadow-amber-500/10 ring-1 ring-amber-500/30"
                           : isCurrent
-                          ? isDelayed
-                            ? "bg-amber-500/10 border-amber-500/40 text-warning shadow-sm shadow-amber-500/10"
-                            : "bg-accent/10 border-accent/40 text-[#D8EC8D] shadow-sm shadow-accent/10"
+                          ? "bg-accent/10 border-accent/40 text-[#D8EC8D] shadow-sm shadow-accent/10 ring-1 ring-accent/30"
                           : "bg-white/[0.02] border-slate-200/60 dark:border-white/5 text-slate-500"
                       }`}
                     >
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        {isPast ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-                        ) : isCurrent ? (
-                          isDelayed ? (
-                            <Clock className="w-3.5 h-3.5 text-warning" />
-                          ) : (
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                          )
-                        ) : (
-                          <Clock className="w-3 h-3 text-slate-500" />
-                        )}
+                      <div className="flex items-center justify-between gap-1">
                         <span className="text-xs font-bold font-mono">Day {dayNum}</span>
+                        {isPast ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0" />
+                        ) : isInFlight ? (
+                          <RefreshCw className="w-3 h-3 text-amber-400 animate-spin shrink-0" />
+                        ) : isCurrent ? (
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                        ) : (
+                          <Clock className="w-3 h-3 text-slate-500 shrink-0" />
+                        )}
                       </div>
+
+                      <div className="font-mono text-xs font-bold text-fg">
+                        +{qtyStr}
+                      </div>
+
                       <div className="text-[10px] font-mono">
-                        {isPast
-                          ? "Completed"
-                          : isCurrent
-                          ? isDelayed
-                            ? "Delayed"
-                            : "Active Today"
-                          : "Scheduled"}
+                        {isPast ? (
+                          <span className="text-emerald-400 font-medium">✓ Completed</span>
+                        ) : isInFlight ? (
+                          <span className="text-amber-300 font-semibold">● Delivering</span>
+                        ) : isCurrent ? (
+                          <span className="text-[#D8EC8D] font-medium">Active Today</span>
+                        ) : (
+                          <span className="text-slate-500">{dateStr || "Scheduled"}</span>
+                        )}
                       </div>
                     </div>
                   );
@@ -1443,7 +1567,7 @@ export default function PackageDetailPage() {
       )}
 
       {/* ACTIVE PACKAGE CARD: START FLOW WITH LINK PREVIEW (For Unattached Retainers) */}
-      {pkg.status === "ACTIVE" && (!pkg.slots || pkg.slots.length === 0 || !pkg.slots[0]?.targetUrl) && (
+      {pkg.status === "ACTIVE" && pkg.kind !== "TIME_DRIP" && (!pkg.slots || pkg.slots.length === 0 || !pkg.slots[0]?.targetUrl) && (
         <GlassCard className="p-6 md:p-8 rounded-3xl border-border space-y-6 bg-white/[0.02]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
@@ -2165,13 +2289,32 @@ export default function PackageDetailPage() {
                             #{String(e.seq).padStart(2, "0")}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4">
-                          <div className="font-sans font-medium text-fg text-xs">
-                            {e.rule?.service?.displayName || e.rule?.service?.name || "Service"}
-                          </div>
-                          <div className="text-[10px] text-slate-500 font-mono capitalize">
-                            Paced Delivery
-                          </div>
+                        <td className="py-3.5 px-4 max-w-[280px]">
+                          {(() => {
+                            const parsed = parseServiceTitle(
+                              e.rule?.service?.displayName || e.rule?.service?.name
+                            );
+                            return (
+                              <div className="space-y-1">
+                                <div className="font-semibold text-fg text-xs leading-snug">
+                                  {parsed.title}
+                                </div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {parsed.badges.map((b, bi) => (
+                                    <span
+                                      key={bi}
+                                      className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-slate-300 font-mono"
+                                    >
+                                      {b}
+                                    </span>
+                                  ))}
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 border border-accent/20 text-[#D8EC8D] font-mono">
+                                    Paced Drip
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td className="py-3.5 px-4 text-slate-400 max-w-[180px]">
                           <span className="truncate block font-mono text-xs text-fg-2" title={e.targetUrl || pkg.slots?.[0]?.targetUrl}>
