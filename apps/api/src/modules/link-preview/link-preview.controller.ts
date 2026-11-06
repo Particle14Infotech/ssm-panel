@@ -17,7 +17,6 @@ export class LinkPreviewController {
   constructor(private readonly linkPreviewService: LinkPreviewService) {}
 
   @Get()
-  @UseGuards(JwtAuthGuard)
   async getPreview(
     @Query("url") rawUrl: string,
     @Query("platform") platform: string,

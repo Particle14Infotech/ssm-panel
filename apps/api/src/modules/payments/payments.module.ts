@@ -6,9 +6,10 @@ import { RazorpayPaymentProvider } from "./razorpay-payment.provider";
 import { PrismaService } from "../../common/prisma.service";
 import { WalletModule } from "../wallet/wallet.module";
 import { EmailModule } from "../email/email.module";
+import { YoupiModule } from "./youpi/youpi.module";
 
 @Module({
-  imports: [WalletModule, EmailModule],
+  imports: [WalletModule, EmailModule, YoupiModule],
   controllers: [PaymentsController],
   providers: [
     PaymentsService,
@@ -16,6 +17,6 @@ import { EmailModule } from "../email/email.module";
     RazorpayPaymentProvider,
     PrismaService,
   ],
-  exports: [PaymentsService, SimulatedPaymentProvider, RazorpayPaymentProvider],
+  exports: [PaymentsService, SimulatedPaymentProvider, RazorpayPaymentProvider, YoupiModule],
 })
 export class PaymentsModule {}

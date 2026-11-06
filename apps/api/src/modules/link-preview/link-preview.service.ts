@@ -444,10 +444,27 @@ export class LinkPreviewService {
       this.fetchPageMeta(`https://www.instagram.com/p/${shortcode}/`),
     ]);
 
-    const imgUrl = oembedRes?.data?.thumbnail_url || meta.image || null;
-    const authorName = oembedRes?.data?.author_name || parsed.authorHandle || "Instagram Creator";
-    const rawTitle = decodeHtmlEntities(meta.title || oembedRes?.data?.title || "");
-    const rawDesc = decodeHtmlEntities(meta.desc || oembedRes?.data?.title || "");
+    let imgUrl = oembedRes?.data?.thumbnail_url || meta.image || null;
+    let oembedData = oembedRes?.data || null;
+
+    if (!imgUrl) {
+      const postOembed = await this.fetchJson(`https://www.instagram.com/api/v1/oembed/?url=https://www.instagram.com/p/${shortcode}/`);
+      if (postOembed?.data?.thumbnail_url) {
+        imgUrl = postOembed.data.thumbnail_url;
+        oembedData = postOembed.data;
+      }
+    }
+
+    if (!imgUrl) {
+      const vxMeta = await this.fetchPageMeta(`https://vxinstagram.com/p/${shortcode}`);
+      if (vxMeta.image) {
+        imgUrl = vxMeta.image;
+      }
+    }
+
+    const authorName = oembedData?.author_name || parsed.authorHandle || "Instagram Creator";
+    const rawTitle = decodeHtmlEntities(meta.title || oembedData?.title || "");
+    const rawDesc = decodeHtmlEntities(meta.desc || oembedData?.title || "");
 
     const metrics: LinkEngagementMetrics = {};
     if (rawDesc) {
@@ -527,14 +544,19 @@ export class LinkPreviewService {
       ? `/api/v1/link-preview/proxy-image?url=${encodeURIComponent(imgUrl)}`
       : null;
 
+    const isCarousel = parsed.isCarousel || kind === "CAROUSEL" || (meta.rawHtml && /"carousel_media"|"edge_sidecar_to_children"/i.test(meta.rawHtml));
+    const effectiveKind = isCarousel ? "CAROUSEL" : kind;
+
     return {
       platform: "INSTAGRAM",
-      kind,
+      kind: effectiveKind as LinkPreviewKind,
       mediaId: shortcode,
       canonicalUrl: targetUrl,
       title: cleanTitle,
       authorName: cleanAuthor,
       description: cleanDesc,
+      slideIndex: parsed.slideIndex,
+      isCarousel: Boolean(isCarousel),
       metrics: Object.keys(metrics).length > 0 ? metrics : undefined,
       thumbnailUrl: proxyThumbnail,
       status: proxyThumbnail ? "OK" : "NOT_FOUND",

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCustomer } from "@/context/CustomerContext";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
+import { LinkPreviewCard } from "@/components/shared/LinkPreviewCard";
 import {
   Bookmark,
   Sparkles,
@@ -291,6 +292,11 @@ export default function FavoritesPage() {
                         </a>
                       </div>
                     </div>
+
+                    <LinkPreviewCard
+                      url={fav.targetUrl}
+                      selectedPlatform={fav.service?.platform}
+                    />
 
                     {/* Specs / Configuration */}
                     <div className="grid grid-cols-2 gap-2 text-xs">

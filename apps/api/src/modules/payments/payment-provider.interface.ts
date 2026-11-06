@@ -41,7 +41,7 @@ export interface PaymentRefundParams {
 }
 
 export interface PaymentProvider {
-  readonly providerName: "simulated" | "razorpay";
+  readonly providerName: "simulated" | "razorpay" | "youpi";
   createOrder(params: PaymentOrderParams): Promise<PaymentOrderResult>;
   verifyPayment(params: PaymentVerificationParams): Promise<PaymentVerificationResult>;
   handleWebhook(payload: any, signature: string): Promise<any>;

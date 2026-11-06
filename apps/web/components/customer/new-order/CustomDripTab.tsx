@@ -65,6 +65,8 @@ export function CustomDripTab({
   // Link inputs
   const [profileUrl, setProfileUrl] = useState<string>("");
   const [targetUrl, setTargetUrl] = useState<string>(prefilledTargetUrl);
+  const [targetPreview, setTargetPreview] = useState<any | null>(null);
+  const [profilePreview, setProfilePreview] = useState<any | null>(null);
 
   // Targeting Area (if geo services exist)
   const [geoCountry, setGeoCountry] = useState<string>("ALL");
@@ -421,6 +423,14 @@ export function CustomDripTab({
           deliveryWindow: deliveryWindowConfig,
           quoteHash: quoteData.quoteHash,
           services: activeItems,
+          preview: (targetPreview || profilePreview) ? {
+            thumbnailUrl: (targetPreview || profilePreview)?.thumbnailUrl,
+            title: (targetPreview || profilePreview)?.title,
+            authorName: (targetPreview || profilePreview)?.authorName,
+            kind: (targetPreview || profilePreview)?.kind,
+            isCarousel: (targetPreview || profilePreview)?.isCarousel,
+            slideIndex: (targetPreview || profilePreview)?.slideIndex,
+          } : undefined,
         }),
       });
 
@@ -535,6 +545,7 @@ export function CustomDripTab({
                     url={profileUrl}
                     selectedPlatform={platform}
                     serviceTypeOrMetric="PROFILE"
+                    onPreviewChange={setProfilePreview}
                   />
                 </div>
 
@@ -558,6 +569,7 @@ export function CustomDripTab({
                     url={targetUrl}
                     selectedPlatform={platform}
                     serviceTypeOrMetric="POST"
+                    onPreviewChange={setTargetPreview}
                   />
                 </div>
               </div>

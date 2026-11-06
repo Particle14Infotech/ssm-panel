@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCustomer } from "@/context/CustomerContext";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { DashboardHeaderBar } from "@/components/customer/dashboard/DashboardHeaderBar";
@@ -24,8 +25,14 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
-export default function CustomerDashboardPage() {
+function CustomerDashboardContent() {
   const { user, orders, packages, refillOrder, isLoading, refreshData } = useCustomer();
+  const searchParams = useSearchParams();
+  const orderPlacedParam = searchParams?.get("orderPlaced") === "true";
+  const orderIdParam = searchParams?.get("orderId");
+  const [orderNotificationDismissed, setOrderNotificationDismissed] = useState(false);
+  const showOrderNotification = orderPlacedParam && !orderNotificationDismissed;
+
   const [showLedger, setShowLedger] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState("ALL");
@@ -176,14 +183,64 @@ export default function CustomerDashboardPage() {
     });
   }, [orders, selectedPlatform, searchQuery]);
 
+  const renderNotificationBanner = () => {
+    if (!showOrderNotification) return null;
+    return (
+      <div className="p-4 sm:p-5 rounded-2xl bg-[#D8EC8D]/15 border border-[#D8EC8D]/40 text-fg flex items-center justify-between shadow-lg backdrop-blur-xl transition-all">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-full bg-[#D8EC8D] text-slate-900 flex items-center justify-center font-bold shrink-0 shadow-sm">
+            <span className="text-[#171e00] text-base font-extrabold">✓</span>
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-fg flex items-center gap-2 flex-wrap">
+              Order Dispatched Successfully!
+              {orderIdParam && (
+                <span className="font-mono text-xs text-[#556910] dark:text-[#d8ec8d] bg-accent/20 px-2 py-0.5 rounded-md">
+                  #{orderIdParam}
+                </span>
+              )}
+            </h4>
+            <p className="text-xs text-fg-2">
+              Your order is queued and being delivered. Your wallet balance has been updated.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/new-order"
+            className="px-3 py-1.5 rounded-xl bg-surface-raised hover:bg-surface border border-border text-xs font-semibold text-fg transition-colors whitespace-nowrap cursor-pointer"
+          >
+            Place Another Order
+          </Link>
+          <button
+            type="button"
+            onClick={() => setOrderNotificationDismissed(true)}
+            className="p-1.5 rounded-xl hover:bg-white/10 text-fg-muted hover:text-fg transition-colors cursor-pointer"
+            aria-label="Dismiss notification"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   if (isLoading && orders.length === 0) {
-    return <DashboardSkeleton />;
+    return (
+      <div className="space-y-6 pb-16 max-w-7xl mx-auto">
+        {renderNotificationBanner()}
+        <DashboardSkeleton />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6 pb-16 max-w-7xl mx-auto">
       {/* 1. Top Header Bar (Greeting, Quick Target Input) */}
       <DashboardHeaderBar />
+
+      {/* Order Placement Confirmation Banner */}
+      {renderNotificationBanner()}
 
       {/* 2. Top 4 Metric Cards (Total Orders, In Progress, Completed, Delivery Health) */}
       <DashboardKpiGrid
@@ -326,5 +383,13 @@ export default function CustomerDashboardPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function CustomerDashboardPage() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <CustomerDashboardContent />
+    </Suspense>
   );
 }

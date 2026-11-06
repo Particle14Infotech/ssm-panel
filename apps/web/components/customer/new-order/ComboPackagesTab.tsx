@@ -39,6 +39,7 @@ export function ComboPackagesTab({
   prefilledTargetUrl = "",
 }: ComboPackagesTabProps) {
   const [targetUrl, setTargetUrl] = useState<string>(prefilledTargetUrl);
+  const [linkPreview, setLinkPreview] = useState<any | null>(null);
   const [templates, setTemplates] = useState<any[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState<boolean>(true);
   const [templatesError, setTemplatesError] = useState<string | null>(null);
@@ -208,6 +209,14 @@ export function ComboPackagesTab({
           quoteHash: quoteData.quoteHash,
           couponCode: appliedCoupon?.code || undefined,
           customizations,
+          preview: linkPreview ? {
+            thumbnailUrl: linkPreview.thumbnailUrl,
+            title: linkPreview.title,
+            authorName: linkPreview.authorName,
+            kind: linkPreview.kind,
+            isCarousel: linkPreview.isCarousel,
+            slideIndex: linkPreview.slideIndex,
+          } : undefined,
         }),
       });
 
@@ -253,6 +262,7 @@ export function ComboPackagesTab({
             <LinkPreviewCard
               url={targetUrl}
               selectedPlatform={platform}
+              onPreviewChange={setLinkPreview}
             />
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto pt-4 md:pt-0">

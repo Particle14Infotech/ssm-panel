@@ -24,6 +24,7 @@ async function bootstrap() {
   ].filter(Boolean) as string[];
 
   const app = await NestFactory.create(AppModule, {
+    rawBody: true,
     cors: {
       origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
         if (!origin) return callback(null, true);

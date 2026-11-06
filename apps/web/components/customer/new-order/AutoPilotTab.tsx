@@ -55,6 +55,8 @@ export function AutoPilotTab({
 
   // Initial slot link (optional)
   const [firstPostUrl, setFirstPostUrl] = useState<string>(prefilledTargetUrl);
+  const [postPreview, setPostPreview] = useState<any | null>(null);
+  const [profilePreview, setProfilePreview] = useState<any | null>(null);
 
   // Quoting & Purchase
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -133,6 +135,14 @@ export function AutoPilotTab({
             { serviceId: viewService?.id || "srv_2", quantity: totalViewsUnits },
             { serviceId: shareService?.id || "srv_3", quantity: totalSharesUnits },
           ],
+          preview: (postPreview || profilePreview) ? {
+            thumbnailUrl: (postPreview || profilePreview)?.thumbnailUrl,
+            title: (postPreview || profilePreview)?.title,
+            authorName: (postPreview || profilePreview)?.authorName,
+            kind: (postPreview || profilePreview)?.kind,
+            isCarousel: (postPreview || profilePreview)?.isCarousel,
+            slideIndex: (postPreview || profilePreview)?.slideIndex,
+          } : undefined,
         }),
       });
 
@@ -307,6 +317,7 @@ export function AutoPilotTab({
                       url={profileUrl}
                       selectedPlatform={platform}
                       serviceTypeOrMetric="PROFILE"
+                      onPreviewChange={setProfilePreview}
                     />
                   </div>
                   <div className="space-y-1">
@@ -340,6 +351,7 @@ export function AutoPilotTab({
                 url={firstPostUrl}
                 selectedPlatform={platform}
                 serviceTypeOrMetric="POST"
+                onPreviewChange={setPostPreview}
               />
               <p className="text-[10px] text-slate-500">
                 You can activate slot 1 now, or leave blank and activate all slots on-demand.

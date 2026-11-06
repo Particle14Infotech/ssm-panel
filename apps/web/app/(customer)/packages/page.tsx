@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCustomer } from "@/context/CustomerContext";
 import { BentoCard } from "@/components/motion/BentoCard";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
+import { PackageThumbnail } from "@/components/shared/PackageThumbnail";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Boxes,
@@ -135,8 +136,11 @@ function getBundleRuleLabel(rule: any, platform: string): string {
   return "Scheduled Delivery";
 }
 
-export default function PackagesListPage() {
+function PackagesListContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const packagePlaced = searchParams?.get("packagePlaced") === "true";
+  const placedPackageId = searchParams?.get("packageId");
   const { packages, user, refreshPackages } = useCustomer();
 
   const [bundleTemplates, setBundleTemplates] = useState<any[]>([]);
@@ -254,6 +258,46 @@ export default function PackagesListPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Package Placed Success Banner */}
+      {packagePlaced && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 sm:p-5 rounded-2xl bg-[#171e00]/40 border border-[#D8EC8D]/50 text-white backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_0_30px_rgba(216,236,141,0.15)]"
+        >
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#D8EC8D]/20 border border-[#D8EC8D]/40 text-[#D8EC8D] flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-fg flex items-center gap-2">
+                Package Booked Successfully!
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D8EC8D]/20 text-[#D8EC8D] border border-[#D8EC8D]/30">
+                  Active Campaign
+                </span>
+              </h3>
+              <p className="text-xs text-fg-2 mt-0.5">
+                {placedPackageId ? (
+                  <>
+                    Package Reference: <span className="font-mono text-[#D8EC8D] font-semibold">{placedPackageId}</span>. Delivery batches are actively scheduled below.
+                  </>
+                ) : (
+                  "Your growth package has been created and delivery batches are actively scheduled below."
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Link
+              href="/new-order"
+              className="px-3.5 py-2 rounded-xl bg-[#D8EC8D] text-[#171e00] font-bold text-xs hover:brightness-105 transition-all text-center shrink-0 w-full sm:w-auto"
+            >
+              Place Another Order
+            </Link>
+          </div>
+        </motion.div>
+      )}
 
       {/* Page Header (Compact & Mobile-First) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
@@ -415,10 +459,8 @@ export default function PackagesListPage() {
                     <div className="space-y-2.5">
                       {/* Top Header Row: Platform Icon + Clean Title + Status Badge */}
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-7 h-7 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center shrink-0">
-                            <PlatformIcon platform={pkg.platform || "instagram"} size={14} />
-                          </div>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <PackageThumbnail pkg={pkg} size="sm" />
                           <div className="min-w-0">
                             <h3 className="text-xs sm:text-sm font-bold text-fg truncate group-hover:text-[#D8EC8D] transition-colors flex items-center gap-1.5">
                               <span className="truncate">{targetInfo.title}</span>
@@ -426,8 +468,14 @@ export default function PackagesListPage() {
                                 <ExternalLink className="w-3 h-3 text-slate-500 shrink-0 opacity-70 group-hover:opacity-100" />
                               )}
                             </h3>
-                            <div className="text-[10px] text-slate-500 font-mono">
-                              #{pkg.id.slice(0, 8)}
+                            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
+                              <span>#{pkg.id.slice(0, 8)}</span>
+                              {Boolean(pkg.priceSnapshot?.preview?.isCarousel || (pkg.handle && /[?&]img_index=\d+/i.test(pkg.handle))) && (
+                                <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                                  <Layers className="w-2.5 h-2.5" />
+                                  CAROUSEL
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -714,5 +762,20 @@ export default function PackagesListPage() {
         )}
       </AnimatePresence>
     </motion.div>
+  );
+}
+
+export default function PackagesListPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-4 max-w-7xl mx-auto py-8 px-1 sm:px-0">
+          <div className="h-8 w-48 bg-white/5 rounded-xl animate-pulse" />
+          <div className="h-32 bg-white/5 rounded-2xl animate-pulse" />
+        </div>
+      }
+    >
+      <PackagesListContent />
+    </Suspense>
   );
 }

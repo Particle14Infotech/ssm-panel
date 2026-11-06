@@ -21,6 +21,7 @@ import {
   Layers,
 } from "lucide-react";
 import { formatOrderId } from "@/lib/utils";
+import { LinkPreviewCard } from "@/components/shared/LinkPreviewCard";
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -226,6 +227,10 @@ export default function OrderDetailPage() {
                 <span>{order.target}</span>
                 <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
               </a>
+              <LinkPreviewCard
+                url={order.target}
+                selectedPlatform={order.platform}
+              />
             </div>
           </div>
 

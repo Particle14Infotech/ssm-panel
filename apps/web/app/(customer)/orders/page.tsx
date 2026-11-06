@@ -230,6 +230,7 @@ export default function OrdersPage() {
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <select
+              aria-label="Filter orders by platform"
               value={selectedPlatform}
               onChange={(e) => setSelectedPlatform(e.target.value)}
               className="w-full sm:w-44 bg-surface-raised border border-border focus:border-[#D8EC8D]/50 rounded-xl px-3 py-2 text-xs text-fg focus:outline-none font-sans"

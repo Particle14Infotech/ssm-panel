@@ -301,12 +301,24 @@ export function SimulatedCheckoutModal({
 
                   {showQr ? (
                     <div className="flex flex-col items-center justify-center p-6 bg-surface-raised border border-border rounded-2xl space-y-3">
-                      <div className="w-40 h-40 bg-white p-2 rounded-xl flex items-center justify-center shadow-lg">
-                        <QrCode className="w-36 h-36 text-slate-900" />
+                      <div className="w-44 h-44 bg-white p-2 rounded-xl flex items-center justify-center shadow-lg">
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=168x168&data=${encodeURIComponent(
+                            `upi://pay?pa=${encodeURIComponent(vpa)}&pn=${encodeURIComponent(BRAND_NAME)}&am=${amountRupees}&cu=INR&tr=${encodeURIComponent(orderId)}`
+                          )}`}
+                          alt="Real Dynamic UPI QR Code"
+                          className="w-40 h-40 rounded-lg object-contain"
+                        />
                       </div>
                       <div className="text-[11px] text-fg-muted font-mono text-center">
-                        Scan with any test UPI app to simulate instant clearance.
+                        Real Dynamic UPI QR (Amount: ₹{amountRupees.toLocaleString("en-IN")}, VPA: {vpa})
                       </div>
+                      <a
+                        href={`upi://pay?pa=${encodeURIComponent(vpa)}&pn=${encodeURIComponent(BRAND_NAME)}&am=${amountRupees}&cu=INR&tr=${encodeURIComponent(orderId)}`}
+                        className="text-[11px] text-[#D8EC8D] hover:underline font-mono"
+                      >
+                        📱 Tap to open UPI App on phone
+                      </a>
                     </div>
                   ) : (
                     <div className="space-y-3">

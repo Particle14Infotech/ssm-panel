@@ -6,6 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useCustomer } from "@/context/CustomerContext";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
+import { PackageThumbnail } from "@/components/shared/PackageThumbnail";
+import { LinkPreviewCard } from "@/components/shared/LinkPreviewCard";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Boxes,
@@ -977,6 +979,22 @@ export default function PackageDetailPage() {
     .filter((e) => e.status === "SCHEDULED" || e.status === "PENDING")
     .sort((a, b) => new Date(a.executeAt).getTime() - new Date(b.executeAt).getTime())[0];
 
+  const bookingDate = pkg.startAt || pkg.createdAt ? new Date(pkg.startAt || pkg.createdAt) : null;
+  const expiryDate = pkg.endAt || pkg.endDate ? new Date(pkg.endAt || pkg.endDate) : null;
+  const now = new Date();
+
+  const totalDurationDays = bookingDate && expiryDate
+    ? Math.max(1, Math.round((expiryDate.getTime() - bookingDate.getTime()) / (1000 * 60 * 60 * 24)))
+    : (pkg.durationDays || 30);
+
+  const msRemaining = expiryDate ? expiryDate.getTime() - now.getTime() : 0;
+  const daysRemaining = expiryDate ? Math.max(0, Math.ceil(msRemaining / (1000 * 60 * 60 * 24))) : 0;
+  const isExpired = expiryDate ? now.getTime() > expiryDate.getTime() : false;
+
+  const validityElapsedPercent = bookingDate && expiryDate
+    ? Math.min(100, Math.max(0, Math.round(((now.getTime() - bookingDate.getTime()) / (expiryDate.getTime() - bookingDate.getTime())) * 100)))
+    : 0;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -1028,9 +1046,7 @@ export default function PackageDetailPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2.5">
             <div className="flex items-center gap-3.5 flex-wrap">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 via-pink-500/20 to-amber-500/20 border border-border flex items-center justify-center p-2.5 shadow-lg">
-                <PlatformIcon platform={pkg.platform || "instagram"} size={26} />
-              </div>
+              <PackageThumbnail pkg={pkg} size="lg" />
               <div>
                 <div className="flex items-center gap-3">
                   <h1 className="text-xl sm:text-2xl font-extrabold text-fg tracking-tight truncate max-w-xl">
@@ -1057,7 +1073,7 @@ export default function PackageDetailPage() {
                     <span>{pkg.status}</span>
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-400 font-mono mt-1">
+                <div className="flex items-center gap-2 text-xs text-slate-400 font-mono mt-1 flex-wrap">
                   <span>ID: {formatPackageId(pkg.id)}</span>
                   <button
                     type="button"
@@ -1068,9 +1084,20 @@ export default function PackageDetailPage() {
                     {copiedId ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                   <span className="text-slate-600">·</span>
-                  <span className="text-fg-2">
-                    Active through {new Date(pkg.endAt || pkg.endDate).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
+                  <span className="inline-flex items-center gap-1 text-[#D8EC8D] bg-[#D8EC8D]/10 px-2 py-0.5 rounded-md border border-[#D8EC8D]/20">
+                    <Calendar className="w-3 h-3" />
+                    Booked: {bookingDate ? bookingDate.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }) : "—"}
                   </span>
+                  <span className="text-slate-600">·</span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border ${isExpired ? "text-rose-400 bg-rose-500/10 border-rose-500/20" : "text-sky-300 bg-sky-500/10 border-sky-500/20"}`}>
+                    <Clock className="w-3 h-3" />
+                    Valid Through: {expiryDate ? expiryDate.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                  </span>
+                  {!isExpired && (
+                    <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      {daysRemaining}d remaining
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -1247,7 +1274,7 @@ export default function PackageDetailPage() {
             </div>
             <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1 font-mono truncate">
               <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-              <span>{pkg.kind === "TIME_DRIP" ? "Profile verified & active" : "Target link attached"}</span>
+              <span>{pkg.kind === "TIME_DRIP" ? "Profile active & confirmed" : "Target link attached"}</span>
             </div>
           </div>
 
@@ -1284,23 +1311,39 @@ export default function PackageDetailPage() {
             </div>
           </div>
 
-          {/* Card 4: Guarantee & Safety */}
+          {/* Card 4: Campaign Validity & Schedule */}
           <div className="p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 hover:border-white/15 transition-all">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Refill Guarantee</span>
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                <RefreshCw className="w-3.5 h-3.5" />
+              <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Campaign Validity</span>
+              <div className="w-7 h-7 rounded-lg bg-[#D8EC8D]/10 text-[#D8EC8D] flex items-center justify-center">
+                <Calendar className="w-3.5 h-3.5" />
               </div>
             </div>
-            <div className="text-xl sm:text-2xl font-mono font-bold text-fg tracking-tight flex items-center gap-1.5">
-              <span>30-Day Free</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-semibold border border-emerald-500/30">
-                ACTIVE
+            <div className="flex items-baseline justify-between">
+              <div className="text-xl sm:text-2xl font-mono font-bold text-fg tracking-tight">
+                {isExpired ? (
+                  <span className="text-rose-400">Expired</span>
+                ) : (
+                  <>
+                    {daysRemaining} <span className="text-xs text-slate-400 font-normal">days left</span>
+                  </>
+                )}
+              </div>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-300">
+                {totalDurationDays}d total
               </span>
             </div>
-            <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1 font-mono">
-              <ShieldCheck className="w-3 h-3 text-[#D8EC8D]" />
-              <span>Free drop recovery enabled</span>
+            <div className="w-full h-1.5 bg-white/10 rounded-full mt-2.5 overflow-hidden flex">
+              <div
+                className={`h-full transition-all duration-500 rounded-full ${isExpired ? "bg-rose-500" : "bg-gradient-to-r from-[#D8EC8D] to-emerald-400"}`}
+                style={{ width: `${validityElapsedPercent}%` }}
+              />
+            </div>
+            <div className="text-[10px] text-slate-400 mt-2 flex items-center justify-between font-mono">
+              <span>{bookingDate ? bookingDate.toLocaleDateString([], { month: "short", day: "numeric" }) : "—"}</span>
+              <span className="text-[#D8EC8D] font-semibold">
+                {expiryDate ? `Ends ${expiryDate.toLocaleDateString([], { month: "short", day: "numeric" })}` : "—"}
+              </span>
             </div>
           </div>
         </div>
@@ -1653,6 +1696,13 @@ export default function PackageDetailPage() {
               Supports Instagram Reels, Posts, Carousels, and IGTV. We distribute likes & views across multiple days.
             </p>
           </form>
+
+          {/* Post Link Preview Card */}
+          <LinkPreviewCard
+            url={postLink}
+            selectedPlatform={pkg.platform || "instagram"}
+            serviceTypeOrMetric="POST"
+          />
 
           {/* Preview Error Banner */}
           {previewError && (
@@ -2094,6 +2144,55 @@ export default function PackageDetailPage() {
       {/* TAB 1: PACKAGE RULES OVERVIEW */}
       {activeTab === "timeline" && (
         <section className="space-y-4">
+          {/* Package Description & Validity Info Card */}
+          <div className="p-5 rounded-2xl bg-white/[0.02] border border-border grid grid-cols-1 md:grid-cols-3 gap-4 shadow-sm">
+            <div className="space-y-1.5">
+              <div className="text-[10px] uppercase font-mono text-slate-400 tracking-wider flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-[#D8EC8D]" />
+                Booking Date
+              </div>
+              <div className="text-sm font-mono font-bold text-fg">
+                {bookingDate ? bookingDate.toLocaleDateString([], { weekday: "short", year: "numeric", month: "short", day: "numeric" }) : "—"}
+              </div>
+              <div className="text-[11px] text-slate-400 font-mono">
+                {bookingDate ? bookingDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""} ({pkg.timezone || "UTC"})
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="text-[10px] uppercase font-mono text-slate-400 tracking-wider flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-[#D8EC8D]" />
+                Validity Expiration
+              </div>
+              <div className="text-sm font-mono font-bold text-fg">
+                {expiryDate ? expiryDate.toLocaleDateString([], { weekday: "short", year: "numeric", month: "short", day: "numeric" }) : "—"}
+              </div>
+              <div className="text-[11px] text-slate-400 font-mono">
+                {expiryDate ? expiryDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""} ({pkg.timezone || "UTC"})
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="text-[10px] uppercase font-mono text-slate-400 tracking-wider flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                Campaign Duration
+              </div>
+              <div className="text-sm font-mono font-bold text-fg flex items-center gap-2">
+                <span>{totalDurationDays} Days Total</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                  isExpired
+                    ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                    : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                }`}>
+                  {isExpired ? "Campaign Window Ended" : `${daysRemaining} Days Left`}
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-400 font-mono">
+                Paced daily distribution window
+              </div>
+            </div>
+          </div>
+
           <div className="glass-panel overflow-hidden rounded-2xl border border-border shadow-xl shadow-black/20">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">

@@ -13,6 +13,7 @@ export type LinkPlatform =
 export type LinkKind =
   | "REEL"
   | "POST"
+  | "CAROUSEL"
   | "VIDEO"
   | "SHORT"
   | "STATUS"
@@ -29,6 +30,8 @@ export interface ParsedLinkResult {
   canonicalUrl: string | null;
   authorHandle: string | null;
   isShortLink?: boolean;
+  slideIndex?: number;
+  isCarousel?: boolean;
 }
 
 export const KNOWN_SHORT_LINK_HOSTS = new Set([
@@ -300,14 +303,24 @@ export function parseTargetUrl(rawInput: string): ParsedLinkResult {
     if (igPostMatch && INSTAGRAM_MEDIA_REGEX.test(igPostMatch[2])) {
       const type = igPostMatch[1].toLowerCase();
       const id = igPostMatch[2];
-      const kind: LinkKind = type === "reel" || type === "reels" ? "REEL" : "POST";
+      const imgIndexParam = parsed.searchParams.get("img_index");
+      const isCarousel = Boolean(imgIndexParam);
+      const parsedSlide = imgIndexParam ? parseInt(imgIndexParam, 10) : undefined;
+      const slideIndex = !isNaN(parsedSlide as number) ? parsedSlide : undefined;
+      const kind: LinkKind = isCarousel
+        ? "CAROUSEL"
+        : type === "reel" || type === "reels"
+        ? "REEL"
+        : "POST";
       const pathSegment = kind === "REEL" ? "reel" : "p";
       return {
         isValid: true,
         platform: "INSTAGRAM",
         kind,
         mediaId: id,
-        canonicalUrl: `https://www.instagram.com/${pathSegment}/${id}/`,
+        slideIndex,
+        isCarousel,
+        canonicalUrl: `https://www.instagram.com/${pathSegment}/${id}/` + (imgIndexParam ? `?img_index=${imgIndexParam}` : ""),
         authorHandle: null,
       };
     }
@@ -583,6 +596,7 @@ export function validateServiceLinkCompatibility(
   const isPostLink =
     parsed.kind === "POST" ||
     parsed.kind === "REEL" ||
+    parsed.kind === "CAROUSEL" ||
     parsed.kind === "VIDEO" ||
     parsed.kind === "SHORT" ||
     parsed.kind === "STATUS";

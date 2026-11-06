@@ -11,6 +11,7 @@ export type LinkPreviewPlatform =
 export type LinkPreviewKind =
   | "REEL"
   | "POST"
+  | "CAROUSEL"
   | "VIDEO"
   | "SHORT"
   | "STATUS"
@@ -42,6 +43,8 @@ export interface LinkPreviewDto {
   description?: string | null;
   thumbnailUrl: string | null;
   status: LinkPreviewStatus;
+  slideIndex?: number;
+  isCarousel?: boolean;
   metrics?: LinkEngagementMetrics;
 }
 

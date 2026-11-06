@@ -14,6 +14,7 @@ import {
   ExternalLink,
   AlertTriangle,
   Loader2,
+  Layers,
 } from "lucide-react";
 
 export interface LinkEngagementMetrics {
@@ -35,6 +36,7 @@ export interface LinkPreviewCardProps {
   serviceTypeOrMetric?: string;
   className?: string;
   onValidationChange?: (result: { isValid: boolean; error?: string }) => void;
+  onPreviewChange?: (preview: PreviewData | null) => void;
   initialData?: {
     platform?: string;
     kind?: string;
@@ -63,6 +65,8 @@ interface PreviewData {
   thumbnailUrl?: string | null;
   status: "OK" | "NOT_FOUND" | "UNAVAILABLE";
   requestId?: string;
+  slideIndex?: number;
+  isCarousel?: boolean;
   metrics?: LinkEngagementMetrics;
 }
 
@@ -72,6 +76,7 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({
   serviceTypeOrMetric,
   className = "",
   onValidationChange,
+  onPreviewChange,
   initialData,
 }) => {
   const [state, setState] = useState<CardState>("idle");
@@ -81,6 +86,10 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({
   const [imgError, setImgError] = useState<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    onPreviewChange?.(preview);
+  }, [preview, onPreviewChange]);
 
   useEffect(() => {
     setImgError(false);
@@ -193,6 +202,7 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({
           {
             signal: controller.signal,
             headers,
+            credentials: "include",
           }
         );
 
@@ -229,6 +239,8 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({
           authorName: data.authorName,
           thumbnailUrl: finalThumb,
           status: data.status || "OK",
+          slideIndex: data.slideIndex ?? parsed.slideIndex,
+          isCarousel: data.isCarousel ?? parsed.isCarousel,
           metrics: data.metrics,
         });
 
@@ -334,6 +346,8 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({
   const activeKind = preview?.kind || parsedInfo?.kind || "POST";
   const canonicalUrl = parsedInfo?.canonicalUrl || url;
   const thumbnail = !imgError && preview?.thumbnailUrl ? preview.thumbnailUrl : null;
+  const isCarousel = activeKind === "CAROUSEL" || Boolean(preview?.isCarousel) || Boolean(parsedInfo?.isCarousel);
+  const slideIndex = preview?.slideIndex ?? parsedInfo?.slideIndex;
 
   // Local-only fallback card (no thumbnail / platform disabled / Instagram tokenless)
   if (state === "local-only" || !thumbnail) {
@@ -351,9 +365,23 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({
               <span className="text-[11px] font-semibold text-[#65771c] dark:text-[#D8EC8D] tracking-wide uppercase">
                 Link recognised
               </span>
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-slate-200 dark:bg-white/10 text-fg-2 uppercase">
-                {activeKind}
-              </span>
+              {isCarousel ? (
+                <>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20 uppercase flex items-center gap-1">
+                    <Layers className="w-3 h-3" />
+                    Carousel / Photo Dump
+                  </span>
+                  {slideIndex && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold font-mono bg-[#D8EC8D]/15 text-[#65771c] dark:text-[#D8EC8D]">
+                      Slide {slideIndex}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-slate-200 dark:bg-white/10 text-fg-2 uppercase">
+                  {activeKind}
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-sm sm:max-w-md">
               Preview is not available for this link. You can still place the order.
@@ -410,9 +438,23 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({
             <span className="text-[10px] font-semibold text-[#65771c] dark:text-[#D8EC8D] tracking-wide uppercase">
               Preview
             </span>
-            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold font-mono bg-slate-200 dark:bg-white/10 text-fg-2 uppercase">
-              {activeKind}
-            </span>
+            {isCarousel ? (
+              <>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold font-mono bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20 uppercase flex items-center gap-1">
+                  <Layers className="w-2.5 h-2.5" />
+                  Carousel
+                </span>
+                {slideIndex && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold font-mono bg-[#D8EC8D]/15 text-[#65771c] dark:text-[#D8EC8D]">
+                    Slide {slideIndex}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold font-mono bg-slate-200 dark:bg-white/10 text-fg-2 uppercase">
+                {activeKind}
+              </span>
+            )}
             {preview?.authorName && (
               <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[140px] sm:max-w-[200px]">
                 by <strong className="text-fg-2 font-medium">{preview.authorName}</strong>

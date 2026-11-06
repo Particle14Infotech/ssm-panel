@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useCustomer } from "@/context/CustomerContext";
 import { TransactionItem, calculateDepositBonus, PaymentMethod } from "@smm/contracts";
 import { BRAND_NAME } from "@/lib/brand";
 import { SimulatedCheckoutModal } from "@/components/checkout/SimulatedCheckoutModal";
+import { YoupiPilotModal } from "@/components/checkout/YoupiPilotModal";
 import {
   Wallet,
   ArrowUpRight,
@@ -27,7 +28,7 @@ import { formatTxnId, formatInvoiceId } from "@/lib/utils";
 
 export default function WalletPage() {
   const { user, transactions, initiateDeposit, refreshData } = useCustomer();
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("UPI");
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | "YOUPI_PILOT">("UPI");
   const [amount, setAmount] = useState<number>(1000);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState<boolean>(false);
@@ -36,6 +37,40 @@ export default function WalletPage() {
   const [invoiceModalTxn, setInvoiceModalTxn] = useState<TransactionItem | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
+  const [youpiEligible, setYoupiEligible] = useState<boolean>(false);
+  const [youpiData, setYoupiData] = useState<any>(null);
+  const [youpiModalOpen, setYoupiModalOpen] = useState<boolean>(false);
+  const [youpiSession, setYoupiSession] = useState<{
+    orderRef: string;
+    amountRupees: number;
+    checkoutUrl?: string;
+    queuePosition?: number;
+    expiresAt?: string;
+    receivingUpiId?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const isLocalhost =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1");
+
+    if (isLocalhost) {
+      setYoupiEligible(true);
+      setYoupiData({ eligible: true, orderRefPrefix: "youpi_local" });
+    }
+
+    fetch("/api/v1/payments/youpi/eligibility")
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.eligible) {
+          setYoupiEligible(true);
+          setYoupiData(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const gateways = [
     {
       id: "UPI" as PaymentMethod,
@@ -43,6 +78,16 @@ export default function WalletPage() {
       sub: "Direct (0–5s) • 0% Fee",
       badge: "Fast",
     },
+    ...(youpiEligible
+      ? [
+          {
+            id: "YOUPI_PILOT" as const,
+            name: "UPI (Pilot)",
+            sub: "Confirmation can take a few hours",
+            badge: "Pilot",
+          },
+        ]
+      : []),
     {
       id: "CARD" as PaymentMethod,
       name: "Credit / Debit Card",
@@ -69,6 +114,61 @@ export default function WalletPage() {
     }
     if (amount < 100) {
       setErrorMessage("Minimum deposit is ₹100.");
+      return;
+    }
+
+    if (selectedMethod === "YOUPI_PILOT") {
+      if (amount > 5000) {
+        setErrorMessage("UPI (Pilot) method is currently capped at ₹5,000 per transaction.");
+        return;
+      }
+      setErrorMessage("");
+      setIsProcessing(true);
+      try {
+        let session: any = null;
+        try {
+          const res = await fetch("/api/v1/payments/youpi/initiate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ amount }),
+          });
+          if (res.ok) {
+            session = await res.json();
+          }
+        } catch {}
+
+        if (!session) {
+          const isLocalhost =
+            typeof window !== "undefined" &&
+            (window.location.hostname === "localhost" ||
+              window.location.hostname === "127.0.0.1");
+          if (isLocalhost) {
+            session = {
+              orderRef: `youpi_local_${Date.now()}`,
+              amountRupees: amount,
+              queuePosition: 1,
+              expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+              receivingUpiId: "bholu@upi",
+            };
+          } else {
+            throw new Error("Could not reach UPI pilot gateway.");
+          }
+        }
+
+        setYoupiSession({
+          orderRef: session.orderRef,
+          amountRupees: session.amountRupees,
+          checkoutUrl: session.checkoutUrl,
+          queuePosition: session.queuePosition,
+          expiresAt: session.expiresAt,
+          receivingUpiId: session.receivingUpiId || "bholu@upi",
+        });
+        setYoupiModalOpen(true);
+      } catch (err: any) {
+        setErrorMessage(err.message || "Could not initiate UPI pilot payment.");
+      } finally {
+        setIsProcessing(false);
+      }
       return;
     }
 
@@ -502,6 +602,25 @@ export default function WalletPage() {
         onFailure={(err) => setErrorMessage(err)}
         onClose={() => setCheckoutModalOpen(false)}
       />
+
+      {/* YouPI Pilot UPI Modal */}
+      {youpiSession && (
+        <YoupiPilotModal
+          isOpen={youpiModalOpen}
+          onClose={() => setYoupiModalOpen(false)}
+          orderRef={youpiSession.orderRef}
+          amountRupees={youpiSession.amountRupees}
+          checkoutUrl={youpiSession.checkoutUrl}
+          initialQueuePosition={youpiSession.queuePosition}
+          initialExpiresAt={youpiSession.expiresAt}
+          receivingUpiId={youpiSession.receivingUpiId}
+          onSuccess={(paymentId) => {
+            setYoupiModalOpen(false);
+            setSuccessTxn({ paymentId, amount });
+            refreshData();
+          }}
+        />
+      )}
 
       {/* Invoice Modal (Bottom Sheet on Mobile, Centered on Desktop) */}
       {invoiceModalTxn && (

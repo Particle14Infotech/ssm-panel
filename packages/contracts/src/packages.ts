@@ -410,6 +410,17 @@ export const CustomCampaignQuoteInputSchema = z
     pacingStrategy: z.enum(["ORGANIC_CURVE", "EVEN", "INTERVAL"]).default("EVEN"),
     services: z.array(CustomCampaignItemInputSchema).min(1, "At least one service must be selected"),
     timezone: IanaTimezoneSchema.default("UTC"),
+    preview: z
+      .object({
+        thumbnailUrl: z.string().optional().nullable(),
+        title: z.string().optional().nullable(),
+        authorName: z.string().optional().nullable(),
+        kind: z.string().optional().nullable(),
+        slideIndex: z.number().int().optional().nullable(),
+        isCarousel: z.boolean().optional().nullable(),
+      })
+      .optional()
+      .nullable(),
   })
   .refine(
     (data) =>

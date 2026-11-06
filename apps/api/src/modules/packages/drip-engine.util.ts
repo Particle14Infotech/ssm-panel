@@ -468,8 +468,9 @@ export function calculateIntradayPacedRuns(input: IntradayPacingItemInput): {
       const batchQty = batchQuantities[b];
       const dayBase = new Date(startAt.getTime() + d * 24 * 3600 * 1000);
 
-      // Add controlled time jitter: +/- 10 to 20 minutes so it doesn't look like an automated cron
-      const jitterMins = Math.floor((Math.random() * 20) - 10);
+      // Add controlled time jitter: +/- 10 to 20 minutes with deterministic PRNG so it doesn't look like an automated cron
+      const timeRng = mulberry32(Math.abs((dayBase.getTime() ^ (b * 7919) ^ (idx * 104729))) >>> 0);
+      const jitterMins = Math.floor(timeRng() * 20 - 10);
       const executeAt = new Date(
         dayBase.getTime() + (b * intervalMins + offsetMinutes + jitterMins) * 60 * 1000
       );

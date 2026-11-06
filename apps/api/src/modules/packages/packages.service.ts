@@ -3044,6 +3044,12 @@ export class PackagesService {
           endAt,
           pausedDays: 0,
           reserveTotal: totalReserve,
+          priceSnapshot: {
+            totalCharge: totalReserve.toNumber(),
+            durationDays,
+            servicesCount: input.services.length,
+            preview: (input as any).preview || null,
+          },
         },
       });
 
@@ -3509,6 +3515,7 @@ export class PackagesService {
             totalCharge: authoritativeQuote.totalCharge,
             tierId: input.tierId,
             tierVersion: authoritativeQuote.tierVersion,
+            preview: (input as any).preview || null,
           },
           allocationSnapshot: authoritativeQuote.items,
         },
