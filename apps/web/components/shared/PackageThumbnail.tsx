@@ -17,6 +17,15 @@ const previewCache = new Map<
   }
 >();
 
+function normalizeThumbnailUrl(url?: string | null): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (trimmed.startsWith("/")) {
+    return `${getApiBase()}${trimmed.replace(/^\/api\/v1/, "")}`;
+  }
+  return trimmed;
+}
+
 export interface PackageThumbnailProps {
   pkg: {
     id?: string;
@@ -40,38 +49,80 @@ export const PackageThumbnail: React.FC<PackageThumbnailProps> = ({
   const platform = (pkg.platform || "instagram").toLowerCase();
   const snapshotPreview = pkg.priceSnapshot?.preview;
 
-  // Initial values from snapshot if available
+  // Extract target URL from package slots, triggers, or handle
+  const targetUrl = React.useMemo(() => {
+    // 1. High priority: Check slots for a specific post/reel URL (e.g. slots[0].targetUrl)
+    const slotUrl =
+      pkg.slots?.find(
+        (s) =>
+          s?.targetUrl &&
+          (s.targetUrl.startsWith("http://") || s.targetUrl.startsWith("https://"))
+      )?.targetUrl || pkg.slots?.[0]?.targetUrl;
+    if (
+      slotUrl &&
+      (slotUrl.startsWith("http://") || slotUrl.startsWith("https://"))
+    ) {
+      return slotUrl.trim();
+    }
+
+    // 2. Secondary priority: Check triggers for a targetUrl
+    const triggerUrl =
+      pkg.triggers?.find(
+        (t) =>
+          t?.targetUrl &&
+          (t.targetUrl.startsWith("http://") || t.targetUrl.startsWith("https://"))
+      )?.targetUrl || pkg.triggers?.[0]?.targetUrl;
+    if (
+      triggerUrl &&
+      (triggerUrl.startsWith("http://") || triggerUrl.startsWith("https://"))
+    ) {
+      return triggerUrl.trim();
+    }
+
+    // 3. Third priority: pkg.handle if already a full URL
+    if (
+      pkg.handle &&
+      (pkg.handle.startsWith("http://") || pkg.handle.startsWith("https://"))
+    ) {
+      return pkg.handle.trim();
+    }
+
+    // 4. Fourth priority: Synthesize platform URL from bare handle (e.g. "pk1handle", "@username")
+    if (
+      pkg.handle &&
+      pkg.handle.trim().length > 0 &&
+      !pkg.handle.includes(" ")
+    ) {
+      const cleanHandle = pkg.handle.trim().replace(/^@/, "");
+      if (platform === "instagram") return `https://www.instagram.com/${cleanHandle}/`;
+      if (platform === "youtube") return `https://www.youtube.com/@${cleanHandle}`;
+      if (platform === "facebook") return `https://www.facebook.com/${cleanHandle}`;
+      if (platform === "twitter" || platform === "x") return `https://x.com/${cleanHandle}`;
+      if (platform === "tiktok") return `https://www.tiktok.com/@${cleanHandle}`;
+      if (platform === "telegram") return `https://t.me/${cleanHandle}`;
+    }
+
+    return null;
+  }, [pkg, platform]);
+
+  const candidateUrl = targetUrl || pkg.handle || "";
+
+  // Initial values from snapshot if available (properly normalized)
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(
-    snapshotPreview?.thumbnailUrl || null
+    normalizeThumbnailUrl(snapshotPreview?.thumbnailUrl)
   );
   const [isCarousel, setIsCarousel] = useState<boolean>(
     Boolean(
       snapshotPreview?.isCarousel ||
-        (snapshotPreview?.kind === "CAROUSEL") ||
-        (pkg.handle && /[?&]img_index=\d+/i.test(pkg.handle))
+        snapshotPreview?.kind === "CAROUSEL" ||
+        (candidateUrl && /[?&]img_index=\d+/i.test(candidateUrl))
     )
   );
   const [slideIndex, setSlideIndex] = useState<number | undefined>(
     snapshotPreview?.slideIndex ||
-      (pkg.handle ? Number(pkg.handle.match(/[?&]img_index=(\d+)/i)?.[1]) : undefined)
+      (candidateUrl ? Number(candidateUrl.match(/[?&]img_index=(\d+)/i)?.[1]) : undefined)
   );
   const [imgError, setImgError] = useState(false);
-
-  // Extract target URL from package handle or slots/triggers
-  const targetUrl = React.useMemo(() => {
-    if (pkg.handle && (pkg.handle.startsWith("http://") || pkg.handle.startsWith("https://"))) {
-      return pkg.handle.trim();
-    }
-    const slotUrl = pkg.slots?.[0]?.targetUrl;
-    if (slotUrl && (slotUrl.startsWith("http://") || slotUrl.startsWith("https://"))) {
-      return slotUrl.trim();
-    }
-    const triggerUrl = pkg.triggers?.[0]?.targetUrl;
-    if (triggerUrl && (triggerUrl.startsWith("http://") || triggerUrl.startsWith("https://"))) {
-      return triggerUrl.trim();
-    }
-    return null;
-  }, [pkg]);
 
   // Check cache or dynamically fetch if no snapshot preview exists
   useEffect(() => {
@@ -106,10 +157,7 @@ export const PackageThumbnail: React.FC<PackageThumbnailProps> = ({
         if (!res.ok) return;
         const data = await res.json();
         if (data && data.thumbnailUrl && isMounted) {
-          let resolvedThumb = data.thumbnailUrl;
-          if (resolvedThumb.startsWith("/")) {
-            resolvedThumb = `${getApiBase()}${resolvedThumb.replace(/^\/api\/v1/, "")}`;
-          }
+          const resolvedThumb = normalizeThumbnailUrl(data.thumbnailUrl) || data.thumbnailUrl;
           previewCache.set(targetUrl, {
             thumbnailUrl: resolvedThumb,
             isCarousel: Boolean(data.isCarousel || data.kind === "CAROUSEL"),
@@ -203,3 +251,4 @@ export const PackageThumbnail: React.FC<PackageThumbnailProps> = ({
     </div>
   );
 };
+

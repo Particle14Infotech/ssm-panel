@@ -2021,6 +2021,19 @@ export class PackagesService {
           },
         },
         executions: true,
+        slots: {
+          select: {
+            slotNumber: true,
+            targetUrl: true,
+            status: true,
+          },
+        },
+        triggers: {
+          select: {
+            targetUrl: true,
+            mediaKey: true,
+          },
+        },
       },
     });
   }
@@ -2045,6 +2058,13 @@ export class PackagesService {
         },
         executions: { orderBy: { seq: "asc" } },
         triggers: true,
+        slots: {
+          select: {
+            slotNumber: true,
+            targetUrl: true,
+            status: true,
+          },
+        },
       },
     });
 
