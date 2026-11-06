@@ -19,6 +19,7 @@ import { PricingModule } from "./modules/pricing/pricing.module";
 import { FavoritesModule } from "./modules/favorites/favorites.module";
 import { PackagesModule } from "./modules/packages/packages.module";
 import { PlatformsModule } from "./modules/platforms/platforms.module";
+import { LinkPreviewModule } from "./modules/link-preview/link-preview.module";
 import { RequestIdMiddleware } from "./common/request-id.middleware";
 import { RateLimiterMiddleware } from "./common/rate-limiter.middleware";
 
@@ -44,6 +45,7 @@ import { RateLimiterMiddleware } from "./common/rate-limiter.middleware";
     FavoritesModule,
     PackagesModule,
     PlatformsModule,
+    LinkPreviewModule,
   ],
   controllers: [],
   providers: [],

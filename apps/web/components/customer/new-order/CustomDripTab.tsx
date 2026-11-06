@@ -5,6 +5,7 @@ import { GlassCard } from "@/components/shared/GlassCard";
 import { getApiBase } from "@/lib/api-base";
 import { getAuthToken } from "@/lib/auth-session";
 import { STANDARD_DELIVERY_WINDOW_PRESETS, DeliveryWindowConfig } from "@smm/contracts";
+import { LinkPreviewCard } from "@/components/shared/LinkPreviewCard";
 import { ServiceDropdownSelect, GenericSelect } from "./CustomDropdownSelect";
 import {
   Heart,
@@ -12,6 +13,7 @@ import {
   Share2,
   Users,
   Clock,
+  Calendar,
   AlertTriangle,
   CheckCircle2,
   AlertCircle,
@@ -529,6 +531,11 @@ export function CustomDripTab({
                   <p className="text-[10px] text-slate-500">
                     Used for followers and profile engagement dispatches.
                   </p>
+                  <LinkPreviewCard
+                    url={profileUrl}
+                    selectedPlatform={platform}
+                    serviceTypeOrMetric="PROFILE"
+                  />
                 </div>
 
                 {/* Post / Reel URL Input */}
@@ -547,6 +554,11 @@ export function CustomDripTab({
                   <p className="text-[10px] text-slate-500">
                     Target post or reel for views, likes, and share metrics.
                   </p>
+                  <LinkPreviewCard
+                    url={targetUrl}
+                    selectedPlatform={platform}
+                    serviceTypeOrMetric="POST"
+                  />
                 </div>
               </div>
 
@@ -1571,6 +1583,33 @@ export function CustomDripTab({
                 </div>
               </div>
             )}
+
+            {/* Campaign Validity & Booking Specification */}
+            <div className="p-3 rounded-xl bg-surface-raised border border-border space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-[#D8EC8D]" />
+                  Campaign Validity
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#D8EC8D]/15 text-[#D8EC8D] font-bold">
+                  {durationDays} {durationDays === 1 ? "Day" : "Days"}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/50 text-[11px] font-mono">
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Booking Date</span>
+                  <span className="text-fg font-medium">
+                    {new Date().toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Valid Through</span>
+                  <span className="text-[#D8EC8D] font-medium">
+                    {new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                </div>
+              </div>
+            </div>
 
             {/* Itemized Line-Items Breakdown */}
             <div className="pt-3 border-t border-slate-200/60 dark:border-white/5 space-y-2">

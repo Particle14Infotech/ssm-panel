@@ -47,6 +47,7 @@ export function NewOrderShell() {
   const [selectedPlatform, setSelectedPlatform] = useState<string>(currentPlatform);
   const [quickLinkInput, setQuickLinkInput] = useState<string>("");
   const [consentChecked, setConsentChecked] = useState<boolean>(false);
+  const [formResetKey, setFormResetKey] = useState<number>(0);
 
   // Single Order State for Sticky Summary
   const [orderDetails, setOrderDetails] = useState<{
@@ -240,10 +241,7 @@ export function NewOrderShell() {
         throw { message: json.message || "Failed to place order.", requestId: reqId };
       }
 
-      setOrderSuccess(json);
-      setOrderDetails(null);
-      setConsentChecked(false);
-      refreshData();
+      handleOrderSuccess(json, "single");
     } catch (err: any) {
       setOrderError({
         message: err.message || "An unexpected error occurred while placing order.",
@@ -251,6 +249,38 @@ export function NewOrderShell() {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Comprehensive reset and redirection upon successful order placement
+  const handleOrderSuccess = (orderResult: any, orderKind?: "single" | "package") => {
+    setOrderDetails(null);
+    setConsentChecked(false);
+    setQuickLinkInput("");
+    setOrderSuccess(orderResult);
+    setOrderError(null);
+    setFormResetKey((prev) => prev + 1);
+
+    if (typeof window !== "undefined") {
+      window.history.replaceState({}, "", "/new-order");
+    }
+
+    if (refreshData) refreshData();
+
+    const isPackage =
+      orderKind === "package" ||
+      activeTab === "custom_drip" ||
+      activeTab === "combos" ||
+      activeTab === "autopilot" ||
+      Boolean(orderResult?.packageId || orderResult?.package?.id);
+
+    const packageId = orderResult?.packageId || orderResult?.package?.id;
+    const orderId = orderResult?.id || orderResult?.orderId || "";
+
+    if (isPackage) {
+      router.push(`/packages?packagePlaced=true${packageId ? `&packageId=${encodeURIComponent(packageId)}` : ""}`);
+    } else {
+      router.push(`/dashboard?orderPlaced=true${orderId ? `&orderId=${encodeURIComponent(orderId)}` : ""}`);
     }
   };
 
@@ -391,6 +421,7 @@ export function NewOrderShell() {
           {/* Main Left Form Area */}
           <div className="lg:col-span-8 space-y-6 min-w-0 max-w-full">
             <SingleOrderTab
+              key={`single-${selectedPlatform}-${formResetKey}`}
               platform={selectedPlatform}
               categories={bootstrapData?.categories || []}
               services={bootstrapData?.services || []}
@@ -436,39 +467,33 @@ export function NewOrderShell() {
 
       {activeTab === "custom_drip" && (
         <CustomDripTab
+          key={`drip-${selectedPlatform}-${formResetKey}`}
           platform={selectedPlatform}
           services={bootstrapData?.services || []}
           durationChips={bootstrapData?.durationChips || [1, 5, 7, 10, 14, 20, 25, 30]}
           walletBalance={walletBalance}
-          onOrderSuccess={(res) => {
-            setOrderSuccess(res);
-            if (refreshData) refreshData();
-          }}
+          onOrderSuccess={(res) => handleOrderSuccess(res, "package")}
           prefilledTargetUrl={quickLinkInput}
         />
       )}
 
       {activeTab === "combos" && (
         <ComboPackagesTab
+          key={`combos-${selectedPlatform}-${formResetKey}`}
           platform={selectedPlatform}
           walletBalance={walletBalance}
-          onOrderSuccess={(res) => {
-            setOrderSuccess(res);
-            if (refreshData) refreshData();
-          }}
+          onOrderSuccess={(res) => handleOrderSuccess(res, "package")}
           prefilledTargetUrl={quickLinkInput}
         />
       )}
 
       {activeTab === "autopilot" && (
         <AutoPilotTab
+          key={`autopilot-${selectedPlatform}-${formResetKey}`}
           platform={selectedPlatform}
           services={bootstrapData?.services || []}
           walletBalance={walletBalance}
-          onOrderSuccess={(res) => {
-            setOrderSuccess(res);
-            if (refreshData) refreshData();
-          }}
+          onOrderSuccess={(res) => handleOrderSuccess(res, "package")}
           prefilledTargetUrl={quickLinkInput}
         />
       )}

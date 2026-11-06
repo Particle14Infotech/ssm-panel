@@ -190,6 +190,38 @@ export class SMMCacheService {
     return { allowed: true, remaining: limit - data.count, retryAfter: 0 };
   }
 
+  async acquireLock(key: string, ttlSeconds = 5): Promise<boolean> {
+    if (this.redisAvailable && this.redis) {
+      try {
+        const res = await this.redis.set(key, "1", "EX", ttlSeconds, "NX");
+        return res === "OK";
+      } catch {
+        // fall back to memory
+      }
+    }
+    const memKey = `lock:${key}`;
+    const now = Date.now();
+    const existing = this.inMemoryFallback.get(memKey);
+    if (existing && now < existing.expiresAt) {
+      return false;
+    }
+    this.inMemoryFallback.set(memKey, {
+      value: "1",
+      expiresAt: now + ttlSeconds * 1000,
+    });
+    return true;
+  }
+
+  async releaseLock(key: string): Promise<void> {
+    const memKey = `lock:${key}`;
+    this.inMemoryFallback.delete(memKey);
+    if (this.redisAvailable && this.redis) {
+      try {
+        await this.redis.del(key);
+      } catch {}
+    }
+  }
+
   async close(): Promise<void> {
     if (this.redis) {
       try {

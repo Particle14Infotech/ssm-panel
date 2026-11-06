@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { LinkPreviewCard } from "@/components/shared/LinkPreviewCard";
 import { getApiBase } from "@/lib/api-base";
 import { getAuthToken } from "@/lib/auth-session";
 import {
@@ -302,6 +303,11 @@ export function AutoPilotTab({
                       placeholder="https://instagram.com/profile"
                       className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-black/40 border border-border text-fg text-xs font-mono focus:outline-none focus:border-[#D8EC8D]/60"
                     />
+                    <LinkPreviewCard
+                      url={profileUrl}
+                      selectedPlatform={platform}
+                      serviceTypeOrMetric="PROFILE"
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
@@ -329,6 +335,11 @@ export function AutoPilotTab({
                 onChange={(e) => setFirstPostUrl(e.target.value)}
                 placeholder="https://instagram.com/reel/123 (or assign later in package controls)"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-black/40 border border-border text-fg placeholder-slate-600 text-xs font-mono focus:outline-none focus:border-[#D8EC8D]/60"
+              />
+              <LinkPreviewCard
+                url={firstPostUrl}
+                selectedPlatform={platform}
+                serviceTypeOrMetric="POST"
               />
               <p className="text-[10px] text-slate-500">
                 You can activate slot 1 now, or leave blank and activate all slots on-demand.

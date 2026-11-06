@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { GlassCard } from "@/components/shared/GlassCard";
+import { LinkPreviewCard } from "@/components/shared/LinkPreviewCard";
 import { getApiBase } from "@/lib/api-base";
 import { getAuthToken } from "@/lib/auth-session";
 import {
@@ -248,6 +249,10 @@ export function ComboPackagesTab({
               onChange={(e) => setTargetUrl(e.target.value)}
               placeholder="https://tiktok.com/@creator/video/12345678"
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-border text-fg placeholder-slate-400 text-xs font-mono focus:outline-none focus:border-[#D8EC8D]/60 focus:ring-1 focus:ring-[#D8EC8D]/50 transition-all"
+            />
+            <LinkPreviewCard
+              url={targetUrl}
+              selectedPlatform={platform}
             />
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto pt-4 md:pt-0">

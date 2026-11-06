@@ -19,7 +19,15 @@ export type FeatureFlagKey =
   | "delivery_window"
   | "auto_detect"
   | "drip_v2"
-  | "delivery_pace";
+  | "delivery_pace"
+  | "link_preview"
+  | "link_preview_youtube"
+  | "link_preview_tiktok"
+  | "link_preview_instagram"
+  | "link_preview_facebook"
+  | "link_preview_telegram"
+  | "link_preview_x_twitter"
+  | "link_preview_spotify";
 
 export const DEFAULT_FEATURE_FLAGS: Record<FeatureFlagKey, FlagRule> = {
   new_order_v2: { enabled: false, allowlist: [], percentage: 0 },
@@ -33,6 +41,14 @@ export const DEFAULT_FEATURE_FLAGS: Record<FeatureFlagKey, FlagRule> = {
   auto_detect: { enabled: false, allowlist: [], percentage: 0 }, // Permanently off as per SRS §50
   drip_v2: { enabled: false, allowlist: [], percentage: 0 },
   delivery_pace: { enabled: false, allowlist: [], percentage: 0 },
+  link_preview: { enabled: true, allowlist: [], percentage: 100 },
+  link_preview_youtube: { enabled: true, allowlist: [], percentage: 100 },
+  link_preview_tiktok: { enabled: true, allowlist: [], percentage: 100 },
+  link_preview_instagram: { enabled: true, allowlist: [], percentage: 100 },
+  link_preview_facebook: { enabled: true, allowlist: [], percentage: 100 },
+  link_preview_telegram: { enabled: true, allowlist: [], percentage: 100 },
+  link_preview_x_twitter: { enabled: true, allowlist: [], percentage: 100 },
+  link_preview_spotify: { enabled: true, allowlist: [], percentage: 100 },
 };
 
 @Injectable()
@@ -77,6 +93,7 @@ export class FeatureFlagsService {
     isAdmin: boolean = false
   ): Promise<boolean> {
     if (flagKey === "auto_detect") return false; // Enforce rule: auto_detect always disabled
+    if (isAdmin) return true;
 
     const flags = await this.getAllFlags();
     const rule = flags[flagKey] || DEFAULT_FEATURE_FLAGS[flagKey];

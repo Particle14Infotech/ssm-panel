@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { formatIndianNumber } from "@/lib/numberFormat";
 import { validateServiceLink } from "@smm/contracts";
+import { LinkPreviewCard } from "@/components/shared/LinkPreviewCard";
 import { GenericSelect } from "./CustomDropdownSelect";
 import {
   Search,
@@ -894,13 +895,12 @@ export function SingleOrderTab({
             </button>
           </div>
 
-          {/* Validation Feedback */}
-          {targetUrl && !linkValidation.isValid && linkValidation.error && (
-            <p className="text-red-500 dark:text-red-400 text-xs font-medium flex items-center gap-1.5 mt-1">
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-              <span>{linkValidation.error}</span>
-            </p>
-          )}
+          {/* Link Preview and Validation Hint Card */}
+          <LinkPreviewCard
+            url={targetUrl}
+            selectedPlatform={selectedService?.platform || platform}
+            serviceTypeOrMetric={linkType}
+          />
         </div>
 
         {/* Quantity Controls */}
@@ -922,6 +922,7 @@ export function SingleOrderTab({
               </button>
               <input
                 type="number"
+                aria-label="Order Quantity"
                 min={minQty}
                 max={maxQty}
                 step={stepQty}
@@ -1024,6 +1025,7 @@ export function SingleOrderTab({
               )}
               <button
                 type="button"
+                aria-label="Toggle Drip Feed"
                 onClick={() => setIsDripEnabled(!isDripEnabled)}
                 className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${
                   isDripEnabled ? "bg-[#D8EC8D]" : "bg-slate-300 dark:bg-white/10"
