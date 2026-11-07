@@ -544,7 +544,15 @@ export class LinkPreviewService {
       ? `/api/v1/link-preview/proxy-image?url=${encodeURIComponent(imgUrl)}`
       : null;
 
-    const isCarousel = parsed.isCarousel || kind === "CAROUSEL" || (meta.rawHtml && /"carousel_media"|"edge_sidecar_to_children"/i.test(meta.rawHtml));
+    const isCarousel =
+      parsed.isCarousel ||
+      kind === "CAROUSEL" ||
+      Boolean(
+        meta.rawHtml &&
+          /"carousel_media"|"edge_sidecar_to_children"|"GraphSidecar"|"photos and videos"/i.test(
+            meta.rawHtml
+          )
+      );
     const effectiveKind = isCarousel ? "CAROUSEL" : kind;
 
     return {
@@ -1132,11 +1140,46 @@ export class LinkPreviewService {
   }
 
   /**
-   * Proxy image stream through Fastify to bypass CORS & Referer protection
+   * Proxy image stream safely across both Express (res) and Fastify (reply)
+   * Prevents crashes by supporting raw Writable streams and setting headers defensively.
    */
-  async pipeImage(imageUrl: string, reply: FastifyReply, hops = 3): Promise<void> {
+  async pipeImage(imageUrl: string, reply: any, hops = 3): Promise<void> {
+    const rawRes = reply?.raw || reply;
+
+    const isHeadersSent = (): boolean => {
+      return Boolean(rawRes?.headersSent || reply?.sent || reply?.headersSent);
+    };
+
+    const setHeader = (name: string, value: string) => {
+      try {
+        if (typeof reply?.header === "function") {
+          reply.header(name, value);
+        } else if (typeof reply?.setHeader === "function") {
+          reply.setHeader(name, value);
+        } else if (typeof rawRes?.setHeader === "function") {
+          rawRes.setHeader(name, value);
+        }
+      } catch {
+        // Ignore if headers already sent
+      }
+    };
+
+    const sendError = (status: number, message: string) => {
+      if (isHeadersSent()) return;
+      try {
+        if (typeof reply?.status === "function") {
+          reply.status(status).send(message);
+        } else if (typeof rawRes?.writeHead === "function") {
+          rawRes.writeHead(status, { "Content-Type": "text/plain" });
+          rawRes.end(message);
+        }
+      } catch {
+        // Ignore
+      }
+    };
+
     if (hops <= 0) {
-      reply.status(502).send("Too many image redirects");
+      sendError(502, "Too many image redirects");
       return;
     }
 
@@ -1149,14 +1192,20 @@ export class LinkPreviewService {
           imageUrl,
           {
             headers: {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              "User-Agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
               Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
               Referer: `${u.protocol}//${u.host}/`,
             },
             timeout: 6000,
           },
           (res) => {
-            if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+            if (
+              res.statusCode &&
+              res.statusCode >= 300 &&
+              res.statusCode < 400 &&
+              res.headers.location
+            ) {
               res.resume();
               let next = res.headers.location;
               if (next.startsWith("/")) next = `${u.protocol}//${u.host}${next}`;
@@ -1164,13 +1213,21 @@ export class LinkPreviewService {
             }
 
             if (res.statusCode === 200) {
-              reply.header("Content-Type", res.headers["content-type"] || "image/jpeg");
-              reply.header("Cache-Control", "public, max-age=86400");
-              reply.header("Access-Control-Allow-Origin", "*");
-              res.pipe(reply.raw);
-              res.on("end", resolve);
+              setHeader("Content-Type", res.headers["content-type"] || "image/jpeg");
+              setHeader("Cache-Control", "public, max-age=86400");
+              setHeader("Access-Control-Allow-Origin", "*");
+
+              const target = rawRes;
+              if (target && typeof target.write === "function") {
+                res.pipe(target);
+                res.on("end", resolve);
+                res.on("error", () => resolve());
+              } else {
+                sendError(500, "Internal proxy target invalid");
+                resolve();
+              }
             } else {
-              reply.status(res.statusCode || 404).send("Image unavailable");
+              sendError(res.statusCode || 404, "Image unavailable");
               resolve();
             }
           }
@@ -1178,22 +1235,16 @@ export class LinkPreviewService {
 
         req.on("timeout", () => {
           req.destroy();
-          if (!reply.raw.headersSent) {
-            reply.status(504).send("Image gateway timeout");
-          }
+          sendError(504, "Image gateway timeout");
           resolve();
         });
 
         req.on("error", () => {
-          if (!reply.raw.headersSent) {
-            reply.status(502).send("Image fetch failed");
-          }
+          sendError(502, "Image fetch failed");
           resolve();
         });
       } catch {
-        if (!reply.raw.headersSent) {
-          reply.status(400).send("Invalid image URL");
-        }
+        sendError(400, "Invalid image URL");
         resolve();
       }
     });

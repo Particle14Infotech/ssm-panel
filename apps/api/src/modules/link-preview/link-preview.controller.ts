@@ -55,10 +55,15 @@ export class LinkPreviewController {
   @Get("proxy-image")
   async proxyImage(
     @Query("url") rawUrl: string,
-    @Res() reply: FastifyReply
+    @Res() reply: any
   ): Promise<void> {
     if (!rawUrl) {
-      reply.status(400).send("Missing url parameter");
+      if (typeof reply?.status === "function") {
+        reply.status(400).send("Missing url parameter");
+      } else if (typeof reply?.writeHead === "function") {
+        reply.writeHead(400, { "Content-Type": "text/plain" });
+        reply.end("Missing url parameter");
+      }
       return;
     }
     await this.linkPreviewService.pipeImage(rawUrl, reply);
