@@ -43,6 +43,7 @@ import {
   calculateFollowersDrip,
   calculatePerPostDrip,
   calculateIntradayPacedRuns,
+  distributeRandomSafeQuantities,
 } from "./drip-engine.util";
 import { calculatePackageAccounting } from "./package-accounting.util";
 import { verifyQuoteHash, generateQuoteHash } from "./package-quote-hash.util";
@@ -2776,7 +2777,7 @@ export class PackagesService {
     }
 
     const platform = (input.platform || "instagram").toLowerCase().trim();
-    const durationDays = Math.min(30, Math.max(1, input.durationDays || 7));
+    const durationDays = Math.min(60, Math.max(1, input.durationDays || 7));
     const extraHours = Math.min(72, Math.max(0, input.extraHours || 0));
 
     // Fetch requested services
@@ -2929,7 +2930,7 @@ export class PackagesService {
     }
 
     const platform = (input.platform || "instagram").toLowerCase().trim();
-    const durationDays = Math.min(30, Math.max(1, input.durationDays || 7));
+    const durationDays = Math.min(60, Math.max(1, input.durationDays || 7));
     const extraHours = Math.min(72, Math.max(0, input.extraHours || 0));
     const startAt = new Date();
     const endAt = new Date(startAt.getTime() + (durationDays * 24 + extraHours) * 3600 * 1000);
@@ -3112,8 +3113,13 @@ export class PackagesService {
           const batchesPerDay = (dailyQty >= minQty * 2 && minQty > 0)
             ? Math.min(4, Math.floor(dailyQty / minQty))
             : 1;
-          const batchBaseQty = Math.floor(dailyQty / batchesPerDay);
-          const batchRem = dailyQty % batchesPerDay;
+          const batchQuantities = distributeRandomSafeQuantities(
+            dailyQty,
+            minQty,
+            undefined,
+            batchesPerDay,
+            dayIdx * 100 + seq
+          );
 
           timeline.push({
             day: dayIdx + 1,
@@ -3135,7 +3141,7 @@ export class PackagesService {
           else if (kUpper.includes("FOLLOWER")) offsetMinutes = 15;
 
           for (let b = 0; b < batchesPerDay; b++) {
-            const batchQty = b < batchRem ? batchBaseQty + 1 : batchBaseQty;
+            const batchQty = batchQuantities[b] ?? Math.floor(dailyQty / batchesPerDay);
             const executeAt = new Date(startAt.getTime() + (dayIdx * 24 + (b * (24 / batchesPerDay))) * 3600 * 1000 + offsetMinutes * 60 * 1000);
             const allocatedCharge = plan.charge.times(batchQty).dividedBy(plan.quantity).toDecimalPlaces(2, Decimal.ROUND_CEIL);
 
@@ -3845,6 +3851,36 @@ export class PackagesService {
       success: true,
       executionId,
       message: "Execution stall resolved",
+    };
+  }
+
+  async saveToMyPackages(userId: string, packageId: string) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
+    }
+
+    const pkg = await this.prisma.package.findFirst({
+      where: { id: packageId, userId },
+    });
+    if (!pkg) {
+      throw new NotFoundException("Package not found.");
+    }
+
+    const priceSnapshot = (pkg.priceSnapshot && typeof pkg.priceSnapshot === "object") ? { ...(pkg.priceSnapshot as any) } : {};
+    priceSnapshot.savedToMyPackages = true;
+
+    await this.prisma.package.update({
+      where: { id: packageId },
+      data: {
+        priceSnapshot,
+        mode: PackageMode.TEMPLATE,
+      },
+    });
+
+    return {
+      success: true,
+      packageId,
+      message: "Custom order successfully saved to My Packages.",
     };
   }
 }

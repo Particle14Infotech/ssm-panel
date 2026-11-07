@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useCustomer } from "@/context/CustomerContext";
 import { OrderItem } from "@smm/contracts";
@@ -26,8 +26,10 @@ import {
   Boxes,
   Wallet,
   ArrowRight,
+  Sparkles,
 } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { PackageThumbnail } from "@/components/shared/PackageThumbnail";
 import { formatOrderId } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { GlassCard } from "@/components/shared/GlassCard";
@@ -36,7 +38,62 @@ import { motion } from "framer-motion";
 import { getApiBase } from "@/lib/api-base";
 
 export default function OrdersPage() {
-  const { orders, refillOrder, cancelOrder, addFavorite, user } = useCustomer();
+  const { orders, packages, refillOrder, cancelOrder, addFavorite, user, refreshPackages, refreshData } = useCustomer();
+  const [orderTypeTab, setOrderTypeTab] = useState<"ALL" | "STANDARD" | "CUSTOM">("ALL");
+  const [savingPackageId, setSavingPackageId] = useState<string | null>(null);
+
+  const customOrders = useMemo(() => {
+    return (packages || []).filter((p: any) => p.id?.startsWith("pkg_drip_"));
+  }, [packages]);
+
+  const handleSaveCustomToMyPackages = async (pkgId: string) => {
+    setSavingPackageId(pkgId);
+    try {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch(`${getApiBase()}/packages/${pkgId}/save-to-my-packages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setToastMessage("Custom order saved to My Packages!");
+        if (refreshPackages) refreshPackages();
+        if (refreshData) refreshData();
+      } else {
+        setToastMessage(data.message || "Could not save to My Packages.");
+      }
+    } catch {
+      setToastMessage("Network error saving package.");
+    } finally {
+      setSavingPackageId(null);
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+  };
+
+  const handleSaveCustomOrderAsFavorite = async (customOrder: any) => {
+    const primaryRule = customOrder.rules?.[0];
+    const serviceId = primaryRule?.serviceId || "custom_service";
+    const serviceName = primaryRule?.service?.displayName || primaryRule?.service?.name || "Custom Campaign";
+    const targetUrl = customOrder.slots?.[0]?.targetUrl || customOrder.handle || "";
+
+    const res = await addFavorite({
+      serviceId,
+      targetUrl,
+      defaultQuantity: primaryRule?.quantityPerPost || 1000,
+      isDripFeed: true,
+      dripRuns: customOrder.rules?.length || 5,
+      customName: `Custom: ${serviceName}`,
+    });
+    if (res.success) {
+      setToastMessage("Saved to favorites!");
+    } else {
+      setToastMessage(res.error || "Failed to save favorite");
+    }
+    setTimeout(() => setToastMessage(null), 3000);
+  };
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [selectedPlatform, setSelectedPlatform] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -111,25 +168,62 @@ export default function OrdersPage() {
     { id: "CANCELLED", label: "Cancelled" },
   ];
 
+  const filteredCustomOrders = useMemo(() => {
+    return customOrders.filter((co: any) => {
+      const matchesStatus =
+        selectedStatus === "ALL" ||
+        (selectedStatus === "PROCESSING" && (co.status === "ACTIVE" || co.status === "PENDING")) ||
+        (selectedStatus === "IN_PROGRESS" && co.status === "ACTIVE") ||
+        co.status === selectedStatus;
+
+      const matchesPlatform =
+        selectedPlatform === "ALL" ||
+        co.platform?.toLowerCase() === selectedPlatform.toLowerCase();
+
+      const query = searchQuery.toLowerCase().trim();
+      const handleStr = (co.handle || "").toLowerCase();
+      const idStr = co.id.toLowerCase();
+      const matchesSearch =
+        query === "" ||
+        idStr.includes(query) ||
+        handleStr.includes(query) ||
+        co.rules?.some((r: any) =>
+          (r.service?.displayName || r.service?.name || "").toLowerCase().includes(query)
+        );
+
+      return matchesStatus && matchesPlatform && matchesSearch;
+    });
+  }, [customOrders, selectedStatus, selectedPlatform, searchQuery]);
+
   const getStatusCount = (statusKey: string) => {
-    if (statusKey === "ALL") return orders.length;
-    return orders.filter((o) => o.status === statusKey).length;
+    if (orderTypeTab === "CUSTOM") {
+      if (statusKey === "ALL") return customOrders.length;
+      return customOrders.filter((co) => co.status === statusKey).length;
+    }
+    if (orderTypeTab === "STANDARD") {
+      if (statusKey === "ALL") return orders.length;
+      return orders.filter((o) => o.status === statusKey).length;
+    }
+    if (statusKey === "ALL") return orders.length + customOrders.length;
+    return orders.filter((o) => o.status === statusKey).length + customOrders.filter((co) => co.status === statusKey).length;
   };
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesStatus = selectedStatus === "ALL" || order.status === selectedStatus;
-    const matchesPlatform =
-      selectedPlatform === "ALL" ||
-      order.platform?.toLowerCase() === selectedPlatform.toLowerCase();
-    const query = searchQuery.toLowerCase().trim();
-    const matchesSearch =
-      query === "" ||
-      order.id.toLowerCase().includes(query) ||
-      order.serviceName.toLowerCase().includes(query) ||
-      order.target.toLowerCase().includes(query);
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      const matchesStatus = selectedStatus === "ALL" || order.status === selectedStatus;
+      const matchesPlatform =
+        selectedPlatform === "ALL" ||
+        order.platform?.toLowerCase() === selectedPlatform.toLowerCase();
+      const query = searchQuery.toLowerCase().trim();
+      const matchesSearch =
+        query === "" ||
+        order.id.toLowerCase().includes(query) ||
+        order.serviceName.toLowerCase().includes(query) ||
+        order.target.toLowerCase().includes(query);
 
-    return matchesStatus && matchesPlatform && matchesSearch;
-  });
+      return matchesStatus && matchesPlatform && matchesSearch;
+    });
+  }, [orders, selectedStatus, selectedPlatform, searchQuery]);
 
   const handleCopy = (id: string) => {
     navigator.clipboard.writeText(id);
@@ -166,13 +260,50 @@ export default function OrdersPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-black/40 border border-slate-200/80 dark:border-white/5 text-xs">
+            <button
+              type="button"
+              onClick={() => setOrderTypeTab("ALL")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                orderTypeTab === "ALL"
+                  ? "bg-[#D8EC8D] text-black shadow-xs font-bold"
+                  : "text-fg-muted hover:text-fg"
+              }`}
+            >
+              All ({orders.length + customOrders.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setOrderTypeTab("STANDARD")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                orderTypeTab === "STANDARD"
+                  ? "bg-[#D8EC8D] text-black shadow-xs font-bold"
+                  : "text-fg-muted hover:text-fg"
+              }`}
+            >
+              Standard ({orders.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setOrderTypeTab("CUSTOM")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
+                orderTypeTab === "CUSTOM"
+                  ? "bg-purple-500 text-white shadow-xs font-bold"
+                  : "text-purple-400 hover:text-purple-300"
+              }`}
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>Custom Orders ({customOrders.length})</span>
+            </button>
+          </div>
+
           <Link
             href="/packages"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-semibold transition-all"
           >
             <Boxes className="w-3.5 h-3.5" />
-            <span>Growth Packages</span>
+            <span>My Packages</span>
           </Link>
           <Link
             href="/new-order"
@@ -249,7 +380,7 @@ export default function OrdersPage() {
 
       {/* Orders Table Container */}
       <div className="glass-panel p-4 md:p-6 rounded-3xl overflow-hidden space-y-4">
-        {orders.length === 0 ? (
+        {orders.length === 0 && customOrders.length === 0 ? (
           <EmptyState
             icon={ShoppingBag}
             title="No orders yet"
@@ -257,7 +388,7 @@ export default function OrdersPage() {
             actionText="Place your first order"
             actionHref="/new-order"
           />
-        ) : filteredOrders.length === 0 ? (
+        ) : (orderTypeTab === "STANDARD" ? filteredOrders.length === 0 : orderTypeTab === "CUSTOM" ? filteredCustomOrders.length === 0 : (filteredOrders.length === 0 && filteredCustomOrders.length === 0)) ? (
           <div className="py-12 text-center text-slate-400 text-xs font-mono">
             No orders match the current filter criteria.
           </div>
@@ -265,7 +396,96 @@ export default function OrdersPage() {
           <>
             {/* MOBILE CARDS VIEW (< md) */}
             <div className="block md:hidden space-y-3">
-              {filteredOrders.map((order) => (
+              {/* Custom Orders */}
+              {(orderTypeTab === "ALL" || orderTypeTab === "CUSTOM") &&
+                filteredCustomOrders.map((co: any) => {
+                  const completedRuns = co.executions?.filter((e: any) => e.status === "COMPLETED").length ?? 0;
+                  const totalRuns = co.executions?.length ?? 1;
+                  const progressPercent = totalRuns > 0 ? Math.round((completedRuns / totalRuns) * 100) : 0;
+                  const totalCharge = Number(co.reserveTotal || co.priceSnapshot?.totalCharge || 0);
+                  const targetLink = co.slots?.[0]?.targetUrl || co.handle || "";
+
+                  return (
+                    <div
+                      key={co.id}
+                      className="p-4 rounded-2xl bg-purple-950/10 border border-purple-500/25 space-y-3"
+                    >
+                      <div className="flex items-center justify-between gap-2 border-b border-purple-500/20 pb-2.5">
+                        <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-fg">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center gap-1">
+                            <Sparkles className="w-3 h-3" />
+                            Custom Order
+                          </span>
+                          <span className="text-[11px] text-slate-400 font-mono">#{co.id.slice(0, 8)}</span>
+                        </div>
+                        <StatusBadge status={co.status} />
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <PackageThumbnail pkg={co} size="sm" className="shrink-0" />
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="text-xs font-bold text-fg truncate">
+                            {targetLink}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-[10px] uppercase font-mono text-fg-2">
+                              <PlatformIcon platform={co.platform} size={11} />
+                              <span>{co.platform}</span>
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {completedRuns}/{totalRuns} runs ({progressPercent}%)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-white/5 overflow-hidden">
+                        <div
+                          style={{ width: `${progressPercent}%` }}
+                          className="h-full rounded-full bg-gradient-to-r from-purple-500 to-[#D8EC8D]"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-purple-500/15 text-xs">
+                        <div>
+                          <span className="text-slate-400 text-[10px] uppercase mr-1">Total:</span>
+                          <span className="font-mono font-bold text-[#D8EC8D]">₹{totalCharge.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveCustomOrderAsFavorite(co)}
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+                            title="Save as Favorite"
+                          >
+                            <Bookmark className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={savingPackageId === co.id}
+                            onClick={() => handleSaveCustomToMyPackages(co.id)}
+                            className="px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 font-semibold text-[11px] transition-colors flex items-center gap-1"
+                            title="Save to My Packages"
+                          >
+                            <Boxes className="w-3 h-3" />
+                            <span>{savingPackageId === co.id ? "Saving..." : "Save to My Packages"}</span>
+                          </button>
+                          <Link
+                            href={`/packages/${co.id}`}
+                            className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                            title="View Details"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+              {/* Standard Orders (Mobile) */}
+              {(orderTypeTab === "ALL" || orderTypeTab === "STANDARD") &&
+                filteredOrders.map((order) => (
                 <div
                   key={order.id}
                   onClick={() => setActiveModalOrder(order)}
@@ -372,7 +592,120 @@ export default function OrdersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 text-xs">
-                  {filteredOrders.map((order) => (
+                  {/* Custom Orders Desktop Rows */}
+                  {(orderTypeTab === "ALL" || orderTypeTab === "CUSTOM") &&
+                    filteredCustomOrders.map((co: any) => {
+                      const completedRuns = co.executions?.filter((e: any) => e.status === "COMPLETED").length ?? 0;
+                      const totalRuns = co.executions?.length ?? 1;
+                      const progressPercent = totalRuns > 0 ? Math.round((completedRuns / totalRuns) * 100) : 0;
+                      const totalCharge = Number(co.reserveTotal || co.priceSnapshot?.totalCharge || 0);
+                      const targetLink = co.slots?.[0]?.targetUrl || co.handle || "";
+
+                      return (
+                        <tr
+                          key={co.id}
+                          className="bg-purple-950/[0.08] hover:bg-purple-950/[0.18] transition-colors group"
+                        >
+                          <td className="py-3.5 px-3 font-mono font-semibold text-fg whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
+                                <Sparkles className="w-2.5 h-2.5" />
+                                Custom Order
+                              </span>
+                              <span className="text-[11px] text-slate-400">#{co.id.slice(0, 8)}</span>
+                            </div>
+                            <span className="text-[10px] text-slate-400 block font-normal mt-0.5">
+                              {co.createdAt ? new Date(co.createdAt).toLocaleDateString() : ""}
+                            </span>
+                          </td>
+
+                          <td className="py-3.5 px-3">
+                            <div className="flex items-center gap-2.5">
+                              <PackageThumbnail pkg={co} size="sm" className="shrink-0" />
+                              <div className="min-w-0">
+                                <div className="font-semibold text-fg max-w-xs truncate">
+                                  Multi-Service Custom Drip ({co.rules?.length || 1} services)
+                                </div>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <PlatformIcon platform={co.platform} size={12} />
+                                  <span className="text-[10px] text-slate-400 uppercase font-mono">{co.platform}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="py-3.5 px-3 font-mono">
+                            <a
+                              href={targetLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-fg-2 hover:text-[#D8EC8D] max-w-[180px] truncate block"
+                              title={targetLink}
+                            >
+                              {targetLink}
+                            </a>
+                          </td>
+
+                          <td className="py-3.5 px-3 font-mono">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-fg font-medium">
+                                  {completedRuns}/{totalRuns} runs ({progressPercent}%)
+                                </span>
+                              </div>
+                              <div className="w-28 h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+                                <div
+                                  style={{ width: `${progressPercent}%` }}
+                                  className="h-full rounded-full bg-gradient-to-r from-purple-500 to-[#D8EC8D]"
+                                />
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="py-3.5 px-3 font-mono font-bold text-[#D8EC8D]">
+                            ₹{totalCharge.toFixed(2)}
+                          </td>
+
+                          <td className="py-3.5 px-3">
+                            <StatusBadge status={co.status} />
+                          </td>
+
+                          <td className="py-3.5 px-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleSaveCustomOrderAsFavorite(co)}
+                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+                                title="Save as Favorite"
+                              >
+                                <Bookmark className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={savingPackageId === co.id}
+                                onClick={() => handleSaveCustomToMyPackages(co.id)}
+                                className="px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 font-semibold text-[10px] transition-colors flex items-center gap-1"
+                                title="Save to My Packages"
+                              >
+                                <Boxes className="w-3 h-3" />
+                                <span>{savingPackageId === co.id ? "Saving..." : "Save to My Packages"}</span>
+                              </button>
+                              <Link
+                                href={`/packages/${co.id}`}
+                                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors inline-block"
+                                title="View Details"
+                              >
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                  {/* Standard Orders Desktop Rows */}
+                  {(orderTypeTab === "ALL" || orderTypeTab === "STANDARD") &&
+                    filteredOrders.map((order) => (
                     <tr
                       key={order.id}
                       onClick={() => setActiveModalOrder(order)}

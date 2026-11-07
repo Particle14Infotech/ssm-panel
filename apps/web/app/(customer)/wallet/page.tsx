@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useCustomer } from "@/context/CustomerContext";
 import { TransactionItem, calculateDepositBonus, PaymentMethod } from "@smm/contracts";
 import { BRAND_NAME } from "@/lib/brand";
@@ -8,6 +9,7 @@ import { SimulatedCheckoutModal } from "@/components/checkout/SimulatedCheckoutM
 import { YoupiPilotModal } from "@/components/checkout/YoupiPilotModal";
 import {
   Wallet,
+  Receipt,
   ArrowUpRight,
   Sparkles,
   CreditCard,
@@ -27,6 +29,19 @@ import { motion } from "framer-motion";
 import { formatTxnId, formatInvoiceId } from "@/lib/utils";
 
 export default function WalletPage() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams?.get("tab") === "transactions" ? "transactions" : "add_funds";
+  const [walletTab, setWalletTab] = useState<"add_funds" | "transactions">(initialTab);
+
+  useEffect(() => {
+    const tab = searchParams?.get("tab");
+    if (tab === "transactions") {
+      setWalletTab("transactions");
+    } else if (tab === "add_funds" || tab === "deposit") {
+      setWalletTab("add_funds");
+    }
+  }, [searchParams]);
+
   const { user, transactions, initiateDeposit, refreshData } = useCustomer();
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | "YOUPI_PILOT">("UPI");
   const [amount, setAmount] = useState<number>(1000);
@@ -205,14 +220,42 @@ export default function WalletPage() {
       className="w-full bg-white dark:bg-[#131313] min-h-screen pb-24 text-fg"
     >
       <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-8 space-y-8">
-        {/* Header Clean (Badge removed) */}
+        {/* Header Clean */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="space-y-1">
-            <h1 className="text-3xl md:text-4xl font-semibold text-fg tracking-tight">Add Funds & Billing</h1>
+            <h1 className="text-3xl md:text-4xl font-semibold text-fg tracking-tight">Wallet & Financials</h1>
             <p className="text-xs text-slate-400">
-              Add spendable liquidity, unlock tier bonus credits, and view payment receipts.
+              Manage your wallet balance, add spendable funds, unlock bonuses, and inspect transaction statements.
             </p>
           </div>
+        </div>
+
+        {/* Wallet Navigation Tabs */}
+        <div className="flex items-center gap-2 border-b border-border pb-3">
+          <button
+            type="button"
+            onClick={() => setWalletTab("add_funds")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              walletTab === "add_funds"
+                ? "bg-accent/15 text-accent-text border border-accent/30 shadow-xs"
+                : "text-fg-muted hover:text-fg hover:bg-surface-raised"
+            }`}
+          >
+            <Wallet className="w-4 h-4" />
+            <span>Add Funds</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setWalletTab("transactions")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              walletTab === "transactions"
+                ? "bg-accent/15 text-accent-text border border-accent/30 shadow-xs"
+                : "text-fg-muted hover:text-fg hover:bg-surface-raised"
+            }`}
+          >
+            <Receipt className="w-4 h-4" />
+            <span>Transactions & Invoices</span>
+          </button>
         </div>
 
         {/* Success Banner */}
@@ -238,7 +281,8 @@ export default function WalletPage() {
           </div>
         )}
 
-        {/* Dual Column: Balance Overview & Deposit Form */}
+        {/* Dual Column: Balance Overview & Deposit Form (Visible on Add Funds tab) */}
+        {walletTab === "add_funds" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Top Up Gateway Selector (7 cols) */}
           <div className="lg:col-span-7 bg-white dark:bg-[#1c1b1b] border border-border rounded-3xl p-6 md:p-8 space-y-6 shadow-xl">
@@ -439,6 +483,7 @@ export default function WalletPage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* Transactions Statements Table */}
         <div className="bg-white dark:bg-[#1c1b1b] border border-border rounded-3xl p-4 md:p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] overflow-hidden space-y-4">

@@ -17,6 +17,7 @@ import {
   Receipt,
   HelpCircle,
   User,
+  Settings,
   Key,
   LogOut,
 } from "lucide-react";
@@ -40,16 +41,14 @@ export function CustomerSidebar() {
     {
       label: "Financials",
       items: [
-        { name: "Add Funds", href: "/wallet", icon: Wallet },
-        { name: "Transactions", href: "/transactions", icon: Receipt },
+        { name: "Wallet", href: "/wallet", icon: Wallet },
       ],
     },
     {
       label: "Account & Support",
       items: [
         { name: "Support Tickets", href: "/support", icon: HelpCircle },
-        { name: "API & Profile", href: "/profile", icon: User },
-        { name: "Reseller API", href: "/app/api", icon: Key },
+        { name: "Settings", href: "/settings", icon: Settings },
       ],
     },
   ];

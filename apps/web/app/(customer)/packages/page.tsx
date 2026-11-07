@@ -172,21 +172,31 @@ function PackagesListContent() {
     loadBundles();
   }, [refreshPackages]);
 
+  // User Packages (Filter out one-off custom drip orders so only user packages/templates and bundles appear)
+  const userPackages = useMemo(() => {
+    return packages.filter((p: any) => {
+      if (p.id?.startsWith("pkg_drip_") && !p.priceSnapshot?.savedToMyPackages && p.mode !== "TEMPLATE") {
+        return false;
+      }
+      return true;
+    });
+  }, [packages]);
+
   // Quick Counts
   const counts = useMemo(() => {
     return {
-      all: packages.length,
-      active: packages.filter((p: any) => p.status === "ACTIVE").length,
-      completed: packages.filter((p: any) => p.status === "COMPLETED").length,
-      cancelled: packages.filter((p: any) => p.status === "CANCELLED").length,
+      all: userPackages.length,
+      active: userPackages.filter((p: any) => p.status === "ACTIVE").length,
+      completed: userPackages.filter((p: any) => p.status === "COMPLETED").length,
+      cancelled: userPackages.filter((p: any) => p.status === "CANCELLED").length,
     };
-  }, [packages]);
+  }, [userPackages]);
 
   // Filtered List
   const filteredPackages = useMemo(() => {
-    if (statusFilter === "ALL") return packages;
-    return packages.filter((p: any) => p.status === statusFilter);
-  }, [packages, statusFilter]);
+    if (statusFilter === "ALL") return userPackages;
+    return userPackages.filter((p: any) => p.status === statusFilter);
+  }, [userPackages, statusFilter]);
 
   const handlePurchaseBundle = async () => {
     if (!selectedBundle || !bundleHandle.trim()) return;

@@ -24,6 +24,7 @@ import {
   Boxes,
   Bookmark,
   ChevronDown,
+  Settings,
 } from "lucide-react";
 
 export function CustomerHeader() {
@@ -40,11 +41,9 @@ export function CustomerHeader() {
     { name: "Favorites", href: "/favorites", icon: Bookmark },
     { name: "Services", href: "/services-catalog", icon: Layers },
     { name: "Orders", href: "/orders", icon: ListOrdered },
-    { name: "Add Funds", href: "/wallet", icon: Wallet },
-    { name: "Transactions", href: "/transactions", icon: Receipt },
+    { name: "Wallet", href: "/wallet", icon: Wallet },
     { name: "Support Tickets", href: "/support", icon: HelpCircle },
-    { name: "API & Profile", href: "/profile", icon: User },
-    { name: "Reseller API", href: "/app/api", icon: Key },
+    { name: "Settings", href: "/settings", icon: Settings },
   ];
 
   return (
@@ -154,12 +153,12 @@ export function CustomerHeader() {
                 </div>
 
                 <Link
-                  href="/profile"
+                  href="/settings"
                   onClick={() => setUserDropdownOpen(false)}
                   className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-fg-2 hover:text-fg hover:bg-surface-raised transition-colors"
                 >
-                  <User className="w-4 h-4 text-fg-muted" />
-                  <span>Account & Profile</span>
+                  <Settings className="w-4 h-4 text-fg-muted" />
+                  <span>Account Settings</span>
                 </Link>
 
                 <Link

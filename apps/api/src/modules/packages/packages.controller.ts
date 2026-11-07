@@ -483,4 +483,13 @@ export class PackagesController {
   ) {
     return this.packagesService.cancelPackage(user.id, id);
   }
+  @Post(":id/save-to-my-packages")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Save/Promote a Custom Order Campaign into My Packages" })
+  async saveToMyPackages(
+    @CurrentUser() user: CurrentUserData,
+    @Param("id") id: string
+  ) {
+    return this.packagesService.saveToMyPackages(user.id, id);
+  }
 }

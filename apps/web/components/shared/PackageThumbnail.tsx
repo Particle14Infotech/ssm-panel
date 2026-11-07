@@ -87,19 +87,34 @@ export const PackageThumbnail: React.FC<PackageThumbnailProps> = ({
       return pkg.handle.trim();
     }
 
-    // 4. Fourth priority: Synthesize platform URL from bare handle (e.g. "pk1handle", "@username")
-    if (
-      pkg.handle &&
-      pkg.handle.trim().length > 0 &&
-      !pkg.handle.includes(" ")
-    ) {
-      const cleanHandle = pkg.handle.trim().replace(/^@/, "");
-      if (platform === "instagram") return `https://www.instagram.com/${cleanHandle}/`;
-      if (platform === "youtube") return `https://www.youtube.com/@${cleanHandle}`;
-      if (platform === "facebook") return `https://www.facebook.com/${cleanHandle}`;
-      if (platform === "twitter" || platform === "x") return `https://x.com/${cleanHandle}`;
-      if (platform === "tiktok") return `https://www.tiktok.com/@${cleanHandle}`;
-      if (platform === "telegram") return `https://t.me/${cleanHandle}`;
+    // 4. Fourth priority: Synthesize platform URL from handle or shortcode
+    if (pkg.handle && pkg.handle.trim().length > 0) {
+      const trimmed = pkg.handle.trim();
+      if (trimmed.includes("•")) {
+        const afterBullet = trimmed.split("•")[1]?.trim();
+        if (afterBullet) {
+          if (trimmed.toUpperCase().includes("REEL")) {
+            return `https://www.instagram.com/reel/${afterBullet}/`;
+          }
+          return `https://www.instagram.com/p/${afterBullet}/`;
+        }
+      }
+
+      if (!trimmed.includes(" ")) {
+        const cleanHandle = trimmed.replace(/^@/, "");
+        // If it looks like an Instagram post/reel shortcode (e.g. 9-13 alphanumeric characters like 1ExbpyK7bp or DfZF7ZShr8c)
+        if (platform === "instagram") {
+          if (/^[a-zA-Z0-9_-]{9,13}$/.test(cleanHandle)) {
+            return `https://www.instagram.com/p/${cleanHandle}/`;
+          }
+          return `https://www.instagram.com/${cleanHandle}/`;
+        }
+        if (platform === "youtube") return `https://www.youtube.com/@${cleanHandle}`;
+        if (platform === "facebook") return `https://www.facebook.com/${cleanHandle}`;
+        if (platform === "twitter" || platform === "x") return `https://x.com/${cleanHandle}`;
+        if (platform === "tiktok") return `https://www.tiktok.com/@${cleanHandle}`;
+        if (platform === "telegram") return `https://t.me/${cleanHandle}`;
+      }
     }
 
     return null;

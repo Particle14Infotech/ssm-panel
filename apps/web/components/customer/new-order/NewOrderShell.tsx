@@ -277,10 +277,12 @@ export function NewOrderShell() {
     const packageId = orderResult?.packageId || orderResult?.package?.id;
     const orderId = orderResult?.id || orderResult?.orderId || "";
 
-    if (isPackage) {
+    if (activeTab === "custom_drip" || (packageId && packageId.startsWith("pkg_drip_"))) {
+      router.push(`/orders?customOrderPlaced=true${packageId ? `&orderId=${encodeURIComponent(packageId)}` : ""}`);
+    } else if (isPackage) {
       router.push(`/packages?packagePlaced=true${packageId ? `&packageId=${encodeURIComponent(packageId)}` : ""}`);
     } else {
-      router.push(`/dashboard?orderPlaced=true${orderId ? `&orderId=${encodeURIComponent(orderId)}` : ""}`);
+      router.push(`/orders?orderPlaced=true${orderId ? `&orderId=${encodeURIComponent(orderId)}` : ""}`);
     }
   };
 
@@ -363,6 +365,32 @@ export function NewOrderShell() {
           placeholder="Paste profile or post link here to identify platform..."
           className="w-full bg-transparent text-fg text-xs placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none font-mono"
         />
+        {quickLinkInput && (
+          <button
+            type="button"
+            onClick={() => setQuickLinkInput("")}
+            className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
+            title="Clear link input"
+          >
+            <RefreshCw className="w-3 h-3" />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            setQuickLinkInput("");
+            setOrderDetails(null);
+            setConsentChecked(false);
+            setOrderSuccess(null);
+            setOrderError(null);
+            setFormResetKey((prev) => prev + 1);
+          }}
+          className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-1 shrink-0"
+          title="Reset order form"
+        >
+          <RefreshCw className="w-3 h-3" />
+          <span>Reset Form</span>
+        </button>
       </div>
 
       {/* Success Notification */}
@@ -425,7 +453,7 @@ export function NewOrderShell() {
               platform={selectedPlatform}
               categories={bootstrapData?.categories || []}
               services={bootstrapData?.services || []}
-              durationChips={bootstrapData?.durationChips || [1, 5, 7, 10, 14, 20, 25, 30]}
+              durationChips={bootstrapData?.durationChips || [1, 3, 5, 7, 10, 14, 21, 30, 45, 60]}
               favorites={favorites || []}
               recentOrders={orders ? orders.slice(0, 5) : []}
               onOrderDetailsChange={setOrderDetails}
@@ -470,7 +498,7 @@ export function NewOrderShell() {
           key={`drip-${selectedPlatform}-${formResetKey}`}
           platform={selectedPlatform}
           services={bootstrapData?.services || []}
-          durationChips={bootstrapData?.durationChips || [1, 5, 7, 10, 14, 20, 25, 30]}
+          durationChips={bootstrapData?.durationChips || [1, 3, 5, 7, 10, 14, 21, 30, 45, 60]}
           walletBalance={walletBalance}
           onOrderSuccess={(res) => handleOrderSuccess(res, "package")}
           prefilledTargetUrl={quickLinkInput}
