@@ -1,0 +1,61 @@
+=== RUNTIME EVIDENCE HEADER ===
+COMMIT: 48266b94b93afee04691e1266ce155a9b08bd78e
+BRANCH: chore/fastify-migration
+STATUS:
+M .env.example
+ M apps/api/src/app.module.ts
+ M apps/api/src/common/cache.service.ts
+ M apps/api/src/main.ts
+ M apps/api/src/modules/packages/drip-engine.util.ts
+ M apps/api/src/modules/payments/payment-provider.interface.ts
+ M apps/api/src/modules/payments/payments.module.ts
+ M apps/api/src/modules/settings/flags.service.ts
+ M apps/web/app/(auth)/login/page.tsx
+ M apps/web/app/(customer)/favorites/page.tsx
+ M apps/web/app/(customer)/orders/[id]/page.tsx
+ M apps/web/app/(customer)/packages/[id]/page.tsx
+ M apps/web/app/(customer)/wallet/page.tsx
+ M apps/web/components/checkout/SimulatedCheckoutModal.tsx
+ M apps/web/components/customer/new-order/CustomDripTab.tsx
+ M apps/web/components/customer/new-order/SingleOrderTab.tsx
+ M apps/web/context/CustomerContext.tsx
+ M apps/web/next.config.js
+ M apps/worker/src/main.ts
+ M docs/CONTRACT_DIFF.md
+ M docs/releases/ROLLOUT.md
+ M packages/contracts/src/link-validation.ts
+ M prisma/migrations/20261102150000_dispatch_resilience_i1/migration.sql
+ M prisma/schema.prisma
+?? apps/api/src/modules/link-preview/
+?? apps/api/src/modules/payments/youpi/
+?? apps/api/test/package-link-preview-lp2.spec.ts
+?? apps/api/test/package-link-validation-lp1.spec.ts
+?? apps/web/app/admin/payments/youpi-pilot/
+?? apps/web/components/checkout/YoupiPilotModal.tsx
+?? apps/web/components/shared/LinkPreviewCard.tsx
+?? docs/LINK_PREVIEW_DESIGN.md
+?? docs/SECURITY_FINDINGS.md
+?? docs/YOUPI_OPERATOR_RUNBOOK.md
+?? docs/YOUPI_PILOT_DESIGN.md
+?? docs/releases/v-link-preview/
+?? docs/releases/v-youpi-pilot/
+?? e2e/link-preview.spec.ts
+?? infra/youpi/
+?? prisma/migrations/20261104113000_youpi_pilot_schema/
+DB_NAME: neondb (dev)
+TIMESTAMP: 2026-11-06T06:45:12.267Z
+=== EVIDENCE OUTPUT ===
+Total unique links collected from last 30 days: 20
+
+=== VALIDATOR REPLAY RESULTS (LAST 30 DAYS) ===
+Accepted: 20
+Rejected: 0
+
+Rejections by Category:
+  short_link: 0
+  userinfo: 0
+  non_default_port: 0
+  http_not_https: 0
+  length_exceeded: 0
+  unsupported_or_invalid_host: 0
+  unrecognized_path_format: 0

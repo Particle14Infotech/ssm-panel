@@ -1,0 +1,66 @@
+=== RUNTIME EVIDENCE HEADER ===
+COMMIT: 48266b94b93afee04691e1266ce155a9b08bd78e
+BRANCH: chore/fastify-migration
+STATUS:
+M .env.example
+ M apps/api/src/app.module.ts
+ M apps/api/src/common/cache.service.ts
+ M apps/api/src/main.ts
+ M apps/api/src/modules/packages/drip-engine.util.ts
+ M apps/api/src/modules/payments/payment-provider.interface.ts
+ M apps/api/src/modules/payments/payments.module.ts
+ M apps/api/src/modules/settings/flags.service.ts
+ M apps/web/app/(auth)/login/page.tsx
+ M apps/web/app/(customer)/favorites/page.tsx
+ M apps/web/app/(customer)/orders/[id]/page.tsx
+ M apps/web/app/(customer)/orders/page.tsx
+ M apps/web/app/(customer)/packages/[id]/page.tsx
+ M apps/web/app/(customer)/wallet/page.tsx
+ M apps/web/components/checkout/SimulatedCheckoutModal.tsx
+ M apps/web/components/customer/new-order/CustomDripTab.tsx
+ M apps/web/components/customer/new-order/SingleOrderTab.tsx
+ M apps/web/context/CustomerContext.tsx
+ M apps/web/next.config.js
+ M apps/worker/src/main.ts
+ M docs/CONTRACT_DIFF.md
+ M docs/releases/ROLLOUT.md
+ M packages/contracts/src/link-validation.ts
+ M prisma/migrations/20261102150000_dispatch_resilience_i1/migration.sql
+ M prisma/schema.prisma
+?? apps/api/src/modules/link-preview/
+?? apps/api/src/modules/payments/youpi/
+?? apps/api/test/package-link-preview-lp2.spec.ts
+?? apps/api/test/package-link-validation-lp1.spec.ts
+?? apps/web/app/admin/payments/youpi-pilot/
+?? apps/web/components/checkout/YoupiPilotModal.tsx
+?? apps/web/components/shared/LinkPreviewCard.tsx
+?? docs/LINK_PREVIEW_DESIGN.md
+?? docs/SECURITY_FINDINGS.md
+?? docs/YOUPI_OPERATOR_RUNBOOK.md
+?? docs/YOUPI_PILOT_DESIGN.md
+?? docs/releases/v-link-preview/
+?? docs/releases/v-youpi-pilot/
+?? e2e/link-preview.spec.ts
+?? infra/youpi/
+?? prisma/migrations/20261104113000_youpi_pilot_schema/
+DB_NAME: neondb (dev)
+TIMESTAMP: 2026-11-06T07:51:30.210Z
+=== EVIDENCE OUTPUT ===
+
+Running 12 tests using 1 worker
+
+  ok  1 [chromium] › e2e\link-preview.spec.ts:90:7 › LP4 Link Preview Quality Gate › 1. Instagram reel link uses local card (Instagram decision gate) (4.6s)
+  ok  2 [chromium] › e2e\link-preview.spec.ts:104:7 › LP4 Link Preview Quality Gate › 2. Profile link in a likes/reel order is blocked with type conflict (2.1s)
+  ok  3 [chromium] › e2e\link-preview.spec.ts:116:7 › LP4 Link Preview Quality Gate › 3. Wrong platform link is blocked with platform mismatch (1.7s)
+  ok  4 [chromium] › e2e\link-preview.spec.ts:129:7 › LP4 Link Preview Quality Gate › 4. Shortened link asks for full link (blocking shortener) (2.0s)
+  ok  5 [chromium] › e2e\link-preview.spec.ts:138:7 › LP4 Link Preview Quality Gate › 5. YouTube link preview displays thumbnail, title, author, and badge (3.5s)
+  ok  6 [chromium] › e2e\link-preview.spec.ts:168:7 › LP4 Link Preview Quality Gate › 6. TikTok link preview renders when available (4.0s)
+  ok  7 [chromium] › e2e\link-preview.spec.ts:194:7 › LP4 Link Preview Quality Gate › 7. Unavailable link falls back to local card and order remains placeable (1.5s)
+  ok  8 [chromium] › e2e\link-preview.spec.ts:220:7 › LP4 Link Preview Quality Gate › 8. XSS payload in title and author is safely rendered strictly as text (2.2s)
+  ok  9 [chromium] › e2e\link-preview.spec.ts:247:7 › LP4 Link Preview Quality Gate › 9. Slow upstream falls back gracefully to local card within timeout (1.9s)
+  ok 10 [chromium] › e2e\link-preview.spec.ts:265:7 › LP4 Link Preview Quality Gate › 10. Flags off (404) gracefully falls back to local card against real API (1.7s)
+  ok 11 [chromium] › e2e\link-preview.spec.ts:278:7 › LP4 Link Preview Quality Gate › 11. Accessibility scan (Axe) across all five changed pages has zero critical violations (4.7s)
+Measured CLS on New Order: 0.006133218396347737
+  ok 12 [chromium] › e2e\link-preview.spec.ts:303:7 › LP4 Link Preview Quality Gate › 12. Cumulative Layout Shift (CLS) on new-order page is below 0.1 (3.1s)
+
+  12 passed (34.6s)
