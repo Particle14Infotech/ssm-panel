@@ -251,7 +251,8 @@ export class LinkPreviewService {
       throw new NotFoundException(`Link preview for ${parsed.platform} is not enabled`);
     }
 
-    const mediaKey = parsed.mediaId || parsed.authorHandle || "root";
+    const slideSuffix = parsed.slideIndex ? `:slide_${parsed.slideIndex}` : "";
+    const mediaKey = (parsed.mediaId || parsed.authorHandle || "root") + slideSuffix;
     const cacheKey = `link_preview:${parsed.platform.toLowerCase()}:${mediaKey}`;
     const cached = await this.cacheService.get<{
       data: LinkPreviewDto;
@@ -267,7 +268,8 @@ export class LinkPreviewService {
   }
 
   private async fetchUpstreamCoalesced(parsed: ParsedLinkResult): Promise<LinkPreviewDto> {
-    const mediaKey = parsed.mediaId || parsed.authorHandle || "root";
+    const slideSuffix = parsed.slideIndex ? `:slide_${parsed.slideIndex}` : "";
+    const mediaKey = (parsed.mediaId || parsed.authorHandle || "root") + slideSuffix;
     const flightKey = `${parsed.platform}:${mediaKey}`;
 
     if (this.inFlight.has(flightKey)) {
