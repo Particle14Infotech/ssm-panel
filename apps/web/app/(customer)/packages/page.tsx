@@ -459,8 +459,10 @@ function PackagesListContent() {
                     <div className="space-y-2.5">
                       {/* Top Header Row: Platform Icon + Clean Title + Status Badge */}
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <PackageThumbnail pkg={pkg} size="sm" />
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-7 h-7 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center p-1 shrink-0">
+                            <PlatformIcon platform={pkg.platform} size={15} />
+                          </div>
                           <div className="min-w-0">
                             <h3 className="text-xs sm:text-sm font-bold text-fg truncate group-hover:text-[#D8EC8D] transition-colors flex items-center gap-1.5">
                               <span className="truncate">{targetInfo.title}</span>
@@ -508,44 +510,56 @@ function PackagesListContent() {
                         </div>
                       </div>
 
-                      {/* Fulfillment Progress Bar */}
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between text-[11px] font-mono">
-                          <span className="text-slate-400">Progress</span>
-                          <span className="text-fg font-medium">
-                            {completedExecs}/{totalExecs} runs{" "}
-                            <span className="text-[#D8EC8D] font-bold">({progressPercent}%)</span>
-                          </span>
-                        </div>
-                        <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-white/5 overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${progressPercent}%` }}
-                            transition={{ duration: 0.6, ease: "easeOut" }}
-                            className="h-full rounded-full bg-gradient-to-r from-[#D8EC8D]/70 to-[#D8EC8D]"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Bundled Metrics Chips (Compact & clean horizontal wrap) */}
-                      {displayRules.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 pt-0.5">
-                          {displayRules.map((rule) => (
-                            <div
-                              key={rule.id}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/[0.03] border border-white/5 text-[11px] font-mono text-slate-300"
-                            >
-                              {getMetricIcon(rule.name)}
-                              <span className="font-semibold text-fg">
-                                {formatIndianNumber(rule.quantity)}
-                              </span>
-                              <span className="text-slate-400 text-[10px] truncate max-w-[120px]">
-                                {rule.name}
+                      {/* Middle Row: Left Progress & Chips + Right Prominent Media Thumbnail */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 min-w-0 space-y-2">
+                          {/* Fulfillment Progress Bar */}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[11px] font-mono">
+                              <span className="text-slate-400">Progress</span>
+                              <span className="text-fg font-medium">
+                                {completedExecs}/{totalExecs} runs{" "}
+                                <span className="text-[#D8EC8D] font-bold">({progressPercent}%)</span>
                               </span>
                             </div>
-                          ))}
+                            <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-white/5 overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progressPercent}%` }}
+                                transition={{ duration: 0.6, ease: "easeOut" }}
+                                className="h-full rounded-full bg-gradient-to-r from-[#D8EC8D]/70 to-[#D8EC8D]"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Bundled Metrics Chips (Compact & clean horizontal wrap) */}
+                          {displayRules.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-0.5">
+                              {displayRules.map((rule) => (
+                                <div
+                                  key={rule.id}
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/[0.03] border border-white/5 text-[11px] font-mono text-slate-300"
+                                >
+                                  {getMetricIcon(rule.name)}
+                                  <span className="font-semibold text-fg">
+                                    {formatIndianNumber(rule.quantity)}
+                                  </span>
+                                  <span className="text-slate-400 text-[10px] truncate max-w-[120px]">
+                                    {rule.name}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      )}
+
+                        {/* Right Prominent Media Thumbnail (Dedicated Preview Slot) */}
+                        <PackageThumbnail
+                          pkg={pkg}
+                          size="md"
+                          className="shrink-0 shadow-md group-hover:scale-105 transition-transform duration-200"
+                        />
+                      </div>
                     </div>
 
                     {/* Bottom Metadata Bar: Dates, Price, and Quick Arrow */}

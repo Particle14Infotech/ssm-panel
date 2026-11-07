@@ -332,7 +332,7 @@ export default function PackageDetailPage() {
     }
   };
 
-  const fetchPackage = useCallback(async () => {
+  const fetchPackage = useCallback(async (retryCount = 0) => {
     if (typeof window === "undefined" || !packageId) return;
     const token = getAuthToken();
     if (!token) {
@@ -357,6 +357,12 @@ export default function PackageDetailPage() {
         const data = await pkgRes.json();
         setPkg(data);
       } else {
+        // Auto-retry transient gateway/restart errors (502, 503, 504)
+        if (retryCount < 2 && [502, 503, 504].includes(pkgRes.status)) {
+          await new Promise((r) => setTimeout(r, 1200));
+          return fetchPackage(retryCount + 1);
+        }
+
         const errJson = await pkgRes.json().catch(() => ({}));
         const reqId = errJson.requestId || `req_${Date.now()}`;
         const isAuthErr = pkgRes.status === 401 || (errJson.message && (errJson.message.toLowerCase().includes("jwt") || errJson.message.toLowerCase().includes("expired") || errJson.message.toLowerCase().includes("unauthorized")));
@@ -376,7 +382,11 @@ export default function PackageDetailPage() {
         const execData = await execRes.json();
         if (Array.isArray(execData)) setExecutions(execData);
       }
-    } catch {
+    } catch (netErr) {
+      if (retryCount < 2) {
+        await new Promise((r) => setTimeout(r, 1200));
+        return fetchPackage(retryCount + 1);
+      }
       setPageError({
         message: "Network error loading package details. Please check your connection.",
         requestId: `req_net_${Date.now()}`,
@@ -933,7 +943,7 @@ export default function PackageDetailPage() {
           ) : (
             <button
               type="button"
-              onClick={fetchPackage}
+              onClick={() => fetchPackage(0)}
               className="px-4 py-2 rounded-xl bg-[#D8EC8D] text-[#131313] font-bold text-xs hover:brightness-105 transition-all"
             >
               Retry

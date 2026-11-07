@@ -182,20 +182,20 @@ export const PackageThumbnail: React.FC<PackageThumbnailProps> = ({
   // Size definitions for responsive mobile layout
   const dimensionClasses = {
     sm: "w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl",
-    md: "w-12 h-12 min-w-[48px] min-h-[48px] rounded-xl",
-    lg: "w-14 h-14 sm:w-16 sm:h-16 min-w-[56px] min-h-[56px] rounded-2xl",
+    md: "w-16 h-16 sm:w-20 sm:h-20 min-w-[64px] min-h-[64px] rounded-xl",
+    lg: "w-20 h-20 sm:w-24 sm:h-24 min-w-[80px] min-h-[80px] rounded-2xl",
   }[size];
 
   const iconSizes = {
     sm: 18,
-    md: 20,
-    lg: 26,
+    md: 26,
+    lg: 34,
   }[size];
 
   const badgeIconSizes = {
     sm: 10,
-    md: 11,
-    lg: 13,
+    md: 12,
+    lg: 14,
   }[size];
 
   const showImage = Boolean(thumbnailUrl && !imgError);

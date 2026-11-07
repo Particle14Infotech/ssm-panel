@@ -197,7 +197,7 @@ export class PackagesController {
     @CurrentUser() user: CurrentUserData,
     @Param("id") id: string
   ) {
-    return this.packagesService.getPackage(user.id, id);
+    return this.packagesService.getPackage(user.id, id, user.role);
   }
 
   @Post(":id/report-problem")
@@ -238,7 +238,7 @@ export class PackagesController {
     @CurrentUser() user: CurrentUserData,
     @Param("id") id: string
   ) {
-    return this.packagesService.getPackageTriggers(user.id, id);
+    return this.packagesService.getPackageTriggers(user.id, id, user.role);
   }
 
   @Get(":id/executions")
@@ -248,7 +248,7 @@ export class PackagesController {
     @CurrentUser() user: CurrentUserData,
     @Param("id") id: string
   ) {
-    return this.packagesService.getPackageExecutions(user.id, id);
+    return this.packagesService.getPackageExecutions(user.id, id, user.role);
   }
 
   @Post(":id/triggers/preview")

@@ -429,13 +429,13 @@ export class PackagesService {
    * 4. For each POST_TRIGGERED rule, computes remaining quota and default time-interval drip schedule.
    * 5. Zero DB side effects.
    */
-  async triggerPreview(userId: string, packageId: string, input: TriggerPreviewInput) {
+  async triggerPreview(userId: string, packageId: string, input: TriggerPreviewInput, role?: string) {
     if (!this.prisma.isConnected) {
       throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
     }
 
     const pkg = await this.prisma.package.findFirst({
-      where: { id: packageId, userId },
+      where: role === "ADMIN" ? { id: packageId } : { id: packageId, userId },
       include: {
         rules: {
           where: { kind: PackageRuleKind.POST_TRIGGERED },
@@ -2041,13 +2041,13 @@ export class PackagesService {
   /**
    * Inspects detailed package status and executions with strict cost/provider field redaction
    */
-  async getPackage(userId: string, packageId: string) {
+  async getPackage(userId: string, packageId: string, role?: string) {
     if (!this.prisma.isConnected) {
       throw new ServiceUnavailableException("Database service is currently unavailable. Please retry later.");
     }
 
     const pkg = await this.prisma.package.findFirst({
-      where: { id: packageId, userId },
+      where: role === "ADMIN" ? { id: packageId } : { id: packageId, userId },
       include: {
         rules: {
           include: {
@@ -2075,7 +2075,7 @@ export class PackagesService {
   /**
    * Returns triggers processed for this package
    */
-  async getPackageTriggers(userId: string, packageId: string) {
+  async getPackageTriggers(userId: string, packageId: string, role?: string) {
     if (!this.prisma.isConnected) return [];
 
     const pkg = await this.prisma.package.findFirst({
@@ -2093,7 +2093,7 @@ export class PackagesService {
   /**
    * Returns list of executions for this package with strict redaction of provider & cost
    */
-  async getPackageExecutions(userId: string, packageId: string) {
+  async getPackageExecutions(userId: string, packageId: string, role?: string) {
     if (!this.prisma.isConnected) return [];
 
     const pkg = await this.prisma.package.findFirst({
