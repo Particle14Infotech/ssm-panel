@@ -1671,7 +1671,7 @@ export function CustomDripTab({
                 </span>
               </div>
               <div className="grid grid-cols-5 gap-1.5">
-                {durationChips.map((days) => (
+                {(Array.from(new Set([...(durationChips || []), 3, 60])).sort((a, b) => a - b)).map((days) => (
                   <button
                     key={days}
                     type="button"

@@ -49,7 +49,7 @@ export class NewOrderBootstrapController {
     let platformConfig: any = null;
     let enabledTabs = ["SINGLE", "CUSTOM_DRIP", "COMBOS", "AUTOPILOT"];
     let dripIntervals = [1, 2, 4, 8, 12, 24];
-    let durationChips = [1, 5, 7, 10, 14, 20, 25, 30];
+    let durationChips = [1, 3, 5, 7, 10, 14, 21, 30, 45, 60];
 
     if (this.prisma.isConnected) {
       platformConfig = await this.prisma.platformConfig.findFirst({
