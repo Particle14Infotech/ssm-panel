@@ -599,6 +599,114 @@ model Favorite {
   @@index([userId, createdAt])
 }
 
+// -----------------------------------------------------------------------------
+// YOUPI-PG PILOT EXPAND-ONLY SCHEMA
+// -----------------------------------------------------------------------------
+
+enum YoupiTopUpStatus {
+  INITIATED
+  AWAITING_PAYMENT
+  OBSERVED
+  CONFIRMED
+  CREDITED
+  REJECTED
+  EXPIRED
+  SUSPICIOUS
+}
+
+model YoupiTopUp {
+  id               String           @id @default(uuid())
+  userId           String
+  orderRef         String           @unique
+  amountPaise      Int
+  currency         String           @default("INR")
+  status           YoupiTopUpStatus @default(INITIATED)
+  utr              String?
+  normalizedUtr    String?
+  queuePosition    Int?
+  gatewaySessionId String?
+  expiresAt        DateTime?
+  creditedAt       DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  reviews          TopUpReview[]
+  observations     YoupiObservation[]
+  statementRows    BankStatementRow[]
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@index([gatewaySessionId])
+  @@index([normalizedUtr])
+}
+
+model YoupiWebhookDelivery {
+  id          String    @id @default(uuid())
+  deliveryId  String    @unique
+  event       String
+  signatureOk Boolean
+  receivedAt  DateTime  @default(now())
+  rawBodyHash String
+  processedAt DateTime?
+  result      String?
+
+  @@index([receivedAt])
+}
+
+model YoupiObservation {
+  id          String      @id @default(uuid())
+  topUpId     String?
+  topUp       YoupiTopUp? @relation(fields: [topUpId], references: [id], onDelete: SetNull)
+  amountPaise Int
+  utr         String
+  source      String
+  observedAt  DateTime    @default(now())
+
+  @@index([topUpId])
+  @@index([utr])
+}
+
+model BankStatementImport {
+  id         String             @id @default(uuid())
+  uploadedBy String
+  fileHash   String             @unique
+  rowCount   Int
+  importedAt DateTime           @default(now())
+  rows       BankStatementRow[]
+
+  @@index([importedAt])
+}
+
+model BankStatementRow {
+  id             String              @id @default(uuid())
+  importId       String
+  import         BankStatementImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  utr            String
+  normalizedUtr  String
+  amountPaise    Int
+  date           DateTime
+  matchedTopUpId String?
+  matchedTopUp   YoupiTopUp?         @relation(fields: [matchedTopUpId], references: [id], onDelete: SetNull)
+  createdAt      DateTime            @default(now())
+
+  @@index([importId])
+  @@index([normalizedUtr, amountPaise])
+}
+
+model TopUpReview {
+  id        String     @id @default(uuid())
+  topUpId   String
+  topUp     YoupiTopUp @relation(fields: [topUpId], references: [id], onDelete: Cascade)
+  actorId   String
+  decision  String
+  reason    String
+  createdAt DateTime   @default(now())
+
+  @@index([topUpId])
+  @@index([actorId])
+}
+
+
 model SuggestionDismissal {
   id        String   @id @default(uuid())
   userId    String
