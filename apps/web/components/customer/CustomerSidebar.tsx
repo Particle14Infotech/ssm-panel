@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import { useCustomer } from "@/context/CustomerContext";
-import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import {
   LayoutDashboard,
   PlusCircle,
@@ -57,9 +56,8 @@ export function CustomerSidebar() {
     <aside className="w-64 shrink-0 hidden lg:flex flex-col justify-between bg-surface border-r border-border h-full z-40 transition-colors duration-200">
       <div className="flex flex-col flex-1 min-h-0">
         {/* Brand Header */}
-        <div className="h-16 px-5 flex items-center justify-between border-b border-border shrink-0">
+        <div className="h-16 px-5 flex items-center border-b border-border shrink-0">
           <BrandLogo variant="combined" size={32} withLink href="/dashboard" />
-          <ThemeToggle variant="compact" />
         </div>
 
         {/* Grouped Nav Items */}
