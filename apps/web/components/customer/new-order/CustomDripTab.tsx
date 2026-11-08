@@ -422,6 +422,10 @@ export function CustomDripTab({
 
   // Handle Order Submit
   const handleOrderSubmit = async () => {
+    if (quoteStale || quoteLoading) {
+      setOrderError("Configuration is updating. Please wait a moment.");
+      return;
+    }
     if (!quoteData?.quoteHash) {
       setOrderError("Please fetch a valid quote before submitting.");
       return;
@@ -2055,6 +2059,7 @@ export function CustomDripTab({
               disabled={
                 isSubmitting ||
                 quoteLoading ||
+                quoteStale ||
                 !quoteData ||
                 walletBalance < (quoteData?.totalCharge || 0) ||
                 !consentChecked

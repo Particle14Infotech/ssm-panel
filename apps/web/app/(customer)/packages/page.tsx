@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { formatIndianNumber } from "@/lib/numberFormat";
 import { getApiBase } from "@/lib/api-base";
+import { getAuthToken } from "@/lib/auth-session";
 
 // Helper: Format target link or social handle cleanly (Never produce @https://)
 function formatTargetDisplay(handle?: string, platform?: string): { title: string; isUrl: boolean; rawUrl?: string } {
@@ -233,7 +234,7 @@ function PackagesListContent() {
     setPurchasingBundle(true);
     setBundleError(null);
 
-    const token = localStorage.getItem("authToken");
+    const token = getAuthToken() || localStorage.getItem("authToken");
     if (!token) {
       setBundleError("Please log in to purchase a growth bundle.");
       setPurchasingBundle(false);

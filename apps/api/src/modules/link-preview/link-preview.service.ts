@@ -105,6 +105,8 @@ const ALLOWED_THUMBNAIL_DOMAINS = [
   "x.com",
   "spotifycdn.com",
   "scdn.co",
+  "unsplash.com",
+  "images.unsplash.com",
 ];
 
 function isThumbnailHostAllowed(rawUrl: string | null): boolean {
@@ -1185,6 +1187,11 @@ export class LinkPreviewService {
       return;
     }
 
+    if (!isThumbnailHostAllowed(imageUrl)) {
+      sendError(403, "Forbidden image host");
+      return;
+    }
+
     return new Promise((resolve) => {
       try {
         const u = new URL(imageUrl);
@@ -1211,6 +1218,11 @@ export class LinkPreviewService {
               res.resume();
               let next = res.headers.location;
               if (next.startsWith("/")) next = `${u.protocol}//${u.host}${next}`;
+              if (!isThumbnailHostAllowed(next)) {
+                sendError(403, "Forbidden redirect image host");
+                resolve();
+                return;
+              }
               return this.pipeImage(next, reply, hops - 1).then(resolve);
             }
 

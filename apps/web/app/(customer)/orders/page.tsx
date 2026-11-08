@@ -36,6 +36,7 @@ import { GlassCard } from "@/components/shared/GlassCard";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { motion } from "framer-motion";
 import { getApiBase } from "@/lib/api-base";
+import { getAuthToken } from "@/lib/auth-session";
 
 export default function OrdersPage() {
   const { orders, packages, refillOrder, cancelOrder, addFavorite, user, refreshPackages, refreshData } = useCustomer();
@@ -49,7 +50,7 @@ export default function OrdersPage() {
   const handleSaveCustomToMyPackages = async (pkgId: string) => {
     setSavingPackageId(pkgId);
     try {
-      const token = localStorage.getItem("authToken");
+      const token = getAuthToken() || localStorage.getItem("authToken");
       const res = await fetch(`${getApiBase()}/packages/${pkgId}/save-to-my-packages`, {
         method: "POST",
         headers: {
