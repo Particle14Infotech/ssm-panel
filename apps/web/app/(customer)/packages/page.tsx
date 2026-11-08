@@ -27,6 +27,7 @@ import {
   Share2,
   MessageSquare,
   Users,
+  Bookmark,
 } from "lucide-react";
 import { formatIndianNumber } from "@/lib/numberFormat";
 import { getApiBase } from "@/lib/api-base";
@@ -141,7 +142,7 @@ function PackagesListContent() {
   const searchParams = useSearchParams();
   const packagePlaced = searchParams?.get("packagePlaced") === "true";
   const placedPackageId = searchParams?.get("packageId");
-  const { packages, user, refreshPackages } = useCustomer();
+  const { packages, user, refreshPackages, addFavorite, favorites } = useCustomer();
 
   const [bundleTemplates, setBundleTemplates] = useState<any[]>([]);
   const [, setLoadingBundles] = useState(true);
@@ -151,6 +152,35 @@ function PackagesListContent() {
   const [bundleError, setBundleError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "CANCELLED">("ALL");
+  const [favoriteSavingId, setFavoriteSavingId] = useState<string | null>(null);
+
+  const handleSavePackageAsFavorite = async (e: React.MouseEvent, pkg: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const primaryRule = pkg.rules?.[0];
+    const serviceId = primaryRule?.serviceId || "custom_package";
+    const serviceName = primaryRule?.service?.displayName || primaryRule?.service?.name || pkg.name || "Growth Package";
+    const targetUrl = pkg.slots?.[0]?.targetUrl || pkg.handle || "";
+
+    setFavoriteSavingId(pkg.id);
+    const res = await addFavorite({
+      serviceId,
+      targetUrl,
+      defaultQuantity: primaryRule?.quantityPerPost || 1000,
+      isDripFeed: true,
+      dripRuns: pkg.rules?.length || 5,
+      customName: `Package: ${serviceName}`,
+    });
+    setFavoriteSavingId(null);
+
+    if (res.success) {
+      setToastMessage("Package saved to favorites!");
+    } else {
+      setToastMessage(res.error || "Failed to save favorite");
+    }
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   useEffect(() => {
     if (refreshPackages) {
@@ -492,8 +522,17 @@ function PackagesListContent() {
                           </div>
                         </div>
 
-                        {/* Status Badge */}
-                        <div className="shrink-0">
+                        {/* Status Badge & Quick Favorite */}
+                        <div className="shrink-0 flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => handleSavePackageAsFavorite(e, pkg)}
+                            disabled={favoriteSavingId === pkg.id}
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-[#D8EC8D] transition-colors border border-white/5"
+                            title="Save as Favorite"
+                          >
+                            <Bookmark className={`w-3.5 h-3.5 ${favoriteSavingId === pkg.id ? "animate-pulse text-[#D8EC8D]" : ""}`} />
+                          </button>
                           {isActive && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -583,6 +622,16 @@ function PackagesListContent() {
                       </div>
 
                       <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => handleSavePackageAsFavorite(e, pkg)}
+                          disabled={favoriteSavingId === pkg.id}
+                          className="px-2 py-1 rounded-lg bg-white/5 hover:bg-[#D8EC8D]/15 text-slate-300 hover:text-[#D8EC8D] border border-white/5 text-[11px] font-semibold flex items-center gap-1 transition-colors"
+                          title="Save as Favorite"
+                        >
+                          <Bookmark className={`w-3 h-3 text-[#D8EC8D] ${favoriteSavingId === pkg.id ? "animate-pulse" : ""}`} />
+                          <span className="hidden sm:inline">Favorite</span>
+                        </button>
                         <div className="text-right">
                           <span className="text-[10px] text-slate-500 uppercase mr-1">Total:</span>
                           <span className="text-[#D8EC8D] font-bold text-xs sm:text-sm">
