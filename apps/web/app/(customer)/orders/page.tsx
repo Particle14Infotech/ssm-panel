@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useCustomer } from "@/context/CustomerContext";
 import { OrderItem } from "@smm/contracts";
@@ -14,6 +14,8 @@ import {
   Clock,
   Layers,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   ShoppingBag,
   PlusCircle,
   HelpCircle,
@@ -109,6 +111,36 @@ export default function OrdersPage() {
   const [orderProblemDesc, setOrderProblemDesc] = useState("");
   const [submittingOrderProblem, setSubmittingOrderProblem] = useState(false);
 
+  // Sub-orders & platform dropdown state
+  const [expandedPackageIds, setExpandedPackageIds] = useState<Record<string, boolean>>({});
+  const [platformDropdownOpen, setPlatformDropdownOpen] = useState(false);
+  const platformDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (platformDropdownRef.current && !platformDropdownRef.current.contains(event.target as Node)) {
+        setPlatformDropdownOpen(false);
+      }
+    }
+    if (platformDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [platformDropdownOpen]);
+
+  const toggleExpandPackage = (pkgId: string) => {
+    setExpandedPackageIds((prev) => ({
+      ...prev,
+      [pkgId]: !prev[pkgId],
+    }));
+  };
+
+  const standaloneOrders = useMemo(() => {
+    return (orders || []).filter((o: any) => !o.packageExecutionId && !o.packageRun && !o.isPrepaid);
+  }, [orders]);
+
   const handleReportOrderProblem = async () => {
     if (!activeModalOrder || !orderProblemDesc.trim()) return;
     setSubmittingOrderProblem(true);
@@ -202,15 +234,18 @@ export default function OrdersPage() {
       return customOrders.filter((co) => co.status === statusKey).length;
     }
     if (orderTypeTab === "STANDARD") {
-      if (statusKey === "ALL") return orders.length;
-      return orders.filter((o) => o.status === statusKey).length;
+      if (statusKey === "ALL") return standaloneOrders.length;
+      return standaloneOrders.filter((o) => o.status === statusKey).length;
     }
-    if (statusKey === "ALL") return orders.length + customOrders.length;
-    return orders.filter((o) => o.status === statusKey).length + customOrders.filter((co) => co.status === statusKey).length;
+    if (statusKey === "ALL") return standaloneOrders.length + customOrders.length;
+    return (
+      standaloneOrders.filter((o) => o.status === statusKey).length +
+      customOrders.filter((co) => co.status === statusKey).length
+    );
   };
 
   const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
+    return standaloneOrders.filter((order) => {
       const matchesStatus = selectedStatus === "ALL" || order.status === selectedStatus;
       const matchesPlatform =
         selectedPlatform === "ALL" ||
@@ -224,7 +259,7 @@ export default function OrdersPage() {
 
       return matchesStatus && matchesPlatform && matchesSearch;
     });
-  }, [orders, selectedStatus, selectedPlatform, searchQuery]);
+  }, [standaloneOrders, selectedStatus, selectedPlatform, searchQuery]);
 
   const handleCopy = (id: string) => {
     navigator.clipboard.writeText(id);
@@ -272,7 +307,7 @@ export default function OrdersPage() {
                   : "text-fg-muted hover:text-fg"
               }`}
             >
-              All ({orders.length + customOrders.length})
+              All ({standaloneOrders.length + customOrders.length})
             </button>
             <button
               type="button"
@@ -283,7 +318,7 @@ export default function OrdersPage() {
                   : "text-fg-muted hover:text-fg"
               }`}
             >
-              Standard ({orders.length})
+              Standard ({standaloneOrders.length})
             </button>
             <button
               type="button"
@@ -360,28 +395,81 @@ export default function OrdersPage() {
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <select
+          {/* High-Contrast Dark Mode Safe Platform Filter Dropdown */}
+          <div className="relative w-full sm:w-48" ref={platformDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setPlatformDropdownOpen((prev) => !prev)}
               aria-label="Filter orders by platform"
-              value={selectedPlatform}
-              onChange={(e) => setSelectedPlatform(e.target.value)}
-              className="w-full sm:w-44 bg-surface-raised border border-border focus:border-[#D8EC8D]/50 rounded-xl px-3 py-2 text-xs text-fg focus:outline-none font-sans"
+              aria-expanded={platformDropdownOpen}
+              className="w-full bg-surface-raised hover:bg-surface border border-border focus:border-[#D8EC8D]/50 rounded-xl px-3 py-2 text-xs text-fg flex items-center justify-between gap-2 transition-all shadow-xs"
             >
-              <option value="ALL" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">All Platforms</option>
-              <option value="instagram" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">Instagram</option>
-              <option value="youtube" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">YouTube</option>
-              <option value="tiktok" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">TikTok</option>
-              <option value="telegram" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">Telegram</option>
-              <option value="twitter" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">X (Twitter)</option>
-              <option value="spotify" className="bg-white text-slate-900 dark:bg-[#131313] text-fg">Spotify</option>
-            </select>
+              <div className="flex items-center gap-2 truncate">
+                {selectedPlatform !== "ALL" ? (
+                  <PlatformIcon platform={selectedPlatform} size={14} useBrandColor={true} />
+                ) : (
+                  <Filter className="w-3.5 h-3.5 text-slate-400" />
+                )}
+                <span className="font-medium truncate">
+                  {selectedPlatform === "ALL"
+                    ? "All Platforms"
+                    : selectedPlatform.charAt(0).toUpperCase() + selectedPlatform.slice(1)}
+                </span>
+              </div>
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
+                  platformDropdownOpen ? "rotate-180 text-[#D8EC8D]" : ""
+                }`}
+              />
+            </button>
+
+            {platformDropdownOpen && (
+              <div className="absolute right-0 left-0 sm:left-auto sm:w-52 mt-1 z-50 rounded-xl bg-[#18191B] border border-white/10 shadow-2xl p-1.5 space-y-0.5 backdrop-blur-xl">
+                {[
+                  { value: "ALL", label: "All Platforms" },
+                  { value: "instagram", label: "Instagram" },
+                  { value: "youtube", label: "YouTube" },
+                  { value: "tiktok", label: "TikTok" },
+                  { value: "telegram", label: "Telegram" },
+                  { value: "twitter", label: "X (Twitter)" },
+                  { value: "spotify", label: "Spotify" },
+                ].map((opt) => {
+                  const isSelected = selectedPlatform === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedPlatform(opt.value);
+                        setPlatformDropdownOpen(false);
+                      }}
+                      className={`w-full px-2.5 py-2 rounded-lg text-left text-xs transition-colors flex items-center justify-between gap-2 ${
+                        isSelected
+                          ? "bg-[#D8EC8D]/15 text-[#D8EC8D] font-bold"
+                          : "text-slate-200 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        {opt.value !== "ALL" ? (
+                          <PlatformIcon platform={opt.value} size={14} useBrandColor={true} />
+                        ) : (
+                          <Filter className="w-3.5 h-3.5 text-slate-400" />
+                        )}
+                        <span className="truncate">{opt.label}</span>
+                      </div>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-[#D8EC8D] shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Orders Table Container */}
       <div className="glass-panel p-4 md:p-6 rounded-3xl overflow-hidden space-y-4">
-        {orders.length === 0 && customOrders.length === 0 ? (
+        {standaloneOrders.length === 0 && customOrders.length === 0 ? (
           <EmptyState
             icon={ShoppingBag}
             title="No orders yet"
@@ -479,6 +567,63 @@ export default function OrdersPage() {
                             <ChevronRight className="w-3.5 h-3.5" />
                           </Link>
                         </div>
+                      </div>
+
+                      {/* Expandable Sub-Orders Button & Drawer (Mobile) */}
+                      <div className="pt-2 border-t border-purple-500/15">
+                        <button
+                          type="button"
+                          onClick={() => toggleExpandPackage(co.id)}
+                          className={`w-full py-2 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between ${
+                            expandedPackageIds[co.id]
+                              ? "bg-purple-500 text-white border-purple-400 shadow-xs"
+                              : "bg-purple-500/15 hover:bg-purple-500/25 border-purple-500/30 text-purple-200"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <Boxes className="w-3.5 h-3.5 text-purple-400" />
+                            <span>Sub-Orders (${co.executions?.length || 0} runs)</span>
+                          </div>
+                          <ChevronDown
+                            className={`w-3.5 h-3.5 transition-transform ${expandedPackageIds[co.id] ? "rotate-180" : ""}`}
+                          />
+                        </button>
+
+                        {expandedPackageIds[co.id] && (
+                          <div className="mt-3 p-3 rounded-xl bg-black/50 border border-purple-500/25 space-y-2.5">
+                            <div className="flex items-center justify-between text-[11px] font-mono text-purple-300 border-b border-purple-500/20 pb-1.5">
+                              <span>Sub-Orders Breakdown</span>
+                              <span>${completedRuns} / ${totalRuns} Done</span>
+                            </div>
+                            {(!co.executions || co.executions.length === 0) ? (
+                              <div className="py-3 text-center text-slate-400 text-[11px] font-mono">
+                                No execution runs scheduled yet.
+                              </div>
+                            ) : (
+                              <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
+                                {co.executions.map((exec: any, idx: number) => {
+                                  const ruleMatch = co.rules?.find((r: any) => r.id === exec.ruleId);
+                                  const svcName = ruleMatch?.service?.displayName || ruleMatch?.service?.name || "Service Run";
+                                  return (
+                                    <div key={exec.id || idx} className="p-2 rounded-lg bg-white/[0.03] border border-white/5 space-y-1 text-[11px] font-mono">
+                                      <div className="flex items-center justify-between">
+                                        <span className="font-bold text-purple-300">Run #{exec.seq ?? idx + 1}</span>
+                                        <StatusBadge status={exec.status} />
+                                      </div>
+                                      <div className="text-fg font-sans font-medium text-xs truncate">
+                                        {svcName}
+                                      </div>
+                                      <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
+                                        <span>{Number(exec.quantity || 0).toLocaleString()} units · Prepaid</span>
+                                        <span>{exec.executeAt ? new Date(exec.executeAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-"}</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -601,106 +746,218 @@ export default function OrdersPage() {
                       const progressPercent = totalRuns > 0 ? Math.round((completedRuns / totalRuns) * 100) : 0;
                       const totalCharge = Number(co.reserveTotal || co.priceSnapshot?.totalCharge || 0);
                       const targetLink = co.slots?.[0]?.targetUrl || co.handle || "";
+                      const isExpanded = !!expandedPackageIds[co.id];
 
                       return (
-                        <tr
-                          key={co.id}
-                          className="bg-purple-950/[0.08] hover:bg-purple-950/[0.18] transition-colors group"
-                        >
-                          <td className="py-3.5 px-3 font-mono font-semibold text-fg whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
-                                <Sparkles className="w-2.5 h-2.5" />
-                                Custom Order
-                              </span>
-                              <span className="text-[11px] text-slate-400">#{co.id.slice(0, 8)}</span>
-                            </div>
-                            <span className="text-[10px] text-slate-400 block font-normal mt-0.5">
-                              {co.createdAt ? new Date(co.createdAt).toLocaleDateString() : ""}
-                            </span>
-                          </td>
-
-                          <td className="py-3.5 px-3">
-                            <div className="flex items-center gap-2.5">
-                              <PackageThumbnail pkg={co} size="sm" className="shrink-0" />
-                              <div className="min-w-0">
-                                <div className="font-semibold text-fg max-w-xs truncate">
-                                  Multi-Service Custom Drip ({co.rules?.length || 1} services)
-                                </div>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                  <PlatformIcon platform={co.platform} size={12} />
-                                  <span className="text-[10px] text-slate-400 uppercase font-mono">{co.platform}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-
-                          <td className="py-3.5 px-3 font-mono">
-                            <a
-                              href={targetLink}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-fg-2 hover:text-[#D8EC8D] max-w-[180px] truncate block"
-                              title={targetLink}
-                            >
-                              {targetLink}
-                            </a>
-                          </td>
-
-                          <td className="py-3.5 px-3 font-mono">
-                            <div className="space-y-1">
+                        <React.Fragment key={co.id}>
+                          <tr className="bg-purple-950/[0.08] hover:bg-purple-950/[0.18] transition-colors group">
+                            <td className="py-3.5 px-3 font-mono font-semibold text-fg whitespace-nowrap">
                               <div className="flex items-center gap-1.5">
-                                <span className="text-fg font-medium">
-                                  {completedRuns}/{totalRuns} runs ({progressPercent}%)
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
+                                  <Sparkles className="w-2.5 h-2.5" />
+                                  Custom Order
                                 </span>
+                                <span className="text-[11px] text-slate-400">#{co.id.slice(0, 8)}</span>
                               </div>
-                              <div className="w-28 h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
-                                <div
-                                  style={{ width: `${progressPercent}%` }}
-                                  className="h-full rounded-full bg-gradient-to-r from-purple-500 to-[#D8EC8D]"
-                                />
+                              <span className="text-[10px] text-slate-400 block font-normal mt-0.5">
+                                {co.createdAt ? new Date(co.createdAt).toLocaleDateString() : ""}
+                              </span>
+                            </td>
+
+                            <td className="py-3.5 px-3">
+                              <div className="flex items-center gap-2.5">
+                                <PackageThumbnail pkg={co} size="sm" className="shrink-0" />
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-fg max-w-xs truncate">
+                                    Multi-Service Custom Drip ({co.rules?.length || 1} services)
+                                  </div>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <PlatformIcon platform={co.platform} size={12} />
+                                    <span className="text-[10px] text-slate-400 uppercase font-mono">{co.platform}</span>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </td>
+                            </td>
 
-                          <td className="py-3.5 px-3 font-mono font-bold text-[#D8EC8D]">
-                            ₹{totalCharge.toFixed(2)}
-                          </td>
+                            <td className="py-3.5 px-3 font-mono">
+                              <a
+                                href={targetLink}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-fg-2 hover:text-[#D8EC8D] max-w-[180px] truncate block"
+                                title={targetLink}
+                              >
+                                {targetLink}
+                              </a>
+                            </td>
 
-                          <td className="py-3.5 px-3">
-                            <StatusBadge status={co.status} />
-                          </td>
+                            <td className="py-3.5 px-3 font-mono">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-fg font-medium">
+                                    {completedRuns}/{totalRuns} runs ({progressPercent}%)
+                                  </span>
+                                </div>
+                                <div className="w-28 h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+                                  <div
+                                    style={{ width: `${progressPercent}%` }}
+                                    className="h-full rounded-full bg-gradient-to-r from-purple-500 to-[#D8EC8D]"
+                                  />
+                                </div>
+                              </div>
+                            </td>
 
-                          <td className="py-3.5 px-3 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => handleSaveCustomOrderAsFavorite(co)}
-                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
-                                title="Save as Favorite"
-                              >
-                                <Bookmark className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                disabled={savingPackageId === co.id}
-                                onClick={() => handleSaveCustomToMyPackages(co.id)}
-                                className="px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 font-semibold text-[10px] transition-colors flex items-center gap-1"
-                                title="Save to My Packages"
-                              >
-                                <Boxes className="w-3 h-3" />
-                                <span>{savingPackageId === co.id ? "Saving..." : "Save to My Packages"}</span>
-                              </button>
-                              <Link
-                                href={`/packages/${co.id}`}
-                                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors inline-block"
-                                title="View Details"
-                              >
-                                <ChevronRight className="w-3.5 h-3.5" />
-                              </Link>
-                            </div>
-                          </td>
-                        </tr>
+                            <td className="py-3.5 px-3 font-mono font-bold text-[#D8EC8D]">
+                              ₹{totalCharge.toFixed(2)}
+                            </td>
+
+                            <td className="py-3.5 px-3">
+                              <StatusBadge status={co.status} />
+                            </td>
+
+                            <td className="py-3.5 px-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleExpandPackage(co.id)}
+                                  className={`px-2.5 py-1 rounded-lg border text-xs font-semibold transition-all flex items-center gap-1 ${
+                                    isExpanded
+                                      ? "bg-purple-500 text-white border-purple-400 shadow-xs"
+                                      : "bg-purple-500/15 hover:bg-purple-500/25 border-purple-500/30 text-purple-200"
+                                  }`}
+                                  title={isExpanded ? "Hide Sub-Orders" : "View Sub-Orders"}
+                                >
+                                  <Boxes className="w-3.5 h-3.5" />
+                                  <span>Sub-Orders ({co.executions?.length || 0})</span>
+                                  <ChevronDown
+                                    className={`w-3.5 h-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                  />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveCustomOrderAsFavorite(co)}
+                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+                                  title="Save as Favorite"
+                                >
+                                  <Bookmark className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={savingPackageId === co.id}
+                                  onClick={() => handleSaveCustomToMyPackages(co.id)}
+                                  className="px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 font-semibold text-[10px] transition-colors flex items-center gap-1"
+                                  title="Save to My Packages"
+                                >
+                                  <Boxes className="w-3 h-3" />
+                                  <span>{savingPackageId === co.id ? "Saving..." : "Save to My Packages"}</span>
+                                </button>
+                                <Link
+                                  href={`/packages/${co.id}`}
+                                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors inline-block"
+                                  title="View Details"
+                                >
+                                  <ChevronRight className="w-3.5 h-3.5" />
+                                </Link>
+                              </div>
+                            </td>
+                          </tr>
+
+                          {/* EXPANDABLE NESTED SUB-ORDERS DRAWER */}
+                          {isExpanded && (
+                            <tr className="bg-purple-950/[0.20] border-b border-purple-500/20">
+                              <td colSpan={7} className="p-3 sm:p-5">
+                                <div className="rounded-2xl bg-[#141019]/90 border border-purple-500/30 p-4 space-y-3 shadow-inner">
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-500/20 pb-2.5">
+                                    <div className="flex items-center gap-2">
+                                      <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300">
+                                        <Boxes className="w-4 h-4" />
+                                      </div>
+                                      <div>
+                                        <div className="text-xs font-bold text-fg flex items-center gap-2">
+                                          <span>Package Sub-Orders & Execution Runs</span>
+                                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-200">
+                                            {co.executions?.length || 0} Total Batches
+                                          </span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                          These child orders are strictly isolated inside this custom package to keep your Standard Orders history clean.
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[11px] font-mono">
+                                      <span className="text-slate-400">Status:</span>
+                                      <span className="font-semibold text-purple-300">{completedRuns} of {totalRuns} completed</span>
+                                    </div>
+                                  </div>
+
+                                  {(!co.executions || co.executions.length === 0) ? (
+                                    <div className="py-6 text-center text-slate-400 text-xs font-mono">
+                                      No execution runs found for this package.
+                                    </div>
+                                  ) : (
+                                    <div className="overflow-x-auto">
+                                      <table className="w-full text-left text-xs border-collapse">
+                                        <thead>
+                                          <tr className="border-b border-white/10 text-[10px] uppercase font-mono text-slate-400 tracking-wider">
+                                            <th className="py-2 px-2.5">Run #</th>
+                                            <th className="py-2 px-2.5">Target & Service</th>
+                                            <th className="py-2 px-2.5">Quantity</th>
+                                            <th className="py-2 px-2.5">Charge</th>
+                                            <th className="py-2 px-2.5">Scheduled / Executed</th>
+                                            <th className="py-2 px-2.5">Status</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5 font-mono">
+                                          {co.executions.map((exec: any, idx: number) => {
+                                            const ruleMatch = co.rules?.find((r: any) => r.id === exec.ruleId);
+                                            const svcName = ruleMatch?.service?.displayName || ruleMatch?.service?.name || "Service Run";
+                                            const execTarget = exec.targetUrl || targetLink;
+                                            return (
+                                              <tr key={exec.id || idx} className="hover:bg-white/[0.03] transition-colors">
+                                                <td className="py-2 px-2.5 whitespace-nowrap">
+                                                  <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold text-[10px]">
+                                                    #{exec.seq ?? idx + 1}
+                                                  </span>
+                                                </td>
+                                                <td className="py-2 px-2.5">
+                                                  <div className="text-fg font-sans font-medium text-xs truncate max-w-[220px]">
+                                                    {svcName}
+                                                  </div>
+                                                  {execTarget && (
+                                                    <a
+                                                      href={execTarget}
+                                                      target="_blank"
+                                                      rel="noreferrer"
+                                                      className="text-[10px] text-slate-400 hover:text-[#D8EC8D] truncate max-w-[220px] block"
+                                                    >
+                                                      {execTarget}
+                                                    </a>
+                                                  )}
+                                                </td>
+                                                <td className="py-2 px-2.5 whitespace-nowrap text-fg font-medium">
+                                                  {Number(exec.quantity || 0).toLocaleString()} units
+                                                </td>
+                                                <td className="py-2 px-2.5 whitespace-nowrap text-purple-300 text-[11px]">
+                                                  Prepaid (₹0.00)
+                                                </td>
+                                                <td className="py-2 px-2.5 whitespace-nowrap text-slate-400 text-[10px]">
+                                                  {exec.executeAt ? new Date(exec.executeAt).toLocaleString() : "-"}
+                                                </td>
+                                                <td className="py-2 px-2.5 whitespace-nowrap">
+                                                  <StatusBadge status={exec.status} />
+                                                </td>
+                                              </tr>
+                                            );
+                                          })}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       );
                     })}
 
@@ -1298,10 +1555,10 @@ export default function OrdersPage() {
                   onChange={(e) => setOrderProblemIssue(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-white/5 border border-border text-fg text-xs font-mono focus:outline-none focus:border-[#D8EC8D]"
                 >
-                  <option value="Execution delayed or missed" className="bg-white dark:bg-[#1c1c1c] text-fg">Execution delayed or missed</option>
-                  <option value="Quantity drop or discrepancy" className="bg-white dark:bg-[#1c1c1c] text-fg">Quantity drop or discrepancy</option>
-                  <option value="Target URL not updating" className="bg-white dark:bg-[#1c1c1c] text-fg">Target URL not updating</option>
-                  <option value="Other delivery issue" className="bg-white dark:bg-[#1c1c1c] text-fg">Other delivery issue</option>
+                  <option value="Execution delayed or missed" className="bg-[#1c1c1c] text-slate-100">Execution delayed or missed</option>
+                  <option value="Quantity drop or discrepancy" className="bg-[#1c1c1c] text-slate-100">Quantity drop or discrepancy</option>
+                  <option value="Target URL not updating" className="bg-[#1c1c1c] text-slate-100">Target URL not updating</option>
+                  <option value="Other delivery issue" className="bg-[#1c1c1c] text-slate-100">Other delivery issue</option>
                 </select>
               </div>
 

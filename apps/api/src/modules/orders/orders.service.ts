@@ -147,6 +147,11 @@ export class OrdersService {
       } else {
         if (!userId) return [];
         where.userId = userId;
+        // Suppress package sub-orders (child batch executions) from customer standalone order history
+        if (!(filters as any)?.includePackageExecutions) {
+          where.packageExecutionId = null;
+          where.isPrepaid = false;
+        }
       }
 
       if (filters?.status && filters.status !== "ALL") {

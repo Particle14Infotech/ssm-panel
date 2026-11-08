@@ -299,6 +299,10 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
               intervalMinutes: o.intervalMinutes ?? undefined,
               quantityPerRun: o.quantityPerRun ?? undefined,
               totalQuantity: o.totalQuantity ?? o.quantity,
+              packageExecutionId: o.packageExecutionId ?? undefined,
+              packageExecution: o.packageExecution ?? undefined,
+              isPrepaid: o.isPrepaid ?? false,
+              runsList: o.runsList ?? undefined,
             }))
           );
         }
