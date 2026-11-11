@@ -212,3 +212,4 @@ test("4. Capture Mobile - Dark Mode (iPhone 14)", async ({ page, context }) => {
   await page.screenshot({ path: ssPath, fullPage: true });
   expect(fs.existsSync(ssPath)).toBe(true);
 });
+
