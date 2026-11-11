@@ -898,10 +898,11 @@ export default function AutopilotPage() {
                 const isSelected = selectedPresetId === p.id;
                 const IconComponent = p.icon;
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={p.id}
                     onClick={() => setSelectedPresetId(p.id)}
-                    className={`relative p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${isSelected
+                    className={`relative p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between text-left w-full ${isSelected
                         ? p.themeClasses.activeBorder
                         : "bg-surface-raised border-border hover:border-fg-muted/40 hover:bg-surface"
                       }`}
@@ -912,7 +913,7 @@ export default function AutopilotPage() {
                       </span>
                     )}
 
-                    <div className="space-y-3">
+                    <div className="space-y-3 w-full">
                       <div className="flex items-center justify-between">
                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${p.themeClasses.iconBg}`}>
                           <IconComponent className="w-4 h-4" />
@@ -956,11 +957,11 @@ export default function AutopilotPage() {
                       </div>
                     </div>
 
-                    <div className="pt-4 mt-3 border-t border-border flex items-baseline justify-between">
+                    <div className="pt-4 mt-3 border-t border-border flex items-baseline justify-between w-full">
                       <span className="text-[11px] text-fg-muted">Per Upload</span>
                       <span className="text-base font-extrabold text-fg">₹{p.pricePerSlot}</span>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
