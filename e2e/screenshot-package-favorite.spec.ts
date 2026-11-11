@@ -125,3 +125,4 @@ test("Capture My Packages Save as Favorite Button and Action", async ({ page, co
     fullPage: true,
   });
 });
+

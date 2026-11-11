@@ -50,3 +50,4 @@ test("Capture Settings Page with single clean theme toggle", async ({ page, cont
     fullPage: false,
   });
 });
+

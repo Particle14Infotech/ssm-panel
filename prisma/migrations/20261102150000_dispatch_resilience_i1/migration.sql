@@ -11,7 +11,7 @@ ALTER TABLE "PackageExecution" ADD COLUMN IF NOT EXISTS "lastErrorAt"   TIMESTAM
 
 -- 3. Composite index for the new dispatchable-candidate SQL query
 --    Covers: status = SCHEDULED, executeAt <= now(), nextAttemptAt IS NULL OR <= now()
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "PackageExecution_dispatchable_idx"
+CREATE INDEX IF NOT EXISTS "PackageExecution_dispatchable_idx"
   ON "PackageExecution" ("status", "executeAt", "nextAttemptAt")
   WHERE "status" = 'SCHEDULED';
 

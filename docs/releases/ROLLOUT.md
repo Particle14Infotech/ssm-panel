@@ -156,4 +156,68 @@ Per architectural guidelines, the following legacy cleanup items are explicitly 
 
 - **Code Push Status:** **ZERO CODE PUSHED TO VPS**.
 - All changes, property-based tests, Next.js build compilation, forbidden words grep gates, and dry-run repair simulations have been executed strictly in local workspace.
-- Production deployment will occur strictly following operator approval.
+---
+
+## 7. YouPI-PG Pilot Rollout Plan (Self-Hosted UPI Gateway Pilot)
+
+### 7.1 Prerequisites Checklist
+Before enabling the YouPI pilot in production, all of the following checkboxes MUST be verified:
+- [ ] **Bank Written Confirmation**: Commercial confirmation obtained from receiving bank regarding business UPI transaction terms and statement export formats.
+- [ ] **Legal & Compliance Review**: Legal review completed regarding non-instant, manual-reconciliation pilot wallet credits under RBI guidelines.
+- [ ] **Dedicated Bank Account & SIM**: Completely isolated bank account used solely for the pilot (never mixed with primary operations or personal finances).
+- [ ] **Dedicated Pilot Phone**: Android observer installed only on a clean, dedicated physical phone holding the pilot bank SIM, with no external personal apps.
+- [ ] **Observer Hardening**: Gmail OAuth credentials restricted to read-only alert forwarding mailbox; Android notification listener restricted.
+- [ ] **Pilot Acknowledgement Record**: Stored in DB via Admin Portal (`adminName`, `signedAt`, confirmation text). The feature flag is code-locked and will refuse to activate if this record is missing.
+- [ ] **Hard Ceiling Caps Enforced**: Daily attempts ceiling $\le$ 20 per receiving account (as specified in upstream YouPI README); individual transaction caps: Min ₹100, Max ₹5,000.
+- [ ] **Monitoring & Heartbeats**: Heartbeat alerts configured for observers; admin email/Telegram alerts wired for `SUSPICIOUS` events.
+
+### 7.2 Phased Flag Order
+1. **Phase 0: Internal Dry-Run (Hours 0–24)**
+   - `YOUPI_PILOT_ENABLED = true`
+   - `allowlistedUserIds = ["<INTERNAL_ADMIN_USER_ID>"]`
+   - Only 1 internal admin account can see and initiate UPI pilot top-ups.
+   - Run 2 end-to-end test top-ups (₹100 each). Verify webhook delivery, statement CSV matching, and wallet credit.
+2. **Phase 1: Limited Friendly Customer Pilot (Days 2–7)**
+   - Add exactly 2 to 3 trusted power-user IDs to `allowlistedUserIds`.
+   - Never enable globally (`*`) or for un-allowlisted users.
+   - Total daily top-up attempts hard-capped at 20 across all users.
+3. **Phase 2: Evaluated Expansion (Days 8–14)**
+   - Maximum 10 allowlisted users.
+   - Requires 0 unresolved `SUSPICIOUS` events and 100% daily bank statement reconciliation match rate.
+
+### 7.3 Daily Limits within Upstream Guidelines
+- **Daily Attempts Cap**: 20 attempts / 24 hours per receiving account (README research project guideline).
+- **Daily Amount Cap**: ₹25,000 total per receiving account per day.
+- **Per-User Daily Cap**: 2 top-ups per user per day.
+- **Dual-Approval Threshold**: Any top-up $\ge$ ₹2,000 requires two separate administrators to confirm before wallet credit.
+
+### 7.4 Operational Monitoring: What to Watch
+- **Webhook Delivery Failures**: Rate of non-200 webhook responses or signature rejections (`YoupiWebhookDelivery.signatureOk = false`).
+- **Observer Heartbeats**: Alert if observer heartbeat timestamp is older than 15 minutes during active banking hours.
+- **SUSPICIOUS Count**: Any top-up marked `SUSPICIOUS` (amount mismatch, duplicate UTR, currency mismatch, or expired match) generates immediate admin notifications.
+- **Unmatched Bank Rows**: Daily count of bank statement rows that do not match any initiated top-up.
+- **Customer Support Tickets**: Any support inquiry referencing YouPI top-up order refs or delayed credits.
+
+### 7.5 Daily Manual Reconciliation (First 14 Days)
+Every evening at 23:00 IST:
+1. Operator downloads the day's official transaction CSV from netbanking.
+2. Operator navigates to `/admin/payments/youpi-pilot` and uploads the CSV.
+3. The reconciliation engine matches rows by exact UTR and amount in paise against `OBSERVED` top-ups.
+4. Operator verifies that every credited wallet deposit has a corresponding reconciled bank ledger entry.
+5. Invariant check: `Total Credited Paise in SMM == Total Reconciled Bank Inflows`.
+
+### 7.6 Exact Rollback & Emergency Kill-Switch Steps
+1. Go to `https://smm-admin.domain.com/admin/payments/youpi-pilot`
+2. Toggle **Kill Switch** to `ON`.
+   - *Result*: All subsequent attempts to initiate a pilot top-up are immediately rejected with `403 Pilot temporarily disabled`.
+3. Or via environment variable: Set `YOUPI_PILOT_ENABLED=false` and reload API (`pm2 reload smm-api`).
+4. Reverting user access: Clear `allowlistedUserIds` in settings. Active initiated sessions will expire in 15 minutes with no credits issued.
+
+### 7.7 Incident Response Plan: Suspected Spoofed Alert
+If an alert is received with a forged SMS, spoofed email, or fake bank push notification:
+1. **Freeze**: Immediately activate the Kill-Switch.
+2. **Reverse Nothing Automatically**: Never programmatically deduct or alter balances based on webhook status updates.
+3. **Audit**: Review `YoupiObservation` and raw webhook payloads in `YoupiWebhookDelivery`.
+4. **Manual Bank Verification**: Check official netbanking statement directly. Top-ups can only be credited if the money is settled in the bank account.
+5. **Mark Suspicious / Reject**: If confirmed spoofed, click **Reject** with reason `Spoofed SMS/alert detected - no bank credit entry found`. Top-up transitions to `REJECTED`.
+
