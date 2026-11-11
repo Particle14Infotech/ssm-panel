@@ -286,12 +286,12 @@ export function PlatformRing({
     ring.current.rotation.y = rotAngle.current;
   });
 
-  // Elliptical orbit geometry ensuring wide clearance and zero collisions
-  const radX = radius * 0.98;
-  const radZ = radius * 0.78;
+  // Controlled elliptical orbit geometry ensuring complete visual clearance outside the crown
+  const radX = radius * 1.08;
+  const radZ = radius * 0.92;
 
   return (
-    <group ref={ring} rotation={[0.18, 0, 0.03]} name="platform-ring">
+    <group ref={ring} rotation={[0.14, 0, 0.02]} name="platform-ring">
       {ids.map((id, i) => {
         // Evenly spaced along the orbit
         const a = (i / ids.length) * Math.PI * 2;
@@ -299,11 +299,9 @@ export function PlatformRing({
         const z = Math.sin(a) * radZ;
 
         // Vertical non-obscuring profile:
-        // When in front (z > 0), sits comfortably lower in the foreground below crown base band;
-        // when in back (z < 0), sits higher framing the top pointed tips from behind.
-        // The crown's front face, gemstones, and hollow interior are NEVER obscured!
+        // Gentle tilt so front chips float cleanly in front of the base band without clipping
         const zNorm = z / radZ;
-        const yOffset = 0.15 - zNorm * 1.35;
+        const yOffset = -0.06 - zNorm * 0.38;
 
         const content = (
           <group

@@ -65,9 +65,9 @@ function AuthCrownRig({
         </group>
       </Float>
 
-      {/* Orbiting 3D Social Logos with safe, unclipped radius inside the boundary */}
-      <group position={[0, -0.15, 0]} scale={0.44}>
-        <PlatformRing radius={2.8} isMobile={false} />
+      {/* Orbiting 3D Social Logos with safe, unclipped radius outside crown */}
+      <group position={[0, -0.08, 0]} scale={0.42}>
+        <PlatformRing radius={4.2} isMobile={false} />
       </group>
 
       {/* Radiant particle sparkle field around the crown */}

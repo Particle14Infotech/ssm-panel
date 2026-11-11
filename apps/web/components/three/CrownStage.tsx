@@ -78,9 +78,9 @@ function ContainedCrownRig({
       </group>
 
       {/* Orbiting 3D Social Media Platform Logos */}
-      <group position={[0, -0.15, 0]} scale={0.46}>
+      <group position={[0, -0.08, 0]} scale={0.42}>
         <PlatformRing
-          radius={isMobile ? 2.4 : 3.0}
+          radius={isMobile ? 3.8 : 4.2}
           onSelect={onSelect}
           isMobile={isMobile}
           scrollProgress={scrollDummy}
