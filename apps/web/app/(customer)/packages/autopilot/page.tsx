@@ -121,7 +121,12 @@ const PLATFORMS: PlatformOption[] = [
 
 function getSafeImageUrl(url?: string | null): string {
   if (!url) return "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300";
-  if (url.startsWith("/api/") || url.startsWith("data:")) return url;
+  if (url.startsWith("/api/") || url.startsWith("data:")) {
+    if (url.startsWith("/api/v1/packages/autopilot/proxy-image")) {
+      return url.replace("/api/v1/packages/autopilot/proxy-image", "/api/v1/link-preview/proxy-image");
+    }
+    return url;
+  }
   try {
     const parsed = new URL(url);
     if (parsed.protocol === "https:" || parsed.protocol === "http:") {
@@ -131,7 +136,7 @@ function getSafeImageUrl(url?: string | null): string {
       }
     }
   } catch {}
-  return `/api/v1/packages/autopilot/proxy-image?url=${encodeURIComponent(url)}`;
+  return `/api/v1/link-preview/proxy-image?url=${encodeURIComponent(url)}`;
 }
 
 interface AutopilotPackageSlot {
@@ -785,6 +790,9 @@ export default function AutopilotPage() {
                       alt={detectedProfile.handle}
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80";
+                      }}
                     />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -824,6 +832,9 @@ export default function AutopilotPage() {
                           alt="Thumbnail"
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80";
+                          }}
                         />
                         <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
                           <Play className="w-4 h-4 text-white fill-white/80" />

@@ -9,9 +9,10 @@ import { PackagesEnabledGuard } from "./packages-enabled.guard";
 import { PrismaService } from "../../common/prisma.service";
 import { PlatformsModule } from "../platforms/platforms.module";
 import { SettingsModule } from "../settings/settings.module";
+import { LinkPreviewModule } from "../link-preview/link-preview.module";
 
 @Module({
-  imports: [PlatformsModule, SettingsModule],
+  imports: [PlatformsModule, SettingsModule, LinkPreviewModule],
   controllers: [PackagesController, PackageTemplatesAdminController],
   providers: [
     PackagesService,

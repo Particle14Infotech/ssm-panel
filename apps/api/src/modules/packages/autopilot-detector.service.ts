@@ -173,7 +173,7 @@ export class AutopilotDetectorService {
         title,
         author: authorHandle ? `@${authorHandle}` : (getMeta("site_name") || "Instagram"),
         publishedAt: new Date().toISOString(),
-        thumbnailUrl: image ? `/api/v1/packages/autopilot/proxy-image?url=${encodeURIComponent(image)}` : "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
+        thumbnailUrl: image ? `/api/v1/link-preview/proxy-image?url=${encodeURIComponent(image)}` : "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
         rawImage: image || undefined,
         isLiveDetected: true,
         mediaType: "REEL",
@@ -250,7 +250,7 @@ export class AutopilotDetectorService {
       nodes.sort((a, b) => (b.pk > a.pk ? 1 : -1));
 
       const newestReel = nodes.find((n) => n.typename === "XIGPolarisVideoMedia") || nodes[0];
-      const proxyThumbnail = `/api/v1/packages/autopilot/proxy-image?url=${encodeURIComponent(newestReel.displayUri)}`;
+      const proxyThumbnail = `/api/v1/link-preview/proxy-image?url=${encodeURIComponent(newestReel.displayUri)}`;
 
       return {
         platform: "INSTAGRAM",
@@ -295,7 +295,7 @@ export class AutopilotDetectorService {
       author: `@${cleanHandle}`,
       publishedAt: new Date().toISOString(),
       thumbnailUrl: ogImage
-        ? `/api/v1/packages/autopilot/proxy-image?url=${encodeURIComponent(ogImage[1])}`
+        ? `/api/v1/link-preview/proxy-image?url=${encodeURIComponent(ogImage[1])}`
         : "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop&q=80",
       isLiveDetected: false,
       mediaType: "POST",

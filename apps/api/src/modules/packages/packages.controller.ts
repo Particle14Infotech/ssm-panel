@@ -38,12 +38,16 @@ import {
   AutopilotPurchaseInputSchema,
 } from "@smm/contracts";
 import { isSafeImageUrl, isSafeResolvedIp, isPrivateOrReservedIp } from "./ssrf-guard.util";
+import { LinkPreviewService } from "../link-preview/link-preview.service";
 
 @ApiTags("Scheduled Packages Engine")
 @Controller("packages")
 @UseGuards(PackagesEnabledGuard)
 export class PackagesController {
-  constructor(private readonly packagesService: PackagesService) {}
+  constructor(
+    private readonly packagesService: PackagesService,
+    private readonly linkPreviewService: LinkPreviewService
+  ) {}
 
   @Get("templates")
   @ApiOperation({ summary: "List Active Combo Package Templates" })
@@ -414,93 +418,17 @@ export class PackagesController {
 
   @Get("autopilot/proxy-image")
   @ApiOperation({ summary: "Proxy social media image assets to bypass referrer restrictions" })
-  async proxyAutopilotImage(@Query("url") targetUrl: string, @Res() res: Response) {
+  async proxyAutopilotImage(@Query("url") targetUrl: string, @Res() reply: any): Promise<void> {
     if (!targetUrl) {
-      return res.status(400).send("url parameter is required");
-    }
-    if (!isSafeImageUrl(targetUrl)) {
-      return res.status(403).send("Image URL not allowed");
-    }
-    try {
-      const u = new URL(targetUrl);
-      const addresses = await dns.lookup(u.hostname, { all: true });
-      if (!addresses || addresses.length === 0) {
-        return res.status(403).send("Host failed DNS resolution");
+      if (typeof reply?.status === "function") {
+        return reply.status(400).send("Missing url parameter");
+      } else if (typeof reply?.writeHead === "function") {
+        reply.writeHead(400, { "Content-Type": "text/plain" });
+        return reply.end("Missing url parameter");
       }
-      for (const rec of addresses) {
-        if (isPrivateOrReservedIp(rec.address)) {
-          return res.status(403).send("Host resolves to disallowed or private IP address");
-        }
-      }
-      const pinnedIp = addresses[0].address;
-      const pinnedFamily = net.isIPv4(pinnedIp) ? 4 : 6;
-
-      const client = https;
-      const headers = {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-        Referer: "https://www.instagram.com/",
-        Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-      };
-
-      const requestOptions = {
-        headers,
-        timeout: 5000,
-        lookup: (
-          _hostname: string,
-          _opts: any,
-          callback: (err: NodeJS.ErrnoException | null, address: string, family: number) => void
-        ) => {
-          callback(null, pinnedIp, pinnedFamily);
-        },
-      };
-
-      const request = client
-        .get(targetUrl, requestOptions, (upstreamRes) => {
-          // Reject redirects unconditionally per AV1 security rule (no redirects)
-          if (
-            upstreamRes.statusCode &&
-            upstreamRes.statusCode >= 300 &&
-            upstreamRes.statusCode < 400
-          ) {
-            upstreamRes.resume();
-            return res.status(403).send("Redirects are disallowed on proxy endpoint");
-          }
-
-          if (upstreamRes.statusCode !== 200) {
-            upstreamRes.resume();
-            return res.status(upstreamRes.statusCode || 502).send("Upstream image returned non-200");
-          }
-
-          res.setHeader("Content-Type", upstreamRes.headers["content-type"] || "image/jpeg");
-          res.setHeader("Cache-Control", "public, max-age=86400");
-
-          let totalBytes = 0;
-          upstreamRes.on("data", (chunk) => {
-            totalBytes += chunk.length;
-            if (totalBytes > 5 * 1024 * 1024) {
-              // 5MB limit
-              upstreamRes.destroy();
-              if (!res.headersSent) {
-                res.status(413).send("Image exceeds 5MB size limit");
-              } else {
-                res.end();
-              }
-            }
-          });
-
-          upstreamRes.pipe(res);
-        })
-        .on("timeout", () => {
-          request.destroy();
-          if (!res.headersSent) res.status(504).send("Image proxy request timed out");
-        })
-        .on("error", () => {
-          if (!res.headersSent) res.status(502).send("Failed to proxy image");
-        });
-    } catch {
-      if (!res.headersSent) res.status(400).send("Invalid URL");
+      return;
     }
+    await this.linkPreviewService.pipeImage(targetUrl, reply);
   }
 
   @Post("autopilot/preview")
