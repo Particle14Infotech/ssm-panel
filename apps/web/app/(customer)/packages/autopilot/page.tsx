@@ -74,8 +74,6 @@ interface PlatformOption {
   description: string;
   contentLabel: string;
   placeholder: string;
-  defaultSample: string;
-  samples: Array<{ handle: string; label: string }>;
 }
 
 const PLATFORMS: PlatformOption[] = [
@@ -85,12 +83,7 @@ const PLATFORMS: PlatformOption[] = [
     label: "Instagram",
     description: "Auto-detects new Reels, Posts & IGTV",
     contentLabel: "Instagram Reels & Posts",
-    placeholder: "Enter @handle or Reel URL",
-    defaultSample: "@areion._",
-    samples: [
-      { handle: "@areion._", label: "@areion._" },
-      { handle: "@cristiano", label: "@cristiano" },
-    ],
+    placeholder: "Enter @handle or Reel URL (e.g. @your_brand)",
   },
   {
     id: "YOUTUBE",
@@ -98,12 +91,7 @@ const PLATFORMS: PlatformOption[] = [
     label: "YouTube",
     description: "Auto-detects new Videos & Shorts",
     contentLabel: "YouTube Channel & Shorts",
-    placeholder: "Enter @channel, URL or Video",
-    defaultSample: "@mkbhd",
-    samples: [
-      { handle: "@mkbhd", label: "@mkbhd" },
-      { handle: "@MrBeast", label: "@MrBeast" },
-    ],
+    placeholder: "Enter @channel, URL or Video (e.g. @your_channel)",
   },
   {
     id: "TIKTOK",
@@ -111,12 +99,7 @@ const PLATFORMS: PlatformOption[] = [
     label: "TikTok",
     description: "Auto-detects new TikTok Videos",
     contentLabel: "TikTok Profile & Videos",
-    placeholder: "Enter @handle or TikTok URL",
-    defaultSample: "@tiktok",
-    samples: [
-      { handle: "@tiktok", label: "@tiktok" },
-      { handle: "@khaby.lame", label: "@khaby.lame" },
-    ],
+    placeholder: "Enter @handle or TikTok URL (e.g. @your_page)",
   },
   {
     id: "TELEGRAM",
@@ -124,12 +107,7 @@ const PLATFORMS: PlatformOption[] = [
     label: "Telegram",
     description: "Auto-detects new Public Channel Posts",
     contentLabel: "Telegram Public Channel",
-    placeholder: "Enter public @channel or t.me link",
-    defaultSample: "@durov",
-    samples: [
-      { handle: "@durov", label: "@durov" },
-      { handle: "@telegram", label: "@telegram" },
-    ],
+    placeholder: "Enter public @channel or t.me link (e.g. @your_channel)",
   },
   {
     id: "TWITTER",
@@ -137,12 +115,7 @@ const PLATFORMS: PlatformOption[] = [
     label: "X",
     description: "Auto-detects new Posts & Media",
     contentLabel: "X / Twitter Profile & Posts",
-    placeholder: "Enter @handle or post link",
-    defaultSample: "@elonmusk",
-    samples: [
-      { handle: "@elonmusk", label: "@elonmusk" },
-      { handle: "@sama", label: "@sama" },
-    ],
+    placeholder: "Enter @handle or post link (e.g. @your_account)",
   },
 ];
 
@@ -266,7 +239,7 @@ export default function AutopilotPage() {
   const { user, refreshData } = useCustomer();
 
   // Booking Form State
-  const [handleInput, setHandleInput] = useState("@areion._");
+  const [handleInput, setHandleInput] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState<SupportedAutopilotPlatform>("INSTAGRAM");
   const [selectedPresetId, setSelectedPresetId] = useState<string>("viral_push");
   const [slotCount, setSlotCount] = useState<number>(5);
@@ -315,9 +288,11 @@ export default function AutopilotPage() {
 
   // Auto-detect handle on change with debouncing
   useEffect(() => {
-    if (!handleInput || handleInput.trim().length < 2) {
+    const trimmed = handleInput.trim();
+    if (!trimmed || trimmed.length < 2) {
       setDetectedProfile(null);
       setDetectedMedia(null);
+      setDetectionError(null);
       return;
     }
 
@@ -326,7 +301,7 @@ export default function AutopilotPage() {
     }
 
     debounceTimerRef.current = setTimeout(() => {
-      triggerDetect(handleInput, selectedPlatform);
+      triggerDetect(trimmed, selectedPlatform);
     }, 600);
 
     return () => {
@@ -335,6 +310,14 @@ export default function AutopilotPage() {
   }, [handleInput, selectedPlatform]);
 
   const triggerDetect = async (inputStr: string, platformHint?: string) => {
+    const trimmed = inputStr.trim();
+    if (!trimmed) {
+      setDetectedProfile(null);
+      setDetectedMedia(null);
+      setDetectionError(null);
+      return;
+    }
+
     setIsDetecting(true);
     setDetectionError(null);
     try {
@@ -348,50 +331,27 @@ export default function AutopilotPage() {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ handle: inputStr, platform: platformHint }),
+          body: JSON.stringify({ handle: trimmed, platform: platformHint }),
         });
-      } catch (networkErr) {
-        // Handled below by fallback
+      } catch (networkErr: any) {
+        throw new Error(networkErr?.message || "Network error while connecting to preview service.");
       }
 
       if (res && res.ok) {
         const data = await res.json();
-        setDetectedProfile(data.profile);
-        setDetectedMedia(data.latestMedia);
+        setDetectedProfile(data.profile || null);
+        setDetectedMedia(data.latestMedia || null);
         if (data.profile?.platform) {
           setSelectedPlatform(data.profile.platform);
         }
         return;
       }
 
-      // In local dev or simulation mode, provide instant verified creator preview
-      if (process.env.NEXT_PUBLIC_SIMULATE_UPSTREAM_ORDERS === "true" || process.env.NODE_ENV !== "production") {
-        const clean = inputStr.replace(/^@/, "").trim() || "creator";
-        const targetPlat: SupportedAutopilotPlatform = (platformHint as SupportedAutopilotPlatform) || selectedPlatform;
-        const simProfile: DetectedProfile = {
-          handle: `@${clean}`,
-          displayName: clean.charAt(0).toUpperCase() + clean.slice(1),
-          avatarUrl: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150`,
-          platform: targetPlat,
-        };
-        const simMedia: DetectedMedia = {
-          platform: targetPlat,
-          mediaKey: `media_${clean}_latest`,
-          url: targetPlat === "YOUTUBE" ? `https://youtube.com/watch?v=dQw4w9WgXcQ` : `https://instagram.com/reel/C7xY9z0A`,
-          title: `Latest drop from @${clean}! Auto-boost armed and waiting.`,
-          author: `@${clean}`,
-          publishedAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
-          thumbnailUrl: `https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80`,
-          mediaType: targetPlat === "YOUTUBE" ? "video" : "reel",
-          isLiveDetected: true,
-        };
-        setDetectedProfile(simProfile);
-        setDetectedMedia(simMedia);
-        return;
-      }
-
-      throw new Error("Could not detect public profile or recent uploads.");
+      const errData = await res?.json().catch(() => null);
+      throw new Error(errData?.message || "Could not detect public profile or recent uploads.");
     } catch (err: any) {
+      setDetectedProfile(null);
+      setDetectedMedia(null);
       setDetectionError(err.message || "Failed to auto-detect handle");
     } finally {
       setIsDetecting(false);
@@ -412,72 +372,19 @@ export default function AutopilotPage() {
           },
         });
       } catch (networkErr) {
-        // Handled below by fallback
+        // Handled below
       }
 
       if (res && res.ok) {
         const data = await res.json();
-        setAutopilotPackages(data);
+        setAutopilotPackages(Array.isArray(data) ? data : []);
         return;
       }
 
-      // If backend has no subscriptions yet or offline in dev, show verified sample subscription
-      if (process.env.NEXT_PUBLIC_SIMULATE_UPSTREAM_ORDERS === "true" || process.env.NODE_ENV !== "production") {
-        setAutopilotPackages((prev) => {
-          if (prev.length > 0) return prev;
-          return [
-            {
-              id: "pkg_auto_demo_01",
-              platform: "INSTAGRAM",
-              handle: "@areion._",
-              status: "ACTIVE",
-              reserveTotal: 1495,
-              createdAt: new Date(Date.now() - 86400000).toISOString(),
-              allocationSnapshot: {
-                presetName: "Viral Push",
-                runsCount: 4,
-                durationHours: 12,
-                metrics: { views: 10000, likes: 600, shares: 150, comments: 50 },
-              },
-              slots: [
-                {
-                  id: "slot_01_done",
-                  slotNumber: 1,
-                  status: "COMPLETED",
-                  targetUrl: "https://instagram.com/reel/C6mKL89",
-                  startedAt: new Date(Date.now() - 72000000).toISOString(),
-                  completedAt: new Date(Date.now() - 28800000).toISOString(),
-                  executions: [
-                    { id: "e1", seq: 1, quantity: 2500, executeAt: "10:00 AM", status: "COMPLETED", rule: { kind: "VIEWS", service: { name: "Explore Views", kind: "VIEWS" } } },
-                    { id: "e2", seq: 2, quantity: 2500, executeAt: "01:00 PM", status: "COMPLETED", rule: { kind: "VIEWS", service: { name: "Explore Views", kind: "VIEWS" } } },
-                    { id: "e3", seq: 3, quantity: 2500, executeAt: "04:00 PM", status: "COMPLETED", rule: { kind: "VIEWS", service: { name: "Explore Views", kind: "VIEWS" } } },
-                    { id: "e4", seq: 4, quantity: 2500, executeAt: "07:00 PM", status: "COMPLETED", rule: { kind: "VIEWS", service: { name: "Explore Views", kind: "VIEWS" } } },
-                  ],
-                },
-                {
-                  id: "slot_02_active",
-                  slotNumber: 2,
-                  status: "ACTIVE",
-                  targetUrl: "https://instagram.com/reel/C7xY9z0",
-                  startedAt: new Date(Date.now() - 14400000).toISOString(),
-                  executions: [
-                    { id: "e5", seq: 1, quantity: 2500, executeAt: "02:00 PM", status: "COMPLETED", rule: { kind: "VIEWS", service: { name: "Explore Views", kind: "VIEWS" } } },
-                    { id: "e6", seq: 2, quantity: 2500, executeAt: "05:00 PM", status: "DELIVERING", rule: { kind: "VIEWS", service: { name: "Explore Views", kind: "VIEWS" } } },
-                    { id: "e7", seq: 3, quantity: 2500, executeAt: "08:00 PM", status: "SCHEDULED", rule: { kind: "VIEWS", service: { name: "Explore Views", kind: "VIEWS" } } },
-                    { id: "e8", seq: 4, quantity: 2500, executeAt: "11:00 PM", status: "SCHEDULED", rule: { kind: "VIEWS", service: { name: "Explore Views", kind: "VIEWS" } } },
-                  ],
-                },
-                { id: "slot_03_avail", slotNumber: 3, status: "AVAILABLE" },
-                { id: "slot_04_avail", slotNumber: 4, status: "AVAILABLE" },
-                { id: "slot_05_avail", slotNumber: 5, status: "AVAILABLE" },
-              ],
-            },
-          ];
-        });
-        return;
-      }
+      setAutopilotPackages([]);
     } catch (e) {
       console.error("Failed to load autopilot packages:", e);
+      setAutopilotPackages([]);
     } finally {
       setIsLoadingPackages(false);
     }
@@ -511,6 +418,11 @@ export default function AutopilotPage() {
 
   // Purchase Autopilot
   const handlePurchase = async () => {
+    if (!handleInput.trim()) {
+      setPurchaseError("Please enter a creator handle or content link first.");
+      return;
+    }
+
     if (!hasSufficientBalance) {
       setPurchaseError(`Insufficient balance (₹${userBalance.toFixed(2)}). Need ₹${totalCost.toFixed(2)}.`);
       return;
@@ -528,27 +440,22 @@ export default function AutopilotPage() {
           ? crypto.randomUUID()
           : `auto_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-      let res: Response | null = null;
-      try {
-        res = await fetch(`${apiBase}/packages/autopilot/purchase`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "idempotency-key": idempotencyKey,
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({
-            handle: handleInput,
-            platform: selectedPlatform,
-            presetId: selectedPreset.id,
-            slotCount,
-            seedCurrentPost,
-            idempotencyKey,
-          }),
-        });
-      } catch (networkErr) {
-        // Fallback handled below
-      }
+      const res = await fetch(`${apiBase}/packages/autopilot/purchase`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "idempotency-key": idempotencyKey,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          handle: handleInput.trim(),
+          platform: selectedPlatform,
+          presetId: selectedPreset.id,
+          slotCount,
+          seedCurrentPost,
+          idempotencyKey,
+        }),
+      });
 
       if (res && res.ok) {
         setPurchaseSuccess(`🚀 Autopilot successfully activated for ${detectedProfile?.handle || handleInput}!`);
@@ -558,55 +465,8 @@ export default function AutopilotPage() {
         return;
       }
 
-      // Simulation fallback for demo / test mode
-      if (process.env.NEXT_PUBLIC_SIMULATE_UPSTREAM_ORDERS === "true" || process.env.NODE_ENV !== "production") {
-        const newPkg: AutopilotPackage = {
-          id: `pkg_auto_${Date.now()}`,
-          platform: selectedPlatform,
-          handle: detectedProfile?.handle || handleInput,
-          status: "ACTIVE",
-          reserveTotal: totalCost,
-          createdAt: new Date().toISOString(),
-          allocationSnapshot: {
-            presetName: selectedPreset.name,
-            runsCount: selectedPreset.runsCount,
-            durationHours: selectedPreset.durationHours,
-            metrics: selectedPreset.metrics,
-          },
-          slots: Array.from({ length: slotCount }, (_, idx) => ({
-            id: `slot_${Date.now()}_${idx + 1}`,
-            slotNumber: idx + 1,
-            status: idx === 0 && seedCurrentPost ? "ACTIVE" : "AVAILABLE",
-            targetUrl: idx === 0 && seedCurrentPost ? (detectedMedia?.url || "https://instagram.com/reel/demo") : null,
-            startedAt: idx === 0 && seedCurrentPost ? new Date().toISOString() : null,
-            executions: idx === 0 && seedCurrentPost ? [
-              {
-                id: `exec_1`,
-                seq: 1,
-                quantity: Math.round(selectedPreset.metrics.views / selectedPreset.runsCount),
-                executeAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                status: "DELIVERING",
-                rule: { kind: "VIEWS", service: { name: "High-Retention Views", kind: "VIEWS" } },
-              },
-              {
-                id: `exec_2`,
-                seq: 2,
-                quantity: Math.round(selectedPreset.metrics.views / selectedPreset.runsCount),
-                executeAt: new Date(Date.now() + 3 * 3600000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                status: "SCHEDULED",
-                rule: { kind: "VIEWS", service: { name: "High-Retention Views", kind: "VIEWS" } },
-              },
-            ] : [],
-          })),
-        };
-        setAutopilotPackages((prev) => [newPkg, ...prev]);
-        setPurchaseSuccess(`🚀 Autopilot successfully activated for ${detectedProfile?.handle || handleInput}!`);
-        showToast(`Autopilot activated for ${slotCount} uploads!`);
-        if (refreshData) refreshData();
-        return;
-      }
-
-      throw new Error("Failed to book Autopilot package.");
+      const errData = await res?.json().catch(() => null);
+      throw new Error(errData?.message || "Failed to book Autopilot package.");
     } catch (err: any) {
       setPurchaseError(err.message || "Error activating Autopilot.");
     } finally {
@@ -623,18 +483,13 @@ export default function AutopilotPage() {
     try {
       const apiBase = getApiBase();
       const token = getAuthToken();
-      let res: Response | null = null;
-      try {
-        res = await fetch(`${apiBase}/packages/${cancelModalPackage.id}/cancel`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-      } catch (networkErr) {
-        // Fallback handled below
-      }
+      const res = await fetch(`${apiBase}/packages/${cancelModalPackage.id}/cancel`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
 
       if (res && res.ok) {
         const data = await res.json();
@@ -646,18 +501,8 @@ export default function AutopilotPage() {
         return;
       }
 
-      // Simulation fallback for demo / test mode
-      if (process.env.NEXT_PUBLIC_SIMULATE_UPSTREAM_ORDERS === "true" || process.env.NODE_ENV !== "production") {
-        setAutopilotPackages((prev) =>
-          prev.map((p) => (p.id === cancelModalPackage.id ? { ...p, status: "CANCELLED" } : p))
-        );
-        showToast(`Subscription cancelled! 100% of unused reserve refunded to your wallet.`);
-        setCancelModalPackage(null);
-        if (refreshData) refreshData();
-        return;
-      }
-
-      throw new Error("Failed to cancel subscription.");
+      const errData = await res?.json().catch(() => null);
+      throw new Error(errData?.message || "Failed to cancel subscription.");
     } catch (err: any) {
       setCancelError(err.message || "Failed to cancel package");
     } finally {
@@ -671,18 +516,13 @@ export default function AutopilotPage() {
     try {
       const apiBase = getApiBase();
       const token = getAuthToken();
-      let res: Response | null = null;
-      try {
-        res = await fetch(`${apiBase}/packages/autopilot/${packageId}/sync`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-      } catch (networkErr) {
-        // Fallback handled below
-      }
+      const res = await fetch(`${apiBase}/packages/autopilot/${packageId}/sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
 
       if (res && res.ok) {
         const data = await res.json();
@@ -692,14 +532,8 @@ export default function AutopilotPage() {
         return;
       }
 
-      // Simulation fallback for demo / test mode
-      if (process.env.NEXT_PUBLIC_SIMULATE_UPSTREAM_ORDERS === "true" || process.env.NODE_ENV !== "production") {
-        await new Promise((r) => setTimeout(r, 600));
-        showToast("Poller verified creator feed: all slots synchronized!");
-        return;
-      }
-
-      throw new Error("Failed to sync feed.");
+      const errData = await res?.json().catch(() => null);
+      throw new Error(errData?.message || "Failed to sync feed.");
     } catch (err: any) {
       showToast(err.message || "Failed to sync feed.");
     } finally {
@@ -822,7 +656,6 @@ export default function AutopilotPage() {
                       type="button"
                       onClick={() => {
                         setSelectedPlatform(p.id);
-                        setHandleInput(p.defaultSample);
                       }}
                       title={p.label}
                       aria-label={p.label}
@@ -847,7 +680,7 @@ export default function AutopilotPage() {
             {/* Input Box with Paste & Clear */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs font-medium text-fg-muted">
-                <span>Creator Handle or Link</span>
+                <span>Creator Handle or Profile Link</span>
                 <button
                   type="button"
                   onClick={handlePasteClipboard}
@@ -871,7 +704,12 @@ export default function AutopilotPage() {
                   {handleInput && (
                     <button
                       type="button"
-                      onClick={() => setHandleInput("")}
+                      onClick={() => {
+                        setHandleInput("");
+                        setDetectedProfile(null);
+                        setDetectedMedia(null);
+                        setDetectionError(null);
+                      }}
                       className="p-1 rounded-lg text-fg-muted hover:text-fg transition-colors"
                       title="Clear input"
                     >
@@ -891,24 +729,26 @@ export default function AutopilotPage() {
                   ) : null}
                 </div>
               </div>
-
-              {/* Sample test chips */}
-              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                <span className="text-[10px] text-fg-muted font-medium">Quick Try:</span>
-                {activePlatform.samples.map((sample) => (
-                  <button
-                    key={sample.handle}
-                    type="button"
-                    onClick={() => {
-                      setHandleInput(sample.handle);
-                    }}
-                    className="px-2 py-0.5 rounded-md bg-surface-raised hover:bg-surface text-fg-muted hover:text-fg text-[11px] font-medium border border-border transition-all"
-                  >
-                    {sample.label}
-                  </button>
-                ))}
-              </div>
             </div>
+
+            {/* Error Message when detection fails */}
+            {detectionError && (
+              <div className="flex items-center gap-2 p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-medium">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{detectionError}</span>
+              </div>
+            )}
+
+            {/* Empty State Helper when no handle has been entered yet */}
+            {!detectedProfile && !isDetecting && !detectionError && (
+              <div className="rounded-2xl border border-dashed border-border p-4 text-center space-y-1.5 bg-surface-raised/40">
+                <Bot className="w-7 h-7 text-fg-muted/40 mx-auto" />
+                <div className="text-xs font-semibold text-fg">Enter Your {activePlatform.label} Handle Above</div>
+                <p className="text-[11px] text-fg-muted max-w-xs mx-auto">
+                  Type your public account handle or link to preview your latest upload and arm automated boosting.
+                </p>
+              </div>
+            )}
 
             {/* Live Detected Profile Preview Card */}
             {detectedProfile ? (
