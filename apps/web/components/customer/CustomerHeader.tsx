@@ -78,6 +78,11 @@ export function CustomerHeader() {
 
         {/* Right: Balance Chip + Add Funds, Notifications, User Menu */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {process.env.NEXT_PUBLIC_SIMULATE_UPSTREAM_ORDERS === "true" && (
+            <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 whitespace-nowrap">
+              SIMULATION
+            </span>
+          )}
           {/* Balance Chip (No-wrap per T3 rules) */}
           <div className="flex items-center gap-1.5 sm:gap-2 bg-surface-raised border border-border rounded-xl p-1 pr-1.5 pl-2.5 sm:pl-3 whitespace-nowrap transition-colors">
             <div className="flex items-baseline gap-1 font-sans whitespace-nowrap">

@@ -357,13 +357,22 @@ function PackagesListContent() {
           </p>
         </div>
 
-        <Link
-          href="/new-order?tab=custom_drip"
-          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#D8EC8D] text-[#131313] font-semibold text-xs hover:brightness-105 active:scale-95 transition-all shadow-sm w-full sm:w-auto"
-        >
-          <PlusCircle className="w-3.5 h-3.5" />
-          <span>New Custom Package</span>
-        </Link>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Link
+            href="/packages/autopilot"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500/20 to-[#D8EC8D]/20 border border-[#D8EC8D]/40 text-[#D8EC8D] font-semibold text-xs hover:brightness-110 active:scale-95 transition-all shadow-sm w-full sm:w-auto"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#D8EC8D]" />
+            <span>🚀 Autopilot (Auto-Boost)</span>
+          </Link>
+          <Link
+            href="/new-order?tab=custom_drip"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#D8EC8D] text-[#131313] font-semibold text-xs hover:brightness-105 active:scale-95 transition-all shadow-sm w-full sm:w-auto"
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>New Custom Package</span>
+          </Link>
+        </div>
       </div>
 
       {/* Filter Chips Bar (Quick mobile switcher) */}

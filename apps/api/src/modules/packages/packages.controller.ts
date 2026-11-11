@@ -1,4 +1,8 @@
 import { randomBytes } from "crypto";
+import * as https from "https";
+import * as http from "http";
+import { URL } from "url";
+import type { Response } from "express";
 import {
   Controller,
   Get,
@@ -9,6 +13,7 @@ import {
   UseGuards,
   BadRequestException,
   Headers,
+  Res,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { PackagesService } from "./packages.service";
@@ -27,7 +32,10 @@ import {
   CustomCampaignPurchaseInputSchema,
   ComboQuoteInputSchema,
   ComboPurchaseInputSchema,
+  AutopilotPreviewInputSchema,
+  AutopilotPurchaseInputSchema,
 } from "@smm/contracts";
+import { isSafeImageUrl, isSafeResolvedIp } from "./ssrf-guard.util";
 
 @ApiTags("Scheduled Packages Engine")
 @Controller("packages")
@@ -400,6 +408,114 @@ export class PackagesController {
       throw new BadRequestException("newTargetUrl is required.");
     }
     return this.packagesService.swapTriggerLink(user.id, id, tid, body);
+  }
+
+  @Get("autopilot/proxy-image")
+  @ApiOperation({ summary: "Proxy social media image assets to bypass referrer restrictions" })
+  async proxyAutopilotImage(@Query("url") targetUrl: string, @Res() res: Response) {
+    if (!targetUrl) {
+      return res.status(400).send("url parameter is required");
+    }
+    if (!isSafeImageUrl(targetUrl)) {
+      return res.status(403).send("Image URL not allowed");
+    }
+    try {
+      const u = new URL(targetUrl);
+      const isDnsSafe = await isSafeResolvedIp(u.hostname);
+      if (!isDnsSafe) {
+        return res.status(403).send("Host resolves to disallowed or private IP address");
+      }
+
+      const client = https;
+      const headers = {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        Referer: "https://www.instagram.com/",
+        Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+      };
+
+      const request = client
+        .get(targetUrl, { headers, timeout: 5000 }, (upstreamRes) => {
+          // Reject redirects unconditionally per AV1 security rule (no redirects)
+          if (
+            upstreamRes.statusCode &&
+            upstreamRes.statusCode >= 300 &&
+            upstreamRes.statusCode < 400
+          ) {
+            upstreamRes.resume();
+            return res.status(403).send("Redirects are disallowed on proxy endpoint");
+          }
+
+          if (upstreamRes.statusCode !== 200) {
+            upstreamRes.resume();
+            return res.status(upstreamRes.statusCode || 502).send("Upstream image returned non-200");
+          }
+
+          res.setHeader("Content-Type", upstreamRes.headers["content-type"] || "image/jpeg");
+          res.setHeader("Cache-Control", "public, max-age=86400");
+
+          let totalBytes = 0;
+          upstreamRes.on("data", (chunk) => {
+            totalBytes += chunk.length;
+            if (totalBytes > 5 * 1024 * 1024) {
+              // 5MB limit
+              upstreamRes.destroy();
+              if (!res.headersSent) {
+                res.status(413).send("Image exceeds 5MB size limit");
+              } else {
+                res.end();
+              }
+            }
+          });
+
+          upstreamRes.pipe(res);
+        })
+        .on("timeout", () => {
+          request.destroy();
+          if (!res.headersSent) res.status(504).send("Image proxy request timed out");
+        })
+        .on("error", () => {
+          if (!res.headersSent) res.status(502).send("Failed to proxy image");
+        });
+    } catch {
+      if (!res.headersSent) res.status(400).send("Invalid URL");
+    }
+  }
+
+  @Post("autopilot/preview")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Preview Autopilot Target Identity and Latest Upload" })
+  async previewAutopilot(@Body() body: any) {
+    const validated = AutopilotPreviewInputSchema.parse(body);
+    return this.packagesService.previewAutopilot(validated.handle, validated.platform);
+  }
+
+  @Post("autopilot/purchase")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Purchase Zero-Friction Autopilot Package Bundle" })
+  async purchaseAutopilot(
+    @CurrentUser() user: CurrentUserData,
+    @Body() rawBody: any,
+    @Headers("idempotency-key") idempotencyKeyHeader?: string
+  ) {
+    const validated = AutopilotPurchaseInputSchema.parse(rawBody);
+    const idempotencyKey = idempotencyKeyHeader || (rawBody && rawBody.idempotencyKey) || null;
+    return this.packagesService.purchaseAutopilot(user.id, validated, idempotencyKey);
+  }
+
+  @Get("autopilot/list")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "List Active Autopilot Packages for Current User" })
+  async listAutopilotPackages(@CurrentUser() user: CurrentUserData) {
+    return this.packagesService.listAutopilotPackages(user.id);
+  }
+
+  @Get("autopilot/:id/slots")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Get Autopilot Slots and Sub-Orders Drip Feed Timeline" })
+  async getAutopilotSlots(@CurrentUser() user: CurrentUserData, @Param("id") id: string) {
+    const isAdmin = user.role === Role.ADMIN;
+    return this.packagesService.getAutopilotSlots(user.id, id, isAdmin);
   }
 
   @Post(":id/speed-up")

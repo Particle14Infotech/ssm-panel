@@ -49,6 +49,8 @@ import { calculatePackageAccounting } from "./package-accounting.util";
 import { verifyQuoteHash, generateQuoteHash } from "./package-quote-hash.util";
 import { allocateFixedPriceLargestRemainder, checkMarginFloor } from "./package-combos-engine.util";
 import { FeatureFlagsService } from "../settings/flags.service";
+import { AutopilotDetectorService } from "./autopilot-detector.service";
+import { AUTOPILOT_PRESETS, AutopilotPreset } from "./autopilot.constants";
 
 // Allowlist regex for Instagram post / reel links (never arbitrary URLs)
 const INSTAGRAM_URL_REGEX = /^https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|tv)\/([a-zA-Z0-9_-]+)/;
@@ -62,8 +64,12 @@ export class PackagesService {
     private readonly prisma: PrismaService,
     private readonly quoteService: PackagesQuoteService,
     private readonly platformsService: PlatformsService,
-    @Optional() private readonly flagsService?: FeatureFlagsService
+    @Optional() private readonly flagsService?: FeatureFlagsService,
+    @Optional() private autopilotDetector?: AutopilotDetectorService
   ) {
+    if (!this.autopilotDetector) {
+      this.autopilotDetector = new AutopilotDetectorService();
+    }
     (this as any)[["sandbox", "Packages"].join("")] = new Map<string, any>();
   }
 
@@ -3882,5 +3888,574 @@ export class PackagesService {
       packageId,
       message: "Custom order successfully saved to My Packages.",
     };
+  }
+
+  /**
+   * Preview Autopilot Target & Current Upload
+   */
+  async previewAutopilot(handleOrUrl: string, platform?: string) {
+    if (!handleOrUrl || !handleOrUrl.trim()) {
+      throw new BadRequestException("Handle or profile link is required.");
+    }
+    const detector = this.autopilotDetector || new AutopilotDetectorService();
+    const result = await detector.autoDetect(handleOrUrl, platform);
+    return {
+      ...result,
+      presets: Object.values(AUTOPILOT_PRESETS),
+    };
+  }
+
+  /**
+   * Purchase Zero-Friction Autopilot Package Bundle
+   */
+  async purchaseAutopilot(
+    userId: string,
+    input: {
+      handle: string;
+      platform?: string;
+      presetId: string;
+      slotCount: number;
+      seedCurrentPost?: boolean;
+    },
+    idempotencyKey?: string | null
+  ) {
+    if (!this.prisma.isConnected) {
+      throw new ServiceUnavailableException("Database service is currently unavailable.");
+    }
+
+    if (!input.handle || !input.handle.trim()) {
+      throw new BadRequestException("Handle or channel link is required.");
+    }
+
+    if (idempotencyKey) {
+      const existingPackage = await this.prisma.package.findUnique({
+        where: {
+          unique_package_idempotency_per_user: {
+            userId,
+            idempotencyKey,
+          },
+        },
+        include: { slots: true },
+      });
+      if (existingPackage) {
+        return {
+          success: true,
+          packageId: existingPackage.id,
+          package: existingPackage,
+          message: "Autopilot package already purchased with this idempotency key.",
+        };
+      }
+    }
+
+    const slotCount = Math.floor(Math.max(1, Math.min(20, Number(input.slotCount) || 5)));
+    const preset = AUTOPILOT_PRESETS[input.presetId] || AUTOPILOT_PRESETS.viral_push;
+    const pricePerSlot = preset.pricePerSlot;
+    const totalPrice = new Decimal(pricePerSlot * slotCount);
+
+    const detector = this.autopilotDetector || new AutopilotDetectorService();
+    const preview = await detector.autoDetect(input.handle, input.platform);
+    const targetPlatform = preview.profile.platform;
+    const cleanHandle = preview.profile.handle.replace(/^@/, "");
+
+    const canSeed =
+      !!input.seedCurrentPost &&
+      !!preview.latestMedia &&
+      preview.latestMedia.isLiveDetected === true &&
+      !preview.latestMedia.mediaKey.startsWith("profile_");
+
+    // 1. Database Transaction with balance lock
+    try {
+      const createdPackage = await this.prisma.$transaction(async (tx) => {
+        const [walletRow] = await tx.$queryRawUnsafe<Array<{ id: string; balance: any; currency: string }>>(
+          `SELECT id, balance, currency FROM "Wallet" WHERE "userId" = $1 FOR UPDATE`,
+          userId
+        );
+
+        if (!walletRow) {
+          throw new BadRequestException("Wallet not found for user.");
+        }
+
+        const currentBalance = new Decimal(walletRow.balance.toString());
+        if (currentBalance.lessThan(totalPrice)) {
+          throw new BadRequestException(
+            `Insufficient wallet balance. Total required: ₹${totalPrice.toFixed(2)}, Available: ₹${currentBalance.toFixed(2)}. Please add funds to proceed.`
+          );
+        }
+
+        const newBalance = currentBalance.minus(totalPrice);
+        await tx.wallet.update({
+          where: { id: walletRow.id },
+          data: { balance: newBalance },
+        });
+
+        await tx.ledgerEntry.create({
+          data: {
+            walletId: walletRow.id,
+            amount: totalPrice.negated(),
+            type: TransactionType.PACKAGE_PURCHASE,
+            idempotencyKey: idempotencyKey || null,
+            description: `Autopilot Package: @${cleanHandle} (${targetPlatform}, ${slotCount} slots, ${preset.name})`,
+          },
+        });
+
+        const startAt = new Date();
+        const endAt = new Date(startAt.getTime() + 30 * 24 * 3600 * 1000);
+
+        // Create Package
+        const pkg = await tx.package.create({
+          data: {
+            userId,
+            platform: targetPlatform,
+            handle: cleanHandle,
+            timezone: "UTC",
+            kind: PackageRuleKind.TIME_DRIP,
+            mode: PackageMode.CUSTOMIZED,
+            status: PackageStatus.ACTIVE,
+            startAt,
+            endAt,
+            reserveTotal: totalPrice,
+            idempotencyKey: idempotencyKey || null,
+            priceSnapshot: {
+              type: "AUTOPILOT",
+              presetId: preset.id,
+              presetName: preset.name,
+              pricePerSlot,
+              slotCount,
+              totalPrice: totalPrice.toNumber(),
+            },
+            allocationSnapshot: {
+              preset: preset as any,
+              targetHandle: cleanHandle,
+              seedCurrentPost: canSeed,
+            },
+          },
+        });
+
+        // Find active services for this platform
+        const viewsService = await tx.service.findFirst({
+          where: { platform: targetPlatform, kind: "VIEWS", active: true },
+        });
+        const likesService = await tx.service.findFirst({
+          where: { platform: targetPlatform, kind: "LIKES", active: true },
+        });
+        const commentsService = await tx.service.findFirst({
+          where: { platform: targetPlatform, kind: "COMMENTS", active: true },
+        });
+        const sharesService = await tx.service.findFirst({
+          where: { platform: targetPlatform, kind: "OTHER", active: true },
+        });
+
+        // Create PackageRules for Views, Likes, Comments, Shares
+        const viewsRule = viewsService ? await tx.packageRule.create({
+          data: {
+            packageId: pkg.id,
+            kind: PackageRuleKind.TIME_DRIP,
+            serviceId: viewsService.id,
+            quantityPerPost: preset.metrics.views,
+            maxPosts: slotCount,
+            unitCharge: new Decimal(pricePerSlot * 0.5),
+            rateSnapshot: new Decimal(viewsService.ratePer1000.toString()),
+            reserve: totalPrice.mul(0.5),
+          },
+        }) : null;
+
+        const likesRule = likesService ? await tx.packageRule.create({
+          data: {
+            packageId: pkg.id,
+            kind: PackageRuleKind.TIME_DRIP,
+            serviceId: likesService.id,
+            quantityPerPost: preset.metrics.likes,
+            maxPosts: slotCount,
+            unitCharge: new Decimal(pricePerSlot * 0.3),
+            rateSnapshot: new Decimal(likesService.ratePer1000.toString()),
+            reserve: totalPrice.mul(0.3),
+          },
+        }) : null;
+
+        const commentsRule = commentsService ? await tx.packageRule.create({
+          data: {
+            packageId: pkg.id,
+            kind: PackageRuleKind.TIME_DRIP,
+            serviceId: commentsService.id,
+            quantityPerPost: preset.metrics.comments,
+            maxPosts: slotCount,
+            unitCharge: new Decimal(pricePerSlot * 0.1),
+            rateSnapshot: new Decimal(commentsService.ratePer1000.toString()),
+            reserve: totalPrice.mul(0.1),
+          },
+        }) : null;
+
+        const sharesRule = sharesService ? await tx.packageRule.create({
+          data: {
+            packageId: pkg.id,
+            kind: PackageRuleKind.TIME_DRIP,
+            serviceId: sharesService.id,
+            quantityPerPost: preset.metrics.shares,
+            maxPosts: slotCount,
+            unitCharge: new Decimal(pricePerSlot * 0.1),
+            rateSnapshot: new Decimal(sharesService.ratePer1000.toString()),
+            reserve: totalPrice.mul(0.1),
+          },
+        }) : null;
+
+        const rulesMap = {
+          views: viewsRule,
+          likes: likesRule,
+          comments: commentsRule,
+          shares: sharesRule,
+        };
+
+        // Create Slots
+        for (let s = 1; s <= slotCount; s++) {
+          const isSeeded = s === 1 && canSeed;
+          const slot = await tx.packageSlot.create({
+            data: {
+              packageId: pkg.id,
+              slotNumber: s,
+              targetUrl: isSeeded ? preview.latestMedia!.url : null,
+              mediaKey: isSeeded ? preview.latestMedia!.mediaKey : null,
+              status: isSeeded ? "ACTIVE" : "AVAILABLE",
+              linkSlotsUsed: isSeeded ? 1 : 0,
+              linkSlotsTotal: 1,
+              startedAt: isSeeded ? startAt : null,
+            },
+          });
+
+          if (isSeeded) {
+            // Generate drip executions for Slot #1
+            await this.createDripExecutionsForSlot(tx, pkg.id, slot.id, slot.targetUrl!, slot.mediaKey!, preset, rulesMap, startAt);
+          }
+        }
+
+        return pkg;
+      }, { maxWait: 10000, timeout: 30000 });
+
+      return {
+        success: true,
+        packageId: createdPackage.id,
+        package: createdPackage,
+        message: `Autopilot package successfully activated for @${cleanHandle}!`,
+      };
+    } catch (err: any) {
+      if (err.code === "P2002" && idempotencyKey) {
+        const existing = await this.prisma.package.findUnique({
+          where: { unique_package_idempotency_per_user: { userId, idempotencyKey } },
+          include: { slots: true },
+        });
+        if (existing) {
+          return {
+            success: true,
+            packageId: existing.id,
+            package: existing,
+            message: "Autopilot package already purchased with this idempotency key.",
+          };
+        }
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Helper: Generate deterministic drip feed executions for a claimed slot
+   */
+  private async createDripExecutionsForSlot(
+    tx: any,
+    packageId: string,
+    slotId: string,
+    targetUrl: string,
+    mediaKey: string,
+    preset: AutopilotPreset,
+    rulesMap: Record<string, any>,
+    startTime: Date
+  ) {
+    const runsCount = preset.runsCount || 4;
+    const durationHours = preset.durationHours || 12;
+    const stepHours = durationHours / runsCount;
+    const pricePerSlot = preset.pricePerSlot || 299;
+
+    // Weight percentages across batches: Front-loaded for organic engagement
+    const weights = runsCount === 6
+      ? [0.25, 0.20, 0.20, 0.15, 0.10, 0.10]
+      : [0.35, 0.30, 0.20, 0.15];
+
+    const totalViewsCharge = new Decimal((pricePerSlot * 0.5).toFixed(2));
+    const totalLikesCharge = new Decimal((pricePerSlot * 0.3).toFixed(2));
+    const totalCommentsCharge = new Decimal((pricePerSlot * 0.1).toFixed(2));
+    const totalSharesCharge = new Decimal(pricePerSlot)
+      .minus(totalViewsCharge)
+      .minus(totalLikesCharge)
+      .minus(totalCommentsCharge);
+
+    let accumulatedViews = new Decimal(0);
+    let accumulatedLikes = new Decimal(0);
+    let accumulatedComments = new Decimal(0);
+    let accumulatedShares = new Decimal(0);
+
+    for (let r = 0; r < runsCount; r++) {
+      const isLast = r === runsCount - 1;
+      const offsetMinutes = r === 0 ? 2 : Math.round(r * stepHours * 60);
+      const executeAt = new Date(startTime.getTime() + offsetMinutes * 60 * 1000);
+      const w = weights[r] || (1 / runsCount);
+
+      // Views Execution (50% of budget)
+      if (rulesMap.views) {
+        const qty = Math.max(10, Math.round(preset.metrics.views * w));
+        const charge = isLast
+          ? totalViewsCharge.minus(accumulatedViews)
+          : new Decimal((pricePerSlot * 0.5 * w).toFixed(2));
+        accumulatedViews = accumulatedViews.plus(charge);
+
+        await tx.packageExecution.create({
+          data: {
+            packageId,
+            ruleId: rulesMap.views.id,
+            slotId,
+            seq: r * 10 + 1,
+            quantity: qty,
+            remainingQuantity: qty,
+            allocatedCharge: charge,
+            plannedAt: executeAt,
+            executeAt,
+            status: PackageExecutionStatus.SCHEDULED,
+            targetUrl,
+            mediaKey,
+            source: ExecutionSource.SCHEDULE,
+          },
+        });
+      }
+
+      // Likes Execution (30% of budget)
+      if (rulesMap.likes) {
+        const qty = Math.max(5, Math.round(preset.metrics.likes * w));
+        const charge = isLast
+          ? totalLikesCharge.minus(accumulatedLikes)
+          : new Decimal((pricePerSlot * 0.3 * w).toFixed(2));
+        accumulatedLikes = accumulatedLikes.plus(charge);
+
+        await tx.packageExecution.create({
+          data: {
+            packageId,
+            ruleId: rulesMap.likes.id,
+            slotId,
+            seq: r * 10 + 2,
+            quantity: qty,
+            remainingQuantity: qty,
+            allocatedCharge: charge,
+            plannedAt: executeAt,
+            executeAt,
+            status: PackageExecutionStatus.SCHEDULED,
+            targetUrl,
+            mediaKey,
+            source: ExecutionSource.SCHEDULE,
+          },
+        });
+      }
+
+      // Comments Execution (10% of budget)
+      if (rulesMap.comments && preset.metrics.comments > 0) {
+        const qty = Math.max(1, Math.round(preset.metrics.comments * w));
+        const charge = isLast
+          ? totalCommentsCharge.minus(accumulatedComments)
+          : new Decimal((pricePerSlot * 0.1 * w).toFixed(2));
+        accumulatedComments = accumulatedComments.plus(charge);
+
+        await tx.packageExecution.create({
+          data: {
+            packageId,
+            ruleId: rulesMap.comments.id,
+            slotId,
+            seq: r * 10 + 3,
+            quantity: qty,
+            remainingQuantity: qty,
+            allocatedCharge: charge,
+            plannedAt: executeAt,
+            executeAt,
+            status: PackageExecutionStatus.SCHEDULED,
+            targetUrl,
+            mediaKey,
+            source: ExecutionSource.SCHEDULE,
+          },
+        });
+      }
+
+      // Shares Execution (10% of budget)
+      if (rulesMap.shares && preset.metrics.shares > 0) {
+        const qty = Math.max(2, Math.round(preset.metrics.shares * w));
+        const charge = isLast
+          ? totalSharesCharge.minus(accumulatedShares)
+          : new Decimal((pricePerSlot * 0.1 * w).toFixed(2));
+        accumulatedShares = accumulatedShares.plus(charge);
+
+        await tx.packageExecution.create({
+          data: {
+            packageId,
+            ruleId: rulesMap.shares.id,
+            slotId,
+            seq: r * 10 + 4,
+            quantity: qty,
+            remainingQuantity: qty,
+            allocatedCharge: charge,
+            plannedAt: executeAt,
+            executeAt,
+            status: PackageExecutionStatus.SCHEDULED,
+            targetUrl,
+            mediaKey,
+            source: ExecutionSource.SCHEDULE,
+          },
+        });
+      }
+    }
+  }
+
+  /**
+   * Get Autopilot Slots with nested executions and status breakdown
+   */
+  async getAutopilotSlots(userId: string, packageId: string, isAdmin = false) {
+    const pkg = await this.prisma.package.findFirst({
+      where: isAdmin ? { id: packageId } : { id: packageId, userId },
+      include: {
+        rules: {
+          include: {
+            service: { select: { id: true, name: true, kind: true } },
+          },
+        },
+      },
+    });
+
+    if (!pkg) {
+      throw new NotFoundException("Autopilot package not found or access denied.");
+    }
+
+    const slots = await this.prisma.packageSlot.findMany({
+      where: { packageId },
+      include: {
+        executions: {
+          include: {
+            rule: {
+              select: {
+                kind: true,
+                service: { select: { name: true, kind: true } },
+              },
+            },
+            order: {
+              select: { id: true, status: true, quantity: true, target: true },
+            },
+          },
+          orderBy: { executeAt: "asc" },
+        },
+      },
+      orderBy: { slotNumber: "asc" },
+    });
+
+    return {
+      package: pkg,
+      slots,
+    };
+  }
+
+  /**
+   * Claim next available slot for a detected new post
+   */
+  async claimAutopilotSlot(
+    packageId: string,
+    slotNumber: number,
+    mediaData: { mediaKey: string; targetUrl: string; title?: string }
+  ) {
+    const pkg = await this.prisma.package.findUnique({
+      where: { id: packageId },
+      include: {
+        rules: {
+          include: { service: true },
+        },
+      },
+    });
+
+    if (!pkg) {
+      throw new NotFoundException("Package not found");
+    }
+
+    const slot = await this.prisma.packageSlot.findUnique({
+      where: {
+        packageId_slotNumber: { packageId, slotNumber },
+      },
+    });
+
+    if (!slot || slot.status !== "AVAILABLE") {
+      throw new BadRequestException(`Slot #${slotNumber} is not available to be claimed.`);
+    }
+
+    const alloc = (pkg.allocationSnapshot as any) || {};
+    const preset: AutopilotPreset = alloc.preset || AUTOPILOT_PRESETS.viral_push;
+
+    const viewsRule = pkg.rules.find((r) => r.service.kind === "VIEWS");
+    const likesRule = pkg.rules.find((r) => r.service.kind === "LIKES");
+    const commentsRule = pkg.rules.find((r) => r.service.kind === "COMMENTS");
+    const sharesRule = pkg.rules.find((r) => r.service.kind === "OTHER");
+
+    const rulesMap = {
+      views: viewsRule,
+      likes: likesRule,
+      comments: commentsRule,
+      shares: sharesRule,
+    };
+
+    const startAt = new Date();
+
+    return this.prisma.$transaction(async (tx) => {
+      const updateResult = await tx.packageSlot.updateMany({
+        where: { id: slot.id, status: "AVAILABLE" },
+        data: {
+          targetUrl: mediaData.targetUrl,
+          mediaKey: mediaData.mediaKey,
+          status: "ACTIVE",
+          linkSlotsUsed: 1,
+          startedAt: startAt,
+        },
+      });
+
+      if (updateResult.count === 0) {
+        throw new BadRequestException(`Slot #${slotNumber} was already claimed by another request.`);
+      }
+
+      await this.createDripExecutionsForSlot(
+        tx,
+        pkg.id,
+        slot.id,
+        mediaData.targetUrl,
+        mediaData.mediaKey,
+        preset,
+        rulesMap,
+        startAt
+      );
+
+      return tx.packageSlot.findUnique({ where: { id: slot.id } });
+    }, { maxWait: 10000, timeout: 30000 });
+  }
+
+  /**
+   * List user's active Autopilot Packages
+   */
+  async listAutopilotPackages(userId: string) {
+    return this.prisma.package.findMany({
+      where: {
+        userId,
+        status: { in: [PackageStatus.ACTIVE, PackageStatus.PAUSED] },
+      },
+      include: {
+        slots: {
+          select: {
+            id: true,
+            slotNumber: true,
+            status: true,
+            mediaKey: true,
+            targetUrl: true,
+            startedAt: true,
+            completedAt: true,
+          },
+          orderBy: { slotNumber: "asc" },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
   }
 }

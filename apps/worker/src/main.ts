@@ -26,7 +26,14 @@ import {
   isLinkRestrictionError,
   aggregateRunStatuses,
   PACKAGE_PROVIDER_STATUS_STALLED_REASON,
+  AUTOPILOT_PRESETS,
+  AutopilotPreset,
 } from "@smm/contracts";
+import * as https from "https";
+import * as http from "http";
+import * as dns from "dns/promises";
+import * as net from "net";
+import { URL } from "url";
 
 dotenv.config();
 
@@ -63,6 +70,7 @@ export class SMMWorkerEngine {
   private syncInterval: NodeJS.Timeout | null = null;
   private dripRunInterval: NodeJS.Timeout | null = null;
   private packageExecutionInterval: NodeJS.Timeout | null = null;
+  private autopilotInterval: NodeJS.Timeout | null = null;
   private redis: Redis | null = null;
   private bullWorker: BullWorker | null = null;
   private orderQueue: Queue | null = null;
@@ -150,6 +158,17 @@ export class SMMWorkerEngine {
 
   async start() {
     this.isRunning = true;
+    const isProd = process.env.NODE_ENV === "production";
+    const simUpstream = process.env.SIMULATE_UPSTREAM_ORDERS === "true" || process.env.SIMULATE_UPSTREAM_ORDERS === "1";
+    if (isProd && simUpstream) {
+      logger.fatal("FATAL: BOOT REFUSED - SIMULATE_UPSTREAM_ORDERS cannot be true in production.");
+      console.error("\n[FATAL: PRODUCTION BOOT REFUSED] SIMULATE_UPSTREAM_ORDERS=true is strictly forbidden when NODE_ENV=production.\n");
+      process.exit(1);
+    }
+    const dispatchMode = simUpstream ? "SIMULATION" : "LIVE_PRODUCTION";
+    logger.info(`[BOOT] UPSTREAM_DISPATCH_MODE: ${dispatchMode}`);
+    console.log(`[BOOT] UPSTREAM_DISPATCH_MODE: ${dispatchMode}`);
+
     logger.info("[Worker] SMM PANEL Production Worker initializing (BullMQ Engine & Status Sync Daemon)");
 
     // 1. Verify Database connectivity & execute boot Query Canary
@@ -299,7 +318,17 @@ export class SMMWorkerEngine {
       }
     }, 10000);
 
-    // 8. I3 Query Canary Daemon (every 10 minutes)
+    // 8. Autopilot New Upload Poller Daemon (every 60 seconds)
+    this.autopilotInterval = setInterval(async () => {
+      if (!this.isRunning) return;
+      try {
+        await this.pollAutopilotPackages();
+      } catch (err: any) {
+        logger.error({ err }, "[Autopilot] Poller daemon cycle error");
+      }
+    }, 60000);
+
+    // 9. I3 Query Canary Daemon (every 10 minutes)
     setInterval(async () => {
       if (!this.isRunning) return;
       try {
@@ -1949,7 +1978,14 @@ export class SMMWorkerEngine {
         throw new Error(`Upstream SMM API status check returned HTTP ${response.status}: ${errText.slice(0, 200)}`);
       }
 
-      const status = (await response.json()) as any;
+      const text = await response.text();
+      let status: any;
+      try {
+        status = JSON.parse(text);
+      } catch (parseErr: any) {
+        logger.warn({ text: text.slice(0, 200), err: parseErr.message }, `[Worker] Upstream returned non-JSON status response for order #${orderId}`);
+        return { error: `Invalid JSON response: ${text.slice(0, 100)}` };
+      }
       if (providerId) {
         await this.recordProviderStatusCheck(providerId, true);
       }
@@ -2019,6 +2055,7 @@ export class SMMWorkerEngine {
     if (this.syncInterval) clearInterval(this.syncInterval);
     if (this.dripRunInterval) clearInterval(this.dripRunInterval);
     if (this.packageExecutionInterval) clearInterval(this.packageExecutionInterval);
+    if (this.autopilotInterval) clearInterval(this.autopilotInterval);
     if (this.bullWorker) await this.bullWorker.close();
     if (this.emailWorker) await this.emailWorker.close();
     if (this.emailQueue) await this.emailQueue.close();
@@ -2693,6 +2730,492 @@ export class SMMWorkerEngine {
     }
 
     return { dispatchedCount, errorsCount };
+  }
+
+  private async isSafeResolvedWorkerIp(hostname: string): Promise<boolean> {
+    try {
+      const addresses = await dns.lookup(hostname, { all: true });
+      if (!addresses || addresses.length === 0) return false;
+      for (const record of addresses) {
+        const ip = record.address;
+        if (net.isIPv4(ip)) {
+          const parts = ip.split(".").map(Number);
+          if (parts[0] === 127 || parts[0] === 10 || parts[0] === 0) return false;
+          if (parts[0] === 169 && parts[1] === 254) return false;
+          if (parts[0] === 192 && parts[1] === 168) return false;
+          if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return false;
+        } else if (net.isIPv6(ip)) {
+          const norm = ip.toLowerCase();
+          if (norm === "::1" || norm === "::") return false;
+          if (norm.startsWith("fe8") || norm.startsWith("fe9") || norm.startsWith("fea") || norm.startsWith("feb")) return false;
+          if (norm.startsWith("fc") || norm.startsWith("fd")) return false;
+        }
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Helper: Worker HTTP fetcher for Instagram / YouTube scraping
+   */
+  private async fetchWorkerHttp(
+    targetUrl: string,
+    headers: Record<string, string> = {},
+    maxHops = 5
+  ): Promise<{ status: number; data: string }> {
+    if (maxHops <= 0) throw new Error("Too many redirects");
+    const u = new URL(targetUrl);
+    if (u.protocol !== "https:" && u.protocol !== "http:") {
+      throw new Error("Disallowed protocol for scraping");
+    }
+
+    const PRIVATE_IP_REGEX = /^(?:127\.|10\.|192\.168\.|169\.254\.|172\.(?:1[6-9]|2[0-9]|3[0-1])\.|0\.|::1|localhost)/i;
+    if (PRIVATE_IP_REGEX.test(u.hostname)) {
+      throw new Error("Blocked request to internal network or private IP");
+    }
+
+    const hostname = u.hostname.toLowerCase();
+    const isAllowed =
+      hostname === "instagram.com" ||
+      hostname.endsWith(".instagram.com") ||
+      hostname === "youtube.com" ||
+      hostname.endsWith(".youtube.com") ||
+      hostname === "youtu.be";
+
+    if (!isAllowed) {
+      throw new Error(`Blocked request to unauthorized host: ${hostname}`);
+    }
+
+    const isDnsSafe = await this.isSafeResolvedWorkerIp(hostname);
+    if (!isDnsSafe) {
+      throw new Error(`Host '${hostname}' resolved to private or disallowed IP address.`);
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        const client = u.protocol === "https:" ? https : http;
+        const defaultHeaders: Record<string, string> = {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+          ...headers,
+        };
+        const req = client.get(targetUrl, { headers: defaultHeaders, timeout: 5000 }, async (res) => {
+          if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+            res.resume();
+            let nextLoc = res.headers.location;
+            if (nextLoc.startsWith("/")) {
+              nextLoc = `${u.protocol}//${u.host}${nextLoc}`;
+            }
+            try {
+              const redirectU = new URL(nextLoc);
+              const rHost = redirectU.hostname.toLowerCase();
+              if (
+                PRIVATE_IP_REGEX.test(rHost) ||
+                !(
+                  rHost === "instagram.com" ||
+                  rHost.endsWith(".instagram.com") ||
+                  rHost === "youtube.com" ||
+                  rHost.endsWith(".youtube.com") ||
+                  rHost === "youtu.be"
+                )
+              ) {
+                return reject(new Error(`Redirect to disallowed host '${redirectU.hostname}' blocked.`));
+              }
+              const isRedirDnsSafe = await this.isSafeResolvedWorkerIp(rHost);
+              if (!isRedirDnsSafe) {
+                return reject(new Error(`Redirect host '${redirectU.hostname}' resolved to private IP.`));
+              }
+            } catch {
+              return reject(new Error("Invalid redirect location"));
+            }
+            return this.fetchWorkerHttp(nextLoc, headers, maxHops - 1).then(resolve).catch(reject);
+          }
+          let data = "";
+          res.on("data", (chunk) => {
+            data += chunk;
+            if (data.length > 3000000) res.destroy();
+          });
+          res.on("end", () => resolve({ status: res.statusCode || 200, data }));
+        });
+        req.on("error", reject);
+        req.on("timeout", () => {
+          req.destroy();
+          reject(new Error("Request timeout"));
+        });
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  /**
+   * Scrapes latest Instagram upload for a handle (sorts by pk descending to bypass pinned posts)
+   */
+  private async scrapeInstagramLatest(handle: string): Promise<{ mediaKey: string; url: string; title: string } | null> {
+    const cleanHandle = handle.replace(/^@/, "").replace(/https?:\/\/(?:www\.)?instagram\.com\//, "").replace(/\/$/, "");
+    const profileUrl = `https://www.instagram.com/${cleanHandle}/`;
+    const res = await this.fetchWorkerHttp(profileUrl, {
+      "User-Agent": "facebookexternalhit/1.1 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    });
+    const html = res.data;
+
+    const nodePattern =
+      /\{"node":\{"__typename":"([^"]+)","__isXIGPolarisMedia":"[^"]*","pk":"([0-9]+)","code":"([a-zA-Z0-9_-]+)"[^{}]*?"accessibility_caption":"([^"]*)"[^{}]*?"caption":\{"text":"([^"]*)"\}[^{}]*?"display_uri":"([^"]+)"/g;
+    let m: RegExpExecArray | null;
+    const nodes: Array<{ pk: bigint; shortcode: string; caption: string }> = [];
+    while ((m = nodePattern.exec(html)) !== null) {
+      nodes.push({
+        pk: BigInt(m[2]),
+        shortcode: m[3],
+        caption: m[5] || m[4] || `Instagram Reel (${m[3]})`,
+      });
+    }
+
+    if (nodes.length > 0) {
+      nodes.sort((a, b) => (b.pk > a.pk ? 1 : -1));
+      const newest = nodes[0];
+      return {
+        mediaKey: newest.shortcode,
+        url: `https://www.instagram.com/reel/${newest.shortcode}/`,
+        title: newest.caption,
+      };
+    }
+
+    const rawCodes = [
+      ...html.matchAll(/"shortcode":"([a-zA-Z0-9_-]+)"/g),
+      ...html.matchAll(/\/reel\/([a-zA-Z0-9_-]+)/g),
+      ...html.matchAll(/\/p\/([a-zA-Z0-9_-]+)/g),
+    ].map((x) => x[1]);
+    const unique = [...new Set(rawCodes)];
+    if (unique.length > 0) {
+      return {
+        mediaKey: unique[0],
+        url: `https://www.instagram.com/reel/${unique[0]}/`,
+        title: `Instagram Post (${unique[0]})`,
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Scrapes latest YouTube video for a channel handle
+   */
+  private async scrapeYouTubeLatest(handle: string): Promise<{ mediaKey: string; url: string; title: string } | null> {
+    let channelUrl = handle.trim();
+    if (!channelUrl.startsWith("http")) {
+      const clean = channelUrl.replace(/^@/, "");
+      channelUrl = `https://www.youtube.com/@${clean}/videos`;
+    }
+    const res = await this.fetchWorkerHttp(channelUrl);
+    const html = res.data;
+
+    let channelId: string | null = null;
+    const matchId =
+      html.match(/"browseId":"(UC[a-zA-Z0-9_-]{22})"/) || html.match(/channel\/(UC[a-zA-Z0-9_-]{22})/);
+    if (matchId) channelId = matchId[1];
+
+    if (channelId) {
+      try {
+        const rssRes = await this.fetchWorkerHttp(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`);
+        const entries = [...rssRes.data.matchAll(/<entry>([\s\S]*?)<\/entry>/g)];
+        if (entries.length > 0) {
+          const first = entries[0][1];
+          const vm = first.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
+          const tm = first.match(/<title>([^<]+)<\/title>/);
+          if (vm) {
+            return {
+              mediaKey: vm[1],
+              url: `https://www.youtube.com/watch?v=${vm[1]}`,
+              title: tm ? tm[1] : `YouTube Video (${vm[1]})`,
+            };
+          }
+        }
+      } catch {}
+    }
+
+    const vids = [...html.matchAll(/"videoId":"([a-zA-Z0-9_-]{11})"/g)].map((m) => m[1]);
+    const unique = [...new Set(vids)];
+    if (unique.length > 0) {
+      return {
+        mediaKey: unique[0],
+        url: `https://www.youtube.com/watch?v=${unique[0]}`,
+        title: `YouTube Video (${unique[0]})`,
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Autopilot Background Poller:
+   * Scans active autopilot packages, auto-detects new uploads, claims next slot, and schedules drip feed.
+   */
+  async pollAutopilotPackages(database: PrismaClient = prisma) {
+    try {
+      const candidatePackages = await database.package.findMany({
+        where: {
+          status: PackageStatus.ACTIVE,
+          slots: {
+            some: {
+              status: "AVAILABLE",
+            },
+          },
+        },
+        include: {
+          slots: {
+            orderBy: { slotNumber: "asc" },
+          },
+          rules: {
+            include: { service: true },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+        take: 50,
+      });
+
+      if (!candidatePackages.length) return;
+
+      // Deduplicate per (userId, platform, handle) so the oldest active package (FIFO)
+      // claims the upload first, preventing multi-package double consumption!
+      const handledKeys = new Set<string>();
+
+      for (const pkg of candidatePackages) {
+        const cleanHandle = pkg.handle.toLowerCase().replace(/^@/, "").replace(/\/$/, "");
+        const dedupeKey = `${pkg.userId}_${pkg.platform}_${cleanHandle}`;
+        if (handledKeys.has(dedupeKey)) {
+          continue; // Oldest package for this handle is already actively handling uploads
+        }
+        handledKeys.add(dedupeKey);
+
+        const availableSlot = pkg.slots.find((s) => s.status === "AVAILABLE");
+        if (!availableSlot) continue;
+
+        const existingMediaKeys = new Set(
+          pkg.slots.map((s) => s.mediaKey).filter(Boolean) as string[]
+        );
+
+        let latestMedia: { mediaKey: string; url: string; title: string } | null = null;
+        const enableInstagramScraping = process.env.ENABLE_INSTAGRAM_SCRAPING === "true";
+        try {
+          if (pkg.platform === "INSTAGRAM") {
+            if (enableInstagramScraping) {
+              latestMedia = await this.scrapeInstagramLatest(pkg.handle);
+            } else {
+              // Instagram automated scraping stays OFF until approved credentials exist
+              latestMedia = null;
+            }
+          } else if (pkg.platform === "YOUTUBE") {
+            latestMedia = await this.scrapeYouTubeLatest(pkg.handle);
+          }
+        } catch (fetchErr: any) {
+          logger.warn({ pkgId: pkg.id, err: fetchErr.message }, "[Autopilot] Upload check warning");
+        }
+
+        if (latestMedia && latestMedia.mediaKey && !existingMediaKeys.has(latestMedia.mediaKey)) {
+          logger.info(
+            {
+              pkgId: pkg.id,
+              handle: pkg.handle,
+              slotNumber: availableSlot.slotNumber,
+              mediaKey: latestMedia.mediaKey,
+            },
+            "[Autopilot Poller] New media upload detected! Auto-claiming slot and scheduling drip delivery."
+          );
+
+          await this.claimAutopilotSlotInWorker(database, pkg, availableSlot, latestMedia);
+        }
+      }
+    } catch (err: any) {
+      logger.error({ err: err.message }, "[Autopilot Poller] Poller cycle error");
+    }
+  }
+
+  /**
+   * Claim slot and create drip executions in background worker
+   */
+  private async claimAutopilotSlotInWorker(
+    database: PrismaClient,
+    pkg: any,
+    slot: any,
+    mediaData: { mediaKey: string; url: string; title: string }
+  ) {
+    const alloc = (pkg.allocationSnapshot as any) || {};
+    const preset: AutopilotPreset = alloc.preset || AUTOPILOT_PRESETS.viral_push;
+
+    const viewsRule = pkg.rules.find((r: any) => r.service?.kind === "VIEWS");
+    const likesRule = pkg.rules.find((r: any) => r.service?.kind === "LIKES");
+    const commentsRule = pkg.rules.find((r: any) => r.service?.kind === "COMMENTS");
+    const sharesRule = pkg.rules.find((r: any) => r.service?.kind === "OTHER");
+
+    const rulesMap = {
+      views: viewsRule,
+      likes: likesRule,
+      comments: commentsRule,
+      shares: sharesRule,
+    };
+
+    const startTime = new Date();
+    const runsCount = preset.runsCount || 4;
+    const durationHours = preset.durationHours || 12;
+    const stepHours = durationHours / runsCount;
+    const pricePerSlot = preset.pricePerSlot || 299;
+
+    const weights =
+      runsCount === 6
+        ? [0.25, 0.2, 0.2, 0.15, 0.1, 0.1]
+        : [0.35, 0.3, 0.2, 0.15];
+
+    const totalViewsCharge = new Decimal((pricePerSlot * 0.5).toFixed(2));
+    const totalLikesCharge = new Decimal((pricePerSlot * 0.3).toFixed(2));
+    const totalCommentsCharge = new Decimal((pricePerSlot * 0.1).toFixed(2));
+    const totalSharesCharge = new Decimal(pricePerSlot)
+      .minus(totalViewsCharge)
+      .minus(totalLikesCharge)
+      .minus(totalCommentsCharge);
+
+    let accumulatedViews = new Decimal(0);
+    let accumulatedLikes = new Decimal(0);
+    let accumulatedComments = new Decimal(0);
+    let accumulatedShares = new Decimal(0);
+
+    await database.$transaction(async (tx) => {
+      // Atomic status transition check to prevent race conditions across parallel worker instances
+      const updateResult = await tx.packageSlot.updateMany({
+        where: { id: slot.id, status: "AVAILABLE" },
+        data: {
+          targetUrl: mediaData.url,
+          mediaKey: mediaData.mediaKey,
+          status: "ACTIVE",
+          linkSlotsUsed: 1,
+          startedAt: startTime,
+        },
+      });
+
+      if (updateResult.count === 0) {
+        logger.warn({ slotId: slot.id }, "[Autopilot] Slot already claimed by another worker instance. Aborting.");
+        return;
+      }
+
+      for (let r = 0; r < runsCount; r++) {
+        const isLast = r === runsCount - 1;
+        const offsetMinutes = r === 0 ? 2 : Math.round(r * stepHours * 60);
+        const executeAt = new Date(startTime.getTime() + offsetMinutes * 60 * 1000);
+        const w = weights[r] || 1 / runsCount;
+
+        if (rulesMap.views) {
+          const qty = Math.max(10, Math.round(preset.metrics.views * w));
+          const charge = isLast
+            ? totalViewsCharge.minus(accumulatedViews)
+            : new Decimal((pricePerSlot * 0.5 * w).toFixed(2));
+          accumulatedViews = accumulatedViews.plus(charge);
+
+          await tx.packageExecution.create({
+            data: {
+              packageId: pkg.id,
+              ruleId: rulesMap.views.id,
+              slotId: slot.id,
+              seq: r * 10 + 1,
+              quantity: qty,
+              remainingQuantity: qty,
+              allocatedCharge: charge,
+              plannedAt: executeAt,
+              executeAt,
+              status: PackageExecutionStatus.SCHEDULED,
+              targetUrl: mediaData.url,
+              mediaKey: mediaData.mediaKey,
+              source: ExecutionSource.SCHEDULE,
+            },
+          });
+        }
+
+        if (rulesMap.likes) {
+          const qty = Math.max(5, Math.round(preset.metrics.likes * w));
+          const charge = isLast
+            ? totalLikesCharge.minus(accumulatedLikes)
+            : new Decimal((pricePerSlot * 0.3 * w).toFixed(2));
+          accumulatedLikes = accumulatedLikes.plus(charge);
+
+          await tx.packageExecution.create({
+            data: {
+              packageId: pkg.id,
+              ruleId: rulesMap.likes.id,
+              slotId: slot.id,
+              seq: r * 10 + 2,
+              quantity: qty,
+              remainingQuantity: qty,
+              allocatedCharge: charge,
+              plannedAt: executeAt,
+              executeAt,
+              status: PackageExecutionStatus.SCHEDULED,
+              targetUrl: mediaData.url,
+              mediaKey: mediaData.mediaKey,
+              source: ExecutionSource.SCHEDULE,
+            },
+          });
+        }
+
+        if (rulesMap.comments && preset.metrics.comments > 0) {
+          const qty = Math.max(1, Math.round(preset.metrics.comments * w));
+          const charge = isLast
+            ? totalCommentsCharge.minus(accumulatedComments)
+            : new Decimal((pricePerSlot * 0.1 * w).toFixed(2));
+          accumulatedComments = accumulatedComments.plus(charge);
+
+          await tx.packageExecution.create({
+            data: {
+              packageId: pkg.id,
+              ruleId: rulesMap.comments.id,
+              slotId: slot.id,
+              seq: r * 10 + 3,
+              quantity: qty,
+              remainingQuantity: qty,
+              allocatedCharge: charge,
+              plannedAt: executeAt,
+              executeAt,
+              status: PackageExecutionStatus.SCHEDULED,
+              targetUrl: mediaData.url,
+              mediaKey: mediaData.mediaKey,
+              source: ExecutionSource.SCHEDULE,
+            },
+          });
+        }
+
+        if (rulesMap.shares && preset.metrics.shares > 0) {
+          const qty = Math.max(2, Math.round(preset.metrics.shares * w));
+          const charge = isLast
+            ? totalSharesCharge.minus(accumulatedShares)
+            : new Decimal((pricePerSlot * 0.1 * w).toFixed(2));
+          accumulatedShares = accumulatedShares.plus(charge);
+
+          await tx.packageExecution.create({
+            data: {
+              packageId: pkg.id,
+              ruleId: rulesMap.shares.id,
+              slotId: slot.id,
+              seq: r * 10 + 4,
+              quantity: qty,
+              remainingQuantity: qty,
+              allocatedCharge: charge,
+              plannedAt: executeAt,
+              executeAt,
+              status: PackageExecutionStatus.SCHEDULED,
+              targetUrl: mediaData.url,
+              mediaKey: mediaData.mediaKey,
+              source: ExecutionSource.SCHEDULE,
+            },
+          });
+        }
+      }
+    });
+
+    logger.info(
+      { pkgId: pkg.id, slotId: slot.id, mediaKey: mediaData.mediaKey },
+      "[Autopilot Poller] Slot claimed and drip runs scheduled successfully."
+    );
   }
 }
 

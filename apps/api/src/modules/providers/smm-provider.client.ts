@@ -117,6 +117,16 @@ export class SmmProviderClient {
     runs?: number,
     interval?: number
   ): Promise<SmmAddOrderResponse> {
+    // Financial Safety Guardrail: Prevent third-party API spending in testing/development
+    if (process.env.SIMULATE_UPSTREAM_ORDERS === "true" || process.env.DRY_RUN_DISPATCH === "true") {
+      this.logger.log(
+        `[DRY-RUN SIMULATOR] Intercepted addOrder call (zero money spent). Service: ${service}, Qty: ${quantity}, Link: ${link}`
+      );
+      return {
+        order: `sim_prov_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+      };
+    }
+
     const params: Record<string, any> = {
       service,
       link,
@@ -128,6 +138,16 @@ export class SmmProviderClient {
   }
 
   async getOrderStatus(apiUrl: string, apiKey: string, orderId: string | number): Promise<SmmOrderStatusResponse> {
+    if (String(orderId).startsWith("sim_") || process.env.SIMULATE_UPSTREAM_ORDERS === "true") {
+      return {
+        status: "In progress",
+        remains: "0",
+        start_count: "0",
+        charge: "0.00",
+        currency: "INR",
+      };
+    }
+
     return this.request<SmmOrderStatusResponse>(apiUrl, apiKey, "status", {
       order: orderId,
     });

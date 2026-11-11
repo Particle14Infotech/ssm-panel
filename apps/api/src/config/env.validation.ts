@@ -147,6 +147,10 @@ export function validateEnvironment(env: Record<string, string | undefined> = pr
       violations.push("REDIS_URL or REDIS_HOST is required in production");
     }
 
+    if (env.SIMULATE_UPSTREAM_ORDERS === "true" || env.SIMULATE_UPSTREAM_ORDERS === "1") {
+      violations.push("SIMULATE_UPSTREAM_ORDERS=true is strictly forbidden in production. App and Worker refuse to boot.");
+    }
+
     if (paymentProvider !== "razorpay" && env.ALLOW_SIMULATED_PAYMENTS !== "true") {
       violations.push("PAYMENT_PROVIDER=razorpay or ALLOW_SIMULATED_PAYMENTS=true is required in production");
     } else if (paymentProvider === "razorpay") {

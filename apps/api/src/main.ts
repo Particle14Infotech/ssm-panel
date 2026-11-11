@@ -17,6 +17,11 @@ async function bootstrap() {
 
   validateEnvironment();
 
+  const simUpstream = process.env.SIMULATE_UPSTREAM_ORDERS === "true" || process.env.SIMULATE_UPSTREAM_ORDERS === "1";
+  const dispatchMode = simUpstream ? "SIMULATION" : "LIVE_PRODUCTION";
+  smmLogger.info(`[BOOT] UPSTREAM_DISPATCH_MODE: ${dispatchMode}`);
+  console.log(`[BOOT] UPSTREAM_DISPATCH_MODE: ${dispatchMode}`);
+
   const allowedOrigins = [
     process.env.FRONTEND_URL,
     process.env.WEB_URL,
