@@ -105,6 +105,9 @@ export function isSafeImageUrl(rawUrl: string): boolean {
     // Protocol must strictly be HTTPS
     if (u.protocol !== "https:") return false;
 
+    // Port must strictly be default or 443 (blocks port scanning and non-standard services)
+    if (u.port && u.port !== "443" && u.port !== "") return false;
+
     const hostname = u.hostname.toLowerCase();
 
     // Block private IPs / localhost / cloud metadata
