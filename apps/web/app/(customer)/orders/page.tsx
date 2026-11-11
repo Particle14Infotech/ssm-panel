@@ -41,62 +41,8 @@ import { getApiBase } from "@/lib/api-base";
 import { getAuthToken } from "@/lib/auth-session";
 
 export default function OrdersPage() {
-  const { orders, packages, refillOrder, cancelOrder, addFavorite, user, refreshPackages, refreshData } = useCustomer();
-  const [orderTypeTab, setOrderTypeTab] = useState<"ALL" | "STANDARD" | "CUSTOM">("ALL");
-  const [savingPackageId, setSavingPackageId] = useState<string | null>(null);
+  const { orders, refillOrder, cancelOrder, addFavorite, user } = useCustomer();
 
-  const customOrders = useMemo(() => {
-    return (packages || []).filter((p: any) => p.id?.startsWith("pkg_drip_"));
-  }, [packages]);
-
-  const handleSaveCustomToMyPackages = async (pkgId: string) => {
-    setSavingPackageId(pkgId);
-    try {
-      const token = getAuthToken() || localStorage.getItem("authToken");
-      const res = await fetch(`${getApiBase()}/packages/${pkgId}/save-to-my-packages`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setToastMessage("Custom order saved to My Packages!");
-        if (refreshPackages) refreshPackages();
-        if (refreshData) refreshData();
-      } else {
-        setToastMessage(data.message || "Could not save to My Packages.");
-      }
-    } catch {
-      setToastMessage("Network error saving package.");
-    } finally {
-      setSavingPackageId(null);
-      setTimeout(() => setToastMessage(null), 3000);
-    }
-  };
-
-  const handleSaveCustomOrderAsFavorite = async (customOrder: any) => {
-    const primaryRule = customOrder.rules?.[0];
-    const serviceId = primaryRule?.serviceId || "custom_service";
-    const serviceName = primaryRule?.service?.displayName || primaryRule?.service?.name || "Custom Campaign";
-    const targetUrl = customOrder.slots?.[0]?.targetUrl || customOrder.handle || "";
-
-    const res = await addFavorite({
-      serviceId,
-      targetUrl,
-      defaultQuantity: primaryRule?.quantityPerPost || 1000,
-      isDripFeed: true,
-      dripRuns: customOrder.rules?.length || 5,
-      customName: `Custom: ${serviceName}`,
-    });
-    if (res.success) {
-      setToastMessage("Saved to favorites!");
-    } else {
-      setToastMessage(res.error || "Failed to save favorite");
-    }
-    setTimeout(() => setToastMessage(null), 3000);
-  };
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [selectedPlatform, setSelectedPlatform] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -201,47 +147,9 @@ export default function OrdersPage() {
     { id: "CANCELLED", label: "Cancelled" },
   ];
 
-  const filteredCustomOrders = useMemo(() => {
-    return customOrders.filter((co: any) => {
-      const matchesStatus =
-        selectedStatus === "ALL" ||
-        (selectedStatus === "PROCESSING" && (co.status === "ACTIVE" || co.status === "PENDING")) ||
-        (selectedStatus === "IN_PROGRESS" && co.status === "ACTIVE") ||
-        co.status === selectedStatus;
-
-      const matchesPlatform =
-        selectedPlatform === "ALL" ||
-        co.platform?.toLowerCase() === selectedPlatform.toLowerCase();
-
-      const query = searchQuery.toLowerCase().trim();
-      const handleStr = (co.handle || "").toLowerCase();
-      const idStr = co.id.toLowerCase();
-      const matchesSearch =
-        query === "" ||
-        idStr.includes(query) ||
-        handleStr.includes(query) ||
-        co.rules?.some((r: any) =>
-          (r.service?.displayName || r.service?.name || "").toLowerCase().includes(query)
-        );
-
-      return matchesStatus && matchesPlatform && matchesSearch;
-    });
-  }, [customOrders, selectedStatus, selectedPlatform, searchQuery]);
-
   const getStatusCount = (statusKey: string) => {
-    if (orderTypeTab === "CUSTOM") {
-      if (statusKey === "ALL") return customOrders.length;
-      return customOrders.filter((co) => co.status === statusKey).length;
-    }
-    if (orderTypeTab === "STANDARD") {
-      if (statusKey === "ALL") return standaloneOrders.length;
-      return standaloneOrders.filter((o) => o.status === statusKey).length;
-    }
-    if (statusKey === "ALL") return standaloneOrders.length + customOrders.length;
-    return (
-      standaloneOrders.filter((o) => o.status === statusKey).length +
-      customOrders.filter((co) => co.status === statusKey).length
-    );
+    if (statusKey === "ALL") return standaloneOrders.length;
+    return standaloneOrders.filter((o) => o.status === statusKey).length;
   };
 
   const filteredOrders = useMemo(() => {
@@ -297,43 +205,6 @@ export default function OrdersPage() {
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-          <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-black/40 border border-slate-200/80 dark:border-white/5 text-xs">
-            <button
-              type="button"
-              onClick={() => setOrderTypeTab("ALL")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                orderTypeTab === "ALL"
-                  ? "bg-[#D8EC8D] text-black shadow-xs font-bold"
-                  : "text-fg-muted hover:text-fg"
-              }`}
-            >
-              All ({standaloneOrders.length + customOrders.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setOrderTypeTab("STANDARD")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                orderTypeTab === "STANDARD"
-                  ? "bg-[#D8EC8D] text-black shadow-xs font-bold"
-                  : "text-fg-muted hover:text-fg"
-              }`}
-            >
-              Standard ({standaloneOrders.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setOrderTypeTab("CUSTOM")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
-                orderTypeTab === "CUSTOM"
-                  ? "bg-purple-500 text-white shadow-xs font-bold"
-                  : "text-purple-400 hover:text-purple-300"
-              }`}
-            >
-              <Sparkles className="w-3 h-3" />
-              <span>Custom Orders ({customOrders.length})</span>
-            </button>
-          </div>
-
           <Link
             href="/packages"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-semibold transition-all"
@@ -349,6 +220,28 @@ export default function OrdersPage() {
             <span>New Order</span>
           </Link>
         </div>
+      </div>
+
+      {/* Package Orders Banner */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-purple-500/10 border border-purple-500/25 text-purple-200 text-xs gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shrink-0 text-purple-300">
+            <Boxes className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="font-semibold text-white">Looking for your Multi-Wave, Combo, or Auto-Pilot Packages?</span>
+            <p className="text-[11px] text-purple-300/80 mt-0.5">
+              All package orders and their automated execution progress are neatly organized in <strong className="text-white">My Packages</strong>.
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/packages"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 text-xs font-semibold shrink-0 transition-all cursor-pointer"
+        >
+          <span>View My Packages</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
       </div>
 
       {/* Filter and Search Bar */}
@@ -469,15 +362,15 @@ export default function OrdersPage() {
 
       {/* Orders Table Container */}
       <div className="glass-panel p-4 md:p-6 rounded-3xl overflow-hidden space-y-4">
-        {standaloneOrders.length === 0 && customOrders.length === 0 ? (
+        {standaloneOrders.length === 0 ? (
           <EmptyState
             icon={ShoppingBag}
             title="No orders yet"
-            description="You have not placed any orders yet. Select a service to launch your first social media campaign."
+            description="You have not placed any standalone orders yet. Select a service to launch your first social media campaign."
             actionText="Place your first order"
             actionHref="/new-order"
           />
-        ) : (orderTypeTab === "STANDARD" ? filteredOrders.length === 0 : orderTypeTab === "CUSTOM" ? filteredCustomOrders.length === 0 : (filteredOrders.length === 0 && filteredCustomOrders.length === 0)) ? (
+        ) : filteredOrders.length === 0 ? (
           <div className="py-12 text-center text-slate-400 text-xs font-mono">
             No orders match the current filter criteria.
           </div>
@@ -485,153 +378,7 @@ export default function OrdersPage() {
           <>
             {/* MOBILE CARDS VIEW (< md) */}
             <div className="block md:hidden space-y-3">
-              {/* Custom Orders */}
-              {(orderTypeTab === "ALL" || orderTypeTab === "CUSTOM") &&
-                filteredCustomOrders.map((co: any) => {
-                  const completedRuns = co.executions?.filter((e: any) => e.status === "COMPLETED").length ?? 0;
-                  const totalRuns = co.executions?.length ?? 1;
-                  const progressPercent = totalRuns > 0 ? Math.round((completedRuns / totalRuns) * 100) : 0;
-                  const totalCharge = Number(co.reserveTotal || co.priceSnapshot?.totalCharge || 0);
-                  const targetLink = co.slots?.[0]?.targetUrl || co.handle || "";
-
-                  return (
-                    <div
-                      key={co.id}
-                      className="p-4 rounded-2xl bg-purple-950/10 border border-purple-500/25 space-y-3"
-                    >
-                      <div className="flex items-center justify-between gap-2 border-b border-purple-500/20 pb-2.5">
-                        <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-fg">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center gap-1">
-                            <Sparkles className="w-3 h-3" />
-                            Custom Order
-                          </span>
-                          <span className="text-[11px] text-slate-400 font-mono">#{co.id.slice(0, 8)}</span>
-                        </div>
-                        <StatusBadge status={co.status} />
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <PackageThumbnail pkg={co} size="sm" className="shrink-0" />
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <div className="text-xs font-bold text-fg truncate">
-                            {targetLink}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-[10px] uppercase font-mono text-fg-2">
-                              <PlatformIcon platform={co.platform} size={11} />
-                              <span>{co.platform}</span>
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              {completedRuns}/{totalRuns} runs ({progressPercent}%)
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-white/5 overflow-hidden">
-                        <div
-                          style={{ width: `${progressPercent}%` }}
-                          className="h-full rounded-full bg-gradient-to-r from-purple-500 to-[#D8EC8D]"
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between pt-1 border-t border-purple-500/15 text-xs">
-                        <div>
-                          <span className="text-slate-400 text-[10px] uppercase mr-1">Total:</span>
-                          <span className="font-mono font-bold text-[#D8EC8D]">₹{totalCharge.toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleSaveCustomOrderAsFavorite(co)}
-                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
-                            title="Save as Favorite"
-                          >
-                            <Bookmark className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            disabled={savingPackageId === co.id}
-                            onClick={() => handleSaveCustomToMyPackages(co.id)}
-                            className="px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 font-semibold text-[11px] transition-colors flex items-center gap-1"
-                            title="Save to My Packages"
-                          >
-                            <Boxes className="w-3 h-3" />
-                            <span>{savingPackageId === co.id ? "Saving..." : "Save to My Packages"}</span>
-                          </button>
-                          <Link
-                            href={`/packages/${co.id}`}
-                            className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
-                            title="View Details"
-                          >
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </Link>
-                        </div>
-                      </div>
-
-                      {/* Expandable Sub-Orders Button & Drawer (Mobile) */}
-                      <div className="pt-2 border-t border-purple-500/15">
-                        <button
-                          type="button"
-                          onClick={() => toggleExpandPackage(co.id)}
-                          className={`w-full py-2 px-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between ${
-                            expandedPackageIds[co.id]
-                              ? "bg-purple-500 text-white border-purple-400 shadow-xs"
-                              : "bg-purple-500/15 hover:bg-purple-500/25 border-purple-500/30 text-purple-200"
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <Boxes className="w-3.5 h-3.5 text-purple-400" />
-                            <span>Sub-Orders (${co.executions?.length || 0} runs)</span>
-                          </div>
-                          <ChevronDown
-                            className={`w-3.5 h-3.5 transition-transform ${expandedPackageIds[co.id] ? "rotate-180" : ""}`}
-                          />
-                        </button>
-
-                        {expandedPackageIds[co.id] && (
-                          <div className="mt-3 p-3 rounded-xl bg-black/50 border border-purple-500/25 space-y-2.5">
-                            <div className="flex items-center justify-between text-[11px] font-mono text-purple-300 border-b border-purple-500/20 pb-1.5">
-                              <span>Sub-Orders Breakdown</span>
-                              <span>${completedRuns} / ${totalRuns} Done</span>
-                            </div>
-                            {(!co.executions || co.executions.length === 0) ? (
-                              <div className="py-3 text-center text-slate-400 text-[11px] font-mono">
-                                No execution runs scheduled yet.
-                              </div>
-                            ) : (
-                              <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
-                                {co.executions.map((exec: any, idx: number) => {
-                                  const ruleMatch = co.rules?.find((r: any) => r.id === exec.ruleId);
-                                  const svcName = ruleMatch?.service?.displayName || ruleMatch?.service?.name || "Service Run";
-                                  return (
-                                    <div key={exec.id || idx} className="p-2 rounded-lg bg-white/[0.03] border border-white/5 space-y-1 text-[11px] font-mono">
-                                      <div className="flex items-center justify-between">
-                                        <span className="font-bold text-purple-300">Run #{exec.seq ?? idx + 1}</span>
-                                        <StatusBadge status={exec.status} />
-                                      </div>
-                                      <div className="text-fg font-sans font-medium text-xs truncate">
-                                        {svcName}
-                                      </div>
-                                      <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
-                                        <span>{Number(exec.quantity || 0).toLocaleString()} units · Prepaid</span>
-                                        <span>{exec.executeAt ? new Date(exec.executeAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-"}</span>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-
-              {/* Standard Orders (Mobile) */}
-              {(orderTypeTab === "ALL" || orderTypeTab === "STANDARD") &&
-                filteredOrders.map((order) => (
+              {filteredOrders.map((order) => (
                 <div
                   key={order.id}
                   onClick={() => setActiveModalOrder(order)}
@@ -738,232 +485,7 @@ export default function OrdersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 text-xs">
-                  {/* Custom Orders Desktop Rows */}
-                  {(orderTypeTab === "ALL" || orderTypeTab === "CUSTOM") &&
-                    filteredCustomOrders.map((co: any) => {
-                      const completedRuns = co.executions?.filter((e: any) => e.status === "COMPLETED").length ?? 0;
-                      const totalRuns = co.executions?.length ?? 1;
-                      const progressPercent = totalRuns > 0 ? Math.round((completedRuns / totalRuns) * 100) : 0;
-                      const totalCharge = Number(co.reserveTotal || co.priceSnapshot?.totalCharge || 0);
-                      const targetLink = co.slots?.[0]?.targetUrl || co.handle || "";
-                      const isExpanded = !!expandedPackageIds[co.id];
-
-                      return (
-                        <React.Fragment key={co.id}>
-                          <tr className="bg-purple-950/[0.08] hover:bg-purple-950/[0.18] transition-colors group">
-                            <td className="py-3.5 px-3 font-mono font-semibold text-fg whitespace-nowrap">
-                              <div className="flex items-center gap-1.5">
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
-                                  <Sparkles className="w-2.5 h-2.5" />
-                                  Custom Order
-                                </span>
-                                <span className="text-[11px] text-slate-400">#{co.id.slice(0, 8)}</span>
-                              </div>
-                              <span className="text-[10px] text-slate-400 block font-normal mt-0.5">
-                                {co.createdAt ? new Date(co.createdAt).toLocaleDateString() : ""}
-                              </span>
-                            </td>
-
-                            <td className="py-3.5 px-3">
-                              <div className="flex items-center gap-2.5">
-                                <PackageThumbnail pkg={co} size="sm" className="shrink-0" />
-                                <div className="min-w-0">
-                                  <div className="font-semibold text-fg max-w-xs truncate">
-                                    Multi-Service Custom Drip ({co.rules?.length || 1} services)
-                                  </div>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <PlatformIcon platform={co.platform} size={12} />
-                                    <span className="text-[10px] text-slate-400 uppercase font-mono">{co.platform}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-
-                            <td className="py-3.5 px-3 font-mono">
-                              <a
-                                href={targetLink}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-fg-2 hover:text-[#D8EC8D] max-w-[180px] truncate block"
-                                title={targetLink}
-                              >
-                                {targetLink}
-                              </a>
-                            </td>
-
-                            <td className="py-3.5 px-3 font-mono">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-fg font-medium">
-                                    {completedRuns}/{totalRuns} runs ({progressPercent}%)
-                                  </span>
-                                </div>
-                                <div className="w-28 h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
-                                  <div
-                                    style={{ width: `${progressPercent}%` }}
-                                    className="h-full rounded-full bg-gradient-to-r from-purple-500 to-[#D8EC8D]"
-                                  />
-                                </div>
-                              </div>
-                            </td>
-
-                            <td className="py-3.5 px-3 font-mono font-bold text-[#D8EC8D]">
-                              ₹{totalCharge.toFixed(2)}
-                            </td>
-
-                            <td className="py-3.5 px-3">
-                              <StatusBadge status={co.status} />
-                            </td>
-
-                            <td className="py-3.5 px-3 text-right">
-                              <div className="flex items-center justify-end gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleExpandPackage(co.id)}
-                                  className={`px-2.5 py-1 rounded-lg border text-xs font-semibold transition-all flex items-center gap-1 ${
-                                    isExpanded
-                                      ? "bg-purple-500 text-white border-purple-400 shadow-xs"
-                                      : "bg-purple-500/15 hover:bg-purple-500/25 border-purple-500/30 text-purple-200"
-                                  }`}
-                                  title={isExpanded ? "Hide Sub-Orders" : "View Sub-Orders"}
-                                >
-                                  <Boxes className="w-3.5 h-3.5" />
-                                  <span>Sub-Orders ({co.executions?.length || 0})</span>
-                                  <ChevronDown
-                                    className={`w-3.5 h-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                                  />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleSaveCustomOrderAsFavorite(co)}
-                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
-                                  title="Save as Favorite"
-                                >
-                                  <Bookmark className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={savingPackageId === co.id}
-                                  onClick={() => handleSaveCustomToMyPackages(co.id)}
-                                  className="px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 font-semibold text-[10px] transition-colors flex items-center gap-1"
-                                  title="Save to My Packages"
-                                >
-                                  <Boxes className="w-3 h-3" />
-                                  <span>{savingPackageId === co.id ? "Saving..." : "Save to My Packages"}</span>
-                                </button>
-                                <Link
-                                  href={`/packages/${co.id}`}
-                                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors inline-block"
-                                  title="View Details"
-                                >
-                                  <ChevronRight className="w-3.5 h-3.5" />
-                                </Link>
-                              </div>
-                            </td>
-                          </tr>
-
-                          {/* EXPANDABLE NESTED SUB-ORDERS DRAWER */}
-                          {isExpanded && (
-                            <tr className="bg-purple-950/[0.20] border-b border-purple-500/20">
-                              <td colSpan={7} className="p-3 sm:p-5">
-                                <div className="rounded-2xl bg-[#141019]/90 border border-purple-500/30 p-4 space-y-3 shadow-inner">
-                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-500/20 pb-2.5">
-                                    <div className="flex items-center gap-2">
-                                      <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300">
-                                        <Boxes className="w-4 h-4" />
-                                      </div>
-                                      <div>
-                                        <div className="text-xs font-bold text-fg flex items-center gap-2">
-                                          <span>Package Sub-Orders & Execution Runs</span>
-                                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-200">
-                                            {co.executions?.length || 0} Total Batches
-                                          </span>
-                                        </div>
-                                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                                          These child orders are strictly isolated inside this custom package to keep your Standard Orders history clean.
-                                        </p>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-[11px] font-mono">
-                                      <span className="text-slate-400">Status:</span>
-                                      <span className="font-semibold text-purple-300">{completedRuns} of {totalRuns} completed</span>
-                                    </div>
-                                  </div>
-
-                                  {(!co.executions || co.executions.length === 0) ? (
-                                    <div className="py-6 text-center text-slate-400 text-xs font-mono">
-                                      No execution runs found for this package.
-                                    </div>
-                                  ) : (
-                                    <div className="overflow-x-auto">
-                                      <table className="w-full text-left text-xs border-collapse">
-                                        <thead>
-                                          <tr className="border-b border-white/10 text-[10px] uppercase font-mono text-slate-400 tracking-wider">
-                                            <th className="py-2 px-2.5">Run #</th>
-                                            <th className="py-2 px-2.5">Target & Service</th>
-                                            <th className="py-2 px-2.5">Quantity</th>
-                                            <th className="py-2 px-2.5">Charge</th>
-                                            <th className="py-2 px-2.5">Scheduled / Executed</th>
-                                            <th className="py-2 px-2.5">Status</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-white/5 font-mono">
-                                          {co.executions.map((exec: any, idx: number) => {
-                                            const ruleMatch = co.rules?.find((r: any) => r.id === exec.ruleId);
-                                            const svcName = ruleMatch?.service?.displayName || ruleMatch?.service?.name || "Service Run";
-                                            const execTarget = exec.targetUrl || targetLink;
-                                            return (
-                                              <tr key={exec.id || idx} className="hover:bg-white/[0.03] transition-colors">
-                                                <td className="py-2 px-2.5 whitespace-nowrap">
-                                                  <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold text-[10px]">
-                                                    #{exec.seq ?? idx + 1}
-                                                  </span>
-                                                </td>
-                                                <td className="py-2 px-2.5">
-                                                  <div className="text-fg font-sans font-medium text-xs truncate max-w-[220px]">
-                                                    {svcName}
-                                                  </div>
-                                                  {execTarget && (
-                                                    <a
-                                                      href={execTarget}
-                                                      target="_blank"
-                                                      rel="noreferrer"
-                                                      className="text-[10px] text-slate-400 hover:text-[#D8EC8D] truncate max-w-[220px] block"
-                                                    >
-                                                      {execTarget}
-                                                    </a>
-                                                  )}
-                                                </td>
-                                                <td className="py-2 px-2.5 whitespace-nowrap text-fg font-medium">
-                                                  {Number(exec.quantity || 0).toLocaleString()} units
-                                                </td>
-                                                <td className="py-2 px-2.5 whitespace-nowrap text-purple-300 text-[11px]">
-                                                  Prepaid (₹0.00)
-                                                </td>
-                                                <td className="py-2 px-2.5 whitespace-nowrap text-slate-400 text-[10px]">
-                                                  {exec.executeAt ? new Date(exec.executeAt).toLocaleString() : "-"}
-                                                </td>
-                                                <td className="py-2 px-2.5 whitespace-nowrap">
-                                                  <StatusBadge status={exec.status} />
-                                                </td>
-                                              </tr>
-                                            );
-                                          })}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
-
-                  {/* Standard Orders Desktop Rows */}
-                  {(orderTypeTab === "ALL" || orderTypeTab === "STANDARD") &&
-                    filteredOrders.map((order) => (
+                  {filteredOrders.map((order) => (
                     <tr
                       key={order.id}
                       onClick={() => setActiveModalOrder(order)}

@@ -28,6 +28,7 @@ import {
   MessageSquare,
   Users,
   Bookmark,
+  Zap,
 } from "lucide-react";
 import { formatIndianNumber } from "@/lib/numberFormat";
 import { getApiBase } from "@/lib/api-base";
@@ -109,6 +110,29 @@ function getMetricIcon(name: string) {
   return <Layers className="w-3 h-3 text-[#D8EC8D] shrink-0" />;
 }
 
+// Helper: Determine Package Category
+type PackageCategory = "ALL" | "CUSTOM" | "COMBO" | "AUTOPILOT";
+
+function getPackageCategory(pkg: any): "CUSTOM" | "COMBO" | "AUTOPILOT" {
+  if (
+    pkg.priceSnapshot?.type === "AUTOPILOT" ||
+    pkg.id?.startsWith("pkg_auto_") ||
+    pkg.mode === "AUTOPILOT" ||
+    pkg.name?.toLowerCase().includes("autopilot")
+  ) {
+    return "AUTOPILOT";
+  }
+  if (
+    pkg.mode === "TEMPLATE" ||
+    pkg.id?.startsWith("pkg_bundle_") ||
+    pkg.priceSnapshot?.type === "COMBO" ||
+    pkg.name?.toLowerCase().includes("bundle")
+  ) {
+    return "COMBO";
+  }
+  return "CUSTOM";
+}
+
 // Helper: Safely calculate total upfront price without NaN
 function getPackageTotal(pkg: any): number {
   const direct = pkg.reserveTotal ?? pkg.totalCharge ?? pkg.priceSnapshot?.totalPrice ?? pkg.priceSnapshot?.quotePrice;
@@ -152,6 +176,7 @@ function PackagesListContent() {
   const [purchasingBundle, setPurchasingBundle] = useState(false);
   const [bundleError, setBundleError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<PackageCategory>("ALL");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "CANCELLED">("ALL");
   const [favoriteSavingId, setFavoriteSavingId] = useState<string | null>(null);
 
@@ -203,31 +228,46 @@ function PackagesListContent() {
     loadBundles();
   }, [refreshPackages]);
 
-  // User Packages (Filter out one-off custom drip orders so only user packages/templates and bundles appear)
+  // All Package Orders belong in My Packages (Custom Drip, Combo Bundles, and Autopilot)
   const userPackages = useMemo(() => {
-    return packages.filter((p: any) => {
-      if (p.id?.startsWith("pkg_drip_") && !p.priceSnapshot?.savedToMyPackages && p.mode !== "TEMPLATE") {
-        return false;
-      }
-      return true;
-    });
+    return packages || [];
   }, [packages]);
 
-  // Quick Counts
-  const counts = useMemo(() => {
+  // Category Counts
+  const categoryCounts = useMemo(() => {
     return {
       all: userPackages.length,
-      active: userPackages.filter((p: any) => p.status === "ACTIVE").length,
-      completed: userPackages.filter((p: any) => p.status === "COMPLETED").length,
-      cancelled: userPackages.filter((p: any) => p.status === "CANCELLED").length,
+      custom: userPackages.filter((p: any) => getPackageCategory(p) === "CUSTOM").length,
+      combo: userPackages.filter((p: any) => getPackageCategory(p) === "COMBO").length,
+      autopilot: userPackages.filter((p: any) => getPackageCategory(p) === "AUTOPILOT").length,
     };
   }, [userPackages]);
 
-  // Filtered List
+  // Status Counts under active Category
+  const counts = useMemo(() => {
+    const base = categoryFilter === "ALL"
+      ? userPackages
+      : userPackages.filter((p: any) => getPackageCategory(p) === categoryFilter);
+
+    return {
+      all: base.length,
+      active: base.filter((p: any) => p.status === "ACTIVE").length,
+      completed: base.filter((p: any) => p.status === "COMPLETED").length,
+      cancelled: base.filter((p: any) => p.status === "CANCELLED").length,
+    };
+  }, [userPackages, categoryFilter]);
+
+  // Filtered List (Combined Category + Status filter)
   const filteredPackages = useMemo(() => {
-    if (statusFilter === "ALL") return userPackages;
-    return userPackages.filter((p: any) => p.status === statusFilter);
-  }, [userPackages, statusFilter]);
+    let list = userPackages;
+    if (categoryFilter !== "ALL") {
+      list = list.filter((p: any) => getPackageCategory(p) === categoryFilter);
+    }
+    if (statusFilter !== "ALL") {
+      list = list.filter((p: any) => p.status === statusFilter);
+    }
+    return list;
+  }, [userPackages, categoryFilter, statusFilter]);
 
   const handlePurchaseBundle = async () => {
     if (!selectedBundle || !bundleHandle.trim()) return;
@@ -359,11 +399,11 @@ function PackagesListContent() {
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Link
-            href="/packages/autopilot"
+            href="/new-order?tab=autopilot"
             className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500/20 to-[#D8EC8D]/20 border border-[#D8EC8D]/40 text-[#D8EC8D] font-semibold text-xs hover:brightness-110 active:scale-95 transition-all shadow-sm w-full sm:w-auto"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#D8EC8D]" />
-            <span>🚀 Autopilot (Auto-Boost)</span>
+            <span>🚀 Auto-Pilot Engine</span>
           </Link>
           <Link
             href="/new-order?tab=custom_drip"
@@ -375,9 +415,47 @@ function PackagesListContent() {
         </div>
       </div>
 
-      {/* Filter Chips Bar (Quick mobile switcher) */}
-      {packages.length > 0 && (
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+      {/* 4 Category Tabs (All Packages, Custom Packages, Combo Packages, Auto Packages) */}
+      <div className="flex items-center gap-2 border-b border-white/10 pb-2 overflow-x-auto no-scrollbar">
+        {[
+          { id: "ALL", label: "All Packages", count: categoryCounts.all, icon: Boxes },
+          { id: "CUSTOM", label: "Custom Packages", count: categoryCounts.custom, icon: Zap },
+          { id: "COMBO", label: "Combo Packages", count: categoryCounts.combo, icon: Layers },
+          { id: "AUTOPILOT", label: "Auto Packages", count: categoryCounts.autopilot, icon: Sparkles },
+        ].map((cat) => {
+          const isSelected = categoryFilter === cat.id;
+          const Icon = cat.icon;
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => {
+                setCategoryFilter(cat.id as PackageCategory);
+                setStatusFilter("ALL");
+              }}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-2 cursor-pointer ${
+                isSelected
+                  ? "bg-[#D8EC8D] text-black shadow-sm font-bold"
+                  : "bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 border border-white/5"
+              }`}
+            >
+              <Icon className={`w-3.5 h-3.5 ${isSelected ? "text-black" : "text-[#D8EC8D]"}`} />
+              <span>{cat.label}</span>
+              <span
+                className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                  isSelected ? "bg-black/20 text-black font-bold" : "bg-white/10 text-slate-400"
+                }`}
+              >
+                {cat.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Filter Chips Bar (Status filter within selected category) */}
+      {userPackages.length > 0 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
           <button
             type="button"
             onClick={() => setStatusFilter("ALL")}
@@ -522,6 +600,24 @@ function PackagesListContent() {
                             </h3>
                             <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
                               <span>#{pkg.id.slice(0, 8)}</span>
+                              {getPackageCategory(pkg) === "AUTOPILOT" && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                  <Sparkles className="w-2.5 h-2.5 text-purple-300" />
+                                  AUTOPILOT
+                                </span>
+                              )}
+                              {getPackageCategory(pkg) === "COMBO" && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                                  <Boxes className="w-2.5 h-2.5 text-sky-300" />
+                                  COMBO
+                                </span>
+                              )}
+                              {getPackageCategory(pkg) === "CUSTOM" && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                  <Zap className="w-2.5 h-2.5 text-amber-300" />
+                                  CUSTOM DRIP
+                                </span>
+                              )}
                               {Boolean(pkg.priceSnapshot?.preview?.isCarousel || (pkg.handle && /[?&]img_index=\d+/i.test(pkg.handle))) && (
                                 <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
                                   <Layers className="w-2.5 h-2.5" />
@@ -608,6 +704,18 @@ function PackagesListContent() {
                                   </span>
                                 </div>
                               ))}
+                            </div>
+                          )}
+
+                          {/* Autopilot Slot Summary */}
+                          {getPackageCategory(pkg) === "AUTOPILOT" && (
+                            <div className="flex items-center gap-1.5 text-[10px] font-mono text-purple-300 bg-purple-500/10 px-2 py-1 rounded-lg border border-purple-500/20">
+                              <Sparkles className="w-3 h-3 text-purple-400 shrink-0" />
+                              <span>
+                                {pkg.slots?.length
+                                  ? `${pkg.slots.filter((s: any) => s.status === "CONSUMED" || s.status === "ACTIVE").length} of ${pkg.slots.length} uploads boosted • Auto-triggers on next post`
+                                  : "Auto-Pilot Feed Active • Auto-triggers on new uploads"}
+                              </span>
                             </div>
                           )}
                         </div>
