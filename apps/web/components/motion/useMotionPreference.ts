@@ -8,6 +8,19 @@ export interface MotionPreference {
   canRender3D: boolean;
 }
 
+function isWebGLSupported(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    const canvas = document.createElement("canvas");
+    return Boolean(
+      window.WebGLRenderingContext &&
+        (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function useMotionPreference(): MotionPreference {
   const [pref, setPref] = useState<MotionPreference>({
     reduced: false,
@@ -18,6 +31,7 @@ export function useMotionPreference(): MotionPreference {
   useEffect(() => {
     let reduced = false;
     let lowPower = false;
+    const webglOk = isWebGLSupported();
 
     // Check prefers-reduced-motion
     if (typeof window !== "undefined" && window.matchMedia) {
@@ -28,7 +42,6 @@ export function useMotionPreference(): MotionPreference {
         setPref((prev) => ({
           ...prev,
           reduced: e.matches,
-          canRender3D: !e.matches,
         }));
       };
       motionQuery.addEventListener("change", handleMotionChange);
@@ -42,17 +55,10 @@ export function useMotionPreference(): MotionPreference {
       }
     }
 
-    if (reduced) {
-      console.info("[3D fallback] prefers-reduced-motion enabled by user");
-    }
-    if (lowPower) {
-      console.info("[3D fallback] low-power/Save-Data mode active - rendering at dpr 1.0");
-    }
-
     setPref({
       reduced,
       lowPower,
-      canRender3D: !reduced,
+      canRender3D: webglOk,
     });
   }, []);
 

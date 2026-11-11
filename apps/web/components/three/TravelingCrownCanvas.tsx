@@ -435,8 +435,8 @@ export function TravelingCrownCanvas() {
     }
   }, []);
 
-  // When prefers-reduced-motion is requested or 3D is not supported, do not mount 3D canvas
-  if (!isClient || reduced || !canRender3D) {
+  // Ensure 3D canvas mounts reliably on client when WebGL is available
+  if (!isClient || !canRender3D) {
     return null;
   }
 

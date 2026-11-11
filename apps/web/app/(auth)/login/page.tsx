@@ -61,28 +61,6 @@ export default function LoginPage() {
     setServerError(null);
     const email = data.usernameOrEmail.toLowerCase().trim();
 
-    // Local dev bypass for bholu@gmail.com
-    const isLocalDev =
-      process.env.NODE_ENV !== "production" ||
-      (typeof window !== "undefined" &&
-        (window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1"));
-
-    if (isLocalDev && email === "bholu@gmail.com") {
-      establishSession(
-        {
-          id: "usr_bholu_local_id",
-          email: "bholu@gmail.com",
-          name: "Bholu",
-          role: "CUSTOMER",
-          balance: 5000,
-          currency: "INR",
-        },
-        `jwt_demo_bholu_${Date.now()}`
-      );
-      return;
-    }
-
     try {
       const apiBase = getApiBase();
 
@@ -243,26 +221,6 @@ export default function LoginPage() {
               >
                 <span>{isSubmitting ? "Authenticating..." : "Sign In to Account"}</span>
                 <ArrowRight className="w-4 h-4" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  establishSession(
-                    {
-                      id: "usr_bholu_local_id",
-                      email: "bholu@gmail.com",
-                      name: "Bholu",
-                      role: "CUSTOMER",
-                      balance: 5000,
-                      currency: "INR",
-                    },
-                    `jwt_demo_bholu_${Date.now()}`
-                  );
-                }}
-                className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[#D8EC8D] text-xs font-mono border border-[#D8EC8D]/30 transition-all flex items-center justify-center gap-2 mt-2 cursor-pointer"
-              >
-                ⚡ Local Dev: Direct Sign In as bholu@gmail.com
               </button>
             </form>
 

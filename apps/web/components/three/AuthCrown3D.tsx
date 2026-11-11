@@ -116,7 +116,7 @@ export function AuthCrown3D({
     mousePos.current = [0, 0];
   };
 
-  const shouldUseFallback = !isClient || reduced || !canRender3D || lowPower;
+  const isWebGLAvailable = isClient && canRender3D;
 
   return (
     <div
@@ -128,18 +128,7 @@ export function AuthCrown3D({
       {/* Radial soft emerald-lime atmospheric backlight */}
       <div className="absolute inset-0 bg-[#243100]/40 blur-[80px] rounded-full pointer-events-none -z-10" />
 
-      {shouldUseFallback ? (
-        <div className="w-full h-full flex items-center justify-center p-4">
-          <Image
-            src="/brand/crown@2x.webp"
-            alt="SMM Panel 3D Glass Crown emblem"
-            width={400}
-            height={400}
-            priority
-            className="w-full h-full object-contain mix-blend-screen drop-shadow-[0_0_40px_rgba(219,239,144,0.3)] pointer-events-none"
-          />
-        </div>
-      ) : (
+      {isWebGLAvailable ? (
         <Canvas
           dpr={[1, 1.5]}
           camera={{ position: [0, 0, 5.4], fov: 36 }}
@@ -167,6 +156,10 @@ export function AuthCrown3D({
             <AuthCrownRig mousePos={mousePos} />
           </React.Suspense>
         </Canvas>
+      ) : (
+        <div className="w-full h-full flex items-center justify-center p-4">
+          <div className="w-32 h-32 rounded-full bg-[#D8EC8D]/10 animate-pulse blur-xl" />
+        </div>
       )}
     </div>
   );

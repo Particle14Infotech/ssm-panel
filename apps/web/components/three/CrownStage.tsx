@@ -187,8 +187,7 @@ export function CrownStage() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [reduced, canRender3D, isMobile]);
 
-  const shouldUseFallback =
-    !isClient || reduced || !canRender3D || isMobile || lowPower;
+  const shouldUseFallback = !isClient || !canRender3D;
 
   if (shouldUseFallback) {
     return (
