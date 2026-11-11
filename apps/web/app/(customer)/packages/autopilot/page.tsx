@@ -16,28 +16,21 @@ import {
   Eye,
   Heart,
   Share2,
-  MessageSquare,
   Clock,
   ArrowRight,
   ChevronDown,
   ChevronUp,
   RefreshCw,
-  Sliders,
   ShieldCheck,
   Play,
-  Layers,
   Check,
   ExternalLink,
   Flame,
-  Award,
   Crown,
   ClipboardPaste,
   X,
   HelpCircle,
   RotateCcw,
-  CheckCircle,
-  Info,
-  TrendingUp,
   SlidersHorizontal,
 } from "lucide-react";
 import { formatIndianNumber } from "@/lib/numberFormat";
@@ -118,9 +111,11 @@ const PRESETS = [
     pacingSummary: "4 waves over 12 hours",
     metrics: { views: 2500, likes: 150, shares: 40, comments: 20 },
     icon: Flame,
-    color: "from-sky-500/15 via-blue-600/10 to-transparent border-sky-500/30",
-    badgeBg: "bg-sky-500/15 text-sky-300 border-sky-500/30",
-    glow: "shadow-[0_0_25px_rgba(56,189,248,0.1)]",
+    themeClasses: {
+      activeBorder: "border-sky-500 dark:border-sky-400 ring-2 ring-sky-500/40 bg-sky-500/10",
+      badge: "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30",
+      iconBg: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+    },
   },
   {
     id: "viral_push",
@@ -134,9 +129,11 @@ const PRESETS = [
     pacingSummary: "4 waves over 12 hours",
     metrics: { views: 10000, likes: 600, shares: 150, comments: 50 },
     icon: Sparkles,
-    color: "from-[#D8EC8D]/20 via-emerald-600/15 to-transparent border-[#D8EC8D]/40 shadow-[0_0_35px_rgba(216,236,141,0.18)]",
-    badgeBg: "bg-[#D8EC8D]/20 text-[#D8EC8D] border-[#D8EC8D]/35",
-    glow: "shadow-[0_0_30px_rgba(216,236,141,0.2)]",
+    themeClasses: {
+      activeBorder: "border-[#D8EC8D] ring-2 ring-[#D8EC8D]/50 bg-[#D8EC8D]/15 shadow-lg",
+      badge: "bg-[#D8EC8D]/25 text-emerald-800 dark:text-[#D8EC8D] border-[#D8EC8D]/40 font-bold",
+      iconBg: "bg-[#D8EC8D]/25 text-emerald-700 dark:text-[#D8EC8D]",
+    },
   },
   {
     id: "mega_brand",
@@ -149,9 +146,11 @@ const PRESETS = [
     pacingSummary: "6 waves over 24 hours",
     metrics: { views: 50000, likes: 3000, shares: 600, comments: 150 },
     icon: Crown,
-    color: "from-purple-500/15 via-indigo-600/10 to-transparent border-purple-500/30",
-    badgeBg: "bg-purple-500/15 text-purple-300 border-purple-500/30",
-    glow: "shadow-[0_0_25px_rgba(168,85,247,0.1)]",
+    themeClasses: {
+      activeBorder: "border-purple-500 dark:border-purple-400 ring-2 ring-purple-500/40 bg-purple-500/10",
+      badge: "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30",
+      iconBg: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+    },
   },
 ];
 
@@ -371,7 +370,7 @@ export default function AutopilotPage() {
       }
 
       setPurchaseSuccess(`🚀 Autopilot successfully activated for ${detectedProfile?.handle || handleInput}!`);
-      showToast(`Autopilot activated for ${slotCount} future uploads!`);
+      showToast(`Autopilot activated for ${slotCount} uploads!`);
       if (refreshData) refreshData();
       fetchPackages();
     } catch (err: any) {
@@ -432,7 +431,7 @@ export default function AutopilotPage() {
   }, [autopilotPackages, packageFilter]);
 
   return (
-    <div className="space-y-10 max-w-6xl mx-auto pb-24 px-3 sm:px-6">
+    <div className="space-y-8 sm:space-y-10 max-w-6xl mx-auto pb-24 px-2 sm:px-6 text-fg">
       {/* Toast Notification */}
       <AnimatePresence>
         {toastMessage && (
@@ -440,51 +439,51 @@ export default function AutopilotPage() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl bg-[#121609]/95 border border-[#D8EC8D]/50 text-[#D8EC8D] text-xs font-bold shadow-2xl backdrop-blur-xl"
+            className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl bg-surface border border-[#D8EC8D] text-fg text-xs font-bold shadow-2xl backdrop-blur-xl"
           >
-            <CheckCircle2 className="w-5 h-5 shrink-0 text-[#D8EC8D]" />
+            <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-500 dark:text-[#D8EC8D]" />
             <span>{toastMessage}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Top Banner / Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#121417] via-[#161a22] to-[#121417] border border-white/10 p-6 sm:p-8 shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#D8EC8D]/8 rounded-full blur-3xl pointer-events-none" />
+      {/* Top Banner / Hero Header (Universal Dark Aesthetic with High Contrast) */}
+      <div className="relative overflow-hidden rounded-3xl bg-slate-900 dark:bg-[#121417] border border-slate-800 dark:border-white/10 p-6 sm:p-8 shadow-2xl text-white">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#D8EC8D]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D8EC8D]/15 border border-[#D8EC8D]/30 text-[#D8EC8D] text-xs font-semibold">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D8EC8D]/20 border border-[#D8EC8D]/40 text-[#D8EC8D] text-xs font-bold">
               <Bot className="w-4 h-4" />
               <span>Zero-Friction Autopilot</span>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white flex items-center gap-3">
               Hands-Free Content Accelerator
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
               No manual ordering or link copying required. Simply connect your social handle, choose your target velocity, and our background engine automatically boosts every new upload the moment it goes live.
             </p>
 
             {/* Quick Feature Badges */}
-            <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
-              <span className="flex items-center gap-1.5 text-slate-300 font-medium bg-white/[0.04] px-3 py-1 rounded-lg border border-white/5">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-1 text-xs">
+              <span className="flex items-center gap-1.5 text-slate-200 font-medium bg-white/10 px-3 py-1 rounded-lg border border-white/10">
                 <Check className="w-3.5 h-3.5 text-[#D8EC8D]" /> 60s Detection Speed
               </span>
-              <span className="flex items-center gap-1.5 text-slate-300 font-medium bg-white/[0.04] px-3 py-1 rounded-lg border border-white/5">
+              <span className="flex items-center gap-1.5 text-slate-200 font-medium bg-white/10 px-3 py-1 rounded-lg border border-white/10">
                 <Check className="w-3.5 h-3.5 text-[#D8EC8D]" /> Safe Staggered Drip
               </span>
-              <span className="flex items-center gap-1.5 text-slate-300 font-medium bg-white/[0.04] px-3 py-1 rounded-lg border border-white/5">
+              <span className="flex items-center gap-1.5 text-slate-200 font-medium bg-white/10 px-3 py-1 rounded-lg border border-white/10">
                 <Check className="w-3.5 h-3.5 text-[#D8EC8D]" /> 100% Unused Slots Refundable
               </span>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0">
-            <div className="flex items-center gap-3 bg-white/[0.04] border border-white/10 p-3.5 rounded-2xl backdrop-blur-md">
-              <div className="w-10 h-10 rounded-xl bg-[#D8EC8D]/15 flex items-center justify-center text-[#D8EC8D]">
+            <div className="flex items-center gap-3 bg-white/10 border border-white/15 p-3.5 rounded-2xl backdrop-blur-md">
+              <div className="w-10 h-10 rounded-xl bg-[#D8EC8D]/20 flex items-center justify-center text-[#D8EC8D]">
                 <Radio className="w-5 h-5 animate-pulse" />
               </div>
               <div>
-                <div className="text-[11px] text-slate-400 font-medium">Autonomous Poller</div>
+                <div className="text-[11px] text-slate-300 font-medium">Autonomous Poller</div>
                 <div className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
                   Active Background Sync
@@ -492,49 +491,49 @@ export default function AutopilotPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-white/[0.02] border border-white/5 text-xs text-slate-400">
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10 text-xs text-slate-300">
               <span>Your Wallet Balance:</span>
-              <span className="font-bold text-emerald-400 ml-2">₹{formatIndianNumber(userBalance)}</span>
+              <span className="font-extrabold text-emerald-400 ml-2">₹{formatIndianNumber(userBalance)}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Guided Steps Header */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4 p-1.5 rounded-2xl bg-white/[0.02] border border-white/5 text-center text-xs font-medium">
-        <div className="py-2 px-3 rounded-xl bg-white/[0.04] text-white flex items-center justify-center gap-2 border border-white/10 font-bold">
-          <span className="w-5 h-5 rounded-full bg-[#D8EC8D] text-black font-extrabold flex items-center justify-center text-[10px]">1</span>
+      {/* Guided Steps Header (Adapts to Light / Dark) */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 p-1.5 rounded-2xl bg-surface-raised border border-border text-center text-xs font-semibold">
+        <div className="py-2.5 px-2 sm:px-3 rounded-xl bg-surface text-fg flex items-center justify-center gap-1.5 sm:gap-2 border border-border shadow-sm font-bold">
+          <span className="w-5 h-5 rounded-full bg-[#D8EC8D] text-black font-extrabold flex items-center justify-center text-[10px] shrink-0">1</span>
           <span className="truncate">Enter Handle</span>
         </div>
-        <div className="py-2 px-3 rounded-xl text-slate-400 flex items-center justify-center gap-2">
-          <span className="w-5 h-5 rounded-full bg-white/10 text-slate-300 font-extrabold flex items-center justify-center text-[10px]">2</span>
+        <div className="py-2.5 px-2 sm:px-3 rounded-xl text-fg-muted flex items-center justify-center gap-1.5 sm:gap-2">
+          <span className="w-5 h-5 rounded-full bg-surface border border-border text-fg-muted font-extrabold flex items-center justify-center text-[10px] shrink-0">2</span>
           <span className="truncate">Choose Recipe</span>
         </div>
-        <div className="py-2 px-3 rounded-xl text-slate-400 flex items-center justify-center gap-2">
-          <span className="w-5 h-5 rounded-full bg-white/10 text-slate-300 font-extrabold flex items-center justify-center text-[10px]">3</span>
+        <div className="py-2.5 px-2 sm:px-3 rounded-xl text-fg-muted flex items-center justify-center gap-1.5 sm:gap-2">
+          <span className="w-5 h-5 rounded-full bg-surface border border-border text-fg-muted font-extrabold flex items-center justify-center text-[10px] shrink-0">3</span>
           <span className="truncate">Activate Slots</span>
         </div>
       </div>
 
       {/* Booking Form Bento */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
         {/* Left Column: Handle & Auto-Preview (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="rounded-3xl bg-surface border border-border p-6 space-y-5 shadow-lg">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Radio className="w-4 h-4 text-[#D8EC8D]" />
+          <div className="rounded-3xl bg-surface border border-border p-5 sm:p-6 space-y-5 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-base font-bold text-fg flex items-center gap-2">
+                <Radio className="w-4 h-4 text-emerald-600 dark:text-[#D8EC8D]" />
                 Step 1: Target Creator
               </h2>
               {/* Platform Switcher */}
-              <div className="flex items-center gap-1 bg-white/[0.04] p-1 rounded-xl border border-white/5">
+              <div className="flex items-center gap-1 bg-surface-raised p-1 rounded-xl border border-border">
                 <button
                   type="button"
                   onClick={() => setSelectedPlatform("INSTAGRAM")}
                   className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
                     selectedPlatform === "INSTAGRAM"
-                      ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
+                      : "text-fg-muted hover:text-fg"
                   }`}
                 >
                   <PlatformIcon platform="INSTAGRAM" className="w-3.5 h-3.5" />
@@ -545,8 +544,8 @@ export default function AutopilotPage() {
                   onClick={() => setSelectedPlatform("YOUTUBE")}
                   className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
                     selectedPlatform === "YOUTUBE"
-                      ? "bg-red-500/20 text-red-300 border border-red-500/30"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-red-500/15 text-red-700 dark:text-red-300 border border-red-500/30"
+                      : "text-fg-muted hover:text-fg"
                   }`}
                 >
                   <PlatformIcon platform="YOUTUBE" className="w-3.5 h-3.5" />
@@ -557,12 +556,12 @@ export default function AutopilotPage() {
 
             {/* Input Box with Paste & Clear */}
             <div className="space-y-2">
-              <label className="text-xs font-medium text-slate-400 flex items-center justify-between">
+              <label className="text-xs font-medium text-fg-muted flex items-center justify-between">
                 <span>Enter Public Creator Handle or Channel URL</span>
                 <button
                   type="button"
                   onClick={handlePasteClipboard}
-                  className="text-[11px] text-[#D8EC8D] hover:underline flex items-center gap-1"
+                  className="text-[11px] text-emerald-700 dark:text-[#D8EC8D] font-semibold hover:underline flex items-center gap-1"
                 >
                   <ClipboardPaste className="w-3 h-3" />
                   Paste
@@ -575,7 +574,7 @@ export default function AutopilotPage() {
                   value={handleInput}
                   onChange={(e) => setHandleInput(e.target.value)}
                   placeholder={selectedPlatform === "INSTAGRAM" ? "@handle or https://instagram.com/handle" : "@channel or https://youtube.com/@channel"}
-                  className="w-full pl-4 pr-24 py-3.5 rounded-2xl bg-white/[0.03] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-[#D8EC8D]/50 text-sm font-medium transition-all shadow-inner"
+                  className="w-full pl-4 pr-24 py-3.5 rounded-2xl bg-surface-raised border border-border text-fg placeholder:text-fg-muted/60 focus:outline-none focus:border-emerald-500 dark:focus:border-[#D8EC8D] text-sm font-medium transition-all"
                 />
 
                 <div className="absolute right-3 top-3 flex items-center gap-2">
@@ -583,7 +582,7 @@ export default function AutopilotPage() {
                     <button
                       type="button"
                       onClick={() => setHandleInput("")}
-                      className="p-1 rounded-lg text-slate-400 hover:text-white transition-colors"
+                      className="p-1 rounded-lg text-fg-muted hover:text-fg transition-colors"
                       title="Clear input"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -591,12 +590,12 @@ export default function AutopilotPage() {
                   )}
 
                   {isDetecting ? (
-                    <div className="flex items-center gap-1.5 text-xs text-[#D8EC8D]">
+                    <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-[#D8EC8D] font-semibold">
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                       <span className="text-[10px]">Scanning...</span>
                     </div>
                   ) : detectedProfile ? (
-                    <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                    <div className="flex items-center gap-1 text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
                       <Check className="w-3 h-3" />
                       Live
                     </div>
@@ -606,7 +605,7 @@ export default function AutopilotPage() {
 
               {/* Sample test chips */}
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[10px] text-slate-500 mr-1">Quick Try:</span>
+                <span className="text-[10px] text-fg-muted mr-1 font-medium">Quick Try:</span>
                 {SAMPLE_HANDLES.filter((s) => s.platform === selectedPlatform).map((sample) => (
                   <button
                     key={sample.handle}
@@ -615,7 +614,7 @@ export default function AutopilotPage() {
                       setSelectedPlatform(sample.platform);
                       setHandleInput(sample.handle);
                     }}
-                    className="px-2 py-0.5 rounded-md bg-white/[0.03] hover:bg-white/[0.08] text-slate-400 hover:text-white text-[11px] border border-white/5 transition-all"
+                    className="px-2 py-0.5 rounded-md bg-surface-raised hover:bg-surface text-fg-muted hover:text-fg text-[11px] font-medium border border-border transition-all"
                   >
                     {sample.label}
                   </button>
@@ -628,10 +627,10 @@ export default function AutopilotPage() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl bg-white/[0.02] border border-white/10 p-4 space-y-4 shadow-sm"
+                className="rounded-2xl bg-surface-raised border border-border p-4 space-y-4"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 border border-white/10 shrink-0">
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-surface border border-border shrink-0 shadow-sm">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={detectedProfile.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300"}
@@ -642,14 +641,14 @@ export default function AutopilotPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-white text-sm truncate">{detectedProfile.handle}</span>
-                      <ShieldCheck className="w-4 h-4 text-[#D8EC8D] shrink-0" />
+                      <span className="font-bold text-fg text-sm truncate">{detectedProfile.handle}</span>
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-[#D8EC8D] shrink-0" />
                     </div>
-                    <div className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+                    <div className="text-xs text-fg-muted flex items-center gap-2 mt-0.5">
                       <span>{selectedPlatform === "INSTAGRAM" ? "Instagram Profile" : "YouTube Channel"}</span>
-                      <span className="w-1 h-1 rounded-full bg-slate-600" />
-                      <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span className="w-1 h-1 rounded-full bg-border" />
+                      <span className="text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                         Live Synced
                       </span>
                     </div>
@@ -658,19 +657,19 @@ export default function AutopilotPage() {
 
                 {/* Latest Upload Box & Seed Selection */}
                 {detectedMedia && (
-                  <div className="pt-3 border-t border-white/5 space-y-3">
+                  <div className="pt-3 border-t border-border space-y-3">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-400 font-medium flex items-center gap-1.5">
-                        <Play className="w-3.5 h-3.5 text-[#D8EC8D]" />
+                      <span className="text-fg-muted font-medium flex items-center gap-1.5">
+                        <Play className="w-3.5 h-3.5 text-emerald-600 dark:text-[#D8EC8D]" />
                         Latest Upload Detected:
                       </span>
-                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold text-[10px]">
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 font-bold text-[10px]">
                         Auto-Matched
                       </span>
                     </div>
 
-                    <div className="flex gap-3 bg-black/40 p-3 rounded-xl border border-white/5">
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-white/5 shrink-0 relative">
+                    <div className="flex gap-3 bg-surface p-3 rounded-xl border border-border shadow-sm">
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-surface-raised shrink-0 relative">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={detectedMedia.thumbnailUrl}
@@ -678,39 +677,39 @@ export default function AutopilotPage() {
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
                         />
-                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
                           <Play className="w-4 h-4 text-white fill-white/80" />
                         </div>
                       </div>
                       <div className="flex-1 min-w-0 space-y-1">
-                        <div className="text-xs font-semibold text-white line-clamp-2 leading-snug">
+                        <div className="text-xs font-bold text-fg line-clamp-2 leading-snug">
                           {detectedMedia.title}
                         </div>
-                        <div className="text-[11px] text-slate-400 flex items-center gap-1">
+                        <div className="text-[11px] text-fg-muted flex items-center gap-1">
                           <span>Media Key:</span>
-                          <span className="text-slate-200 font-mono text-[10px] truncate">{detectedMedia.mediaKey}</span>
+                          <span className="text-fg font-mono text-[10px] truncate">{detectedMedia.mediaKey}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Interactive Seed Mode Toggle Cards */}
                     <div className="space-y-2 pt-1">
-                      <span className="text-[11px] text-slate-400 font-medium">When should boosting start?</span>
+                      <span className="text-[11px] text-fg-muted font-semibold">When should boosting start?</span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <button
                           type="button"
                           onClick={() => setSeedCurrentPost(true)}
-                          className={`p-2.5 rounded-xl border text-left transition-all ${
+                          className={`p-3 rounded-xl border text-left transition-all ${
                             seedCurrentPost
-                              ? "bg-[#D8EC8D]/10 border-[#D8EC8D]/40 text-white"
-                              : "bg-white/[0.02] border-white/5 text-slate-400 hover:text-white"
+                              ? "bg-emerald-500/15 dark:bg-[#D8EC8D]/15 border-emerald-500 dark:border-[#D8EC8D] text-fg ring-1 ring-emerald-500 dark:ring-[#D8EC8D]"
+                              : "bg-surface border-border text-fg-muted hover:text-fg hover:border-fg-muted/40"
                           }`}
                         >
-                          <div className="flex items-center gap-1.5 text-xs font-bold text-[#D8EC8D]">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-[#D8EC8D]">
                             <Zap className="w-3.5 h-3.5 fill-current" />
                             <span>Start Now on Latest</span>
                           </div>
-                          <div className="text-[10px] text-slate-400 mt-1 leading-tight">
+                          <div className="text-[10px] text-fg-muted mt-1 leading-tight">
                             Slot #1 boosts this video immediately; remaining slots wait for next uploads.
                           </div>
                         </button>
@@ -718,17 +717,17 @@ export default function AutopilotPage() {
                         <button
                           type="button"
                           onClick={() => setSeedCurrentPost(false)}
-                          className={`p-2.5 rounded-xl border text-left transition-all ${
+                          className={`p-3 rounded-xl border text-left transition-all ${
                             !seedCurrentPost
-                              ? "bg-sky-500/10 border-sky-500/40 text-white"
-                              : "bg-white/[0.02] border-white/5 text-slate-400 hover:text-white"
+                              ? "bg-sky-500/15 border-sky-500 text-fg ring-1 ring-sky-500"
+                              : "bg-surface border-border text-fg-muted hover:text-fg hover:border-fg-muted/40"
                           }`}
                         >
-                          <div className="flex items-center gap-1.5 text-xs font-bold text-sky-400">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-sky-700 dark:text-sky-400">
                             <Clock className="w-3.5 h-3.5" />
                             <span>Wait for Next Upload</span>
                           </div>
-                          <div className="text-[10px] text-slate-400 mt-1 leading-tight">
+                          <div className="text-[10px] text-fg-muted mt-1 leading-tight">
                             All {slotCount} slots wait and trigger only when you post brand new content.
                           </div>
                         </button>
@@ -738,16 +737,16 @@ export default function AutopilotPage() {
                 )}
               </motion.div>
             ) : isDetecting ? (
-              <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 text-center space-y-2">
-                <RefreshCw className="w-6 h-6 text-[#D8EC8D] animate-spin mx-auto" />
-                <div className="text-xs text-white font-medium">Detecting profile & recent uploads...</div>
-                <div className="text-[11px] text-slate-500">Connecting to public platform feed</div>
+              <div className="p-6 rounded-2xl bg-surface-raised border border-border text-center space-y-2">
+                <RefreshCw className="w-6 h-6 text-emerald-600 dark:text-[#D8EC8D] animate-spin mx-auto" />
+                <div className="text-xs text-fg font-medium">Detecting profile & recent uploads...</div>
+                <div className="text-[11px] text-fg-muted">Connecting to public platform feed</div>
               </div>
             ) : null}
 
             {detectionError && (
-              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2.5">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
                 <span>{detectionError}</span>
               </div>
             )}
@@ -756,13 +755,13 @@ export default function AutopilotPage() {
 
         {/* Right Column: 3 Presets & Activation (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="rounded-3xl bg-surface border border-border p-6 space-y-6 shadow-lg">
+          <div className="rounded-3xl bg-surface border border-border p-5 sm:p-6 space-y-6 shadow-sm">
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#D8EC8D]" />
+              <h2 className="text-base font-bold text-fg flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-600 dark:text-[#D8EC8D]" />
                 Step 2: Select Growth Recipe
               </h2>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-fg-muted mt-1">
                 Optimized drip algorithms designed to trigger organic algorithmic discoverability.
               </p>
             </div>
@@ -778,8 +777,8 @@ export default function AutopilotPage() {
                     onClick={() => setSelectedPresetId(p.id)}
                     className={`relative p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
                       isSelected
-                        ? `bg-gradient-to-b ${p.color} ring-2 ring-[#D8EC8D] ${p.glow}`
-                        : "bg-white/[0.02] border-white/5 hover:border-white/15 hover:bg-white/[0.04]"
+                        ? p.themeClasses.activeBorder
+                        : "bg-surface-raised border-border hover:border-fg-muted/40 hover:bg-surface"
                     }`}
                   >
                     {p.isRecommended && (
@@ -790,51 +789,51 @@ export default function AutopilotPage() {
 
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center">
-                          <IconComponent className="w-4 h-4 text-white" />
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${p.themeClasses.iconBg}`}>
+                          <IconComponent className="w-4 h-4" />
                         </div>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${p.badgeBg}`}>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${p.themeClasses.badge}`}>
                           {p.badge}
                         </span>
                       </div>
 
                       <div>
-                        <div className="font-bold text-white text-sm">{p.name}</div>
-                        <div className="text-[11px] text-slate-400 leading-snug mt-1">{p.description}</div>
+                        <div className="font-bold text-fg text-sm">{p.name}</div>
+                        <div className="text-[11px] text-fg-muted leading-snug mt-1">{p.description}</div>
                       </div>
 
                       {/* Deliverables Breakdown */}
-                      <div className="space-y-1.5 pt-2 border-t border-white/10 text-xs">
-                        <div className="flex items-center justify-between text-slate-300">
-                          <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                            <Eye className="w-3 h-3 text-sky-400" /> Views:
+                      <div className="space-y-1.5 pt-2 border-t border-border text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1 text-[11px] text-fg-muted">
+                            <Eye className="w-3 h-3 text-sky-500" /> Views:
                           </span>
-                          <span className="font-bold text-white">{formatIndianNumber(p.metrics.views)}</span>
+                          <span className="font-bold text-fg">{formatIndianNumber(p.metrics.views)}</span>
                         </div>
-                        <div className="flex items-center justify-between text-slate-300">
-                          <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                            <Heart className="w-3 h-3 text-rose-400" /> Likes:
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1 text-[11px] text-fg-muted">
+                            <Heart className="w-3 h-3 text-rose-500" /> Likes:
                           </span>
-                          <span className="font-bold text-white">{formatIndianNumber(p.metrics.likes)}</span>
+                          <span className="font-bold text-fg">{formatIndianNumber(p.metrics.likes)}</span>
                         </div>
-                        <div className="flex items-center justify-between text-slate-300">
-                          <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                            <Share2 className="w-3 h-3 text-emerald-400" /> Shares:
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1 text-[11px] text-fg-muted">
+                            <Share2 className="w-3 h-3 text-emerald-500" /> Shares:
                           </span>
-                          <span className="font-bold text-white">{formatIndianNumber(p.metrics.shares)}</span>
+                          <span className="font-bold text-fg">{formatIndianNumber(p.metrics.shares)}</span>
                         </div>
-                        <div className="flex items-center justify-between text-slate-300">
-                          <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                            <Clock className="w-3 h-3 text-amber-400" /> Pacing:
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1 text-[11px] text-fg-muted">
+                            <Clock className="w-3 h-3 text-amber-500" /> Pacing:
                           </span>
-                          <span className="font-medium text-[10px] text-slate-300">{p.runsCount} waves / {p.durationHours}h</span>
+                          <span className="font-semibold text-[10px] text-fg">{p.runsCount} waves / {p.durationHours}h</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="pt-4 mt-3 border-t border-white/5 flex items-baseline justify-between">
-                      <span className="text-[11px] text-slate-400">Per Upload</span>
-                      <span className="text-base font-extrabold text-white">₹{p.pricePerSlot}</span>
+                    <div className="pt-4 mt-3 border-t border-border flex items-baseline justify-between">
+                      <span className="text-[11px] text-fg-muted">Per Upload</span>
+                      <span className="text-base font-extrabold text-fg">₹{p.pricePerSlot}</span>
                     </div>
                   </div>
                 );
@@ -844,11 +843,11 @@ export default function AutopilotPage() {
             {/* Step 3: Slot Count Selector */}
             <div className="space-y-3 pt-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-white font-bold flex items-center gap-1.5">
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-[#D8EC8D]" />
+                <span className="text-fg font-bold flex items-center gap-1.5">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-600 dark:text-[#D8EC8D]" />
                   Step 3: Number of Uploads to Auto-Boost
                 </span>
-                <span className="font-bold text-[#D8EC8D] text-sm">{slotCount} Posts</span>
+                <span className="font-extrabold text-emerald-700 dark:text-[#D8EC8D] text-sm">{slotCount} Posts</span>
               </div>
 
               <div className="grid grid-cols-5 gap-2">
@@ -859,8 +858,8 @@ export default function AutopilotPage() {
                     onClick={() => setSlotCount(cnt)}
                     className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all ${
                       slotCount === cnt
-                        ? "bg-[#D8EC8D]/20 text-[#D8EC8D] border-[#D8EC8D]/50 shadow-sm"
-                        : "bg-white/[0.02] border-white/10 text-slate-400 hover:text-white hover:bg-white/[0.05]"
+                        ? "bg-[#D8EC8D]/25 dark:bg-[#D8EC8D]/20 text-emerald-900 dark:text-[#D8EC8D] border-emerald-500 dark:border-[#D8EC8D] shadow-sm font-extrabold"
+                        : "bg-surface-raised border-border text-fg-muted hover:text-fg hover:bg-surface"
                     }`}
                   >
                     {cnt} Posts
@@ -868,44 +867,44 @@ export default function AutopilotPage() {
                 ))}
               </div>
 
-              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between text-xs text-slate-400">
+              <div className="p-3 rounded-xl bg-surface-raised border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs text-fg-muted">
                 <span>Estimated Total Reach:</span>
-                <span className="font-bold text-white">
+                <span className="font-bold text-fg">
                   {formatIndianNumber(selectedPreset.metrics.views * slotCount)} Views • {formatIndianNumber(selectedPreset.metrics.likes * slotCount)} Likes
                 </span>
               </div>
             </div>
 
             {/* Total Quote & Activation CTA */}
-            <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 space-y-4 shadow-inner">
+            <div className="p-5 rounded-2xl bg-surface-raised border border-border space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <div className="text-xs text-slate-400">Total Autopilot Investment:</div>
-                  <div className="text-2xl sm:text-3xl font-extrabold text-white flex items-baseline gap-2">
+                  <div className="text-xs text-fg-muted">Total Autopilot Investment:</div>
+                  <div className="text-2xl sm:text-3xl font-extrabold text-fg flex items-baseline gap-2">
                     ₹{formatIndianNumber(totalCost)}
-                    <span className="text-xs font-normal text-slate-400">
+                    <span className="text-xs font-normal text-fg-muted">
                       (₹{selectedPreset.pricePerSlot} × {slotCount} uploads)
                     </span>
                   </div>
                 </div>
 
                 <div className="text-left sm:text-right">
-                  <div className="text-[11px] text-slate-400">Your Wallet Balance</div>
-                  <div className={`text-sm sm:text-base font-extrabold ${hasSufficientBalance ? "text-emerald-400" : "text-rose-400"}`}>
+                  <div className="text-[11px] text-fg-muted">Your Wallet Balance</div>
+                  <div className={`text-sm sm:text-base font-extrabold ${hasSufficientBalance ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
                     ₹{formatIndianNumber(userBalance)}
                   </div>
                 </div>
               </div>
 
               {purchaseError && (
-                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2">
+                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{purchaseError}</span>
                 </div>
               )}
 
               {purchaseSuccess && (
-                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2">
+                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span>{purchaseSuccess}</span>
                 </div>
@@ -916,10 +915,10 @@ export default function AutopilotPage() {
                   type="button"
                   disabled={isSubmitting || !hasSufficientBalance}
                   onClick={handlePurchase}
-                  className={`flex-1 py-3.5 px-6 rounded-xl font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-xl ${
+                  className={`flex-1 py-3.5 px-6 rounded-xl font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md ${
                     hasSufficientBalance
                       ? "bg-[#D8EC8D] text-black hover:brightness-105 active:scale-[0.99] cursor-pointer"
-                      : "bg-white/10 text-slate-500 cursor-not-allowed"
+                      : "bg-surface border border-border text-fg-muted cursor-not-allowed"
                   }`}
                 >
                   {isSubmitting ? (
@@ -938,7 +937,7 @@ export default function AutopilotPage() {
                 {!hasSufficientBalance && (
                   <Link
                     href="/wallet"
-                    className="py-3.5 px-5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold text-xs text-center transition-all border border-emerald-500/30 flex items-center justify-center gap-1.5"
+                    className="py-3.5 px-5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 font-bold text-xs text-center transition-all border border-emerald-500/30 flex items-center justify-center gap-1.5"
                   >
                     <span>Top up ₹{formatIndianNumber(balanceShortfall)}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -954,23 +953,23 @@ export default function AutopilotPage() {
       <div className="space-y-6 pt-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5">
-              <Bot className="w-5 h-5 text-[#D8EC8D]" />
+            <h2 className="text-xl sm:text-2xl font-extrabold text-fg flex items-center gap-2.5">
+              <Bot className="w-5 h-5 text-emerald-600 dark:text-[#D8EC8D]" />
               Active Autopilot Subscriptions
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-fg-muted mt-0.5">
               Monitor reserved slots, auto-detected videos, and real-time drip sub-orders.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Filter Tabs */}
-            <div className="flex items-center gap-1 bg-white/[0.03] p-1 rounded-xl border border-white/10 text-xs">
+            <div className="flex items-center gap-1 bg-surface-raised p-1 rounded-xl border border-border text-xs">
               <button
                 type="button"
                 onClick={() => setPackageFilter("ALL")}
                 className={`px-3 py-1 rounded-lg font-semibold transition-all ${
-                  packageFilter === "ALL" ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"
+                  packageFilter === "ALL" ? "bg-surface text-fg shadow-sm" : "text-fg-muted hover:text-fg"
                 }`}
               >
                 All ({autopilotPackages.length})
@@ -979,7 +978,7 @@ export default function AutopilotPage() {
                 type="button"
                 onClick={() => setPackageFilter("ACTIVE")}
                 className={`px-3 py-1 rounded-lg font-semibold transition-all ${
-                  packageFilter === "ACTIVE" ? "bg-[#D8EC8D]/20 text-[#D8EC8D]" : "text-slate-400 hover:text-white"
+                  packageFilter === "ACTIVE" ? "bg-emerald-500/15 text-emerald-700 dark:text-[#D8EC8D] shadow-sm font-bold" : "text-fg-muted hover:text-fg"
                 }`}
               >
                 Active
@@ -988,7 +987,7 @@ export default function AutopilotPage() {
                 type="button"
                 onClick={() => setPackageFilter("COMPLETED")}
                 className={`px-3 py-1 rounded-lg font-semibold transition-all ${
-                  packageFilter === "COMPLETED" ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"
+                  packageFilter === "COMPLETED" ? "bg-surface text-fg shadow-sm" : "text-fg-muted hover:text-fg"
                 }`}
               >
                 Past
@@ -998,24 +997,24 @@ export default function AutopilotPage() {
             <button
               type="button"
               onClick={fetchPackages}
-              className="p-2 rounded-xl bg-white/[0.04] border border-white/10 text-slate-400 hover:text-white transition-all"
+              className="p-2 rounded-xl bg-surface border border-border text-fg-muted hover:text-fg transition-all"
               title="Refresh subscriptions"
             >
-              <RefreshCw className={`w-4 h-4 ${isLoadingPackages ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-4 h-4 ${isLoadingPackages ? "animate-spin text-emerald-500" : ""}`} />
             </button>
           </div>
         </div>
 
         {isLoadingPackages ? (
-          <div className="p-12 text-center text-slate-400 text-sm flex items-center justify-center gap-2">
-            <RefreshCw className="w-4 h-4 animate-spin text-[#D8EC8D]" />
+          <div className="p-12 text-center text-fg-muted text-sm flex items-center justify-center gap-2">
+            <RefreshCw className="w-4 h-4 animate-spin text-emerald-600 dark:text-[#D8EC8D]" />
             <span>Loading active Autopilot subscriptions...</span>
           </div>
         ) : filteredPackages.length === 0 ? (
-          <div className="p-12 rounded-3xl bg-surface border border-border text-center space-y-3">
-            <Bot className="w-10 h-10 text-slate-600 mx-auto" />
-            <div className="text-white font-bold text-sm">No Autopilot Subscriptions Found</div>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+          <div className="p-12 rounded-3xl bg-surface border border-border text-center space-y-3 shadow-sm">
+            <Bot className="w-10 h-10 text-fg-muted/40 mx-auto" />
+            <div className="text-fg font-bold text-sm">No Autopilot Subscriptions Found</div>
+            <p className="text-xs text-fg-muted max-w-sm mx-auto">
               Configure your handle above and activate your first Autopilot package to automate your next uploads.
             </p>
           </div>
@@ -1029,28 +1028,28 @@ export default function AutopilotPage() {
               const percentComplete = totalSlots > 0 ? Math.round((claimedSlots / totalSlots) * 100) : 0;
 
               return (
-                <div key={pkg.id} className="rounded-3xl bg-surface border border-border overflow-hidden space-y-5 p-6 shadow-md">
+                <div key={pkg.id} className="rounded-3xl bg-surface border border-border overflow-hidden space-y-5 p-5 sm:p-6 shadow-sm">
                   {/* Package Meta Header */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                      <div className="w-11 h-11 rounded-2xl bg-surface-raised border border-border flex items-center justify-center shrink-0">
                         <PlatformIcon platform={pkg.platform} className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="text-sm font-bold text-white flex items-center gap-2">
+                        <div className="text-sm font-bold text-fg flex items-center gap-2">
                           <span>@{pkg.handle}</span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D8EC8D]/15 text-[#D8EC8D] border border-[#D8EC8D]/30">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D8EC8D]/20 text-emerald-900 dark:text-[#D8EC8D] border border-[#D8EC8D]/30">
                             {preset.name}
                           </span>
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
                             pkg.status === "ACTIVE"
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                              : "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
+                              : "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20"
                           }`}>
                             {pkg.status}
                           </span>
                         </div>
-                        <div className="text-xs text-slate-400 mt-0.5">
+                        <div className="text-xs text-fg-muted mt-0.5">
                           {claimedSlots} of {totalSlots} uploads boosted ({percentComplete}%) • Reserved: ₹{formatIndianNumber(pkg.reserveTotal)}
                         </div>
                       </div>
@@ -1061,15 +1060,15 @@ export default function AutopilotPage() {
                         <button
                           type="button"
                           onClick={() => setCancelModalPackage(pkg)}
-                          className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-semibold transition-all flex items-center gap-1.5"
+                          className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-semibold transition-all flex items-center gap-1.5"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
                           <span>Cancel & Refund</span>
                         </button>
                       )}
 
-                      <div className="flex items-center gap-1.5 text-xs text-slate-400 bg-white/[0.02] px-3 py-1.5 rounded-xl border border-white/5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <div className="flex items-center gap-1.5 text-xs text-fg-muted bg-surface-raised px-3 py-1.5 rounded-xl border border-border">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                         <span>Background Poller Active</span>
                       </div>
                     </div>
@@ -1077,11 +1076,11 @@ export default function AutopilotPage() {
 
                   {/* Progress Bar */}
                   <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs text-slate-400 font-medium">
+                    <div className="flex justify-between text-xs text-fg-muted font-medium">
                       <span>Campaign Progress</span>
-                      <span>{claimedSlots} / {totalSlots} Posts Claimed</span>
+                      <span className="font-bold text-fg">{claimedSlots} / {totalSlots} Posts Claimed</span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
+                    <div className="w-full h-2 rounded-full bg-surface-raised overflow-hidden border border-border">
                       <div
                         className="h-full bg-gradient-to-r from-emerald-500 to-[#D8EC8D] transition-all duration-500"
                         style={{ width: `${percentComplete}%` }}
@@ -1089,8 +1088,8 @@ export default function AutopilotPage() {
                     </div>
                   </div>
 
-                  {/* Slots Timeline Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+                  {/* Slots Timeline Grid (Mobile Responsive) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
                     {pkg.slots?.map((slot) => {
                       const isClaimed = slot.status === "ACTIVE" || slot.status === "COMPLETED";
                       const isExpanded = !!expandedSlots[slot.id];
@@ -1100,22 +1099,24 @@ export default function AutopilotPage() {
                         <div
                           key={slot.id}
                           className={`rounded-2xl border transition-all p-4 space-y-3 ${
-                            isClaimed
-                              ? "bg-white/[0.02] border-emerald-500/30 shadow-sm"
-                              : "bg-white/[0.01] border-dashed border-white/10"
+                            slot.status === "COMPLETED"
+                              ? "bg-emerald-500/5 border-emerald-500/30 shadow-sm"
+                              : slot.status === "ACTIVE"
+                              ? "bg-sky-500/5 border-sky-500/30 shadow-sm"
+                              : "bg-surface-raised border-dashed border-border"
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-fg flex items-center gap-1.5">
                               <span>Slot #{slot.slotNumber}</span>
                             </span>
                             <span
                               className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
                                 slot.status === "COMPLETED"
-                                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30"
                                   : slot.status === "ACTIVE"
-                                  ? "bg-sky-500/15 text-sky-400 border border-sky-500/30"
-                                  : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                                  ? "bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30"
+                                  : "bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30"
                               }`}
                             >
                               {slot.status === "COMPLETED"
@@ -1129,18 +1130,18 @@ export default function AutopilotPage() {
                           {isClaimed ? (
                             <div className="space-y-2.5">
                               <div className="flex items-center gap-2.5">
-                                <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                                  <Play className="w-4 h-4 text-white fill-white" />
+                                <div className="w-9 h-9 rounded-xl bg-surface-raised border border-border flex items-center justify-center shrink-0">
+                                  <Play className="w-4 h-4 text-emerald-600 dark:text-emerald-400 fill-current" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <div className="text-xs font-semibold text-white truncate">
+                                  <div className="text-xs font-bold text-fg truncate">
                                     Media: {slot.mediaKey}
                                   </div>
                                   <a
                                     href={getSafeLink(slot.targetUrl)}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-[11px] text-sky-400 hover:underline flex items-center gap-1 truncate"
+                                    className="text-[11px] text-sky-600 dark:text-sky-400 font-semibold hover:underline flex items-center gap-1 truncate"
                                   >
                                     <span>Open Post</span>
                                     <ExternalLink className="w-3 h-3" />
@@ -1151,10 +1152,10 @@ export default function AutopilotPage() {
                               <button
                                 type="button"
                                 onClick={() => toggleSlotDrawer(slot.id)}
-                                className="w-full mt-2 py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-[11px] font-semibold flex items-center justify-between transition-all"
+                                className="w-full mt-2 py-2 px-3 rounded-xl bg-surface border border-border hover:bg-surface-raised text-fg text-[11px] font-semibold flex items-center justify-between transition-all"
                               >
                                 <span>{executions.length} Drip Sub-Orders</span>
-                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5 text-fg-muted" />}
                               </button>
 
                               {/* Expandable Drip Drawer */}
@@ -1169,20 +1170,20 @@ export default function AutopilotPage() {
                                     {executions.map((exec) => (
                                       <div
                                         key={exec.id}
-                                        className="p-2.5 rounded-xl bg-black/40 border border-white/5 text-[11px] flex items-center justify-between"
+                                        className="p-2.5 rounded-xl bg-surface border border-border text-[11px] flex items-center justify-between shadow-sm"
                                       >
                                         <div className="space-y-0.5">
-                                          <div className="font-semibold text-slate-200">
+                                          <div className="font-bold text-fg">
                                             {exec.rule?.service?.name || "Delivery Batch"}
                                           </div>
-                                          <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                                          <div className="text-[10px] text-fg-muted flex items-center gap-1">
                                             <Clock className="w-3 h-3" />
                                             <span>Wave #{exec.seq} • {new Date(exec.executeAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                           </div>
                                         </div>
                                         <div className="text-right">
-                                          <div className="font-bold text-white">+{exec.quantity}</div>
-                                          <div className="text-[9px] uppercase font-bold text-emerald-400">
+                                          <div className="font-extrabold text-fg">+{exec.quantity}</div>
+                                          <div className="text-[9px] uppercase font-bold text-emerald-600 dark:text-emerald-400">
                                             {exec.status}
                                           </div>
                                         </div>
@@ -1194,9 +1195,9 @@ export default function AutopilotPage() {
                             </div>
                           ) : (
                             <div className="py-4 text-center space-y-2">
-                              <Radio className="w-5 h-5 text-amber-400/80 mx-auto animate-pulse" />
-                              <div className="text-xs text-slate-300 font-semibold">Standing By For Upload</div>
-                              <div className="text-[10px] text-slate-500 max-w-[200px] mx-auto">
+                              <Radio className="w-5 h-5 text-amber-500 mx-auto animate-pulse" />
+                              <div className="text-xs text-fg font-bold">Standing By For Upload</div>
+                              <div className="text-[10px] text-fg-muted max-w-[200px] mx-auto">
                                 Automatically claims & starts within 60s when you publish next
                               </div>
                             </div>
@@ -1213,13 +1214,13 @@ export default function AutopilotPage() {
       </div>
 
       {/* Customer Confidence & FAQ Section */}
-      <div className="rounded-3xl bg-surface border border-border p-6 sm:p-8 space-y-6">
+      <div className="rounded-3xl bg-surface border border-border p-6 sm:p-8 space-y-6 shadow-sm">
         <div>
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-[#D8EC8D]" />
+          <h3 className="text-lg font-bold text-fg flex items-center gap-2">
+            <HelpCircle className="w-5 h-5 text-emerald-600 dark:text-[#D8EC8D]" />
             Frequently Asked Questions
           </h3>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-fg-muted mt-1">
             Everything you need to know about hands-free automated growth.
           </p>
         </div>
@@ -1228,13 +1229,13 @@ export default function AutopilotPage() {
           {FAQS.map((faq, idx) => (
             <div
               key={idx}
-              className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2"
+              className="p-4 rounded-2xl bg-surface-raised border border-border space-y-2"
             >
-              <div className="text-sm font-bold text-white flex items-start gap-2">
-                <span className="text-[#D8EC8D] font-mono">Q:</span>
+              <div className="text-sm font-bold text-fg flex items-start gap-2">
+                <span className="text-emerald-600 dark:text-[#D8EC8D] font-mono">Q:</span>
                 <span>{faq.q}</span>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed pl-5">
+              <p className="text-xs text-fg-muted leading-relaxed pl-5">
                 {faq.a}
               </p>
             </div>
@@ -1245,59 +1246,59 @@ export default function AutopilotPage() {
       {/* Cancel Subscription Confirmation Modal */}
       <AnimatePresence>
         {cancelModalPackage && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="w-full max-w-md rounded-3xl bg-[#161a22] border border-white/10 p-6 space-y-5 shadow-2xl"
+              className="w-full max-w-md rounded-3xl bg-surface border border-border p-6 space-y-5 shadow-2xl"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center justify-between pb-3 border-b border-border">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center border border-rose-500/20">
+                  <div className="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/30">
                     <RotateCcw className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-base font-bold text-white">Cancel Autopilot?</h4>
-                    <p className="text-xs text-slate-400">@{cancelModalPackage.handle}</p>
+                    <h4 className="text-base font-bold text-fg">Cancel Autopilot?</h4>
+                    <p className="text-xs text-fg-muted">@{cancelModalPackage.handle}</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setCancelModalPackage(null)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-white"
+                  className="p-1 rounded-lg text-fg-muted hover:text-fg"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="space-y-3 text-xs text-slate-300 leading-relaxed">
+              <div className="space-y-3 text-xs text-fg leading-relaxed">
                 <p>
                   Are you sure you want to cancel this Autopilot subscription?
                 </p>
-                <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-1.5">
+                <div className="p-3.5 rounded-xl bg-surface-raised border border-border space-y-1.5">
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Total Slots:</span>
-                    <span className="font-bold text-white">{cancelModalPackage.slots?.length || 0}</span>
+                    <span className="text-fg-muted">Total Slots:</span>
+                    <span className="font-bold text-fg">{cancelModalPackage.slots?.length || 0}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Unused Waiting Slots:</span>
-                    <span className="font-bold text-amber-400">
+                    <span className="text-fg-muted">Unused Waiting Slots:</span>
+                    <span className="font-bold text-amber-600 dark:text-amber-400">
                       {cancelModalPackage.slots?.filter((s) => s.status === "AVAILABLE").length || 0}
                     </span>
                   </div>
-                  <div className="flex justify-between pt-1 border-t border-white/5">
-                    <span className="text-slate-400">Estimated Refund:</span>
-                    <span className="font-bold text-emerald-400">100% of Unused Reserve</span>
+                  <div className="flex justify-between pt-1 border-t border-border">
+                    <span className="text-fg-muted">Estimated Refund:</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">100% of Unused Reserve</span>
                   </div>
                 </div>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-fg-muted">
                   The unused balance will be refunded back to your wallet immediately in an atomic transaction.
                 </p>
               </div>
 
               {cancelError && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs">
                   {cancelError}
                 </div>
               )}
@@ -1306,7 +1307,7 @@ export default function AutopilotPage() {
                 <button
                   type="button"
                   onClick={() => setCancelModalPackage(null)}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-semibold transition-all"
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-surface-raised hover:bg-surface border border-border text-fg text-xs font-semibold transition-all"
                 >
                   Keep Subscription
                 </button>
@@ -1314,7 +1315,7 @@ export default function AutopilotPage() {
                   type="button"
                   disabled={isCancelling}
                   onClick={handleCancelPackage}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-lg"
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md"
                 >
                   {isCancelling ? (
                     <>
