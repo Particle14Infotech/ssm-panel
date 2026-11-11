@@ -660,7 +660,6 @@ export class AutopilotDetectorService {
     let detectedHandle = `@${cleanHandle}`;
     let avatarUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80";
 
-    const enableInstagramScraping = process.env.ENABLE_INSTAGRAM_SCRAPING === "true";
     try {
       if (targetPlatform === "TELEGRAM") {
         media = await this.detectRealTelegram(raw);
@@ -679,16 +678,11 @@ export class AutopilotDetectorService {
         detectedHandle = media.author || `@${cleanHandle}`;
         if (media.thumbnailUrl) avatarUrl = media.thumbnailUrl;
       } else {
-        // INSTAGRAM
-        const isDirectPost = raw.includes("instagram.com/reel/") || raw.includes("instagram.com/p/");
-        if (isDirectPost || enableInstagramScraping) {
-          media = await this.detectRealInstagram(raw);
-          detectedHandle = media.author || `@${cleanHandle}`;
-          if (media.thumbnailUrl) {
-            avatarUrl = media.thumbnailUrl;
-          }
-        } else {
-          media = null;
+        // INSTAGRAM - Always attempt live detection for both handles and direct reel/post URLs
+        media = await this.detectRealInstagram(raw);
+        detectedHandle = media.author || `@${cleanHandle}`;
+        if (media.thumbnailUrl) {
+          avatarUrl = media.thumbnailUrl;
         }
       }
     } catch (err: any) {

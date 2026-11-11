@@ -881,6 +881,21 @@ export default function AutopilotPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Profile Verified State when account has no previous uploads or direct link */}
+                {!detectedMedia && (
+                  <div className="pt-3 border-t border-border space-y-2">
+                    <div className="p-3 rounded-xl bg-surface border border-border flex items-start gap-2.5">
+                      <Clock className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
+                      <div className="text-xs">
+                        <div className="font-bold text-fg">Account Verified & Ready</div>
+                        <div className="text-[11px] text-fg-muted mt-0.5">
+                          Autopilot is armed. All {slotCount} slots will automatically trigger as soon as you publish your next upload!
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             ) : isDetecting ? (
               <div className="p-6 rounded-2xl bg-surface-raised border border-border text-center space-y-2">

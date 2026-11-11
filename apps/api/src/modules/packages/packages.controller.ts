@@ -504,7 +504,7 @@ export class PackagesController {
   }
 
   @Post("autopilot/preview")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: "Preview Autopilot Target Identity and Latest Upload" })
   async previewAutopilot(@Body() body: any) {
     const validated = AutopilotPreviewInputSchema.parse(body);
