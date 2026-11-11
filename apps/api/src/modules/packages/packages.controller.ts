@@ -37,7 +37,6 @@ import {
   AutopilotPreviewInputSchema,
   AutopilotPurchaseInputSchema,
 } from "@smm/contracts";
-import { isSafeImageUrl, isSafeResolvedIp, isPrivateOrReservedIp } from "./ssrf-guard.util";
 import { LinkPreviewService } from "../link-preview/link-preview.service";
 
 @ApiTags("Scheduled Packages Engine")
