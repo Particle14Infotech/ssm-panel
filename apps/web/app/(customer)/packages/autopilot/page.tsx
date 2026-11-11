@@ -134,6 +134,13 @@ const PLATFORMS: PlatformOption[] = [
   },
 ];
 
+function getSafeImageUrl(url?: string | null): string {
+  if (!url) return "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300";
+  if (url.startsWith("/api/") || url.startsWith("data:")) return url;
+  if (url.includes("ytimg.com") || url.includes("images.unsplash.com")) return url;
+  return `/api/v1/packages/autopilot/proxy-image?url=${encodeURIComponent(url)}`;
+}
+
 interface AutopilotPackageSlot {
   id: string;
   slotNumber: number;
@@ -666,7 +673,7 @@ export default function AutopilotPage() {
                   <div className="w-12 h-12 rounded-full overflow-hidden bg-surface border border-border shrink-0 shadow-sm">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={detectedProfile.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300"}
+                      src={getSafeImageUrl(detectedProfile.avatarUrl)}
                       alt={detectedProfile.handle}
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
@@ -705,7 +712,7 @@ export default function AutopilotPage() {
                       <div className="w-16 h-16 rounded-lg overflow-hidden bg-surface-raised shrink-0 relative">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={detectedMedia.thumbnailUrl}
+                          src={getSafeImageUrl(detectedMedia.thumbnailUrl)}
                           alt="Thumbnail"
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"

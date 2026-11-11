@@ -6,6 +6,7 @@ import {
   ExecutionSource,
   PackageExecutionStatus,
   PackageStatus,
+  PackageMode,
 } from "@prisma/client";
 import Redis from "ioredis";
 import { Queue, Worker as BullWorker, Job } from "bullmq";
@@ -71,6 +72,7 @@ export class SMMWorkerEngine {
   private dripRunInterval: NodeJS.Timeout | null = null;
   private packageExecutionInterval: NodeJS.Timeout | null = null;
   private autopilotInterval: NodeJS.Timeout | null = null;
+  private isAutopilotPolling = false;
   private redis: Redis | null = null;
   private bullWorker: BullWorker | null = null;
   private orderQueue: Queue | null = null;
@@ -2757,27 +2759,10 @@ export class SMMWorkerEngine {
     }
   }
 
-  /**
-   * Helper: Worker HTTP fetcher for Instagram / YouTube scraping
-   */
-  private async fetchWorkerHttp(
-    targetUrl: string,
-    headers: Record<string, string> = {},
-    maxHops = 5
-  ): Promise<{ status: number; data: string }> {
-    if (maxHops <= 0) throw new Error("Too many redirects");
-    const u = new URL(targetUrl);
-    if (u.protocol !== "https:" && u.protocol !== "http:") {
-      throw new Error("Disallowed protocol for scraping");
-    }
-
+  private isHostAllowedForWorkerScraping(hostname: string): boolean {
     const PRIVATE_IP_REGEX = /^(?:127\.|10\.|192\.168\.|169\.254\.|172\.(?:1[6-9]|2[0-9]|3[0-1])\.|0\.|::1|localhost)/i;
-    if (PRIVATE_IP_REGEX.test(u.hostname)) {
-      throw new Error("Blocked request to internal network or private IP");
-    }
-
-    const hostname = u.hostname.toLowerCase();
-    const isAllowed =
+    if (PRIVATE_IP_REGEX.test(hostname)) return false;
+    return (
       hostname === "instagram.com" ||
       hostname.endsWith(".instagram.com") ||
       hostname === "youtube.com" ||
@@ -2791,9 +2776,26 @@ export class SMMWorkerEngine {
       hostname === "x.com" ||
       hostname.endsWith(".x.com") ||
       hostname === "twitter.com" ||
-      hostname.endsWith(".twitter.com");
+      hostname.endsWith(".twitter.com")
+    );
+  }
 
-    if (!isAllowed) {
+  /**
+   * Helper: Worker HTTP fetcher for Instagram / YouTube / Telegram / TikTok / Twitter scraping
+   */
+  private async fetchWorkerHttp(
+    targetUrl: string,
+    headers: Record<string, string> = {},
+    maxHops = 5
+  ): Promise<{ status: number; data: string }> {
+    if (maxHops <= 0) throw new Error("Too many redirects");
+    const u = new URL(targetUrl);
+    if (u.protocol !== "https:" && u.protocol !== "http:") {
+      throw new Error("Disallowed protocol for scraping");
+    }
+
+    const hostname = u.hostname.toLowerCase();
+    if (!this.isHostAllowedForWorkerScraping(hostname)) {
       throw new Error(`Blocked request to unauthorized host: ${hostname}`);
     }
 
@@ -2821,16 +2823,7 @@ export class SMMWorkerEngine {
             try {
               const redirectU = new URL(nextLoc);
               const rHost = redirectU.hostname.toLowerCase();
-              if (
-                PRIVATE_IP_REGEX.test(rHost) ||
-                !(
-                  rHost === "instagram.com" ||
-                  rHost.endsWith(".instagram.com") ||
-                  rHost === "youtube.com" ||
-                  rHost.endsWith(".youtube.com") ||
-                  rHost === "youtu.be"
-                )
-              ) {
+              if (!this.isHostAllowedForWorkerScraping(rHost)) {
                 return reject(new Error(`Redirect to disallowed host '${redirectU.hostname}' blocked.`));
               }
               const isRedirDnsSafe = await this.isSafeResolvedWorkerIp(rHost);
@@ -3056,10 +3049,17 @@ export class SMMWorkerEngine {
    * Scans active autopilot packages, auto-detects new uploads, claims next slot, and schedules drip feed.
    */
   async pollAutopilotPackages(database: PrismaClient = prisma) {
+    if (this.isAutopilotPolling) {
+      logger.debug("[Autopilot Poller] Previous poll cycle still executing. Skipping overlapping run.");
+      return;
+    }
+    this.isAutopilotPolling = true;
+
     try {
       const candidatePackages = await database.package.findMany({
         where: {
           status: PackageStatus.ACTIVE,
+          mode: PackageMode.CUSTOMIZED,
           slots: {
             some: {
               status: "AVAILABLE",
@@ -3080,11 +3080,18 @@ export class SMMWorkerEngine {
 
       if (!candidatePackages.length) return;
 
+      // Filter strictly for AUTOPILOT packages
+      const autopilotPackages = candidatePackages.filter(
+        (pkg) => (pkg.priceSnapshot as any)?.type === "AUTOPILOT"
+      );
+
+      if (!autopilotPackages.length) return;
+
       // Deduplicate per (userId, platform, handle) so the oldest active package (FIFO)
       // claims the upload first, preventing multi-package double consumption!
       const handledKeys = new Set<string>();
 
-      for (const pkg of candidatePackages) {
+      for (const pkg of autopilotPackages) {
         const cleanHandle = pkg.handle.toLowerCase().replace(/^@/, "").replace(/\/$/, "");
         const dedupeKey = `${pkg.userId}_${pkg.platform}_${cleanHandle}`;
         if (handledKeys.has(dedupeKey)) {
@@ -3138,6 +3145,8 @@ export class SMMWorkerEngine {
       }
     } catch (err: any) {
       logger.error({ err: err.message }, "[Autopilot Poller] Poller cycle error");
+    } finally {
+      this.isAutopilotPolling = false;
     }
   }
 

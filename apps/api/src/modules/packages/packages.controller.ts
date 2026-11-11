@@ -1,6 +1,8 @@
 import { randomBytes } from "crypto";
 import * as https from "https";
 import * as http from "http";
+import * as dns from "dns/promises";
+import * as net from "net";
 import { URL } from "url";
 import type { Response } from "express";
 import {
@@ -35,7 +37,7 @@ import {
   AutopilotPreviewInputSchema,
   AutopilotPurchaseInputSchema,
 } from "@smm/contracts";
-import { isSafeImageUrl, isSafeResolvedIp } from "./ssrf-guard.util";
+import { isSafeImageUrl, isSafeResolvedIp, isPrivateOrReservedIp } from "./ssrf-guard.util";
 
 @ApiTags("Scheduled Packages Engine")
 @Controller("packages")
@@ -421,10 +423,17 @@ export class PackagesController {
     }
     try {
       const u = new URL(targetUrl);
-      const isDnsSafe = await isSafeResolvedIp(u.hostname);
-      if (!isDnsSafe) {
-        return res.status(403).send("Host resolves to disallowed or private IP address");
+      const addresses = await dns.lookup(u.hostname, { all: true });
+      if (!addresses || addresses.length === 0) {
+        return res.status(403).send("Host failed DNS resolution");
       }
+      for (const rec of addresses) {
+        if (isPrivateOrReservedIp(rec.address)) {
+          return res.status(403).send("Host resolves to disallowed or private IP address");
+        }
+      }
+      const pinnedIp = addresses[0].address;
+      const pinnedFamily = net.isIPv4(pinnedIp) ? 4 : 6;
 
       const client = https;
       const headers = {
@@ -434,8 +443,20 @@ export class PackagesController {
         Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
       };
 
+      const requestOptions = {
+        headers,
+        timeout: 5000,
+        lookup: (
+          _hostname: string,
+          _opts: any,
+          callback: (err: NodeJS.ErrnoException | null, address: string, family: number) => void
+        ) => {
+          callback(null, pinnedIp, pinnedFamily);
+        },
+      };
+
       const request = client
-        .get(targetUrl, { headers, timeout: 5000 }, (upstreamRes) => {
+        .get(targetUrl, requestOptions, (upstreamRes) => {
           // Reject redirects unconditionally per AV1 security rule (no redirects)
           if (
             upstreamRes.statusCode &&

@@ -932,6 +932,17 @@ export class PackagesService {
         },
       });
 
+      // 2b. Cancel unfulfilled package slots
+      await tx.packageSlot.updateMany({
+        where: {
+          packageId: pkg.id,
+          status: { in: ["AVAILABLE", "ACTIVE"] },
+        },
+        data: {
+          status: "CANCELLED",
+        },
+      });
+
       // 3. Compute auditable package accounting across all executions and prior refunds
       const allExecutions = await tx.packageExecution.findMany({
         where: {
@@ -4049,18 +4060,25 @@ export class PackagesService {
           where: { platform: { in: platformAliases }, kind: { in: ["OTHER", "SHARES"] }, active: true },
         });
 
-        // Resilient fallback for platforms with partial service catalogs (e.g. TikTok likes/views)
+        // Resilient intra-platform fallback for platforms with partial service catalogs
         if (!viewsService) {
-          viewsService = likesService || await tx.service.findFirst({ where: { kind: "VIEWS", active: true } });
+          viewsService = likesService;
         }
         if (!likesService) {
-          likesService = viewsService || await tx.service.findFirst({ where: { kind: "LIKES", active: true } });
+          likesService = viewsService;
         }
         if (!commentsService) {
           commentsService = likesService || viewsService;
         }
         if (!sharesService) {
           sharesService = viewsService || likesService;
+        }
+
+        // Strictly reject if no active services exist on the target platform to prevent cross-platform corruption
+        if (!viewsService && !likesService) {
+          throw new BadRequestException(
+            `No active boosting services found for platform "${targetPlatform}". Please contact support.`
+          );
         }
 
         // Create PackageRules for Views, Likes, Comments, Shares
@@ -4451,29 +4469,48 @@ export class PackagesService {
   }
 
   /**
-   * List user's active Autopilot Packages
+   * List user's Autopilot Packages (active, paused, completed, and cancelled)
    */
   async listAutopilotPackages(userId: string) {
-    return this.prisma.package.findMany({
+    const packages = await this.prisma.package.findMany({
       where: {
         userId,
-        status: { in: [PackageStatus.ACTIVE, PackageStatus.PAUSED] },
+        mode: PackageMode.CUSTOMIZED,
       },
       include: {
         slots: {
-          select: {
-            id: true,
-            slotNumber: true,
-            status: true,
-            mediaKey: true,
-            targetUrl: true,
-            startedAt: true,
-            completedAt: true,
+          include: {
+            executions: {
+              select: {
+                id: true,
+                seq: true,
+                quantity: true,
+                remainingQuantity: true,
+                allocatedCharge: true,
+                status: true,
+                executeAt: true,
+                orderId: true,
+                rule: {
+                  select: {
+                    service: {
+                      select: {
+                        name: true,
+                        kind: true,
+                      },
+                    },
+                  },
+                },
+              },
+              orderBy: { seq: "asc" },
+            },
           },
           orderBy: { slotNumber: "asc" },
         },
       },
       orderBy: { createdAt: "desc" },
     });
+
+    // Return strictly autopilot packages
+    return packages.filter((pkg) => (pkg.priceSnapshot as any)?.type === "AUTOPILOT");
   }
 }

@@ -39,3 +39,4 @@ describe('AutopilotMultiplatformRealTest', () => {
     expect(res.latestMedia?.platform).toBe('YOUTUBE');
   });
 });
+

@@ -10,6 +10,15 @@ export const ALLOWED_IMAGE_DOMAINS = [
   "youtube.com",
   "ggpht.com",
   "images.unsplash.com",
+  "t.me",
+  "telegram.org",
+  "telesco.pe",
+  "tiktokcdn.com",
+  "tiktokcdn-eu.com",
+  "tiktok.com",
+  "twimg.com",
+  "twitter.com",
+  "x.com",
 ];
 
 const PRIVATE_IP_REGEX = /^(?:127\.|10\.|192\.168\.|169\.254\.|172\.(?:1[6-9]|2[0-9]|3[0-1])\.|0\.|::1|localhost)/i;
@@ -115,7 +124,10 @@ export function isSafeImageUrl(rawUrl: string): boolean {
 /**
  * Validates social media platform target URLs for scrapers
  */
-export function isSafePlatformUrl(rawUrl: string, expectedPlatform: "INSTAGRAM" | "YOUTUBE"): boolean {
+export function isSafePlatformUrl(
+  rawUrl: string,
+  expectedPlatform: "INSTAGRAM" | "YOUTUBE" | "TELEGRAM" | "TIKTOK" | "TWITTER" | "X" | "X_TWITTER"
+): boolean {
   if (!rawUrl || typeof rawUrl !== "string") return false;
 
   try {
@@ -131,6 +143,23 @@ export function isSafePlatformUrl(rawUrl: string, expectedPlatform: "INSTAGRAM" 
 
     if (expectedPlatform === "YOUTUBE") {
       return hostname === "youtube.com" || hostname.endsWith(".youtube.com") || hostname === "youtu.be";
+    }
+
+    if (expectedPlatform === "TELEGRAM") {
+      return hostname === "t.me" || hostname.endsWith(".t.me") || hostname === "telegram.me";
+    }
+
+    if (expectedPlatform === "TIKTOK") {
+      return hostname === "tiktok.com" || hostname.endsWith(".tiktok.com");
+    }
+
+    if (expectedPlatform === "TWITTER" || expectedPlatform === "X" || expectedPlatform === "X_TWITTER") {
+      return (
+        hostname === "x.com" ||
+        hostname.endsWith(".x.com") ||
+        hostname === "twitter.com" ||
+        hostname.endsWith(".twitter.com")
+      );
     }
 
     return false;
