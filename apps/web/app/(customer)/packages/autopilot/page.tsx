@@ -46,8 +46,10 @@ function getSafeLink(rawUrl?: string | null): string {
   return "#";
 }
 
+type SupportedAutopilotPlatform = "INSTAGRAM" | "YOUTUBE" | "TIKTOK" | "TELEGRAM" | "TWITTER";
+
 interface DetectedMedia {
-  platform: "INSTAGRAM" | "YOUTUBE";
+  platform: SupportedAutopilotPlatform;
   mediaKey: string;
   url: string;
   title: string;
@@ -59,11 +61,78 @@ interface DetectedMedia {
 }
 
 interface DetectedProfile {
-  platform: "INSTAGRAM" | "YOUTUBE";
+  platform: SupportedAutopilotPlatform;
   handle: string;
   displayName?: string;
   avatarUrl?: string;
 }
+
+interface PlatformOption {
+  id: SupportedAutopilotPlatform;
+  key: string;
+  label: string;
+  placeholder: string;
+  defaultSample: string;
+  samples: Array<{ handle: string; label: string }>;
+}
+
+const PLATFORMS: PlatformOption[] = [
+  {
+    id: "INSTAGRAM",
+    key: "instagram",
+    label: "Instagram",
+    placeholder: "Enter @handle or Reel URL",
+    defaultSample: "@areion._",
+    samples: [
+      { handle: "@areion._", label: "@areion._" },
+      { handle: "@cristiano", label: "@cristiano" },
+    ],
+  },
+  {
+    id: "YOUTUBE",
+    key: "youtube",
+    label: "YouTube",
+    placeholder: "Enter @channel, URL or Video",
+    defaultSample: "@mkbhd",
+    samples: [
+      { handle: "@mkbhd", label: "@mkbhd" },
+      { handle: "@MrBeast", label: "@MrBeast" },
+    ],
+  },
+  {
+    id: "TIKTOK",
+    key: "tiktok",
+    label: "TikTok",
+    placeholder: "Enter @handle or TikTok URL",
+    defaultSample: "@tiktok",
+    samples: [
+      { handle: "@tiktok", label: "@tiktok" },
+      { handle: "@khaby.lame", label: "@khaby.lame" },
+    ],
+  },
+  {
+    id: "TELEGRAM",
+    key: "telegram",
+    label: "Telegram",
+    placeholder: "Enter public @channel or t.me link",
+    defaultSample: "@durov",
+    samples: [
+      { handle: "@durov", label: "@durov" },
+      { handle: "@telegram", label: "@telegram" },
+    ],
+  },
+  {
+    id: "TWITTER",
+    key: "x_twitter",
+    label: "X",
+    placeholder: "Enter @handle or post link",
+    defaultSample: "@elonmusk",
+    samples: [
+      { handle: "@elonmusk", label: "@elonmusk" },
+      { handle: "@sama", label: "@sama" },
+    ],
+  },
+];
 
 interface AutopilotPackageSlot {
   id: string;
@@ -186,7 +255,7 @@ export default function AutopilotPage() {
 
   // Booking Form State
   const [handleInput, setHandleInput] = useState("@areion._");
-  const [selectedPlatform, setSelectedPlatform] = useState<"INSTAGRAM" | "YOUTUBE">("INSTAGRAM");
+  const [selectedPlatform, setSelectedPlatform] = useState<SupportedAutopilotPlatform>("INSTAGRAM");
   const [selectedPresetId, setSelectedPresetId] = useState<string>("viral_push");
   const [slotCount, setSlotCount] = useState<number>(5);
   const [seedCurrentPost, setSeedCurrentPost] = useState<boolean>(true);
@@ -214,6 +283,10 @@ export default function AutopilotPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const activePlatform = useMemo(() => {
+    return PLATFORMS.find((p) => p.id === selectedPlatform) || PLATFORMS[0];
+  }, [selectedPlatform]);
 
   const selectedPreset = useMemo(() => {
     return PRESETS.find((p) => p.id === selectedPresetId) || PRESETS[1];
@@ -447,117 +520,115 @@ export default function AutopilotPage() {
         )}
       </AnimatePresence>
 
-      {/* Top Banner / Hero Header (Universal Dark Aesthetic with High Contrast) */}
-      <div className="relative overflow-hidden rounded-3xl bg-slate-900 dark:bg-[#121417] border border-slate-800 dark:border-white/10 p-6 sm:p-8 shadow-2xl text-white">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#D8EC8D]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D8EC8D]/20 border border-[#D8EC8D]/40 text-[#D8EC8D] text-xs font-bold">
-              <Bot className="w-4 h-4" />
+      {/* Top Banner / Hero Header (Streamlined for Mobile & Desktop) */}
+      <div className="relative overflow-hidden rounded-3xl bg-slate-900 dark:bg-[#121417] border border-slate-800 dark:border-white/10 p-4 sm:p-6 shadow-xl text-white">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#D8EC8D]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#D8EC8D]/20 border border-[#D8EC8D]/40 text-[#D8EC8D] text-[11px] font-bold">
+              <Bot className="w-3.5 h-3.5" />
               <span>Zero-Friction Autopilot</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white flex items-center gap-3">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-white">
               Hands-Free Content Accelerator
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-              No manual ordering or link copying required. Simply connect your social handle, choose your target velocity, and our background engine automatically boosts every new upload the moment it goes live.
+            <p className="text-xs text-slate-300 max-w-xl leading-relaxed">
+              Auto-boost every new upload the instant it drops. No manual link copying needed.
             </p>
 
             {/* Quick Feature Badges */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-1 text-xs">
-              <span className="flex items-center gap-1.5 text-slate-200 font-medium bg-white/10 px-3 py-1 rounded-lg border border-white/10">
-                <Check className="w-3.5 h-3.5 text-[#D8EC8D]" /> 60s Detection Speed
+            <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
+              <span className="flex items-center gap-1 text-slate-200 font-medium bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
+                <Check className="w-3 h-3 text-[#D8EC8D]" /> 60s Auto-Detect
               </span>
-              <span className="flex items-center gap-1.5 text-slate-200 font-medium bg-white/10 px-3 py-1 rounded-lg border border-white/10">
-                <Check className="w-3.5 h-3.5 text-[#D8EC8D]" /> Safe Staggered Drip
+              <span className="flex items-center gap-1 text-slate-200 font-medium bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
+                <Check className="w-3 h-3 text-[#D8EC8D]" /> Safe Staggered Drip
               </span>
-              <span className="flex items-center gap-1.5 text-slate-200 font-medium bg-white/10 px-3 py-1 rounded-lg border border-white/10">
-                <Check className="w-3.5 h-3.5 text-[#D8EC8D]" /> 100% Unused Slots Refundable
+              <span className="flex items-center gap-1 text-slate-200 font-medium bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
+                <Check className="w-3 h-3 text-[#D8EC8D]" /> 100% Unused Refundable
               </span>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0">
-            <div className="flex items-center gap-3 bg-white/10 border border-white/15 p-3.5 rounded-2xl backdrop-blur-md">
-              <div className="w-10 h-10 rounded-xl bg-[#D8EC8D]/20 flex items-center justify-center text-[#D8EC8D]">
-                <Radio className="w-5 h-5 animate-pulse" />
+          <div className="flex flex-row md:flex-col gap-2 shrink-0 items-center md:items-end">
+            <div className="flex items-center gap-2.5 bg-white/10 border border-white/15 px-3 py-2 rounded-xl backdrop-blur-md">
+              <div className="w-8 h-8 rounded-lg bg-[#D8EC8D]/20 flex items-center justify-center text-[#D8EC8D]">
+                <Radio className="w-4 h-4 animate-pulse" />
               </div>
-              <div>
-                <div className="text-[11px] text-slate-300 font-medium">Autonomous Poller</div>
-                <div className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
-                  Active Background Sync
+              <div className="text-left">
+                <div className="text-[10px] text-slate-300">Poller Sync</div>
+                <div className="text-xs font-bold text-white flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
+                  Active 60s
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10 text-xs text-slate-300">
-              <span>Your Wallet Balance:</span>
-              <span className="font-extrabold text-emerald-400 ml-2">₹{formatIndianNumber(userBalance)}</span>
+            <div className="flex items-center px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300">
+              <span>Bal:</span>
+              <span className="font-extrabold text-emerald-400 ml-1.5">₹{formatIndianNumber(userBalance)}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Guided Steps Header (Adapts to Light / Dark) */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4 p-1.5 rounded-2xl bg-surface-raised border border-border text-center text-xs font-semibold">
-        <div className="py-2.5 px-2 sm:px-3 rounded-xl bg-surface text-fg flex items-center justify-center gap-1.5 sm:gap-2 border border-border shadow-sm font-bold">
-          <span className="w-5 h-5 rounded-full bg-[#D8EC8D] text-black font-extrabold flex items-center justify-center text-[10px] shrink-0">1</span>
-          <span className="truncate">Enter Handle</span>
+      {/* Guided Steps Header */}
+      <div className="grid grid-cols-3 gap-2 p-1 rounded-2xl bg-surface-raised border border-border text-center text-xs font-semibold">
+        <div className="py-2 px-2 rounded-xl bg-surface text-fg flex items-center justify-center gap-1.5 border border-border shadow-sm font-bold">
+          <span className="w-4 h-4 rounded-full bg-[#D8EC8D] text-black font-extrabold flex items-center justify-center text-[10px] shrink-0">1</span>
+          <span className="truncate">Target Handle</span>
         </div>
-        <div className="py-2.5 px-2 sm:px-3 rounded-xl text-fg-muted flex items-center justify-center gap-1.5 sm:gap-2">
-          <span className="w-5 h-5 rounded-full bg-surface border border-border text-fg-muted font-extrabold flex items-center justify-center text-[10px] shrink-0">2</span>
-          <span className="truncate">Choose Recipe</span>
+        <div className="py-2 px-2 rounded-xl text-fg-muted flex items-center justify-center gap-1.5">
+          <span className="w-4 h-4 rounded-full bg-surface border border-border text-fg-muted font-extrabold flex items-center justify-center text-[10px] shrink-0">2</span>
+          <span className="truncate">Growth Recipe</span>
         </div>
-        <div className="py-2.5 px-2 sm:px-3 rounded-xl text-fg-muted flex items-center justify-center gap-1.5 sm:gap-2">
-          <span className="w-5 h-5 rounded-full bg-surface border border-border text-fg-muted font-extrabold flex items-center justify-center text-[10px] shrink-0">3</span>
+        <div className="py-2 px-2 rounded-xl text-fg-muted flex items-center justify-center gap-1.5">
+          <span className="w-4 h-4 rounded-full bg-surface border border-border text-fg-muted font-extrabold flex items-center justify-center text-[10px] shrink-0">3</span>
           <span className="truncate">Activate Slots</span>
         </div>
       </div>
 
       {/* Booking Form Bento */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8">
         {/* Left Column: Handle & Auto-Preview (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="rounded-3xl bg-surface border border-border p-5 sm:p-6 space-y-5 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-base font-bold text-fg flex items-center gap-2">
+        <div className="lg:col-span-5 space-y-5">
+          <div className="rounded-3xl bg-surface border border-border p-4 sm:p-5 space-y-4 shadow-sm">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm sm:text-base font-bold text-fg flex items-center gap-1.5">
                 <Radio className="w-4 h-4 text-emerald-600 dark:text-[#D8EC8D]" />
-                Step 1: Target Creator
+                Step 1: Choose Platform
               </h2>
-              {/* Platform Switcher */}
-              <div className="flex items-center gap-1 bg-surface-raised p-1 rounded-xl border border-border">
-                <button
-                  type="button"
-                  onClick={() => setSelectedPlatform("INSTAGRAM")}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
-                    selectedPlatform === "INSTAGRAM"
-                      ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
-                      : "text-fg-muted hover:text-fg"
-                  }`}
-                >
-                  <PlatformIcon platform="INSTAGRAM" className="w-3.5 h-3.5" />
-                  Instagram
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPlatform("YOUTUBE")}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
-                    selectedPlatform === "YOUTUBE"
-                      ? "bg-red-500/15 text-red-700 dark:text-red-300 border border-red-500/30"
-                      : "text-fg-muted hover:text-fg"
-                  }`}
-                >
-                  <PlatformIcon platform="YOUTUBE" className="w-3.5 h-3.5" />
-                  YouTube
-                </button>
+              {/* Platform Switcher - ICONS ONLY (No platform names) */}
+              <div className="flex items-center gap-1 bg-surface-raised p-1 rounded-2xl border border-border">
+                {PLATFORMS.map((p) => {
+                  const isSelected = selectedPlatform === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedPlatform(p.id);
+                        setHandleInput(p.defaultSample);
+                      }}
+                      title={p.label}
+                      aria-label={p.label}
+                      className={`p-1.5 sm:p-2 rounded-xl transition-all flex items-center justify-center ${
+                        isSelected
+                          ? "bg-surface border border-emerald-500/60 dark:border-[#D8EC8D] ring-2 ring-emerald-500/30 dark:ring-[#D8EC8D]/30 shadow-sm scale-105"
+                          : "border border-transparent hover:bg-surface/50 opacity-60 hover:opacity-100"
+                      }`}
+                    >
+                      <PlatformIcon platform={p.key} size={20} useBrandColor={true} />
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Input Box with Paste & Clear */}
             <div className="space-y-2">
-              <label className="text-xs font-medium text-fg-muted flex items-center justify-between">
-                <span>Enter Public Creator Handle or Channel URL</span>
+              <div className="flex items-center justify-between text-xs font-medium text-fg-muted">
+                <span>Creator Handle or Link</span>
                 <button
                   type="button"
                   onClick={handlePasteClipboard}
@@ -566,18 +637,18 @@ export default function AutopilotPage() {
                   <ClipboardPaste className="w-3 h-3" />
                   Paste
                 </button>
-              </label>
+              </div>
 
               <div className="relative">
                 <input
                   type="text"
                   value={handleInput}
                   onChange={(e) => setHandleInput(e.target.value)}
-                  placeholder={selectedPlatform === "INSTAGRAM" ? "@handle or https://instagram.com/handle" : "@channel or https://youtube.com/@channel"}
-                  className="w-full pl-4 pr-24 py-3.5 rounded-2xl bg-surface-raised border border-border text-fg placeholder:text-fg-muted/60 focus:outline-none focus:border-emerald-500 dark:focus:border-[#D8EC8D] text-sm font-medium transition-all"
+                  placeholder={activePlatform.placeholder}
+                  className="w-full pl-3.5 pr-20 py-2.5 sm:py-3 rounded-2xl bg-surface-raised border border-border text-fg placeholder:text-fg-muted/60 focus:outline-none focus:border-emerald-500 dark:focus:border-[#D8EC8D] text-sm font-medium transition-all"
                 />
 
-                <div className="absolute right-3 top-3 flex items-center gap-2">
+                <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5">
                   {handleInput && (
                     <button
                       type="button"
@@ -590,13 +661,12 @@ export default function AutopilotPage() {
                   )}
 
                   {isDetecting ? (
-                    <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-[#D8EC8D] font-semibold">
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span className="text-[10px]">Scanning...</span>
+                    <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-[#D8EC8D] font-semibold">
+                      <RefreshCw className="w-3 h-3 animate-spin" />
                     </div>
                   ) : detectedProfile ? (
-                    <div className="flex items-center gap-1 text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
-                      <Check className="w-3 h-3" />
+                    <div className="flex items-center gap-1 text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-500/15 px-1.5 py-0.5 rounded-md border border-emerald-500/30">
+                      <Check className="w-2.5 h-2.5" />
                       Live
                     </div>
                   ) : null}
@@ -604,14 +674,13 @@ export default function AutopilotPage() {
               </div>
 
               {/* Sample test chips */}
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[10px] text-fg-muted mr-1 font-medium">Quick Try:</span>
-                {SAMPLE_HANDLES.filter((s) => s.platform === selectedPlatform).map((sample) => (
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                <span className="text-[10px] text-fg-muted font-medium">Quick Try:</span>
+                {activePlatform.samples.map((sample) => (
                   <button
                     key={sample.handle}
                     type="button"
                     onClick={() => {
-                      setSelectedPlatform(sample.platform);
                       setHandleInput(sample.handle);
                     }}
                     className="px-2 py-0.5 rounded-md bg-surface-raised hover:bg-surface text-fg-muted hover:text-fg text-[11px] font-medium border border-border transition-all"
@@ -645,7 +714,7 @@ export default function AutopilotPage() {
                       <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-[#D8EC8D] shrink-0" />
                     </div>
                     <div className="text-xs text-fg-muted flex items-center gap-2 mt-0.5">
-                      <span>{selectedPlatform === "INSTAGRAM" ? "Instagram Profile" : "YouTube Channel"}</span>
+                      <span>{activePlatform.label} Profile</span>
                       <span className="w-1 h-1 rounded-full bg-border" />
                       <span className="text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -799,7 +868,7 @@ export default function AutopilotPage() {
 
                       <div>
                         <div className="font-bold text-fg text-sm">{p.name}</div>
-                        <div className="text-[11px] text-fg-muted leading-snug mt-1">{p.description}</div>
+                        <div className="hidden sm:block text-[11px] text-fg-muted leading-snug mt-0.5">{p.description}</div>
                       </div>
 
                       {/* Deliverables Breakdown */}

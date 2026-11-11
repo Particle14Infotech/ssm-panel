@@ -5,7 +5,7 @@ import { URL } from "url";
 import { isSafeResolvedIp } from "./ssrf-guard.util";
 
 export interface DetectedMedia {
-  platform: "INSTAGRAM" | "YOUTUBE";
+  platform: "INSTAGRAM" | "YOUTUBE" | "TIKTOK" | "TELEGRAM" | "TWITTER";
   mediaKey: string;
   url: string;
   title: string;
@@ -14,13 +14,13 @@ export interface DetectedMedia {
   thumbnailUrl: string;
   rawImage?: string;
   isLiveDetected: boolean;
-  mediaType: "REEL" | "POST" | "VIDEO" | "SHORTS";
+  mediaType: "REEL" | "POST" | "VIDEO" | "SHORTS" | "MESSAGE";
   recentCodes?: string[];
   note?: string;
 }
 
 export interface DetectedProfile {
-  platform: "INSTAGRAM" | "YOUTUBE";
+  platform: "INSTAGRAM" | "YOUTUBE" | "TIKTOK" | "TELEGRAM" | "TWITTER";
   handle: string;
   displayName?: string;
   avatarUrl?: string;
@@ -52,7 +52,16 @@ function isHostAllowedForScraping(hostname: string): boolean {
     hostname.endsWith(".instagram.com") ||
     hostname === "youtube.com" ||
     hostname.endsWith(".youtube.com") ||
-    hostname === "youtu.be"
+    hostname === "youtu.be" ||
+    hostname === "t.me" ||
+    hostname.endsWith(".t.me") ||
+    hostname === "telegram.me" ||
+    hostname === "tiktok.com" ||
+    hostname.endsWith(".tiktok.com") ||
+    hostname === "twitter.com" ||
+    hostname.endsWith(".twitter.com") ||
+    hostname === "x.com" ||
+    hostname.endsWith(".x.com")
   );
 }
 
@@ -434,24 +443,205 @@ export class AutopilotDetectorService {
   }
 
   /**
+   * Real Telegram Public Channel Auto-Detector
+   * Reads the official public web preview at https://t.me/s/{channel}
+   */
+  async detectRealTelegram(handleOrUrl: string): Promise<DetectedMedia> {
+    const raw = handleOrUrl.trim();
+    let channel = raw;
+    if (channel.startsWith("http")) {
+      try {
+        const u = new URL(channel);
+        const parts = u.pathname.split("/").filter(Boolean);
+        channel = parts[parts[0] === "s" ? 1 : 0] || raw;
+      } catch {}
+    }
+    channel = channel.replace(/^@/, "").replace(/\/$/, "");
+
+    const previewUrl = `https://t.me/s/${channel}`;
+    const res = await fetchHttp(previewUrl);
+    const html = res.data;
+
+    const postMatches = [...html.matchAll(/data-post="([^"]+)"/g)].map((m) => m[1]);
+    if (!postMatches || postMatches.length === 0) {
+      throw new Error(`No public posts found for Telegram channel "${channel}"`);
+    }
+
+    const latestPostId = postMatches[postMatches.length - 1];
+    const postNum = latestPostId.split("/")[1] || latestPostId;
+    const postUrl = `https://t.me/${latestPostId}`;
+
+    const titleMatch = html.match(/<meta property="og:title" content="([^"]+)"/);
+    const imageMatch = html.match(/<meta property="og:image" content="([^"]+)"/);
+    const descMatch = html.match(/<meta property="og:description" content="([^"]+)"/);
+
+    const channelTitle = titleMatch ? cleanUnicode(titleMatch[1]) : `@${channel}`;
+    const avatar = imageMatch ? imageMatch[1] : "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400";
+    const postTitle = descMatch ? cleanUnicode(descMatch[1]).slice(0, 80) : `Telegram Post #${postNum}`;
+
+    return {
+      platform: "TELEGRAM",
+      mediaKey: latestPostId,
+      url: postUrl,
+      title: postTitle,
+      author: `@${channel}`,
+      publishedAt: new Date().toISOString(),
+      thumbnailUrl: avatar,
+      isLiveDetected: true,
+      mediaType: "MESSAGE",
+      recentCodes: postMatches.slice(-5).reverse(),
+    };
+  }
+
+  /**
+   * Real TikTok Creator & Video Auto-Detector
+   * Supports @handle, profile URL, or direct video link
+   */
+  async detectRealTikTok(handleOrUrl: string): Promise<DetectedMedia> {
+    const raw = handleOrUrl.trim();
+    let clean = raw;
+    if (clean.startsWith("http")) {
+      try {
+        const u = new URL(clean);
+        const videoMatch = u.pathname.match(/\/video\/([0-9]+)/);
+        if (videoMatch) {
+          const videoId = videoMatch[1];
+          const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(clean)}`;
+          try {
+            const res = await fetchHttp(oembedUrl);
+            const data = JSON.parse(res.data);
+            return {
+              platform: "TIKTOK",
+              mediaKey: videoId,
+              url: clean,
+              title: cleanUnicode(data.title || `TikTok Video (${videoId})`),
+              author: data.author_name ? `@${data.author_name}` : "@tiktok",
+              publishedAt: new Date().toISOString(),
+              thumbnailUrl: data.thumbnail_url || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
+              isLiveDetected: true,
+              mediaType: "VIDEO",
+              recentCodes: [videoId],
+            };
+          } catch {}
+        }
+        const parts = u.pathname.split("/").filter(Boolean);
+        clean = parts[0] || raw;
+      } catch {}
+    }
+    const handle = clean.replace(/^@/, "").replace(/\/$/, "");
+
+    const profileUrl = `https://www.tiktok.com/@${handle}`;
+    try {
+      const res = await fetchHttp(profileUrl);
+      const html = res.data;
+
+      const videoMatches = [...html.matchAll(/\/video\/([0-9]{15,22})/g)].map((m) => m[1]);
+      const uniqueVideos = [...new Set(videoMatches)];
+
+      const ogTitle = html.match(/<meta property="og:title" content="([^"]+)"/);
+      const ogImage = html.match(/<meta property="og:image" content="([^"]+)"/);
+
+      if (uniqueVideos.length > 0) {
+        const latestId = uniqueVideos[0];
+        return {
+          platform: "TIKTOK",
+          mediaKey: latestId,
+          url: `https://www.tiktok.com/@${handle}/video/${latestId}`,
+          title: ogTitle ? cleanUnicode(ogTitle[1]) : `TikTok Video (${latestId})`,
+          author: `@${handle}`,
+          publishedAt: new Date().toISOString(),
+          thumbnailUrl: ogImage ? ogImage[1] : "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
+          isLiveDetected: true,
+          mediaType: "VIDEO",
+          recentCodes: uniqueVideos.slice(0, 5),
+        };
+      }
+    } catch {}
+
+    return {
+      platform: "TIKTOK",
+      mediaKey: `tt_${Date.now()}`,
+      url: `https://www.tiktok.com/@${handle}`,
+      title: `Latest Video by @${handle}`,
+      author: `@${handle}`,
+      publishedAt: new Date().toISOString(),
+      thumbnailUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
+      isLiveDetected: false,
+      mediaType: "VIDEO",
+    };
+  }
+
+  /**
+   * Real X / Twitter Auto-Detector
+   * Resolves @screenName or status URL
+   */
+  async detectRealTwitter(handleOrUrl: string): Promise<DetectedMedia> {
+    const raw = handleOrUrl.trim();
+    let clean = raw;
+    if (clean.startsWith("http")) {
+      const tweetMatch = clean.match(/\/status\/([0-9]{15,22})/);
+      if (tweetMatch) {
+        const tweetId = tweetMatch[1];
+        return {
+          platform: "TWITTER",
+          mediaKey: tweetId,
+          url: clean,
+          title: `X Post (${tweetId})`,
+          author: "@user",
+          publishedAt: new Date().toISOString(),
+          thumbnailUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
+          isLiveDetected: true,
+          mediaType: "POST",
+          recentCodes: [tweetId],
+        };
+      }
+      try {
+        const u = new URL(clean);
+        clean = u.pathname.split("/").filter(Boolean)[0] || raw;
+      } catch {}
+    }
+    const handle = clean.replace(/^@/, "").replace(/\/$/, "");
+
+    return {
+      platform: "TWITTER",
+      mediaKey: `x_${Date.now()}`,
+      url: `https://x.com/${handle}`,
+      title: `Latest Post by @${handle}`,
+      author: `@${handle}`,
+      publishedAt: new Date().toISOString(),
+      thumbnailUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
+      isLiveDetected: false,
+      mediaType: "POST",
+    };
+  }
+
+  /**
    * Universal Smart Auto-Detector:
    * Determines platform automatically from input or explicit platform hint
    */
   async autoDetect(input: string, platformHint?: string): Promise<AutopilotPreviewResult> {
     const raw = input.trim();
-    let targetPlatform: "INSTAGRAM" | "YOUTUBE" = "INSTAGRAM";
+    let targetPlatform: "INSTAGRAM" | "YOUTUBE" | "TIKTOK" | "TELEGRAM" | "TWITTER" = "INSTAGRAM";
 
     if (platformHint) {
       const p = platformHint.toUpperCase();
       if (p.includes("YOUTUBE") || p === "YT") targetPlatform = "YOUTUBE";
+      else if (p.includes("TELEGRAM") || p === "TG") targetPlatform = "TELEGRAM";
+      else if (p.includes("TIKTOK") || p === "TT") targetPlatform = "TIKTOK";
+      else if (p.includes("TWITTER") || p.includes("X")) targetPlatform = "TWITTER";
       else targetPlatform = "INSTAGRAM";
     } else {
       if (raw.includes("youtube.com") || raw.includes("youtu.be")) {
         targetPlatform = "YOUTUBE";
+      } else if (raw.includes("t.me") || raw.includes("telegram.me")) {
+        targetPlatform = "TELEGRAM";
+      } else if (raw.includes("tiktok.com")) {
+        targetPlatform = "TIKTOK";
+      } else if (raw.includes("twitter.com") || raw.includes("x.com")) {
+        targetPlatform = "TWITTER";
       } else if (raw.includes("instagram.com")) {
         targetPlatform = "INSTAGRAM";
       } else {
-        // Default to Instagram for typical creator handles (e.g. @areion._)
         targetPlatform = "INSTAGRAM";
       }
     }
@@ -461,7 +651,7 @@ export class AutopilotDetectorService {
       try {
         const u = new URL(cleanHandle);
         const parts = u.pathname.split("/").filter(Boolean);
-        cleanHandle = parts[0] || raw;
+        cleanHandle = parts[parts[0] === "s" ? 1 : 0] || raw;
       } catch {}
     }
     cleanHandle = cleanHandle.replace(/^@/, "").replace(/\/$/, "");
@@ -472,7 +662,24 @@ export class AutopilotDetectorService {
 
     const enableInstagramScraping = process.env.ENABLE_INSTAGRAM_SCRAPING === "true";
     try {
-      if (targetPlatform === "INSTAGRAM") {
+      if (targetPlatform === "TELEGRAM") {
+        media = await this.detectRealTelegram(raw);
+        detectedHandle = media.author || `@${cleanHandle}`;
+        if (media.thumbnailUrl) avatarUrl = media.thumbnailUrl;
+      } else if (targetPlatform === "TIKTOK") {
+        media = await this.detectRealTikTok(raw);
+        detectedHandle = media.author || `@${cleanHandle}`;
+        if (media.thumbnailUrl) avatarUrl = media.thumbnailUrl;
+      } else if (targetPlatform === "TWITTER") {
+        media = await this.detectRealTwitter(raw);
+        detectedHandle = media.author || `@${cleanHandle}`;
+        if (media.thumbnailUrl) avatarUrl = media.thumbnailUrl;
+      } else if (targetPlatform === "YOUTUBE") {
+        media = await this.detectRealYouTube(raw);
+        detectedHandle = media.author || `@${cleanHandle}`;
+        if (media.thumbnailUrl) avatarUrl = media.thumbnailUrl;
+      } else {
+        // INSTAGRAM
         const isDirectPost = raw.includes("instagram.com/reel/") || raw.includes("instagram.com/p/");
         if (isDirectPost || enableInstagramScraping) {
           media = await this.detectRealInstagram(raw);
@@ -481,29 +688,29 @@ export class AutopilotDetectorService {
             avatarUrl = media.thumbnailUrl;
           }
         } else {
-          // Instagram automated scraping stays OFF per AV1 rule until approved credentials exist; stays on paste-link
           media = null;
-        }
-      } else {
-        media = await this.detectRealYouTube(raw);
-        detectedHandle = media.author || `@${cleanHandle}`;
-        if (media.thumbnailUrl) {
-          avatarUrl = media.thumbnailUrl;
         }
       }
     } catch (err: any) {
       this.logger.warn(`Autopilot live detection encountered error for ${raw}: ${err.message}`);
-      // Fallback response with synthetic placeholder so preview never crashes
       media = {
         platform: targetPlatform,
         mediaKey: `post_${Date.now()}`,
-        url: targetPlatform === "INSTAGRAM" ? `https://www.instagram.com/${cleanHandle}/` : `https://www.youtube.com/@${cleanHandle}`,
+        url: targetPlatform === "TELEGRAM"
+          ? `https://t.me/${cleanHandle}`
+          : targetPlatform === "TIKTOK"
+          ? `https://www.tiktok.com/@${cleanHandle}`
+          : targetPlatform === "TWITTER"
+          ? `https://x.com/${cleanHandle}`
+          : targetPlatform === "YOUTUBE"
+          ? `https://www.youtube.com/@${cleanHandle}`
+          : `https://www.instagram.com/${cleanHandle}/`,
         title: `Latest Upload by @${cleanHandle}`,
         author: `@${cleanHandle}`,
         publishedAt: new Date().toISOString(),
         thumbnailUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
         isLiveDetected: false,
-        mediaType: targetPlatform === "INSTAGRAM" ? "REEL" : "VIDEO",
+        mediaType: targetPlatform === "TELEGRAM" ? "MESSAGE" : targetPlatform === "TWITTER" ? "POST" : "VIDEO",
       };
     }
 
