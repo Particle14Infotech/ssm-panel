@@ -62,7 +62,8 @@ export function CustomerHeader() {
 
           {/* Mobile Brand Logo & Title */}
           <div className="lg:hidden flex items-center shrink-0">
-            <BrandLogo variant="combined" size={26} withLink href="/dashboard" />
+            <BrandLogo variant="icon" size={28} withLink href="/dashboard" className="sm:hidden" />
+            <BrandLogo variant="combined" size={26} withLink href="/dashboard" className="hidden sm:flex" />
           </div>
 
           {/* Quick Search */}

@@ -513,54 +513,23 @@ export default function AutopilotPage() {
         )}
       </AnimatePresence>
 
-      {/* Top Banner / Hero Header (Streamlined for Mobile & Desktop) */}
-      <div className="relative overflow-hidden rounded-3xl bg-slate-900 dark:bg-[#121417] border border-slate-800 dark:border-white/10 p-4 sm:p-6 shadow-xl text-white">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-[#D8EC8D]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#D8EC8D]/20 border border-[#D8EC8D]/40 text-[#D8EC8D] text-[11px] font-bold">
-              <Bot className="w-3.5 h-3.5" />
-              <span>Zero-Friction Autopilot</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-white">
-              Hands-Free Content Accelerator
-            </h1>
-            <p className="text-xs text-slate-300 max-w-xl leading-relaxed">
-              Auto-boost every new upload the instant it drops. No manual link copying needed.
-            </p>
-
-            {/* Quick Feature Badges */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
-              <span className="flex items-center gap-1 text-slate-200 font-medium bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
-                <Check className="w-3 h-3 text-[#D8EC8D]" /> 60s Auto-Detect
-              </span>
-              <span className="flex items-center gap-1 text-slate-200 font-medium bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
-                <Check className="w-3 h-3 text-[#D8EC8D]" /> Safe Staggered Drip
-              </span>
-              <span className="flex items-center gap-1 text-slate-200 font-medium bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
-                <Check className="w-3 h-3 text-[#D8EC8D]" /> 100% Unused Refundable
-              </span>
-            </div>
+      {/* Sleek, Compact Header Banner (Space-Optimized, Theme-Aware) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-surface border border-border shadow-xs">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-[#D8EC8D]/15 text-emerald-600 dark:text-[#D8EC8D] flex items-center justify-center shrink-0 border border-emerald-500/20 dark:border-[#D8EC8D]/30">
+            <Bot className="w-5 h-5" />
           </div>
-
-          <div className="flex flex-row md:flex-col gap-2 shrink-0 items-center md:items-end">
-            <div className="flex items-center gap-2.5 bg-white/10 border border-white/15 px-3 py-2 rounded-xl backdrop-blur-md">
-              <div className="w-8 h-8 rounded-lg bg-[#D8EC8D]/20 flex items-center justify-center text-[#D8EC8D]">
-                <Radio className="w-4 h-4 animate-pulse" />
-              </div>
-              <div className="text-left">
-                <div className="text-[10px] text-slate-300">Poller Sync</div>
-                <div className="text-xs font-bold text-white flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
-                  Active 60s
-                </div>
-              </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-base sm:text-lg font-bold text-fg tracking-tight">Autopilot Accelerator</h1>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Live 60s Sync
+              </span>
             </div>
-
-            <div className="flex items-center px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300">
-              <span>Bal:</span>
-              <span className="font-extrabold text-emerald-400 ml-1.5">₹{formatIndianNumber(userBalance)}</span>
-            </div>
+            <p className="text-xs text-fg-muted truncate sm:whitespace-normal">
+              Auto-boosts new uploads the instant you publish • 100% unused slots refundable
+            </p>
           </div>
         </div>
       </div>
