@@ -91,6 +91,47 @@ export class ProvidersService {
             plain = "••••••••";
           }
 
+          // Dynamic Live Balance: Automatically fetch real-time balance from upstream API if active
+          let liveBalance = Number(p.balance);
+          let liveCurrency = p.currency;
+
+          if (p.active && p.apiUrl && p.apiKeyEncrypted) {
+            try {
+              let decryptedKey = "";
+              try {
+                decryptedKey = decryptProviderKey(p.apiKeyEncrypted);
+              } catch {
+                decryptedKey = p.apiKeyEncrypted;
+              }
+
+              if (decryptedKey && !decryptedKey.includes("•")) {
+                const balancePromise = this.smmClient.getBalance(p.apiUrl, decryptedKey);
+                const timeoutPromise = new Promise<never>((_, reject) =>
+                  setTimeout(() => reject(new Error("Upstream timeout")), 3500)
+                );
+                const upstream = await Promise.race([balancePromise, timeoutPromise]).catch(() => null);
+
+                if (upstream && upstream.balance !== undefined) {
+                  const bNum = parseFloat(String(upstream.balance || "0"));
+                  liveBalance = bNum;
+                  if (upstream.currency) liveCurrency = upstream.currency;
+                  // Asynchronously persist refreshed live balance to database
+                  this.prisma.provider
+                    .update({
+                      where: { id: p.id },
+                      data: {
+                        balance: new Decimal(bNum),
+                        ...(upstream.currency ? { currency: upstream.currency } : {}),
+                      },
+                    })
+                    .catch(() => {});
+                }
+              }
+            } catch {
+              // Resilient fallback to cached balance
+            }
+          }
+
           const [dripFeedCount, refillCount, cancelCount] = await Promise.all([
             this.prisma.service.count({ where: { providerId: p.id, dripFeedSupported: true, isDeleted: false } }).catch(() => 0),
             this.prisma.service.count({ where: { providerId: p.id, refillable: true, isDeleted: false } }).catch(() => 0),
@@ -103,8 +144,8 @@ export class ProvidersService {
             name: p.name,
             apiUrl: p.apiUrl,
             apiKeyMasked: this.maskKey(plain),
-            balance: Number(p.balance),
-            currency: p.currency,
+            balance: liveBalance,
+            currency: liveCurrency,
             active: p.active,
             serviceCount: p._count.services,
             dripFeedCount,

@@ -25,10 +25,25 @@ export default function AdminProvidersPage() {
   const [editingProvider, setEditingProvider] = useState<AdminProvider | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [syncingAll, setSyncingAll] = useState(false);
   const [importingId, setImportingId] = useState<string | null>(null);
   const [applyingMargin, setApplyingMargin] = useState(false);
   const [applyingProviderId, setApplyingProviderId] = useState<string | null>(null);
   const [importNotice, setImportNotice] = useState<string | null>(null);
+
+  const handleSyncAll = async () => {
+    if (providers.length === 0) return;
+    setSyncingAll(true);
+    setImportNotice(null);
+    let successCount = 0;
+    for (const p of providers) {
+      const ok = await syncProvider(p.id);
+      if (ok) successCount++;
+    }
+    setSyncingAll(false);
+    setImportNotice(`Refreshed live balance for ${successCount}/${providers.length} provider(s).`);
+    setTimeout(() => setImportNotice(null), 5000);
+  };
 
   // New Provider Form
   const [name, setName] = useState("");
@@ -160,13 +175,24 @@ export default function AdminProvidersPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => setIsAdding(true)}
-            className="px-5 py-2.5 rounded-full btn-primary-gradient text-[#171e00] text-xs font-bold hover:brightness-110 flex items-center gap-2 shadow-[0_0_20px_rgba(216,236,141,0.25)] shrink-0"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Connect New Provider</span>
-          </button>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              onClick={handleSyncAll}
+              disabled={syncingAll || providers.length === 0}
+              className="px-4 py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-semibold hover:border-[#D8EC8D]/40 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+              title="Sync live upstream balances for all providers"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${syncingAll ? "animate-spin text-[#D8EC8D]" : "text-[#D8EC8D]"}`} />
+              <span>{syncingAll ? "Syncing Live Balances..." : "Sync Live Balances"}</span>
+            </button>
+            <button
+              onClick={() => setIsAdding(true)}
+              className="px-5 py-2.5 rounded-full btn-primary-gradient text-[#171e00] text-xs font-bold hover:brightness-110 flex items-center gap-2 shadow-[0_0_20px_rgba(216,236,141,0.25)] shrink-0 cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Connect New Provider</span>
+            </button>
+          </div>
         </div>
 
         {/* Global Import Notice */}
@@ -466,13 +492,39 @@ export default function AdminProvidersPage() {
 
                   <h3 className="text-sm font-semibold text-white">{p.name}</h3>
 
-                  <div className="bg-white/[0.03] rounded-2xl p-3.5 space-y-2 text-xs font-mono">
-                    <div className="flex justify-between text-slate-400">
-                      <span>Account Balance</span>
-                      <span className="text-[#D8EC8D] font-bold text-sm">
-                        ₹{p.balance.toFixed(2)} {p.currency}
-                      </span>
+                  <div className="bg-white/[0.03] rounded-2xl p-3.5 space-y-2.5 text-xs font-mono">
+                    {/* Live Dynamic Balance Row */}
+                    <div className="flex items-center justify-between text-slate-400">
+                      <div className="flex items-center gap-1.5">
+                        <span>Account Balance</span>
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          LIVE
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`font-bold text-sm ${p.balance < 50 ? "text-amber-400" : "text-[#D8EC8D]"}`}>
+                          ₹{p.balance < 1 && p.balance > 0 ? p.balance.toFixed(4) : p.balance.toFixed(2)} {p.currency}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleSync(p.id)}
+                          disabled={syncingId === p.id}
+                          className="p-1 rounded-md bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                          title="Refresh live balance from upstream API"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${syncingId === p.id ? "animate-spin text-[#D8EC8D]" : ""}`} />
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Low Balance Warning Badge */}
+                    {p.balance < 50 && p.status === "CONNECTED" && (
+                      <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] flex items-center gap-1.5 font-sans">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span>Low Balance: Recharge provider to prevent automated order failure</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-slate-400">
                       <span>Mapped Services</span>
                       <span className="text-white font-bold">{p.serviceCount} items</span>
