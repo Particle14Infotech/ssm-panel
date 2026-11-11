@@ -2782,7 +2782,16 @@ export class SMMWorkerEngine {
       hostname.endsWith(".instagram.com") ||
       hostname === "youtube.com" ||
       hostname.endsWith(".youtube.com") ||
-      hostname === "youtu.be";
+      hostname === "youtu.be" ||
+      hostname === "t.me" ||
+      hostname.endsWith(".t.me") ||
+      hostname === "telegram.me" ||
+      hostname === "tiktok.com" ||
+      hostname.endsWith(".tiktok.com") ||
+      hostname === "x.com" ||
+      hostname.endsWith(".x.com") ||
+      hostname === "twitter.com" ||
+      hostname.endsWith(".twitter.com");
 
     if (!isAllowed) {
       throw new Error(`Blocked request to unauthorized host: ${hostname}`);
@@ -2951,6 +2960,98 @@ export class SMMWorkerEngine {
   }
 
   /**
+   * Scrapes latest Telegram channel post from official public web preview
+   */
+  private async scrapeTelegramLatest(handle: string): Promise<{ mediaKey: string; url: string; title: string } | null> {
+    const raw = handle.trim();
+    let channel = raw;
+    if (channel.startsWith("http")) {
+      try {
+        const u = new URL(channel);
+        const parts = u.pathname.split("/").filter(Boolean);
+        channel = parts[parts[0] === "s" ? 1 : 0] || raw;
+      } catch {}
+    }
+    channel = channel.replace(/^@/, "").replace(/\/$/, "");
+    const previewUrl = `https://t.me/s/${channel}`;
+    const res = await this.fetchWorkerHttp(previewUrl);
+    const html = res.data;
+
+    const postMatches = [...html.matchAll(/data-post="([^"]+)"/g)].map((m) => m[1]);
+    if (!postMatches || postMatches.length === 0) return null;
+
+    const latestPostId = postMatches[postMatches.length - 1];
+    const postNum = latestPostId.split("/")[1] || latestPostId;
+    const postUrl = `https://t.me/${latestPostId}`;
+    const descMatch = html.match(/<meta property="og:description" content="([^"]+)"/);
+    const postTitle = descMatch ? descMatch[1].slice(0, 80) : `Telegram Post #${postNum}`;
+
+    return {
+      mediaKey: latestPostId,
+      url: postUrl,
+      title: postTitle,
+    };
+  }
+
+  /**
+   * Scrapes latest TikTok video for creator handle or video URL
+   */
+  private async scrapeTikTokLatest(handle: string): Promise<{ mediaKey: string; url: string; title: string } | null> {
+    const raw = handle.trim();
+    let clean = raw;
+    if (clean.startsWith("http")) {
+      try {
+        const u = new URL(clean);
+        const videoMatch = u.pathname.match(/\/video\/([0-9]+)/);
+        if (videoMatch) {
+          return {
+            mediaKey: videoMatch[1],
+            url: clean,
+            title: `TikTok Video (${videoMatch[1]})`,
+          };
+        }
+        const parts = u.pathname.split("/").filter(Boolean);
+        clean = parts[0] || raw;
+      } catch {}
+    }
+    const cleanHandle = clean.replace(/^@/, "").replace(/\/$/, "");
+    try {
+      const profileUrl = `https://www.tiktok.com/@${cleanHandle}`;
+      const res = await this.fetchWorkerHttp(profileUrl);
+      const html = res.data;
+      const videoMatches = [...html.matchAll(/\/video\/([0-9]{15,22})/g)].map((m) => m[1]);
+      const uniqueVideos = [...new Set(videoMatches)];
+      if (uniqueVideos.length > 0) {
+        const latestId = uniqueVideos[0];
+        return {
+          mediaKey: latestId,
+          url: `https://www.tiktok.com/@${cleanHandle}/video/${latestId}`,
+          title: `TikTok Video (${latestId})`,
+        };
+      }
+    } catch {}
+    return null;
+  }
+
+  /**
+   * Scrapes latest X / Twitter post for handle or tweet URL
+   */
+  private async scrapeTwitterLatest(handle: string): Promise<{ mediaKey: string; url: string; title: string } | null> {
+    const raw = handle.trim();
+    if (raw.startsWith("http")) {
+      const tweetMatch = raw.match(/\/status\/([0-9]{15,22})/);
+      if (tweetMatch) {
+        return {
+          mediaKey: tweetMatch[1],
+          url: raw,
+          title: `X Post (${tweetMatch[1]})`,
+        };
+      }
+    }
+    return null;
+  }
+
+  /**
    * Autopilot Background Poller:
    * Scans active autopilot packages, auto-detects new uploads, claims next slot, and schedules drip feed.
    */
@@ -3010,6 +3111,12 @@ export class SMMWorkerEngine {
             }
           } else if (pkg.platform === "YOUTUBE") {
             latestMedia = await this.scrapeYouTubeLatest(pkg.handle);
+          } else if (pkg.platform === "TELEGRAM") {
+            latestMedia = await this.scrapeTelegramLatest(pkg.handle);
+          } else if (pkg.platform === "TIKTOK") {
+            latestMedia = await this.scrapeTikTokLatest(pkg.handle);
+          } else if (pkg.platform === "TWITTER" || pkg.platform === "X_TWITTER" || pkg.platform === "X") {
+            latestMedia = await this.scrapeTwitterLatest(pkg.handle);
           }
         } catch (fetchErr: any) {
           logger.warn({ pkgId: pkg.id, err: fetchErr.message }, "[Autopilot] Upload check warning");
@@ -3046,10 +3153,10 @@ export class SMMWorkerEngine {
     const alloc = (pkg.allocationSnapshot as any) || {};
     const preset: AutopilotPreset = alloc.preset || AUTOPILOT_PRESETS.viral_push;
 
-    const viewsRule = pkg.rules.find((r: any) => r.service?.kind === "VIEWS");
-    const likesRule = pkg.rules.find((r: any) => r.service?.kind === "LIKES");
-    const commentsRule = pkg.rules.find((r: any) => r.service?.kind === "COMMENTS");
-    const sharesRule = pkg.rules.find((r: any) => r.service?.kind === "OTHER");
+    const viewsRule = pkg.rules.find((r: any) => r.service?.kind === "VIEWS") || pkg.rules[0];
+    const likesRule = pkg.rules.find((r: any) => r.service?.kind === "LIKES") || viewsRule || pkg.rules[0];
+    const commentsRule = pkg.rules.find((r: any) => r.service?.kind === "COMMENTS") || likesRule;
+    const sharesRule = pkg.rules.find((r: any) => r.service?.kind === "OTHER" || r.service?.kind === "SHARES") || viewsRule;
 
     const rulesMap = {
       views: viewsRule,

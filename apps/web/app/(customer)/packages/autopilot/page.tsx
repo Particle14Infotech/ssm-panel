@@ -577,11 +577,10 @@ export default function AutopilotPage() {
                       }}
                       title={p.label}
                       aria-label={p.label}
-                      className={`p-1.5 sm:p-2 rounded-xl transition-all flex items-center justify-center ${
-                        isSelected
+                      className={`p-1.5 sm:p-2 rounded-xl transition-all flex items-center justify-center ${isSelected
                           ? "bg-surface border border-emerald-500/60 dark:border-[#D8EC8D] ring-2 ring-emerald-500/30 dark:ring-[#D8EC8D]/30 shadow-sm scale-105"
                           : "border border-transparent hover:bg-surface/50 opacity-60 hover:opacity-100"
-                      }`}
+                        }`}
                     >
                       <PlatformIcon platform={p.key} size={20} useBrandColor={true} />
                     </button>
@@ -733,11 +732,10 @@ export default function AutopilotPage() {
                         <button
                           type="button"
                           onClick={() => setSeedCurrentPost(true)}
-                          className={`p-3 rounded-xl border text-left transition-all ${
-                            seedCurrentPost
+                          className={`p-3 rounded-xl border text-left transition-all ${seedCurrentPost
                               ? "bg-emerald-500/15 dark:bg-[#D8EC8D]/15 border-emerald-500 dark:border-[#D8EC8D] text-fg ring-1 ring-emerald-500 dark:ring-[#D8EC8D]"
                               : "bg-surface border-border text-fg-muted hover:text-fg hover:border-fg-muted/40"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-[#D8EC8D]">
                             <Zap className="w-3.5 h-3.5 fill-current" />
@@ -751,11 +749,10 @@ export default function AutopilotPage() {
                         <button
                           type="button"
                           onClick={() => setSeedCurrentPost(false)}
-                          className={`p-3 rounded-xl border text-left transition-all ${
-                            !seedCurrentPost
+                          className={`p-3 rounded-xl border text-left transition-all ${!seedCurrentPost
                               ? "bg-sky-500/15 border-sky-500 text-fg ring-1 ring-sky-500"
                               : "bg-surface border-border text-fg-muted hover:text-fg hover:border-fg-muted/40"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center gap-1.5 text-xs font-bold text-sky-700 dark:text-sky-400">
                             <Clock className="w-3.5 h-3.5" />
@@ -809,11 +806,10 @@ export default function AutopilotPage() {
                   <div
                     key={p.id}
                     onClick={() => setSelectedPresetId(p.id)}
-                    className={`relative p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
-                      isSelected
+                    className={`relative p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${isSelected
                         ? p.themeClasses.activeBorder
                         : "bg-surface-raised border-border hover:border-fg-muted/40 hover:bg-surface"
-                    }`}
+                      }`}
                   >
                     {p.isRecommended && (
                       <span className="absolute -top-2.5 right-3 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#D8EC8D] text-black shadow-md">
@@ -890,11 +886,10 @@ export default function AutopilotPage() {
                     key={cnt}
                     type="button"
                     onClick={() => setSlotCount(cnt)}
-                    className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all ${
-                      slotCount === cnt
+                    className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all ${slotCount === cnt
                         ? "bg-[#D8EC8D]/25 dark:bg-[#D8EC8D]/20 text-emerald-900 dark:text-[#D8EC8D] border-emerald-500 dark:border-[#D8EC8D] shadow-sm font-extrabold"
                         : "bg-surface-raised border-border text-fg-muted hover:text-fg hover:bg-surface"
-                    }`}
+                      }`}
                   >
                     {cnt} Posts
                   </button>
@@ -949,11 +944,10 @@ export default function AutopilotPage() {
                   type="button"
                   disabled={isSubmitting || !hasSufficientBalance}
                   onClick={handlePurchase}
-                  className={`flex-1 py-3.5 px-6 rounded-xl font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md ${
-                    hasSufficientBalance
+                  className={`flex-1 py-3.5 px-6 rounded-xl font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md ${hasSufficientBalance
                       ? "bg-[#D8EC8D] text-black hover:brightness-105 active:scale-[0.99] cursor-pointer"
                       : "bg-surface border border-border text-fg-muted cursor-not-allowed"
-                  }`}
+                    }`}
                 >
                   {isSubmitting ? (
                     <>
@@ -1002,27 +996,24 @@ export default function AutopilotPage() {
               <button
                 type="button"
                 onClick={() => setPackageFilter("ALL")}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all ${
-                  packageFilter === "ALL" ? "bg-surface text-fg shadow-sm" : "text-fg-muted hover:text-fg"
-                }`}
+                className={`px-3 py-1 rounded-lg font-semibold transition-all ${packageFilter === "ALL" ? "bg-surface text-fg shadow-sm" : "text-fg-muted hover:text-fg"
+                  }`}
               >
                 All ({autopilotPackages.length})
               </button>
               <button
                 type="button"
                 onClick={() => setPackageFilter("ACTIVE")}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all ${
-                  packageFilter === "ACTIVE" ? "bg-emerald-500/15 text-emerald-700 dark:text-[#D8EC8D] shadow-sm font-bold" : "text-fg-muted hover:text-fg"
-                }`}
+                className={`px-3 py-1 rounded-lg font-semibold transition-all ${packageFilter === "ACTIVE" ? "bg-emerald-500/15 text-emerald-700 dark:text-[#D8EC8D] shadow-sm font-bold" : "text-fg-muted hover:text-fg"
+                  }`}
               >
                 Active
               </button>
               <button
                 type="button"
                 onClick={() => setPackageFilter("COMPLETED")}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all ${
-                  packageFilter === "COMPLETED" ? "bg-surface text-fg shadow-sm" : "text-fg-muted hover:text-fg"
-                }`}
+                className={`px-3 py-1 rounded-lg font-semibold transition-all ${packageFilter === "COMPLETED" ? "bg-surface text-fg shadow-sm" : "text-fg-muted hover:text-fg"
+                  }`}
               >
                 Past
               </button>
@@ -1075,11 +1066,10 @@ export default function AutopilotPage() {
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D8EC8D]/20 text-emerald-900 dark:text-[#D8EC8D] border border-[#D8EC8D]/30">
                             {preset.name}
                           </span>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                            pkg.status === "ACTIVE"
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${pkg.status === "ACTIVE"
                               ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
                               : "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20"
-                          }`}>
+                            }`}>
                             {pkg.status}
                           </span>
                         </div>
@@ -1132,32 +1122,30 @@ export default function AutopilotPage() {
                       return (
                         <div
                           key={slot.id}
-                          className={`rounded-2xl border transition-all p-4 space-y-3 ${
-                            slot.status === "COMPLETED"
+                          className={`rounded-2xl border transition-all p-4 space-y-3 ${slot.status === "COMPLETED"
                               ? "bg-emerald-500/5 border-emerald-500/30 shadow-sm"
                               : slot.status === "ACTIVE"
-                              ? "bg-sky-500/5 border-sky-500/30 shadow-sm"
-                              : "bg-surface-raised border-dashed border-border"
-                          }`}
+                                ? "bg-sky-500/5 border-sky-500/30 shadow-sm"
+                                : "bg-surface-raised border-dashed border-border"
+                            }`}
                         >
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-fg flex items-center gap-1.5">
                               <span>Slot #{slot.slotNumber}</span>
                             </span>
                             <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
-                                slot.status === "COMPLETED"
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${slot.status === "COMPLETED"
                                   ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30"
                                   : slot.status === "ACTIVE"
-                                  ? "bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30"
-                                  : "bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30"
-                              }`}
+                                    ? "bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30"
+                                    : "bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30"
+                                }`}
                             >
                               {slot.status === "COMPLETED"
                                 ? "Delivered"
                                 : slot.status === "ACTIVE"
-                                ? "Boosting Now"
-                                : "Awaiting Upload"}
+                                  ? "Boosting Now"
+                                  : "Awaiting Upload"}
                             </span>
                           </div>
 
