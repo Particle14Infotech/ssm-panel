@@ -348,50 +348,54 @@ export function NewOrderShell() {
         </button>
       </div>
 
-      {/* 2. Platform Picker Strip */}
-      <PlatformPicker
-        platforms={bootstrapData?.enabledPlatforms || ["INSTAGRAM", "YOUTUBE", "TIKTOK", "X", "TELEGRAM"]}
-        selectedPlatform={selectedPlatform}
-        onSelect={handlePlatformChange}
-      />
+      {/* 2. Platform Picker Strip & Quick Link Detection Bar (for Single, Custom Drip & Combo Packages) */}
+      {activeTab !== "autopilot" && (
+        <>
+          <PlatformPicker
+            platforms={bootstrapData?.enabledPlatforms || ["INSTAGRAM", "YOUTUBE", "TIKTOK", "X", "TELEGRAM"]}
+            selectedPlatform={selectedPlatform}
+            onSelect={handlePlatformChange}
+          />
 
-      {/* Quick Link Detection Bar */}
-      <div className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200/90 dark:border-white/5 text-xs shadow-sm dark:shadow-none transition-colors">
-        <Clipboard className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1.5" />
-        <input
-          type="text"
-          value={quickLinkInput}
-          onChange={handleQuickLinkPaste}
-          placeholder="Paste profile or post link here to identify platform..."
-          className="w-full bg-transparent text-fg text-xs placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none font-mono"
-        />
-        {quickLinkInput && (
-          <button
-            type="button"
-            onClick={() => setQuickLinkInput("")}
-            className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
-            title="Clear link input"
-          >
-            <RefreshCw className="w-3 h-3" />
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => {
-            setQuickLinkInput("");
-            setOrderDetails(null);
-            setConsentChecked(false);
-            setOrderSuccess(null);
-            setOrderError(null);
-            setFormResetKey((prev) => prev + 1);
-          }}
-          className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-1 shrink-0"
-          title="Reset order form"
-        >
-          <RefreshCw className="w-3 h-3" />
-          <span>Reset Form</span>
-        </button>
-      </div>
+          {/* Quick Link Detection Bar */}
+          <div className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200/90 dark:border-white/5 text-xs shadow-sm dark:shadow-none transition-colors">
+            <Clipboard className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1.5" />
+            <input
+              type="text"
+              value={quickLinkInput}
+              onChange={handleQuickLinkPaste}
+              placeholder="Paste profile or post link here to identify platform..."
+              className="w-full bg-transparent text-fg text-xs placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none font-mono"
+            />
+            {quickLinkInput && (
+              <button
+                type="button"
+                onClick={() => setQuickLinkInput("")}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
+                title="Clear link input"
+              >
+                <RefreshCw className="w-3 h-3" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setQuickLinkInput("");
+                setOrderDetails(null);
+                setConsentChecked(false);
+                setOrderSuccess(null);
+                setOrderError(null);
+                setFormResetKey((prev) => prev + 1);
+              }}
+              className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-1 shrink-0"
+              title="Reset order form"
+            >
+              <RefreshCw className="w-3 h-3" />
+              <span>Reset Form</span>
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Success Notification */}
       {orderSuccess && (

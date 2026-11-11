@@ -358,10 +358,26 @@ export function AutoPilotTab({
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
-        setHandleInput(text.trim());
+        handleInputChange(text.trim());
       }
     } catch {
       // Ignore clipboard read permission failures
+    }
+  };
+
+  const handleInputChange = (val: string) => {
+    setHandleInput(val);
+    const low = val.toLowerCase();
+    if (low.includes("youtube.com") || low.includes("youtu.be")) {
+      setSelectedPlatform("YOUTUBE");
+    } else if (low.includes("instagram.com")) {
+      setSelectedPlatform("INSTAGRAM");
+    } else if (low.includes("tiktok.com")) {
+      setSelectedPlatform("TIKTOK");
+    } else if (low.includes("t.me") || low.includes("telegram.me")) {
+      setSelectedPlatform("TELEGRAM");
+    } else if (low.includes("twitter.com") || low.includes("x.com")) {
+      setSelectedPlatform("TWITTER");
     }
   };
 
@@ -509,38 +525,43 @@ export function AutoPilotTab({
         {/* Left Column: Creator Handle & Auto-Preview (5 cols) */}
         <div className="lg:col-span-5 space-y-5">
           <div className="rounded-3xl bg-surface border border-border p-4 sm:p-5 space-y-4 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-center justify-between">
               <h2 className="text-sm sm:text-base font-bold text-fg flex items-center gap-1.5">
                 <Radio className="w-4 h-4 text-emerald-600 dark:text-[#D8EC8D]" />
                 <span>Step 1: Choose Platform</span>
               </h2>
-              {/* Platform Switcher */}
-              <div className="grid grid-cols-5 gap-1 bg-surface-raised p-1 rounded-2xl border border-border w-full sm:w-auto sm:flex sm:items-center">
-                {PLATFORMS.map((p) => {
-                  const isSelected = selectedPlatform === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setSelectedPlatform(p.id)}
-                      className={`relative flex items-center justify-center p-2 rounded-xl transition-all ${
-                        isSelected
-                          ? "bg-surface text-fg shadow-sm border border-border ring-2 ring-emerald-500/30 dark:ring-[#D8EC8D]/40"
-                          : "text-fg-muted hover:text-fg hover:bg-surface/50"
-                      }`}
-                      title={p.label}
-                    >
-                      <PlatformIcon platform={p.key} size={18} />
-                    </button>
-                  );
-                })}
-              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-[#D8EC8D] border border-emerald-500/20 font-semibold">
+                5 Supported Platforms
+              </span>
+            </div>
+
+            {/* Platform Switcher: Clean 5-Platform Cards */}
+            <div className="grid grid-cols-5 gap-1.5 p-1 rounded-2xl bg-surface-raised border border-border">
+              {PLATFORMS.map((p) => {
+                const isSelected = selectedPlatform === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setSelectedPlatform(p.id)}
+                    className={`relative flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:px-2.5 rounded-xl transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-surface text-fg shadow-sm border border-border ring-2 ring-emerald-500/40 dark:ring-[#D8EC8D]/50 font-bold"
+                        : "text-fg-muted hover:text-fg hover:bg-surface/50 font-medium"
+                    }`}
+                    title={p.label}
+                  >
+                    <PlatformIcon platform={p.key} size={18} />
+                    <span className="text-[11px] sm:text-xs truncate">{p.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Platform Description Pill */}
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800 dark:text-[#D8EC8D] bg-emerald-500/10 dark:bg-[#D8EC8D]/10 px-2.5 py-1 rounded-xl border border-emerald-500/20 dark:border-[#D8EC8D]/25">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800 dark:text-[#D8EC8D] bg-emerald-500/10 dark:bg-[#D8EC8D]/10 px-2.5 py-1.5 rounded-xl border border-emerald-500/20 dark:border-[#D8EC8D]/25">
               <Check className="w-3 h-3 shrink-0 text-emerald-600 dark:text-[#D8EC8D]" />
-              <span>
+              <span className="truncate">
                 {activePlatform.contentLabel}: {activePlatform.description}
               </span>
             </div>
@@ -552,7 +573,7 @@ export function AutoPilotTab({
                 <button
                   type="button"
                   onClick={handlePasteClipboard}
-                  className="text-[11px] text-emerald-700 dark:text-[#D8EC8D] font-semibold hover:underline flex items-center gap-1"
+                  className="text-[11px] text-emerald-700 dark:text-[#D8EC8D] font-semibold hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <ClipboardPaste className="w-3 h-3" />
                   Paste
@@ -563,7 +584,7 @@ export function AutoPilotTab({
                 <input
                   type="text"
                   value={handleInput}
-                  onChange={(e) => setHandleInput(e.target.value)}
+                  onChange={(e) => handleInputChange(e.target.value)}
                   placeholder={activePlatform.placeholder}
                   className="w-full pl-3.5 pr-20 py-2.5 sm:py-3 rounded-2xl bg-surface-raised border border-border text-fg placeholder:text-fg-muted/60 focus:outline-none focus:border-emerald-500 dark:focus:border-[#D8EC8D] text-sm font-medium transition-all"
                 />
