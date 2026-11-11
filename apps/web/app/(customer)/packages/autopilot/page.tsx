@@ -65,6 +65,7 @@ interface DetectedProfile {
   handle: string;
   displayName?: string;
   avatarUrl?: string;
+  followerCount?: string;
 }
 
 interface PlatformOption {
@@ -800,8 +801,13 @@ export default function AutopilotPage() {
                       <span className="font-bold text-fg text-sm truncate">{detectedProfile.handle}</span>
                       <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-[#D8EC8D] shrink-0" />
                     </div>
+                    {detectedProfile.displayName && detectedProfile.displayName.toLowerCase() !== detectedProfile.handle.replace(/^@/, "").toLowerCase() && (
+                      <div className="text-xs font-semibold text-fg-muted truncate">
+                        {detectedProfile.displayName}
+                      </div>
+                    )}
                     <div className="text-xs text-fg-muted flex items-center gap-2 mt-0.5">
-                      <span>{activePlatform.label} Profile</span>
+                      <span>{detectedProfile.followerCount || `${activePlatform.label} Profile`}</span>
                       <span className="w-1 h-1 rounded-full bg-border" />
                       <span className="text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />

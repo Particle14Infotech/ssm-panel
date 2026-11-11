@@ -17,6 +17,9 @@ export interface DetectedMedia {
   mediaType: "REEL" | "POST" | "VIDEO" | "SHORTS" | "MESSAGE";
   recentCodes?: string[];
   note?: string;
+  profileAvatarUrl?: string;
+  profileDisplayName?: string;
+  profileFollowers?: string;
 }
 
 export interface DetectedProfile {
@@ -196,7 +199,7 @@ export class AutopilotDetectorService {
 
   /**
    * Real Instagram Auto-Detector from Profile Handle or URL
-   * Chronologically sorts media by pk descending to bypass pinned posts
+   * Preserves exact profile feed order (nodes[0] = top post) and captures genuine profile avatar
    */
   async detectRealInstagram(handleOrUrl: string): Promise<DetectedMedia> {
     const input = handleOrUrl.trim();
@@ -219,7 +222,28 @@ export class AutopilotDetectorService {
     });
     const html = res.data;
 
-    // Extract Polaris media nodes
+    // 1. Extract Genuine Profile Metadata
+    const ogImg = html.match(/<meta[^>]+property="og:image"[^>]+content="([^"]*)"/i);
+    const ogTitle = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]*)"/i);
+    const ogDesc = html.match(/<meta[^>]+property="og:description"[^>]+content="([^"]*)"/i);
+
+    let displayName = cleanHandle;
+    if (ogTitle) {
+      const m = ogTitle[1].match(/^([^(]+?)(?:\s*\(@[a-zA-Z0-9._-]+\))?\s*[•\-–]\s*Instagram/i);
+      if (m) displayName = cleanUnicode(m[1].trim());
+    }
+
+    let followerCount = "";
+    if (ogDesc) {
+      const folMatch = ogDesc[1].match(/([0-9,KMkm.]+\s*(?:Followers|subscribers))/i);
+      if (folMatch) followerCount = folMatch[1];
+    }
+
+    const profileAvatarUrl = ogImg
+      ? `/api/v1/link-preview/proxy-image?url=${encodeURIComponent(ogImg[1].replace(/&amp;/g, "&"))}`
+      : undefined;
+
+    // 2. Extract Polaris media nodes
     const nodePattern =
       /\{"node":\{"__typename":"([^"]+)","__isXIGPolarisMedia":"[^"]*","pk":"([0-9]+)","code":"([a-zA-Z0-9_-]+)"[^{}]*?"accessibility_caption":"([^"]*)"[^{}]*?"caption":\{"text":"([^"]*)"\}[^{}]*?"display_uri":"([^"]+)"/g;
 
@@ -246,24 +270,25 @@ export class AutopilotDetectorService {
     }
 
     if (nodes.length > 0) {
-      // Sort chronologically by pk descending (highest pk = newest upload, ignores pinned posts!)
-      nodes.sort((a, b) => (b.pk > a.pk ? 1 : -1));
-
-      const newestReel = nodes.find((n) => n.typename === "XIGPolarisVideoMedia") || nodes[0];
-      const proxyThumbnail = `/api/v1/link-preview/proxy-image?url=${encodeURIComponent(newestReel.displayUri)}`;
+      // In Instagram, nodes[0] represents the first/top media in the creator's profile feed!
+      const topMedia = nodes[0];
+      const proxyThumbnail = `/api/v1/link-preview/proxy-image?url=${encodeURIComponent(topMedia.displayUri)}`;
 
       return {
         platform: "INSTAGRAM",
-        mediaKey: newestReel.shortcode,
-        url: `https://www.instagram.com/reel/${newestReel.shortcode}/`,
-        title: newestReel.caption || newestReel.accessibility_caption || `Instagram Reel (${newestReel.shortcode})`,
+        mediaKey: topMedia.shortcode,
+        url: `https://www.instagram.com/reel/${topMedia.shortcode}/`,
+        title: topMedia.caption || topMedia.accessibility_caption || `Instagram Reel (${topMedia.shortcode})`,
         author: `@${cleanHandle}`,
-        publishedAt: newestReel.accessibility_caption || new Date().toISOString(),
+        publishedAt: topMedia.accessibility_caption || new Date().toISOString(),
         thumbnailUrl: proxyThumbnail,
-        rawImage: newestReel.displayUri,
+        rawImage: topMedia.displayUri,
         isLiveDetected: true,
-        mediaType: newestReel.typename === "XIGPolarisVideoMedia" ? "REEL" : "POST",
+        mediaType: topMedia.typename === "XIGPolarisVideoMedia" ? "REEL" : "POST",
         recentCodes: nodes.slice(0, 6).map((n) => n.shortcode),
+        profileAvatarUrl,
+        profileDisplayName: displayName,
+        profileFollowers: followerCount,
       };
     }
 
@@ -280,12 +305,11 @@ export class AutopilotDetectorService {
       const chosenCode = uniqueCodes[0];
       const postDetails = await this.scrapeInstagramPost(chosenCode, cleanHandle);
       postDetails.recentCodes = uniqueCodes.slice(0, 5);
+      postDetails.profileAvatarUrl = profileAvatarUrl;
+      postDetails.profileDisplayName = displayName;
+      postDetails.profileFollowers = followerCount;
       return postDetails;
     }
-
-    // Profile-only fallback
-    const ogTitle = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]*)"/i);
-    const ogImage = html.match(/<meta[^>]+property="og:image"[^>]+content="([^"]*)"/i);
 
     return {
       platform: "INSTAGRAM",
@@ -294,12 +318,13 @@ export class AutopilotDetectorService {
       title: ogTitle ? cleanUnicode(ogTitle[1]) : `Instagram Profile @${cleanHandle}`,
       author: `@${cleanHandle}`,
       publishedAt: new Date().toISOString(),
-      thumbnailUrl: ogImage
-        ? `/api/v1/link-preview/proxy-image?url=${encodeURIComponent(ogImage[1])}`
-        : "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop&q=80",
+      thumbnailUrl: profileAvatarUrl || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop&q=80",
       isLiveDetected: false,
       mediaType: "POST",
       note: "Profile found, no recent public posts exposed.",
+      profileAvatarUrl,
+      profileDisplayName: displayName,
+      profileFollowers: followerCount,
     };
   }
 
@@ -366,6 +391,13 @@ export class AutopilotDetectorService {
     const res = await fetchHttp(videosTabUrl);
     const html = res.data;
 
+    const ogTitle = (html.match(/<meta property="og:title" content="([^"]+)"/) || [])[1];
+    const ogImg = (html.match(/<meta property="og:image" content="([^"]+)"/) || [])[1];
+    let subscriberCount = "";
+    const subMatch = html.match(/"subscriberCountText":\{"accessibility":\{"accessibilityData":\{"label":"([^"]+)"\}\}/) || html.match(/([0-9,KMkm.]+\s*(?:subscribers))/i);
+    if (subMatch) subscriberCount = subMatch[1];
+    const profileAvatarUrl = ogImg ? `/api/v1/link-preview/proxy-image?url=${encodeURIComponent(ogImg)}` : undefined;
+
     let channelId: string | null = null;
     const matchId =
       html.match(/"browseId":"(UC[a-zA-Z0-9_-]{22})"/) ||
@@ -405,12 +437,16 @@ export class AutopilotDetectorService {
               mediaKey: videoId,
               url: `https://www.youtube.com/watch?v=${videoId}`,
               title: titleMatch ? cleanUnicode(titleMatch[1]) : `YouTube Video (${videoId})`,
-              author: authorMatch ? cleanUnicode(authorMatch[1]) : "YouTube Creator",
+              author: authorMatch ? cleanUnicode(authorMatch[1]) : (ogTitle || "YouTube Creator"),
               publishedAt: publishedMatch ? publishedMatch[1] : new Date().toISOString(),
-              thumbnailUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+              thumbnailUrl: `/api/v1/link-preview/proxy-image?url=${encodeURIComponent(`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`)}`,
+              rawImage: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
               isLiveDetected: true,
               mediaType: "VIDEO",
               recentCodes: recentVideos,
+              profileAvatarUrl,
+              profileDisplayName: ogTitle || input,
+              profileFollowers: subscriberCount,
             };
           }
         }
@@ -478,6 +514,9 @@ export class AutopilotDetectorService {
     const channelTitle = titleMatch ? cleanUnicode(titleMatch[1]) : `@${channel}`;
     const avatar = imageMatch ? imageMatch[1] : "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400";
     const postTitle = descMatch ? cleanUnicode(descMatch[1]).slice(0, 80) : `Telegram Post #${postNum}`;
+    const profileAvatarUrl = imageMatch
+      ? `/api/v1/link-preview/proxy-image?url=${encodeURIComponent(imageMatch[1])}`
+      : undefined;
 
     return {
       platform: "TELEGRAM",
@@ -486,10 +525,13 @@ export class AutopilotDetectorService {
       title: postTitle,
       author: `@${channel}`,
       publishedAt: new Date().toISOString(),
-      thumbnailUrl: avatar,
+      thumbnailUrl: profileAvatarUrl || avatar,
       isLiveDetected: true,
       mediaType: "MESSAGE",
       recentCodes: postMatches.slice(-5).reverse(),
+      profileAvatarUrl,
+      profileDisplayName: channelTitle,
+      profileFollowers: descMatch ? cleanUnicode(descMatch[1]).slice(0, 50) : undefined,
     };
   }
 
@@ -659,30 +701,35 @@ export class AutopilotDetectorService {
     let media: DetectedMedia | null = null;
     let detectedHandle = `@${cleanHandle}`;
     let avatarUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80";
+    let displayName = cleanHandle;
+    let followerCount: string | undefined = undefined;
 
     try {
       if (targetPlatform === "TELEGRAM") {
         media = await this.detectRealTelegram(raw);
-        detectedHandle = media.author || `@${cleanHandle}`;
-        if (media.thumbnailUrl) avatarUrl = media.thumbnailUrl;
       } else if (targetPlatform === "TIKTOK") {
         media = await this.detectRealTikTok(raw);
-        detectedHandle = media.author || `@${cleanHandle}`;
-        if (media.thumbnailUrl) avatarUrl = media.thumbnailUrl;
       } else if (targetPlatform === "TWITTER") {
         media = await this.detectRealTwitter(raw);
-        detectedHandle = media.author || `@${cleanHandle}`;
-        if (media.thumbnailUrl) avatarUrl = media.thumbnailUrl;
       } else if (targetPlatform === "YOUTUBE") {
         media = await this.detectRealYouTube(raw);
-        detectedHandle = media.author || `@${cleanHandle}`;
-        if (media.thumbnailUrl) avatarUrl = media.thumbnailUrl;
       } else {
-        // INSTAGRAM - Always attempt live detection for both handles and direct reel/post URLs
+        // INSTAGRAM - Live detection for handles and direct reel/post URLs
         media = await this.detectRealInstagram(raw);
+      }
+
+      if (media) {
         detectedHandle = media.author || `@${cleanHandle}`;
-        if (media.thumbnailUrl) {
+        if (media.profileAvatarUrl) {
+          avatarUrl = media.profileAvatarUrl;
+        } else if (media.thumbnailUrl && targetPlatform === "TELEGRAM") {
           avatarUrl = media.thumbnailUrl;
+        }
+        if (media.profileDisplayName) {
+          displayName = media.profileDisplayName;
+        }
+        if (media.profileFollowers) {
+          followerCount = media.profileFollowers;
         }
       }
     } catch (err: any) {
@@ -712,8 +759,9 @@ export class AutopilotDetectorService {
       profile: {
         platform: targetPlatform,
         handle: detectedHandle,
-        displayName: cleanHandle,
+        displayName,
         avatarUrl,
+        followerCount,
       },
       latestMedia: media,
     };
