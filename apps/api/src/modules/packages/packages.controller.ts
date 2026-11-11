@@ -539,6 +539,13 @@ export class PackagesController {
     return this.packagesService.getAutopilotSlots(user.id, id, isAdmin);
   }
 
+  @Post("autopilot/:id/sync")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Sync feed on-demand and claim slot if new post detected" })
+  async syncAutopilotPackage(@CurrentUser() user: CurrentUserData, @Param("id") id: string) {
+    return this.packagesService.syncAutopilotPackage(user.id, id);
+  }
+
   @Post(":id/speed-up")
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Compress Delivery Interval within Platform Bounds" })

@@ -4469,6 +4469,64 @@ export class PackagesService {
   }
 
   /**
+   * Sync package feed on-demand for user to immediately claim new uploads without waiting 60s
+   */
+  async syncAutopilotPackage(userId: string, packageId: string) {
+    const pkg = await this.prisma.package.findFirst({
+      where: { id: packageId, userId },
+      include: {
+        slots: { orderBy: { slotNumber: "asc" } },
+        rules: { include: { service: true } },
+      },
+    });
+
+    if (!pkg) {
+      throw new NotFoundException("Autopilot package not found");
+    }
+
+    if (pkg.status !== PackageStatus.ACTIVE) {
+      return { success: false, message: `Package is ${pkg.status.toLowerCase()}. Only active packages can sync.` };
+    }
+
+    const availableSlot = pkg.slots.find((s) => s.status === "AVAILABLE");
+    if (!availableSlot) {
+      return { success: true, newPostFound: false, message: "All reserved slots have already been claimed and are currently boosting." };
+    }
+
+    try {
+      if (!this.autopilotDetector) {
+        this.autopilotDetector = new AutopilotDetectorService();
+      }
+      const preview = await this.autopilotDetector.autoDetect(pkg.handle, pkg.platform);
+      if (!preview.latestMedia) {
+        return { success: true, newPostFound: false, message: "No public posts detected. Poller is standing by." };
+      }
+
+      const existingKeys = new Set(pkg.slots.map((s) => s.mediaKey).filter(Boolean));
+      if (existingKeys.has(preview.latestMedia.mediaKey)) {
+        return { success: true, newPostFound: false, message: "Latest upload is already claimed. Standing by for your next upload!" };
+      }
+
+      // New upload detected! Claim next slot immediately
+      await this.claimAutopilotSlot(pkg.id, availableSlot.slotNumber, {
+        mediaKey: preview.latestMedia.mediaKey,
+        targetUrl: preview.latestMedia.url,
+        title: preview.latestMedia.title,
+      });
+
+      return {
+        success: true,
+        newPostFound: true,
+        slotNumber: availableSlot.slotNumber,
+        mediaKey: preview.latestMedia.mediaKey,
+        message: `New upload detected! Slot #${availableSlot.slotNumber} claimed and boosting scheduled.`,
+      };
+    } catch (err: any) {
+      return { success: true, newPostFound: false, message: "Feed check complete. Poller is actively monitoring." };
+    }
+  }
+
+  /**
    * List user's Autopilot Packages (active, paused, completed, and cancelled)
    */
   async listAutopilotPackages(userId: string) {

@@ -71,6 +71,8 @@ interface PlatformOption {
   id: SupportedAutopilotPlatform;
   key: string;
   label: string;
+  description: string;
+  contentLabel: string;
   placeholder: string;
   defaultSample: string;
   samples: Array<{ handle: string; label: string }>;
@@ -81,6 +83,8 @@ const PLATFORMS: PlatformOption[] = [
     id: "INSTAGRAM",
     key: "instagram",
     label: "Instagram",
+    description: "Auto-detects new Reels, Posts & IGTV",
+    contentLabel: "Instagram Reels & Posts",
     placeholder: "Enter @handle or Reel URL",
     defaultSample: "@areion._",
     samples: [
@@ -92,6 +96,8 @@ const PLATFORMS: PlatformOption[] = [
     id: "YOUTUBE",
     key: "youtube",
     label: "YouTube",
+    description: "Auto-detects new Videos & Shorts",
+    contentLabel: "YouTube Channel & Shorts",
     placeholder: "Enter @channel, URL or Video",
     defaultSample: "@mkbhd",
     samples: [
@@ -103,6 +109,8 @@ const PLATFORMS: PlatformOption[] = [
     id: "TIKTOK",
     key: "tiktok",
     label: "TikTok",
+    description: "Auto-detects new TikTok Videos",
+    contentLabel: "TikTok Profile & Videos",
     placeholder: "Enter @handle or TikTok URL",
     defaultSample: "@tiktok",
     samples: [
@@ -114,6 +122,8 @@ const PLATFORMS: PlatformOption[] = [
     id: "TELEGRAM",
     key: "telegram",
     label: "Telegram",
+    description: "Auto-detects new Public Channel Posts",
+    contentLabel: "Telegram Public Channel",
     placeholder: "Enter public @channel or t.me link",
     defaultSample: "@durov",
     samples: [
@@ -125,6 +135,8 @@ const PLATFORMS: PlatformOption[] = [
     id: "TWITTER",
     key: "x_twitter",
     label: "X",
+    description: "Auto-detects new Posts & Media",
+    contentLabel: "X / Twitter Profile & Posts",
     placeholder: "Enter @handle or post link",
     defaultSample: "@elonmusk",
     samples: [
@@ -281,6 +293,7 @@ export default function AutopilotPage() {
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [syncingPackageId, setSyncingPackageId] = useState<string | null>(null);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -487,6 +500,31 @@ export default function AutopilotPage() {
     }
   };
 
+  // On-demand feed sync handler
+  const handleSyncFeed = async (packageId: string) => {
+    setSyncingPackageId(packageId);
+    try {
+      const apiBase = getApiBase();
+      const token = getAuthToken();
+      const res = await fetch(`${apiBase}/packages/autopilot/${packageId}/sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to sync feed.");
+      showToast(data.message || "Feed check complete!");
+      fetchPackages();
+      if (refreshData) refreshData();
+    } catch (err: any) {
+      showToast(err.message || "Failed to sync feed.");
+    } finally {
+      setSyncingPackageId(null);
+    }
+  };
+
   const toggleSlotDrawer = (slotId: string) => {
     setExpandedSlots((prev) => ({
       ...prev,
@@ -504,7 +542,7 @@ export default function AutopilotPage() {
   }, [autopilotPackages, packageFilter]);
 
   return (
-    <div className="space-y-8 sm:space-y-10 max-w-6xl mx-auto pb-24 px-2 sm:px-6 text-fg">
+    <div className="space-y-4 sm:space-y-8 max-w-6xl mx-auto pb-24 px-2 sm:px-6 text-fg">
       {/* Toast Notification */}
       <AnimatePresence>
         {toastMessage && (
@@ -520,43 +558,65 @@ export default function AutopilotPage() {
         )}
       </AnimatePresence>
 
-      {/* Sleek, Compact Header Banner (Space-Optimized, Theme-Aware) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-surface border border-border shadow-xs">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-[#D8EC8D]/15 text-emerald-600 dark:text-[#D8EC8D] flex items-center justify-center shrink-0 border border-emerald-500/20 dark:border-[#D8EC8D]/30">
-            <Bot className="w-5 h-5" />
+      {/* Sleek, Compact Header Banner (Space-Optimized, Theme-Aware, No Duplicate Balance) */}
+      <div className="flex items-center justify-between gap-3 p-3 sm:p-4 rounded-2xl bg-surface border border-border shadow-xs">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/10 dark:bg-[#D8EC8D]/15 text-emerald-600 dark:text-[#D8EC8D] flex items-center justify-center shrink-0 border border-emerald-500/20 dark:border-[#D8EC8D]/30">
+            <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base sm:text-lg font-bold text-fg tracking-tight">Autopilot Accelerator</h1>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+              <h1 className="text-sm sm:text-base font-bold text-fg tracking-tight">Autopilot Accelerator</h1>
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Live 60s Sync
               </span>
             </div>
-            <p className="text-xs text-fg-muted truncate sm:whitespace-normal">
-              Auto-boosts new uploads the instant you publish • 100% unused slots refundable
+            <p className="text-[11px] sm:text-xs text-fg-muted truncate">
+              Auto-boosts new uploads instantly • 100% unused slots refundable
             </p>
           </div>
         </div>
       </div>
 
-      {/* Guided Steps Header */}
-      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-1 rounded-2xl bg-surface-raised border border-border text-center text-xs font-semibold">
-        <div className="py-1.5 sm:py-2 px-1 sm:px-2 rounded-xl bg-surface text-fg flex items-center justify-center gap-1 sm:gap-1.5 border border-border shadow-sm font-bold">
+      {/* 3-Point Micro-Trust Bar: Responsive single row on mobile, 3 cards on desktop */}
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-3 p-1 sm:p-0 rounded-xl sm:rounded-none bg-surface/40 sm:bg-transparent border sm:border-0 border-border text-xs">
+        <div className="flex items-center justify-center sm:justify-start gap-1 sm:gap-2.5 py-1.5 sm:p-3 sm:rounded-2xl sm:bg-surface sm:border sm:border-border sm:shadow-2xs text-center sm:text-left">
+          <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 dark:text-[#D8EC8D] shrink-0" />
+          <div>
+            <div className="font-bold text-[10px] sm:text-xs text-fg">Password-Free</div>
+            <div className="hidden sm:block text-[11px] text-fg-muted">Public link or @handle only</div>
+          </div>
+        </div>
+        <div className="flex items-center justify-center sm:justify-start gap-1 sm:gap-2.5 py-1.5 sm:p-3 sm:rounded-2xl sm:bg-surface sm:border sm:border-border sm:shadow-2xs text-center sm:text-left">
+          <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 dark:text-[#D8EC8D] shrink-0" />
+          <div>
+            <div className="font-bold text-[10px] sm:text-xs text-fg">60s Auto-Detect</div>
+            <div className="hidden sm:block text-[11px] text-fg-muted">Instant trigger on publish</div>
+          </div>
+        </div>
+        <div className="flex items-center justify-center sm:justify-start gap-1 sm:gap-2.5 py-1.5 sm:p-3 sm:rounded-2xl sm:bg-surface sm:border sm:border-border sm:shadow-2xs text-center sm:text-left">
+          <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 dark:text-[#D8EC8D] shrink-0" />
+          <div>
+            <div className="font-bold text-[10px] sm:text-xs text-fg">100% Refundable</div>
+            <div className="hidden sm:block text-[11px] text-fg-muted">Unconsumed posts credited</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Guided Steps Header (Hidden on Mobile to save space, visible on Desktop) */}
+      <div className="hidden sm:grid grid-cols-3 gap-2 p-1 rounded-2xl bg-surface-raised border border-border text-center text-xs font-semibold">
+        <div className="py-2 px-2 rounded-xl bg-surface text-fg flex items-center justify-center gap-1.5 border border-border shadow-sm font-bold">
           <span className="w-4 h-4 rounded-full bg-[#D8EC8D] text-black font-extrabold flex items-center justify-center text-[10px] shrink-0">1</span>
-          <span className="sm:hidden text-[11px]">Handle</span>
-          <span className="hidden sm:inline">Target Handle</span>
+          <span>Target Handle</span>
         </div>
-        <div className="py-1.5 sm:py-2 px-1 sm:px-2 rounded-xl text-fg-muted flex items-center justify-center gap-1 sm:gap-1.5">
+        <div className="py-2 px-2 rounded-xl text-fg-muted flex items-center justify-center gap-1.5">
           <span className="w-4 h-4 rounded-full bg-surface border border-border text-fg-muted font-extrabold flex items-center justify-center text-[10px] shrink-0">2</span>
-          <span className="sm:hidden text-[11px]">Recipe</span>
-          <span className="hidden sm:inline">Growth Recipe</span>
+          <span>Growth Recipe</span>
         </div>
-        <div className="py-1.5 sm:py-2 px-1 sm:px-2 rounded-xl text-fg-muted flex items-center justify-center gap-1 sm:gap-1.5">
+        <div className="py-2 px-2 rounded-xl text-fg-muted flex items-center justify-center gap-1.5">
           <span className="w-4 h-4 rounded-full bg-surface border border-border text-fg-muted font-extrabold flex items-center justify-center text-[10px] shrink-0">3</span>
-          <span className="sm:hidden text-[11px]">Slots</span>
-          <span className="hidden sm:inline">Activate Slots</span>
+          <span>Activate Slots</span>
         </div>
       </div>
 
@@ -571,7 +631,7 @@ export default function AutopilotPage() {
                 <span>Step 1: Choose Platform</span>
               </h2>
               {/* Platform Switcher - ICONS ONLY (No platform names) */}
-              <div className="flex items-center gap-1 bg-surface-raised p-1 rounded-2xl border border-border self-start sm:self-auto">
+              <div className="grid grid-cols-5 gap-1 bg-surface-raised p-1 rounded-2xl border border-border w-full sm:w-auto sm:flex sm:items-center">
                 {PLATFORMS.map((p) => {
                   const isSelected = selectedPlatform === p.id;
                   return (
@@ -584,7 +644,7 @@ export default function AutopilotPage() {
                       }}
                       title={p.label}
                       aria-label={p.label}
-                      className={`p-1.5 sm:p-2 rounded-xl transition-all flex items-center justify-center ${isSelected
+                      className={`h-10 sm:h-9 px-2 sm:px-2.5 rounded-xl transition-all flex items-center justify-center ${isSelected
                           ? "bg-surface border border-emerald-500/60 dark:border-[#D8EC8D] ring-2 ring-emerald-500/30 dark:ring-[#D8EC8D]/30 shadow-sm scale-105"
                           : "border border-transparent hover:bg-surface/50 opacity-60 hover:opacity-100"
                         }`}
@@ -594,6 +654,12 @@ export default function AutopilotPage() {
                   );
                 })}
               </div>
+            </div>
+
+            {/* Active Platform Context Badge */}
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800 dark:text-[#D8EC8D] bg-emerald-500/10 dark:bg-[#D8EC8D]/10 px-2.5 py-1 rounded-xl border border-emerald-500/20 dark:border-[#D8EC8D]/25">
+              <Check className="w-3 h-3 shrink-0 text-emerald-600 dark:text-[#D8EC8D]" />
+              <span>{activePlatform.contentLabel}: {activePlatform.description}</span>
             </div>
 
             {/* Input Box with Paste & Clear */}
@@ -947,35 +1013,32 @@ export default function AutopilotPage() {
               )}
 
               <div className="flex flex-col sm:flex-row gap-3 pt-1">
-                <button
-                  type="button"
-                  disabled={isSubmitting || !hasSufficientBalance}
-                  onClick={handlePurchase}
-                  className={`flex-1 py-3.5 px-6 rounded-xl font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md ${hasSufficientBalance
-                      ? "bg-[#D8EC8D] text-black hover:brightness-105 active:scale-[0.99] cursor-pointer"
-                      : "bg-surface border border-border text-fg-muted cursor-not-allowed"
-                    }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Activating Autopilot...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-4 h-4 fill-current" />
-                      <span>Activate Autopilot (₹{formatIndianNumber(totalCost)})</span>
-                    </>
-                  )}
-                </button>
-
-                {!hasSufficientBalance && (
-                  <Link
-                    href="/wallet"
-                    className="py-3.5 px-5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 font-bold text-xs text-center transition-all border border-emerald-500/30 flex items-center justify-center gap-1.5"
+                {hasSufficientBalance ? (
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={handlePurchase}
+                    className="flex-1 py-3.5 px-6 rounded-xl font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md bg-[#D8EC8D] text-black hover:brightness-105 active:scale-[0.99] cursor-pointer"
                   >
-                    <span>Top up ₹{formatIndianNumber(balanceShortfall)}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    {isSubmitting ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Activating Autopilot...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-4 h-4 fill-current text-black" />
+                        <span>Activate Autopilot (₹{formatIndianNumber(totalCost)})</span>
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <Link
+                    href={`/wallet?amount=${balanceShortfall}&redirect=/packages/autopilot`}
+                    className="flex-1 py-3.5 px-6 rounded-xl font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md bg-emerald-500 hover:bg-emerald-400 text-white cursor-pointer"
+                  >
+                    <span>Top Up ₹{formatIndianNumber(balanceShortfall)} to Wallet & Activate</span>
+                    <ArrowRight className="w-4 h-4" />
                   </Link>
                 )}
               </div>
@@ -1086,7 +1149,20 @@ export default function AutopilotPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {pkg.status === "ACTIVE" && (
+                        <button
+                          type="button"
+                          disabled={syncingPackageId === pkg.id}
+                          onClick={() => handleSyncFeed(pkg.id)}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-[#D8EC8D] border border-emerald-500/30 text-xs font-semibold transition-all flex items-center gap-1.5"
+                          title="Manually check creator feed for new uploads right now"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${syncingPackageId === pkg.id ? "animate-spin" : ""}`} />
+                          <span>{syncingPackageId === pkg.id ? "Checking..." : "Sync Feeds"}</span>
+                        </button>
+                      )}
+
                       {pkg.status === "ACTIVE" && (
                         <button
                           type="button"
@@ -1098,9 +1174,9 @@ export default function AutopilotPage() {
                         </button>
                       )}
 
-                      <div className="flex items-center gap-1.5 text-xs text-fg-muted bg-surface-raised px-3 py-1.5 rounded-xl border border-border">
+                      <div className="hidden sm:flex items-center gap-1.5 text-xs text-fg-muted bg-surface-raised px-3 py-1.5 rounded-xl border border-border">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>Background Poller Active</span>
+                        <span>Poller 60s Sync</span>
                       </div>
                     </div>
                   </div>
@@ -1305,22 +1381,33 @@ export default function AutopilotPage() {
                 <p>
                   Are you sure you want to cancel this Autopilot subscription?
                 </p>
-                <div className="p-3.5 rounded-xl bg-surface-raised border border-border space-y-1.5">
-                  <div className="flex justify-between">
-                    <span className="text-fg-muted">Total Slots:</span>
-                    <span className="font-bold text-fg">{cancelModalPackage.slots?.length || 0}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-fg-muted">Unused Waiting Slots:</span>
-                    <span className="font-bold text-amber-600 dark:text-amber-400">
-                      {cancelModalPackage.slots?.filter((s) => s.status === "AVAILABLE").length || 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between pt-1 border-t border-border">
-                    <span className="text-fg-muted">Estimated Refund:</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">100% of Unused Reserve</span>
-                  </div>
-                </div>
+                {(() => {
+                  const cancelSlotsTotal = cancelModalPackage.slots?.length || 1;
+                  const cancelAvailableSlots = cancelModalPackage.slots?.filter((s) => s.status === "AVAILABLE").length || 0;
+                  const cancelPricePerSlot = (cancelModalPackage.reserveTotal || 0) / cancelSlotsTotal;
+                  const cancelExactRefund = Math.round(cancelAvailableSlots * cancelPricePerSlot);
+
+                  return (
+                    <div className="p-3.5 rounded-xl bg-surface-raised border border-border space-y-1.5">
+                      <div className="flex justify-between">
+                        <span className="text-fg-muted">Total Posts Reserved:</span>
+                        <span className="font-bold text-fg">{cancelSlotsTotal}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-fg-muted">Unconsumed Waiting Posts:</span>
+                        <span className="font-bold text-amber-600 dark:text-amber-400">
+                          {cancelAvailableSlots} of {cancelSlotsTotal} Posts
+                        </span>
+                      </div>
+                      <div className="flex justify-between pt-1.5 border-t border-border">
+                        <span className="text-fg-muted font-medium">Instant Wallet Refund:</span>
+                        <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">
+                          ₹{formatIndianNumber(cancelExactRefund)} (100% of Unused)
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
                 <p className="text-[11px] text-fg-muted">
                   The unused balance will be refunded back to your wallet immediately in an atomic transaction.
                 </p>
