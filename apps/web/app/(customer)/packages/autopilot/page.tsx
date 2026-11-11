@@ -223,13 +223,6 @@ const PRESETS = [
   },
 ];
 
-const SAMPLE_HANDLES = [
-  { platform: "INSTAGRAM" as const, handle: "@areion._", label: "@areion._ (IG)" },
-  { platform: "INSTAGRAM" as const, handle: "@cristiano", label: "@cristiano (IG)" },
-  { platform: "YOUTUBE" as const, handle: "@mkbhd", label: "@mkbhd (YT)" },
-  { platform: "YOUTUBE" as const, handle: "@MrBeast", label: "@MrBeast (YT)" },
-];
-
 const FAQS = [
   {
     q: "How fast does Autopilot detect when I post a new Reel or Video?",
@@ -573,18 +566,21 @@ export default function AutopilotPage() {
       </div>
 
       {/* Guided Steps Header */}
-      <div className="grid grid-cols-3 gap-2 p-1 rounded-2xl bg-surface-raised border border-border text-center text-xs font-semibold">
-        <div className="py-2 px-2 rounded-xl bg-surface text-fg flex items-center justify-center gap-1.5 border border-border shadow-sm font-bold">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-1 rounded-2xl bg-surface-raised border border-border text-center text-xs font-semibold">
+        <div className="py-1.5 sm:py-2 px-1 sm:px-2 rounded-xl bg-surface text-fg flex items-center justify-center gap-1 sm:gap-1.5 border border-border shadow-sm font-bold">
           <span className="w-4 h-4 rounded-full bg-[#D8EC8D] text-black font-extrabold flex items-center justify-center text-[10px] shrink-0">1</span>
-          <span className="truncate">Target Handle</span>
+          <span className="sm:hidden text-[11px]">Handle</span>
+          <span className="hidden sm:inline">Target Handle</span>
         </div>
-        <div className="py-2 px-2 rounded-xl text-fg-muted flex items-center justify-center gap-1.5">
+        <div className="py-1.5 sm:py-2 px-1 sm:px-2 rounded-xl text-fg-muted flex items-center justify-center gap-1 sm:gap-1.5">
           <span className="w-4 h-4 rounded-full bg-surface border border-border text-fg-muted font-extrabold flex items-center justify-center text-[10px] shrink-0">2</span>
-          <span className="truncate">Growth Recipe</span>
+          <span className="sm:hidden text-[11px]">Recipe</span>
+          <span className="hidden sm:inline">Growth Recipe</span>
         </div>
-        <div className="py-2 px-2 rounded-xl text-fg-muted flex items-center justify-center gap-1.5">
+        <div className="py-1.5 sm:py-2 px-1 sm:px-2 rounded-xl text-fg-muted flex items-center justify-center gap-1 sm:gap-1.5">
           <span className="w-4 h-4 rounded-full bg-surface border border-border text-fg-muted font-extrabold flex items-center justify-center text-[10px] shrink-0">3</span>
-          <span className="truncate">Activate Slots</span>
+          <span className="sm:hidden text-[11px]">Slots</span>
+          <span className="hidden sm:inline">Activate Slots</span>
         </div>
       </div>
 
@@ -593,13 +589,13 @@ export default function AutopilotPage() {
         {/* Left Column: Handle & Auto-Preview (5 cols) */}
         <div className="lg:col-span-5 space-y-5">
           <div className="rounded-3xl bg-surface border border-border p-4 sm:p-5 space-y-4 shadow-sm">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
               <h2 className="text-sm sm:text-base font-bold text-fg flex items-center gap-1.5">
                 <Radio className="w-4 h-4 text-emerald-600 dark:text-[#D8EC8D]" />
-                Step 1: Choose Platform
+                <span>Step 1: Choose Platform</span>
               </h2>
               {/* Platform Switcher - ICONS ONLY (No platform names) */}
-              <div className="flex items-center gap-1 bg-surface-raised p-1 rounded-2xl border border-border">
+              <div className="flex items-center gap-1 bg-surface-raised p-1 rounded-2xl border border-border self-start sm:self-auto">
                 {PLATFORMS.map((p) => {
                   const isSelected = selectedPlatform === p.id;
                   return (

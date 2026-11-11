@@ -4031,19 +4031,37 @@ export class PackagesService {
           },
         });
 
-        // Find active services for this platform
-        const viewsService = await tx.service.findFirst({
-          where: { platform: targetPlatform, kind: "VIEWS", active: true },
+        // Find active services for this platform with alias support (e.g. TWITTER <-> X_TWITTER)
+        const platformAliases: string[] = [targetPlatform];
+        if ((targetPlatform as string) === "TWITTER") platformAliases.push("X_TWITTER", "X");
+        if ((targetPlatform as string) === "X_TWITTER" || (targetPlatform as string) === "X") platformAliases.push("TWITTER");
+
+        let viewsService = await tx.service.findFirst({
+          where: { platform: { in: platformAliases }, kind: "VIEWS", active: true },
         });
-        const likesService = await tx.service.findFirst({
-          where: { platform: targetPlatform, kind: "LIKES", active: true },
+        let likesService = await tx.service.findFirst({
+          where: { platform: { in: platformAliases }, kind: "LIKES", active: true },
         });
-        const commentsService = await tx.service.findFirst({
-          where: { platform: targetPlatform, kind: "COMMENTS", active: true },
+        let commentsService = await tx.service.findFirst({
+          where: { platform: { in: platformAliases }, kind: "COMMENTS", active: true },
         });
-        const sharesService = await tx.service.findFirst({
-          where: { platform: targetPlatform, kind: "OTHER", active: true },
+        let sharesService = await tx.service.findFirst({
+          where: { platform: { in: platformAliases }, kind: { in: ["OTHER", "SHARES"] }, active: true },
         });
+
+        // Resilient fallback for platforms with partial service catalogs (e.g. TikTok likes/views)
+        if (!viewsService) {
+          viewsService = likesService || await tx.service.findFirst({ where: { kind: "VIEWS", active: true } });
+        }
+        if (!likesService) {
+          likesService = viewsService || await tx.service.findFirst({ where: { kind: "LIKES", active: true } });
+        }
+        if (!commentsService) {
+          commentsService = likesService || viewsService;
+        }
+        if (!sharesService) {
+          sharesService = viewsService || likesService;
+        }
 
         // Create PackageRules for Views, Likes, Comments, Shares
         const viewsRule = viewsService ? await tx.packageRule.create({
@@ -4387,10 +4405,10 @@ export class PackagesService {
     const alloc = (pkg.allocationSnapshot as any) || {};
     const preset: AutopilotPreset = alloc.preset || AUTOPILOT_PRESETS.viral_push;
 
-    const viewsRule = pkg.rules.find((r) => r.service.kind === "VIEWS");
-    const likesRule = pkg.rules.find((r) => r.service.kind === "LIKES");
-    const commentsRule = pkg.rules.find((r) => r.service.kind === "COMMENTS");
-    const sharesRule = pkg.rules.find((r) => r.service.kind === "OTHER");
+    const viewsRule = pkg.rules.find((r) => r.service?.kind === "VIEWS") || pkg.rules[0];
+    const likesRule = pkg.rules.find((r) => r.service?.kind === "LIKES") || viewsRule || pkg.rules[0];
+    const commentsRule = pkg.rules.find((r) => r.service?.kind === "COMMENTS") || likesRule;
+    const sharesRule = pkg.rules.find((r) => r.service?.kind === "OTHER" || r.service?.kind === "SHARES") || viewsRule;
 
     const rulesMap = {
       views: viewsRule,
