@@ -122,7 +122,15 @@ const PLATFORMS: PlatformOption[] = [
 function getSafeImageUrl(url?: string | null): string {
   if (!url) return "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300";
   if (url.startsWith("/api/") || url.startsWith("data:")) return url;
-  if (url.includes("ytimg.com") || url.includes("images.unsplash.com")) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+      const h = parsed.hostname.toLowerCase();
+      if (h === "images.unsplash.com" || h.endsWith(".ytimg.com") || h === "ytimg.com") {
+        return url;
+      }
+    }
+  } catch {}
   return `/api/v1/packages/autopilot/proxy-image?url=${encodeURIComponent(url)}`;
 }
 
@@ -269,6 +277,7 @@ export default function AutopilotPage() {
   const [syncingPackageId, setSyncingPackageId] = useState<string | null>(null);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const activePlatform = useMemo(() => {
     return PLATFORMS.find((p) => p.id === selectedPlatform) || PLATFORMS[0];
@@ -290,6 +299,7 @@ export default function AutopilotPage() {
   useEffect(() => {
     const trimmed = handleInput.trim();
     if (!trimmed || trimmed.length < 2) {
+      if (abortControllerRef.current) abortControllerRef.current.abort();
       setDetectedProfile(null);
       setDetectedMedia(null);
       setDetectionError(null);
@@ -312,11 +322,18 @@ export default function AutopilotPage() {
   const triggerDetect = async (inputStr: string, platformHint?: string) => {
     const trimmed = inputStr.trim();
     if (!trimmed) {
+      if (abortControllerRef.current) abortControllerRef.current.abort();
       setDetectedProfile(null);
       setDetectedMedia(null);
       setDetectionError(null);
       return;
     }
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     setIsDetecting(true);
     setDetectionError(null);
@@ -332,8 +349,10 @@ export default function AutopilotPage() {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({ handle: trimmed, platform: platformHint }),
+          signal: controller.signal,
         });
       } catch (networkErr: any) {
+        if (networkErr.name === "AbortError") return;
         throw new Error(networkErr?.message || "Network error while connecting to preview service.");
       }
 
@@ -341,20 +360,20 @@ export default function AutopilotPage() {
         const data = await res.json();
         setDetectedProfile(data.profile || null);
         setDetectedMedia(data.latestMedia || null);
-        if (data.profile?.platform) {
-          setSelectedPlatform(data.profile.platform);
-        }
         return;
       }
 
       const errData = await res?.json().catch(() => null);
       throw new Error(errData?.message || "Could not detect public profile or recent uploads.");
     } catch (err: any) {
+      if (err.name === "AbortError") return;
       setDetectedProfile(null);
       setDetectedMedia(null);
       setDetectionError(err.message || "Failed to auto-detect handle");
     } finally {
-      setIsDetecting(false);
+      if (abortControllerRef.current === controller) {
+        setIsDetecting(false);
+      }
     }
   };
 
@@ -654,6 +673,7 @@ export default function AutopilotPage() {
                     <button
                       key={p.id}
                       type="button"
+                      aria-pressed={isSelected}
                       onClick={() => {
                         setSelectedPlatform(p.id);
                       }}
@@ -869,13 +889,6 @@ export default function AutopilotPage() {
                 <div className="text-[11px] text-fg-muted">Connecting to public platform feed</div>
               </div>
             ) : null}
-
-            {detectionError && (
-              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2.5">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
-                <span>{detectionError}</span>
-              </div>
-            )}
           </div>
         </div>
 
@@ -981,6 +994,7 @@ export default function AutopilotPage() {
                   <button
                     key={cnt}
                     type="button"
+                    aria-pressed={slotCount === cnt}
                     onClick={() => setSlotCount(cnt)}
                     className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all ${slotCount === cnt
                         ? "bg-[#D8EC8D]/25 dark:bg-[#D8EC8D]/20 text-emerald-900 dark:text-[#D8EC8D] border-emerald-500 dark:border-[#D8EC8D] shadow-sm font-extrabold"
@@ -1265,15 +1279,19 @@ export default function AutopilotPage() {
                                   <div className="text-xs font-bold text-fg truncate">
                                     Media: {slot.mediaKey}
                                   </div>
-                                  <a
-                                    href={getSafeLink(slot.targetUrl)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-[11px] text-sky-600 dark:text-sky-400 font-semibold hover:underline flex items-center gap-1 truncate"
-                                  >
-                                    <span>Open Post</span>
-                                    <ExternalLink className="w-3 h-3" />
-                                  </a>
+                                  {slot.targetUrl && getSafeLink(slot.targetUrl) !== "#" ? (
+                                    <a
+                                      href={getSafeLink(slot.targetUrl)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-[11px] text-sky-600 dark:text-sky-400 font-semibold hover:underline flex items-center gap-1 truncate"
+                                    >
+                                      <span>Open Post</span>
+                                      <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                  ) : (
+                                    <span className="text-[11px] text-fg-muted font-medium">Auto-detected post</span>
+                                  )}
                                 </div>
                               </div>
 
@@ -1306,7 +1324,13 @@ export default function AutopilotPage() {
                                           </div>
                                           <div className="text-[10px] text-fg-muted flex items-center gap-1">
                                             <Clock className="w-3 h-3" />
-                                            <span>Wave #{exec.seq} • {new Date(exec.executeAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            {(() => {
+                                              const d = exec.executeAt ? new Date(exec.executeAt) : null;
+                                              const timeStr = d && !isNaN(d.getTime())
+                                                ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                                : "Scheduled";
+                                              return <span>Wave #{exec.seq} • {timeStr}</span>;
+                                            })()}
                                           </div>
                                         </div>
                                         <div className="text-right">
