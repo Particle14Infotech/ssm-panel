@@ -20,7 +20,7 @@ interface SlotData {
   targetScrollY: number;
 }
 
-const SLOT_ORDER: CrownSlotId[] = ["hero", "steps", "services", "payments", "cta"];
+const SLOT_ORDER: CrownSlotId[] = ["hero", "steps", "services", "payments"];
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
