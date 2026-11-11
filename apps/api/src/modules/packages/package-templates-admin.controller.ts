@@ -176,6 +176,43 @@ export class PackageTemplatesAdminController {
     });
   }
 
+  @Delete(":id")
+  @ApiOperation({ summary: "Delete or Archive Package Template (Admin)" })
+  async deleteTemplate(@Param("id") id: string) {
+    const template = await this.prisma.packageTemplate.findUnique({
+      where: { id },
+      include: { tiers: true },
+    });
+    if (!template) {
+      throw new NotFoundException(`Template with ID ${id} not found.`);
+    }
+
+    const hasSales = template.tiers.some((t) => t.soldCount > 0);
+    if (hasSales) {
+      // Archive instead of hard delete to preserve historical integrity
+      return this.prisma.packageTemplate.update({
+        where: { id },
+        data: { active: false, archived: true },
+      });
+    }
+
+    return this.prisma.packageTemplate.delete({
+      where: { id },
+    });
+  }
+
+  @Post(":id/toggle-active")
+  @ApiOperation({ summary: "Toggle Package Template Active Status" })
+  async toggleActive(@Param("id") id: string) {
+    const template = await this.prisma.packageTemplate.findUnique({ where: { id } });
+    if (!template) throw new NotFoundException(`Template ${id} not found.`);
+
+    return this.prisma.packageTemplate.update({
+      where: { id },
+      data: { active: !template.active },
+    });
+  }
+
   @Post(":id/validate")
   @ApiOperation({ summary: "Validate Template for Publishing & Margin Previews" })
   async validateTemplate(@Param("id") id: string) {
@@ -411,6 +448,72 @@ export class PackageTemplatesAdminController {
           active: body.active,
         },
       });
+    });
+  }
+
+  @Delete(":id/tiers/:tierId")
+  @ApiOperation({ summary: "Delete or Deactivate Tier (Admin)" })
+  async deleteTier(
+    @Param("id") id: string,
+    @Param("tierId") tierId: string
+  ) {
+    const tier = await this.prisma.packageTemplateTier.findUnique({
+      where: { id: tierId },
+    });
+    if (!tier) throw new NotFoundException(`Tier ${tierId} not found.`);
+
+    if (tier.soldCount > 0) {
+      return this.prisma.packageTemplateTier.update({
+        where: { id: tierId },
+        data: { active: false },
+      });
+    }
+
+    return this.prisma.packageTemplateTier.delete({
+      where: { id: tierId },
+    });
+  }
+
+  @Post(":id/tiers/:tierId/items")
+  @ApiOperation({ summary: "Add Item to Tier (Admin)" })
+  async addItemToTier(
+    @Param("id") id: string,
+    @Param("tierId") tierId: string,
+    @Body()
+    body: {
+      serviceId: string;
+      quantity: number;
+      kind?: string;
+      allocationBp?: number;
+    }
+  ) {
+    if (!body.serviceId || !body.quantity || body.quantity <= 0) {
+      throw new BadRequestException("Service ID and positive quantity are required.");
+    }
+
+    return this.prisma.packageTemplateItem.create({
+      data: {
+        tierId,
+        serviceId: body.serviceId,
+        quantity: body.quantity,
+        kind: (body.kind as any) || "OTHER",
+        allocationBp: body.allocationBp || 0,
+      },
+      include: {
+        service: true,
+      },
+    });
+  }
+
+  @Delete(":id/tiers/:tierId/items/:itemId")
+  @ApiOperation({ summary: "Remove Item from Tier (Admin)" })
+  async removeItemFromTier(
+    @Param("id") id: string,
+    @Param("tierId") tierId: string,
+    @Param("itemId") itemId: string
+  ) {
+    return this.prisma.packageTemplateItem.delete({
+      where: { id: itemId },
     });
   }
 }

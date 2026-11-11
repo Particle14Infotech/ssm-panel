@@ -19,6 +19,7 @@ import {
   BarChart3,
   Settings,
   FileText,
+  Boxes,
 } from "lucide-react";
 
 import { BrandLogo } from "@/components/shared/BrandLogo";
@@ -54,6 +55,7 @@ export function AdminHeader() {
     { name: "Dashboard", href: "/admin/dashboard", icon: Layers },
     { name: "Orders Ledger", href: "/admin/orders", icon: ListOrdered },
     { name: "Service Matrix", href: "/admin/services", icon: Zap },
+    { name: "Combo Packages", href: "/admin/combos", icon: Boxes },
     { name: "Categories", href: "/admin/categories", icon: Tag },
     { name: "User Directory", href: "/admin/users", icon: Users },
     { name: "Wallets & Liability", href: "/admin/wallets", icon: CreditCard },
