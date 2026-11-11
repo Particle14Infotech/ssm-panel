@@ -367,22 +367,23 @@ export default function AutopilotPage() {
       // In local dev or simulation mode, provide instant verified creator preview
       if (process.env.NEXT_PUBLIC_SIMULATE_UPSTREAM_ORDERS === "true" || process.env.NODE_ENV !== "production") {
         const clean = inputStr.replace(/^@/, "").trim() || "creator";
-        const targetPlat = platformHint || selectedPlatform;
-        const simProfile = {
+        const targetPlat: SupportedAutopilotPlatform = (platformHint as SupportedAutopilotPlatform) || selectedPlatform;
+        const simProfile: DetectedProfile = {
           handle: `@${clean}`,
           displayName: clean.charAt(0).toUpperCase() + clean.slice(1),
           avatarUrl: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150`,
           platform: targetPlat,
-          followers: 142500,
-          verified: true,
         };
-        const simMedia = {
-          id: `media_${clean}_${Date.now()}`,
-          url: targetPlat === "YOUTUBE" ? `https://youtube.com/watch?v=dQw4w9WgXcQ` : `https://instagram.com/reel/C7xY9z0A`,
-          thumbnailUrl: `https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80`,
-          caption: `Latest drop from @${clean}! Auto-boost armed and waiting for new uploads.`,
-          publishedAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
+        const simMedia: DetectedMedia = {
           platform: targetPlat,
+          mediaKey: `media_${clean}_latest`,
+          url: targetPlat === "YOUTUBE" ? `https://youtube.com/watch?v=dQw4w9WgXcQ` : `https://instagram.com/reel/C7xY9z0A`,
+          title: `Latest drop from @${clean}! Auto-boost armed and waiting.`,
+          author: `@${clean}`,
+          publishedAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
+          thumbnailUrl: `https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80`,
+          mediaType: targetPlat === "YOUTUBE" ? "video" : "reel",
+          isLiveDetected: true,
         };
         setDetectedProfile(simProfile);
         setDetectedMedia(simMedia);
@@ -564,7 +565,7 @@ export default function AutopilotPage() {
           platform: selectedPlatform,
           handle: detectedProfile?.handle || handleInput,
           status: "ACTIVE",
-          reserveTotal: totalPrice,
+          reserveTotal: totalCost,
           createdAt: new Date().toISOString(),
           allocationSnapshot: {
             presetName: selectedPreset.name,
