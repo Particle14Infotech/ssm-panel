@@ -267,6 +267,7 @@ export default function AutopilotPage() {
 
   // Purchase & Packages List State
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
 
@@ -442,7 +443,7 @@ export default function AutopilotPage() {
   };
 
   // Purchase Autopilot
-  const handlePurchase = async () => {
+  const handleOpenConfirmModal = () => {
     if (!handleInput.trim()) {
       setPurchaseError("Please enter a creator handle or content link first.");
       return;
@@ -453,6 +454,11 @@ export default function AutopilotPage() {
       return;
     }
 
+    setPurchaseError(null);
+    setShowConfirmModal(true);
+  };
+
+  const handlePurchase = async () => {
     setIsSubmitting(true);
     setPurchaseError(null);
     setPurchaseSuccess(null);
@@ -483,6 +489,7 @@ export default function AutopilotPage() {
       });
 
       if (res && res.ok) {
+        setShowConfirmModal(false);
         setPurchaseSuccess(`🚀 Autopilot successfully activated for ${detectedProfile?.handle || handleInput}!`);
         showToast(`Autopilot activated for ${slotCount} uploads!`);
         if (refreshData) refreshData();
@@ -645,19 +652,35 @@ export default function AutopilotPage() {
         </div>
       </div>
 
-      {/* Guided Steps Header (Hidden on Mobile to save space, visible on Desktop) */}
-      <div className="hidden sm:grid grid-cols-3 gap-2 p-1 rounded-2xl bg-surface-raised border border-border text-center text-xs font-semibold">
-        <div className="py-2 px-2 rounded-xl bg-surface text-fg flex items-center justify-center gap-1.5 border border-border shadow-sm font-bold">
-          <span className="w-4 h-4 rounded-full bg-[#D8EC8D] text-black font-extrabold flex items-center justify-center text-[10px] shrink-0">1</span>
-          <span>Target Handle</span>
+      {/* Guided Steps Header */}
+      <div className="grid grid-cols-3 gap-2 p-1.5 rounded-2xl bg-surface-raised border border-border text-center text-xs font-semibold">
+        <div className={`py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 border transition-all ${
+          handleInput.trim()
+            ? "bg-emerald-500/10 text-emerald-800 dark:text-[#D8EC8D] border-emerald-500/30 font-bold"
+            : "bg-surface text-fg border-border shadow-sm font-bold"
+        }`}>
+          <span className={`w-4 h-4 rounded-full font-extrabold flex items-center justify-center text-[10px] shrink-0 ${
+            handleInput.trim() ? "bg-[#D8EC8D] text-black" : "bg-emerald-500 text-white"
+          }`}>
+            {handleInput.trim() ? "✓" : "1"}
+          </span>
+          <span className="truncate">1. Target Creator</span>
         </div>
-        <div className="py-2 px-2 rounded-xl text-fg-muted flex items-center justify-center gap-1.5">
-          <span className="w-4 h-4 rounded-full bg-surface border border-border text-fg-muted font-extrabold flex items-center justify-center text-[10px] shrink-0">2</span>
-          <span>Growth Recipe</span>
+        <div className={`py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 border transition-all ${
+          selectedPreset
+            ? "bg-surface text-fg border-border shadow-sm font-bold"
+            : "text-fg-muted border-transparent"
+        }`}>
+          <span className="w-4 h-4 rounded-full bg-[#D8EC8D] text-black font-extrabold flex items-center justify-center text-[10px] shrink-0">
+            2
+          </span>
+          <span className="truncate">2. Growth Recipe</span>
         </div>
-        <div className="py-2 px-2 rounded-xl text-fg-muted flex items-center justify-center gap-1.5">
-          <span className="w-4 h-4 rounded-full bg-surface border border-border text-fg-muted font-extrabold flex items-center justify-center text-[10px] shrink-0">3</span>
-          <span>Activate Slots</span>
+        <div className="py-2 px-2 rounded-xl bg-surface-raised text-fg-muted flex items-center justify-center gap-1.5 border border-transparent font-medium">
+          <span className="w-4 h-4 rounded-full bg-surface border border-border text-fg-muted font-extrabold flex items-center justify-center text-[10px] shrink-0">
+            3
+          </span>
+          <span className="truncate">3. Slots & Review</span>
         </div>
       </div>
 
@@ -1086,27 +1109,19 @@ export default function AutopilotPage() {
                   <button
                     type="button"
                     disabled={isSubmitting}
-                    onClick={handlePurchase}
+                    onClick={handleOpenConfirmModal}
                     className="flex-1 py-3.5 px-6 rounded-xl font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md bg-[#D8EC8D] text-black hover:brightness-105 active:scale-[0.99] cursor-pointer"
                   >
-                    {isSubmitting ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Activating Autopilot...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="w-4 h-4 fill-current text-black" />
-                        <span>Activate Autopilot (₹{formatIndianNumber(totalCost)})</span>
-                      </>
-                    )}
+                    <Zap className="w-4 h-4 fill-current text-black" />
+                    <span>Review & Confirm Autopilot (₹{formatIndianNumber(totalCost)})</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 ) : (
                   <Link
                     href={`/wallet?amount=${balanceShortfall}&redirect=/packages/autopilot`}
                     className="flex-1 py-3.5 px-6 rounded-xl font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md bg-emerald-500 hover:bg-emerald-400 text-white cursor-pointer"
                   >
-                    <span>Top Up ₹{formatIndianNumber(balanceShortfall)} to Wallet & Activate</span>
+                    <span>Top Up ₹{formatIndianNumber(balanceShortfall)} to Wallet & Review</span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 )}
@@ -1426,6 +1441,152 @@ export default function AutopilotPage() {
           ))}
         </div>
       </div>
+
+      {/* Review & Confirm Autopilot Modal */}
+      <AnimatePresence>
+        {showConfirmModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="w-full max-w-lg rounded-3xl bg-surface border border-border p-6 space-y-5 shadow-2xl"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-border">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-2xl bg-[#D8EC8D]/20 text-emerald-800 dark:text-[#D8EC8D] flex items-center justify-center border border-[#D8EC8D]/40">
+                    <Zap className="w-5 h-5 fill-current" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-fg">Confirm Autopilot Subscription</h4>
+                    <p className="text-xs text-fg-muted">Review package details before wallet deduction</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmModal(false)}
+                  className="p-1 rounded-lg text-fg-muted hover:text-fg"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Creator Card */}
+              <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-surface-raised border border-border">
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-surface border border-border shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={getSafeImageUrl(detectedProfile?.avatarUrl)}
+                    alt={detectedProfile?.handle || handleInput}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300";
+                    }}
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-fg text-sm truncate">{detectedProfile?.handle || handleInput}</span>
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-[#D8EC8D] shrink-0" />
+                  </div>
+                  <div className="text-xs text-fg-muted truncate">
+                    {detectedProfile?.displayName && detectedProfile.displayName.toLowerCase() !== (detectedProfile.handle || handleInput).replace(/^@/, "").toLowerCase()
+                      ? `${detectedProfile.displayName} • `
+                      : ""}
+                    {detectedProfile?.followerCount || `${activePlatform.label} Profile`}
+                  </div>
+                </div>
+              </div>
+
+              {/* Plan & Allocation Breakdown */}
+              <div className="p-4 rounded-2xl bg-surface-raised border border-border space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-fg-muted">Growth Recipe:</span>
+                  <span className="font-bold text-fg">{selectedPreset.name} (₹{selectedPreset.pricePerSlot} / upload)</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-fg-muted">Reserved Uploads:</span>
+                  <span className="font-bold text-fg">{slotCount} Posts</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-fg-muted">Drip Schedule:</span>
+                  <span className="font-medium text-fg-muted">{selectedPreset.pacingSummary}</span>
+                </div>
+                <div className="flex justify-between items-start pt-2 border-t border-border">
+                  <span className="text-fg-muted">Boosting Target:</span>
+                  <span className="font-semibold text-fg text-right max-w-[240px]">
+                    {seedCurrentPost && detectedMedia
+                      ? "Slot #1 starts on latest detected video; remaining slots wait for new uploads"
+                      : `All ${slotCount} slots wait and trigger only on your new uploads`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Financial Wallet Summary */}
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-fg-muted">Current Wallet Balance:</span>
+                  <span className="font-bold text-fg">₹{formatIndianNumber(userBalance)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-fg-muted font-medium">Autopilot Total ({slotCount} slots):</span>
+                  <span className="font-extrabold text-emerald-800 dark:text-[#D8EC8D] text-sm">
+                    - ₹{formatIndianNumber(totalCost)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-emerald-500/20">
+                  <span className="text-fg font-semibold">Remaining Wallet Balance:</span>
+                  <span className="font-extrabold text-fg text-sm">
+                    ₹{formatIndianNumber(Math.max(0, userBalance - totalCost))}
+                  </span>
+                </div>
+              </div>
+
+              {/* Refund Guarantee */}
+              <div className="flex items-center gap-2 text-[11px] text-fg-muted bg-surface-raised p-2.5 rounded-xl border border-border">
+                <RotateCcw className="w-3.5 h-3.5 text-emerald-600 dark:text-[#D8EC8D] shrink-0" />
+                <span><strong>100% Refundable</strong>: Cancel anytime to refund unconsumed slots back to your wallet immediately.</span>
+              </div>
+
+              {purchaseError && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs">
+                  {purchaseError}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 py-3 px-4 rounded-xl bg-surface-raised hover:bg-surface border border-border text-fg text-xs font-semibold transition-all cursor-pointer"
+                >
+                  Modify / Edit
+                </button>
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={handlePurchase}
+                  className="flex-1 py-3 px-4 rounded-xl bg-[#D8EC8D] hover:brightness-105 text-black text-xs font-extrabold tracking-wide uppercase transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Activating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-3.5 h-3.5 fill-current" />
+                      <span>Confirm & Pay ₹{formatIndianNumber(totalCost)}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Cancel Subscription Confirmation Modal */}
       <AnimatePresence>
