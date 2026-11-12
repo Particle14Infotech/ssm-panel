@@ -71,7 +71,7 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: data.usernameOrEmail,
+          email: email,
           password: data.password,
         }),
         signal: controller.signal,
@@ -91,7 +91,12 @@ export default function LoginPage() {
           }
         } else {
           const errorData = await res.json().catch(() => ({}));
-          setServerError(errorData.message || "Invalid email or password.");
+          setServerError(
+            errorData.message ||
+            (res.status >= 500
+              ? `Server error (${res.status}). Please try again momentarily.`
+              : "Invalid email or password.")
+          );
           return;
         }
       }
