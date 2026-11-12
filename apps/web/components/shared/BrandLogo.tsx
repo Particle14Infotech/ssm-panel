@@ -51,7 +51,7 @@ export function BrandLogo({
 
     if (withLink) {
       return (
-        <Link href={href} className="inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D8EC8D] rounded-lg">
+        <Link href={href} className="inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg">
           {content}
         </Link>
       );
@@ -74,7 +74,7 @@ export function BrandLogo({
 
     if (withLink) {
       return (
-        <Link href={href} className="inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D8EC8D] rounded-xl">
+        <Link href={href} className="inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl">
           {content}
         </Link>
       );
@@ -101,7 +101,7 @@ export function BrandLogo({
           {BRAND_NAME || "SMM PANEL"}
         </span>
         {showPulse && (
-          <span className="w-1.5 h-1.5 rounded-full bg-[#D8EC8D] animate-pulse shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0" />
         )}
       </div>
     </div>
@@ -109,7 +109,7 @@ export function BrandLogo({
 
   if (withLink) {
     return (
-      <Link href={href} className="group inline-flex items-center min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D8EC8D] rounded-xl">
+      <Link href={href} className="group inline-flex items-center min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl">
         {content}
       </Link>
     );

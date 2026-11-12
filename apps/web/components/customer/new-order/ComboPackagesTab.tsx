@@ -29,6 +29,7 @@ import {
   Flame,
   ArrowRight,
   Check,
+  X,
 } from "lucide-react";
 
 interface ComboPackagesTabProps {
@@ -80,7 +81,6 @@ export function ComboPackagesTab({
     try {
       const apiBase = getApiBase();
       const token = getAuthToken();
-      // Pass platform if present; if empty or ALL, fetch all active
       const url = platform && platform !== "ALL"
         ? `${apiBase}/packages/templates?platform=${encodeURIComponent(platform)}`
         : `${apiBase}/packages/templates`;
@@ -98,11 +98,9 @@ export function ComboPackagesTab({
       setTemplates(tmpls);
 
       if (tmpls.length > 0 && !selectedTemplateId) {
-        // Default to Reels Growth Packages if present, else first
         const reelsTmpl = tmpls.find((t) => t.slug?.includes("reels") || t.slug?.includes("growth")) || tmpls[0];
         setSelectedTemplateId(reelsTmpl.id);
         if (reelsTmpl.tiers && reelsTmpl.tiers.length > 0) {
-          // Default to middle tier (Tier 2 ₹3,999) if available, else first tier
           const tier2 = reelsTmpl.tiers.find((t: any) => t.name.includes("Tier 2")) || reelsTmpl.tiers[0];
           setSelectedTierId(tier2.id);
         }
@@ -131,6 +129,7 @@ export function ComboPackagesTab({
       raw.includes("/video/") ||
       raw.includes("tiktok.com") ||
       raw.includes("youtu.be") ||
+      raw.includes("youtube.com/watch") ||
       linkPreview?.kind === "REEL" ||
       linkPreview?.kind === "VIDEO";
 
@@ -169,7 +168,6 @@ export function ComboPackagesTab({
       };
     }
 
-    // Default for photo / regular post
     const matchTmpl = templates.find((t) => t.slug?.includes("engagement"));
     return {
       type: "POST",
@@ -195,7 +193,6 @@ export function ComboPackagesTab({
     }
   }, [aiSuggestion, hasAutoApplied]);
 
-  // Reset auto applied flag when targetUrl changes significantly
   useEffect(() => {
     setHasAutoApplied(false);
   }, [targetUrl]);
@@ -331,7 +328,6 @@ export function ComboPackagesTab({
     }
   };
 
-  // Currency Formatter
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -341,7 +337,6 @@ export function ComboPackagesTab({
     }).format(val);
   };
 
-  // Group templates into Reels Growth (multi-tier) vs Single Boost Packs
   const reelsGrowthTemplate = useMemo(() => {
     return templates.find((t) => t.slug?.includes("reels") || t.slug?.includes("growth"));
   }, [templates]);
@@ -352,17 +347,17 @@ export function ComboPackagesTab({
 
   return (
     <div className="space-y-6">
-      {/* Target URL Header Bar with Embedded Thumbnail Card */}
+      {/* Target URL Header Bar with Embedded Reusable LinkPreviewCard */}
       <GlassCard className="p-4 border-border space-y-3">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
           <div className="flex-1 w-full space-y-1">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-fg-2 flex items-center gap-1.5 uppercase tracking-wider">
-                <Boxes className="w-4 h-4 text-[#D8EC8D]" />
+                <Boxes className="w-4 h-4 text-accent" />
                 Target Social Media URL or Handle
               </label>
-              <span className="text-[10px] font-mono text-[#D8EC8D] flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
+              <span className="text-[10px] font-mono text-accent-text flex items-center gap-1 font-semibold">
+                <Sparkles className="w-3 h-3 text-accent" />
                 Auto-Thumbnail & Smart Suggestion
               </span>
             </div>
@@ -370,10 +365,10 @@ export function ComboPackagesTab({
               type="text"
               value={targetUrl}
               onChange={(e) => setTargetUrl(e.target.value)}
-              placeholder="e.g. https://www.instagram.com/reel/C7x9yz12345/ or @username"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-border text-fg placeholder-slate-400 text-xs font-mono focus:outline-none focus:border-[#D8EC8D]/60 focus:ring-1 focus:ring-[#D8EC8D]/50 transition-all"
+              placeholder="e.g. https://www.instagram.com/reel/Dfj3U2rpvA9/ or @username"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-surface-raised border border-border text-fg placeholder:text-fg-muted text-xs font-mono focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/40 transition-all"
             />
-            {/* Embedded Live Thumbnail & Metadata */}
+            {/* Embedded Live Reusable LinkPreviewCard (Real Thumbnail & Metadata) */}
             <LinkPreviewCard
               url={targetUrl}
               selectedPlatform={platform}
@@ -385,15 +380,15 @@ export function ComboPackagesTab({
             <button
               type="button"
               onClick={() => setShowCompareDrawer(true)}
-              className="px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-fg-2 font-semibold text-xs border border-border flex items-center gap-1.5 whitespace-nowrap"
+              className="px-3 py-2.5 rounded-xl bg-surface-raised hover:bg-surface text-fg-2 font-semibold text-xs border border-border flex items-center gap-1.5 whitespace-nowrap transition-colors"
             >
-              <Layers className="w-3.5 h-3.5 text-[#D8EC8D]" />
+              <Layers className="w-3.5 h-3.5 text-accent" />
               Compare Combos
             </button>
             <button
               type="button"
               onClick={fetchQuote}
-              className="px-5 py-2.5 rounded-xl bg-[#D8EC8D] text-black font-extrabold text-xs uppercase tracking-wider shadow-[0_0_15px_rgba(216,236,141,0.25)] hover:bg-[#cbe27a] whitespace-nowrap"
+              className="px-5 py-2.5 rounded-xl bg-accent text-on-accent font-extrabold text-xs uppercase tracking-wider shadow-sm hover:opacity-90 whitespace-nowrap transition-all"
             >
               Verify Target
             </button>
@@ -402,14 +397,14 @@ export function ComboPackagesTab({
 
         {/* AI SMART SUGGESTION BANNER */}
         {aiSuggestion && (
-          <div className="p-3 rounded-xl bg-gradient-to-r from-accent/20 via-accent/10 to-transparent border border-accent/30 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-1">
+          <div className="p-3 rounded-xl bg-accent/10 border border-accent/25 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-1">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-accent/20 border border-accent/40 flex items-center justify-center text-accent shrink-0">
-                <Sparkles className="w-4 h-4 text-[#D8EC8D]" />
+              <div className="w-8 h-8 rounded-lg bg-accent/20 border border-accent/30 flex items-center justify-center text-accent-text shrink-0">
+                <Sparkles className="w-4 h-4 text-accent" />
               </div>
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-accent text-black">
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-accent text-on-accent">
                     {aiSuggestion.badge}
                   </span>
                   <span className="text-xs font-extrabold text-fg">
@@ -427,7 +422,7 @@ export function ComboPackagesTab({
                 if (aiSuggestion.templateId) setSelectedTemplateId(aiSuggestion.templateId);
                 if (aiSuggestion.tierId) setSelectedTierId(aiSuggestion.tierId);
               }}
-              className="px-3 py-1.5 rounded-lg bg-[#D8EC8D] hover:bg-[#cbe27a] text-black text-xs font-extrabold shrink-0 flex items-center gap-1 shadow-sm"
+              className="px-3 py-1.5 rounded-lg bg-accent text-on-accent text-xs font-extrabold shrink-0 flex items-center gap-1 shadow-sm transition-opacity hover:opacity-90"
             >
               <Check className="w-3.5 h-3.5" />
               Applied
@@ -440,32 +435,32 @@ export function ComboPackagesTab({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Combo Cards Grid */}
         <div className="lg:col-span-8 space-y-6">
-          {/* SECTION 1: Instagram Reels Growth Packages (Reference Banner style: Tier 1 ₹2,999, Tier 2 ₹3,999, Tier 3 ₹4,999) */}
+          {/* SECTION 1: Instagram Reels Growth Packages (Tier 1 ₹2,999, Tier 2 ₹3,999, Tier 3 ₹4,999) */}
           {reelsGrowthTemplate && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-[#D8EC8D]/20 border border-[#D8EC8D]/30 flex items-center justify-center">
-                    <Flame className="w-4 h-4 text-[#D8EC8D]" />
+                  <div className="w-7 h-7 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center">
+                    <Flame className="w-4 h-4 text-accent" />
                   </div>
                   <div>
                     <h3 className="text-sm font-extrabold text-fg uppercase tracking-wider flex items-center gap-2">
                       {reelsGrowthTemplate.name}
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-red-500 to-pink-500 text-white font-extrabold font-mono">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/15 text-accent-text border border-accent/30 font-bold font-mono">
                         HOT ALGORITHM
                       </span>
                     </h3>
-                    <p className="text-[11px] text-slate-400">
-                      Multi-metric algorithmic ignition bundle (Views, Likes, Comments, Shares, Saves & Reposts)
+                    <p className="text-[11px] text-fg-muted">
+                      Full multi-metric algorithm ignition: Views, Likes, Comments, Shares, Saves & Reposts
                     </p>
                   </div>
                 </div>
-                <span className="text-[11px] text-slate-500 font-mono hidden sm:inline">
+                <span className="text-[11px] text-fg-muted font-mono hidden sm:inline">
                   Paced algorithmic delivery
                 </span>
               </div>
 
-              {/* Tiers List as High-Impact Pricing Cards */}
+              {/* Tiers List Cards */}
               <div className="space-y-3">
                 {reelsGrowthTemplate.tiers?.map((tier: any, idx: number) => {
                   const isSelected =
@@ -474,26 +469,17 @@ export function ComboPackagesTab({
                     aiSuggestion?.type === "REEL" &&
                     (aiSuggestion.tierId === tier.id || (!aiSuggestion.tierId && idx === 1));
 
-                  // Extract metrics if available
                   const viewsItem = tier.items?.find((i: any) => i.kind === "VIEWS");
                   const likesItem = tier.items?.find((i: any) => i.kind === "LIKES");
                   const commentsItem = tier.items?.find((i: any) => i.kind === "COMMENTS");
                   const sharesItem = tier.items?.find((i: any) => i.kind === "SHARES");
 
-                  // Fallback numbers matching reference image
                   const viewsDisplay = viewsItem ? `${(viewsItem.quantity / 1000000).toFixed(1)}M+` : idx === 0 ? "1.2M+" : idx === 1 ? "1.6M+" : "2M+";
                   const likesDisplay = likesItem ? `${(likesItem.quantity / 1000).toFixed(0)}K+` : idx === 0 ? "30K+" : idx === 1 ? "40K+" : "50K+";
                   const commentsDisplay = commentsItem ? `${commentsItem.quantity.toLocaleString()}+` : idx === 0 ? "2,400+" : idx === 1 ? "3,200+" : "4K+";
                   const sharesDisplay = sharesItem ? `${sharesItem.quantity.toLocaleString()}+` : idx === 0 ? "56,400+" : idx === 1 ? "75,200+" : "94K+";
                   const savesDisplay = idx === 0 ? "6K+" : idx === 1 ? "8K+" : "10K+";
                   const repostsDisplay = idx === 0 ? "4,500+" : idx === 1 ? "6K+" : "7,500+";
-
-                  const tierColorClass =
-                    idx === 0
-                      ? "from-rose-600 to-pink-600"
-                      : idx === 1
-                      ? "from-purple-600 to-indigo-600"
-                      : "from-blue-600 to-cyan-600";
 
                   return (
                     <div
@@ -502,70 +488,68 @@ export function ComboPackagesTab({
                         setSelectedTemplateId(reelsGrowthTemplate.id);
                         setSelectedTierId(tier.id);
                       }}
-                      className={`relative p-4 rounded-2xl border transition-all cursor-pointer overflow-hidden ${
+                      className={`relative p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer overflow-hidden ${
                         isSelected
-                          ? "bg-surface-raised border-[#D8EC8D] shadow-lg dark:shadow-[0_0_30px_rgba(216,236,141,0.2)] ring-2 ring-[#D8EC8D]/50"
-                          : "bg-surface border-border hover:border-slate-300 dark:hover:border-white/20"
+                          ? "bg-surface border-accent shadow-sm ring-1 ring-accent/40"
+                          : "bg-surface/70 border-border hover:border-border-control"
                       }`}
                     >
                       {/* AI Suggested Ribbon */}
                       {isAiRecommended && (
-                        <div className="absolute top-0 right-0 bg-[#D8EC8D] text-black font-extrabold text-[9px] px-3 py-0.5 rounded-bl-xl uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                        <div className="absolute top-0 right-0 bg-accent text-on-accent font-extrabold text-[9px] px-3 py-0.5 rounded-bl-xl uppercase tracking-wider flex items-center gap-1 shadow-sm">
                           <Sparkles className="w-3 h-3" />
                           AI Suggested Best Match
                         </div>
                       )}
 
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        {/* Left Ribbon / Badge */}
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-24 h-16 rounded-xl bg-gradient-to-br ${tierColorClass} text-white flex flex-col items-center justify-center p-2 text-center shadow-md shrink-0`}
-                          >
-                            <span className="text-[10px] font-bold tracking-wider uppercase opacity-90">Growth</span>
-                            <span className="text-xs font-black uppercase tracking-tight">Package</span>
-                            <span className="text-[9px] font-mono opacity-80">{tier.name.split("—")[0]}</span>
+                        {/* Left Badge & Metrics */}
+                        <div className="flex items-center gap-4">
+                          <div className="w-20 h-16 rounded-xl bg-surface-raised border border-border flex flex-col items-center justify-center p-2 text-center shrink-0">
+                            <span className="text-[10px] font-bold tracking-wider uppercase text-fg-muted">Growth</span>
+                            <span className="text-xs font-black uppercase tracking-tight text-fg">Package</span>
+                            <span className="text-[9px] font-mono text-accent-text font-bold">{tier.name.split("—")[0]}</span>
                           </div>
 
                           {/* Deliverables Matrix */}
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5 text-xs">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-5 gap-y-1.5 text-xs">
                             <div className="flex items-center gap-1.5">
-                              <Eye className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                              <Eye className="w-3.5 h-3.5 text-accent-text shrink-0" />
                               <span className="text-fg font-black">{viewsDisplay}</span>
                               <span className="text-[11px] text-fg-muted">Views</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <Heart className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                              <Heart className="w-3.5 h-3.5 text-accent-text shrink-0" />
                               <span className="text-fg font-black">{likesDisplay}</span>
                               <span className="text-[11px] text-fg-muted">Likes</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <MessageCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                              <MessageCircle className="w-3.5 h-3.5 text-accent-text shrink-0" />
                               <span className="text-fg font-black">{commentsDisplay}</span>
                               <span className="text-[11px] text-fg-muted">Comments</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <Share2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                              <Share2 className="w-3.5 h-3.5 text-accent-text shrink-0" />
                               <span className="text-fg font-black">{sharesDisplay}</span>
                               <span className="text-[11px] text-fg-muted">Shares</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <Bookmark className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <Bookmark className="w-3.5 h-3.5 text-accent-text shrink-0" />
                               <span className="text-fg font-black">{savesDisplay}</span>
                               <span className="text-[11px] text-fg-muted">Saves</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <Repeat className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                              <Repeat className="w-3.5 h-3.5 text-accent-text shrink-0" />
                               <span className="text-fg font-black">{repostsDisplay}</span>
                               <span className="text-[11px] text-fg-muted">Reposts</span>
                             </div>
                           </div>
                         </div>
 
-                        {/* Right: Price & Choose Button */}
-                        <div className="flex items-center justify-between md:justify-end gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-border">
+                        {/* Right: Price & Button */}
+                        <div className="flex items-center justify-between md:justify-end gap-4 pt-3 md:pt-0 border-t md:border-t-0 border-border">
                           <div className="text-left md:text-right">
-                            <div className="text-xl sm:text-2xl font-black text-[#D8EC8D] font-mono tracking-tight">
+                            <div className="text-xl sm:text-2xl font-black text-accent-text font-mono">
                               {formatCurrency(Number(tier.price))}
                             </div>
                             <span className="text-[10px] text-fg-muted font-mono block">
@@ -582,8 +566,8 @@ export function ComboPackagesTab({
                             }}
                             className={`px-4 py-2.5 rounded-xl font-extrabold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 whitespace-nowrap ${
                               isSelected
-                                ? "bg-[#D8EC8D] text-black shadow-[0_0_15px_rgba(216,236,141,0.35)]"
-                                : "bg-red-600 hover:bg-red-500 text-white shadow-md"
+                                ? "bg-accent text-on-accent shadow-sm"
+                                : "bg-surface-raised hover:bg-surface border border-border text-fg-2 hover:text-fg"
                             }`}
                           >
                             <span>{isSelected ? "Selected" : "Choose Package"}</span>
@@ -600,18 +584,18 @@ export function ComboPackagesTab({
 
           {/* SECTION 2: Other Multi-Metric Packs (Profile Power-Up ₹1,435, Engagement Boost ₹1,235) */}
           <div className="space-y-3 pt-2">
-            <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#D8EC8D]" />
+            <h3 className="text-xs font-extrabold text-fg-muted uppercase tracking-wider flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-accent" />
               Targeted Engagement & Profile Combos
             </h3>
 
             {isLoadingTemplates ? (
-              <div className="p-8 text-center text-slate-400 font-mono text-xs flex items-center justify-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-[#D8EC8D]" />
+              <div className="p-8 text-center text-fg-muted font-mono text-xs flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-accent" />
                 Loading packages...
               </div>
             ) : otherTemplates.length === 0 ? (
-              <p className="text-xs text-slate-500 italic">No additional combo packs configured.</p>
+              <p className="text-xs text-fg-muted italic">No additional combo packs configured.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {otherTemplates.map((tmpl) => {
@@ -630,12 +614,12 @@ export function ComboPackagesTab({
                       }}
                       className={`relative p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
                         isSelected
-                          ? "bg-surface-raised border-[#D8EC8D] shadow-md dark:shadow-[0_0_25px_rgba(216,236,141,0.15)] ring-1 ring-[#D8EC8D]/50"
-                          : "bg-surface border-border hover:border-slate-300 dark:hover:border-white/20"
+                          ? "bg-surface border-accent shadow-sm ring-1 ring-accent/40"
+                          : "bg-surface/70 border-border hover:border-border-control"
                       }`}
                     >
                       {isAiRecommended && (
-                        <div className="absolute top-0 right-0 bg-[#D8EC8D] text-black font-extrabold text-[9px] px-2.5 py-0.5 rounded-bl-xl uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                        <div className="absolute top-0 right-0 bg-accent text-on-accent font-extrabold text-[9px] px-2.5 py-0.5 rounded-bl-xl uppercase tracking-wider flex items-center gap-1 shadow-sm">
                           <Sparkles className="w-3 h-3" />
                           AI Suggested
                         </div>
@@ -646,20 +630,20 @@ export function ComboPackagesTab({
                           <div>
                             <div className="flex items-center gap-2">
                               {tmpl.slug?.includes("profile") ? (
-                                <Users className="w-4 h-4 text-[#D8EC8D]" />
+                                <Users className="w-4 h-4 text-accent-text" />
                               ) : (
-                                <Zap className="w-4 h-4 text-[#D8EC8D]" />
+                                <Zap className="w-4 h-4 text-accent-text" />
                               )}
                               <h4 className="text-sm font-extrabold text-fg uppercase tracking-wider">
                                 {tmpl.name}
                               </h4>
                             </div>
-                            <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
+                            <p className="text-[11px] text-fg-muted mt-0.5 line-clamp-1">
                               {tmpl.description || "Multi-metric engagement bundle"}
                             </p>
                           </div>
                           {tmpl.badge && (
-                            <span className="px-2 py-0.5 rounded-full bg-accent/10 text-[#D8EC8D] text-[10px] font-bold border border-accent/30 uppercase tracking-wider shrink-0">
+                            <span className="px-2 py-0.5 rounded-full bg-accent/15 text-accent-text text-[10px] font-bold border border-accent/30 uppercase tracking-wider shrink-0">
                               {tmpl.badge}
                             </span>
                           )}
@@ -671,13 +655,13 @@ export function ComboPackagesTab({
                             <div key={it.id} className="flex items-center justify-between text-xs">
                               <span className="flex items-center gap-2">
                                 {it.kind === "FOLLOWERS" ? (
-                                  <Users className="w-3.5 h-3.5 text-[#D8EC8D]" />
+                                  <Users className="w-3.5 h-3.5 text-accent-text" />
                                 ) : it.kind === "LIKES" ? (
-                                  <Heart className="w-3.5 h-3.5 text-pink-400" />
+                                  <Heart className="w-3.5 h-3.5 text-accent-text" />
                                 ) : it.kind === "COMMENTS" ? (
-                                  <MessageCircle className="w-3.5 h-3.5 text-amber-400" />
+                                  <MessageCircle className="w-3.5 h-3.5 text-accent-text" />
                                 ) : (
-                                  <Eye className="w-3.5 h-3.5 text-blue-400" />
+                                  <Eye className="w-3.5 h-3.5 text-accent-text" />
                                 )}
                                 <span className="font-bold text-fg">{it.quantity.toLocaleString()}</span>
                                 <span className="text-fg-muted">{it.serviceName || it.kind}</span>
@@ -686,8 +670,8 @@ export function ComboPackagesTab({
                           ))}
                         </div>
 
-                        <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono pt-1">
-                          <Clock className="w-3 h-3 text-[#D8EC8D]" />
+                        <div className="flex items-center gap-1.5 text-[10px] text-fg-muted font-mono pt-1">
+                          <Clock className="w-3 h-3 text-accent" />
                           <span>Paced Delivery over {activeTier?.durationDays || 5} Days</span>
                         </div>
                       </div>
@@ -695,7 +679,7 @@ export function ComboPackagesTab({
                       {/* Footer */}
                       <div className="pt-4 mt-3 border-t border-border flex items-center justify-between">
                         <div>
-                          <div className="text-lg font-extrabold text-[#D8EC8D] font-mono">
+                          <div className="text-lg font-extrabold text-accent-text font-mono">
                             {formatCurrency(Number(activeTier?.price || 0))}
                           </div>
                         </div>
@@ -709,8 +693,8 @@ export function ComboPackagesTab({
                           }}
                           className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all ${
                             isSelected
-                              ? "bg-[#D8EC8D] text-black shadow-md"
-                              : "bg-surface-raised hover:bg-surface-elevated text-fg-2 border border-border"
+                              ? "bg-accent text-on-accent shadow-sm"
+                              : "bg-surface-raised hover:bg-surface text-fg-2 border border-border"
                           }`}
                         >
                           {isSelected ? "Selected" : "Choose"}
@@ -728,7 +712,7 @@ export function ComboPackagesTab({
         <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
           <GlassCard className="p-5 border-border space-y-4">
             <h4 className="text-xs font-bold text-fg uppercase tracking-wider flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#D8EC8D]" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-accent" />
               Combo Order Summary
             </h4>
 
@@ -740,7 +724,7 @@ export function ComboPackagesTab({
               <p className="text-fg font-extrabold text-sm">{selectedTemplate?.name || "None"}</p>
               <div className="flex items-center justify-between text-[11px] text-fg-2 font-mono">
                 <span>{selectedTier?.name || "Standard Tier"}</span>
-                <span className="text-[#D8EC8D] font-bold">
+                <span className="text-accent-text font-bold">
                   {selectedTier ? formatCurrency(Number(selectedTier.price)) : "—"}
                 </span>
               </div>
@@ -754,21 +738,21 @@ export function ComboPackagesTab({
               <span className="absolute top-2 left-2 text-[10px] font-mono text-fg-muted uppercase">
                 Algorithmic Wave Curve
               </span>
-              <svg className="w-full h-16" viewBox="0 0 300 80" preserveAspectRatio="none">
+              <svg className="w-full h-16 text-accent" viewBox="0 0 300 80" preserveAspectRatio="none">
                 <defs>
-                  <linearGradient id="neonWave" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#D8EC8D" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#D8EC8D" stopOpacity="0.0" />
+                  <linearGradient id="neonWaveCombo" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="currentColor" stopOpacity="0.25" />
+                    <stop offset="100%" stopColor="currentColor" stopOpacity="0.0" />
                   </linearGradient>
                 </defs>
                 <path
                   d="M 0 60 Q 50 10, 100 45 T 200 20 T 300 55 L 300 80 L 0 80 Z"
-                  fill="url(#neonWave)"
+                  fill="url(#neonWaveCombo)"
                 />
                 <path
                   d="M 0 60 Q 50 10, 100 45 T 200 20 T 300 55"
                   fill="none"
-                  stroke="#D8EC8D"
+                  stroke="currentColor"
                   strokeWidth="2.5"
                 />
               </svg>
@@ -781,20 +765,20 @@ export function ComboPackagesTab({
                 <span className="font-mono">{formatCurrency(quoteData?.basePrice || selectedTier?.price || 0)}</span>
               </div>
               {quoteData?.discountAmount > 0 && (
-                <div className="flex justify-between text-emerald-400">
+                <div className="flex justify-between text-emerald-500 font-semibold">
                   <span>Coupon Discount:</span>
                   <span className="font-mono">-{formatCurrency(quoteData.discountAmount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm font-black text-fg pt-2 border-t border-border">
                 <span>Total Charge:</span>
-                <span className="font-mono text-base text-[#D8EC8D]">
+                <span className="font-mono text-base text-accent-text">
                   {formatCurrency(quoteData?.totalCharge || selectedTier?.price || 0)}
                 </span>
               </div>
               <div className="flex justify-between text-[11px] text-fg-muted font-mono">
                 <span>Wallet Balance:</span>
-                <span className={walletBalance >= (quoteData?.totalCharge || selectedTier?.price || 0) ? "text-emerald-400" : "text-red-400"}>
+                <span className={walletBalance >= (quoteData?.totalCharge || selectedTier?.price || 0) ? "text-emerald-500 font-semibold" : "text-red-500 font-semibold"}>
                   {formatCurrency(walletBalance)}
                 </span>
               </div>
@@ -802,13 +786,13 @@ export function ComboPackagesTab({
 
             {/* Error alerts */}
             {quoteError && (
-              <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-1.5">
+              <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs flex items-center gap-1.5">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>{quoteError}</span>
               </div>
             )}
             {orderError && (
-              <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-1.5">
+              <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs flex items-center gap-1.5">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>{orderError}</span>
               </div>
@@ -820,7 +804,7 @@ export function ComboPackagesTab({
                 type="checkbox"
                 checked={consentChecked}
                 onChange={(e) => setConsentChecked(e.target.checked)}
-                className="mt-0.5 rounded border-border text-[#D8EC8D] focus:ring-accent"
+                className="mt-0.5 rounded border-border text-accent focus:ring-accent"
               />
               <span className="text-[11px] text-fg-muted leading-tight">
                 I understand this combo executes on an automated multi-day pacing schedule to emulate natural organic growth.
@@ -835,7 +819,7 @@ export function ComboPackagesTab({
               className={`w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
                 isSubmitting || isQuoting || !targetUrl.trim()
                   ? "bg-surface-raised text-fg-muted cursor-not-allowed border border-border"
-                  : "bg-[#D8EC8D] hover:bg-[#cbe27a] text-black shadow-[0_0_20px_rgba(216,236,141,0.35)]"
+                  : "bg-accent text-on-accent hover:opacity-90 shadow-sm"
               }`}
             >
               {isSubmitting ? (
@@ -853,6 +837,212 @@ export function ComboPackagesTab({
           </GlassCard>
         </div>
       </div>
+
+      {/* COMPARE COMBOS MODAL */}
+      {showCompareDrawer && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl max-h-[90vh] bg-surface border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-border bg-surface-raised">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center">
+                  <Layers className="w-4 h-4 text-accent" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-fg uppercase tracking-wider">
+                    Compare Combo Growth Packages
+                  </h3>
+                  <p className="text-[11px] text-fg-muted">
+                    Full multi-metric comparison of deliverables, algorithmic pacing, and pricing.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCompareDrawer(false)}
+                className="p-1.5 rounded-lg hover:bg-surface text-fg-muted hover:text-fg transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body: Comparison Grid */}
+            <div className="p-5 overflow-y-auto space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Reels Tier 1 */}
+                <div className="p-4 rounded-xl bg-surface-raised border border-border flex flex-col justify-between space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-surface border border-border text-fg-muted font-bold">
+                        Tier 1 — Starter
+                      </span>
+                      <span className="text-xs font-mono font-bold text-fg-muted">7 Days</span>
+                    </div>
+                    <div className="text-xl font-black text-accent-text font-mono">₹2,999</div>
+                    <ul className="text-xs space-y-1.5 pt-2 border-t border-border text-fg-2">
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Views</span>
+                        <span className="font-bold text-fg">1.2M+</span>
+                      </li>
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Likes</span>
+                        <span className="font-bold text-fg">30,000+</span>
+                      </li>
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Comments</span>
+                        <span className="font-bold text-fg">2,400+</span>
+                      </li>
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Shares</span>
+                        <span className="font-bold text-fg">56,400+</span>
+                      </li>
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Saves</span>
+                        <span className="font-bold text-fg">6,000+</span>
+                      </li>
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Reposts</span>
+                        <span className="font-bold text-fg">4,500+</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (reelsGrowthTemplate) {
+                        setSelectedTemplateId(reelsGrowthTemplate.id);
+                        if (reelsGrowthTemplate.tiers?.[0]) setSelectedTierId(reelsGrowthTemplate.tiers[0].id);
+                      }
+                      setShowCompareDrawer(false);
+                    }}
+                    className="w-full py-2 rounded-lg bg-surface hover:bg-surface-elevated text-fg font-extrabold text-xs border border-border transition-colors"
+                  >
+                    Select Tier 1
+                  </button>
+                </div>
+
+                {/* Reels Tier 2 (Highlighted) */}
+                <div className="p-4 rounded-xl bg-surface border-2 border-accent relative flex flex-col justify-between space-y-3 shadow-md">
+                  <div className="absolute -top-2.5 right-4 bg-accent text-on-accent text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow-sm">
+                    Most Popular
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-accent/15 border border-accent/30 text-accent-text font-bold">
+                        Tier 2 — Viral Push
+                      </span>
+                      <span className="text-xs font-mono font-bold text-fg-muted">7 Days</span>
+                    </div>
+                    <div className="text-xl font-black text-accent-text font-mono">₹3,999</div>
+                    <ul className="text-xs space-y-1.5 pt-2 border-t border-border text-fg-2">
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Views</span>
+                        <span className="font-bold text-fg">1.6M+</span>
+                      </li>
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Likes</span>
+                        <span className="font-bold text-fg">40,000+</span>
+                      </li>
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Comments</span>
+                        <span className="font-bold text-fg">3,200+</span>
+                      </li>
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Shares</span>
+                        <span className="font-bold text-fg">75,200+</span>
+                      </li>
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Saves</span>
+                        <span className="font-bold text-fg">8,000+</span>
+                      </li>
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Reposts</span>
+                        <span className="font-bold text-fg">6,000+</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (reelsGrowthTemplate) {
+                        setSelectedTemplateId(reelsGrowthTemplate.id);
+                        if (reelsGrowthTemplate.tiers?.[1]) setSelectedTierId(reelsGrowthTemplate.tiers[1].id);
+                      }
+                      setShowCompareDrawer(false);
+                    }}
+                    className="w-full py-2 rounded-lg bg-accent text-on-accent font-black text-xs hover:opacity-90 shadow-sm transition-all"
+                  >
+                    Select Tier 2
+                  </button>
+                </div>
+
+                {/* Reels Tier 3 */}
+                <div className="p-4 rounded-xl bg-surface-raised border border-border flex flex-col justify-between space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-surface border border-border text-fg-muted font-bold">
+                        Tier 3 — Mega Explosive
+                      </span>
+                      <span className="text-xs font-mono font-bold text-fg-muted">10 Days</span>
+                    </div>
+                    <div className="text-xl font-black text-accent-text font-mono">₹4,999</div>
+                    <ul className="text-xs space-y-1.5 pt-2 border-t border-border text-fg-2">
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Views</span>
+                        <span className="font-bold text-fg">2.0M+</span>
+                      </li>
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Likes</span>
+                        <span className="font-bold text-fg">50,000+</span>
+                      </li>
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Comments</span>
+                        <span className="font-bold text-fg">4,000+</span>
+                      </li>
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Shares</span>
+                        <span className="font-bold text-fg">94,000+</span>
+                      </li>
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Saves</span>
+                        <span className="font-bold text-fg">10,000+</span>
+                      </li>
+                      <li className="flex items-center justify-between">
+                        <span className="text-fg-muted">Reposts</span>
+                        <span className="font-bold text-fg">7,500+</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (reelsGrowthTemplate) {
+                        setSelectedTemplateId(reelsGrowthTemplate.id);
+                        if (reelsGrowthTemplate.tiers?.[2]) setSelectedTierId(reelsGrowthTemplate.tiers[2].id);
+                      }
+                      setShowCompareDrawer(false);
+                    }}
+                    className="w-full py-2 rounded-lg bg-surface hover:bg-surface-elevated text-fg font-extrabold text-xs border border-border transition-colors"
+                  >
+                    Select Tier 3
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end p-4 border-t border-border bg-surface-raised">
+              <button
+                type="button"
+                onClick={() => setShowCompareDrawer(false)}
+                className="px-4 py-2 rounded-xl bg-surface hover:bg-surface-elevated text-fg font-extrabold text-xs border border-border transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

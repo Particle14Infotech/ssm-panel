@@ -1230,6 +1230,7 @@ export class LinkPreviewService {
               setHeader("Content-Type", res.headers["content-type"] || "image/jpeg");
               setHeader("Cache-Control", "public, max-age=86400");
               setHeader("Access-Control-Allow-Origin", "*");
+              setHeader("Cross-Origin-Resource-Policy", "cross-origin");
 
               const target = rawRes;
               if (target && typeof target.write === "function") {

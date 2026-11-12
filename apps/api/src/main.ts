@@ -70,7 +70,11 @@ async function bootstrap() {
     });
   });
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    })
+  );
   app.setGlobalPrefix("api/v1");
 
   // Global Exception Envelope

@@ -482,12 +482,12 @@ export default function AdminCombosPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent">
-              <Boxes className="w-5 h-5 text-[#D8EC8D]" />
+              <Boxes className="w-5 h-5 text-accent" />
             </div>
             <div>
               <h1 className="text-xl font-extrabold text-fg tracking-tight flex items-center gap-2">
                 Combo Packages Matrix
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-[#D8EC8D] font-mono font-bold">
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-accent-text font-mono font-bold">
                   ADMIN RESTRICTED
                 </span>
               </h1>
@@ -513,7 +513,7 @@ export default function AdminCombosPage() {
               resetForms();
               setShowCreateModal(true);
             }}
-            className="px-4 py-2 rounded-xl bg-[#D8EC8D] hover:bg-[#cbe27a] text-black font-extrabold text-xs flex items-center gap-1.5 shadow-[0_0_15px_rgba(216,236,141,0.25)] transition-all"
+            className="px-4 py-2 rounded-xl bg-accent hover:opacity-90 text-on-accent font-extrabold text-xs flex items-center gap-1.5 shadow-sm transition-all"
           >
             <PlusCircle className="w-4 h-4" />
             Create Combo Plan
@@ -549,7 +549,7 @@ export default function AdminCombosPage() {
         </div>
         <div className="p-4 rounded-xl bg-surface border border-border space-y-1">
           <span className="text-[11px] font-mono text-fg-muted uppercase tracking-wider">Total Tiers Configured</span>
-          <div className="text-2xl font-black text-[#D8EC8D] font-mono">
+          <div className="text-2xl font-black text-accent-text font-mono">
             {templates.reduce((acc, t) => acc + (t.tiers?.length || 0), 0)}
           </div>
         </div>
@@ -569,7 +569,7 @@ export default function AdminCombosPage() {
               onClick={() => setSelectedPlatform(plat)}
               className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all ${
                 selectedPlatform === plat
-                  ? "bg-[#D8EC8D] text-black shadow-[0_0_10px_rgba(216,236,141,0.2)]"
+                  ? "bg-accent text-on-accent shadow-sm"
                   : "bg-surface-raised text-fg-2 hover:bg-surface-elevated border border-border"
               }`}
             >
@@ -594,7 +594,7 @@ export default function AdminCombosPage() {
       {/* Templates List Cards */}
       {isLoading ? (
         <div className="p-16 text-center text-fg-muted font-mono text-xs flex items-center justify-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin text-[#D8EC8D]" />
+          <Loader2 className="w-4 h-4 animate-spin text-accent" />
           Loading combo packages matrix...
         </div>
       ) : filteredTemplates.length === 0 ? (
@@ -622,7 +622,7 @@ export default function AdminCombosPage() {
                         {tmpl.platform}
                       </span>
                       {tmpl.badge && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent/10 border border-accent/25 text-[#D8EC8D] uppercase">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-accent-text uppercase">
                           {tmpl.badge}
                         </span>
                       )}
@@ -657,12 +657,12 @@ export default function AdminCombosPage() {
                 <div className="space-y-2 pt-2 border-t border-border">
                   <div className="flex items-center justify-between text-xs text-fg-muted">
                     <span className="font-semibold text-fg-2 flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-[#D8EC8D]" />
+                      <Layers className="w-3.5 h-3.5 text-accent" />
                       Configured Tiers ({tmpl.tiers?.length || 0})
                     </span>
                     <button
                       onClick={() => openTiersModal(tmpl)}
-                      className="text-[#D8EC8D] hover:underline text-[11px] font-semibold"
+                      className="text-accent-text hover:underline text-[11px] font-semibold"
                     >
                       Manage Tiers & Services →
                     </button>
@@ -677,7 +677,7 @@ export default function AdminCombosPage() {
                         >
                           <div className="flex items-center justify-between">
                             <span className="text-[11px] font-bold text-fg truncate">{tier.name}</span>
-                            <span className="text-[11px] font-mono font-extrabold text-[#D8EC8D]">
+                            <span className="text-[11px] font-mono font-extrabold text-accent-text">
                               {formatCurrency(Number(tier.price))}
                             </span>
                           </div>
@@ -718,11 +718,11 @@ export default function AdminCombosPage() {
 
       {/* CREATE MODAL */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-lg bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between p-4 border-b border-border">
               <h2 className="text-base font-extrabold text-fg flex items-center gap-2">
-                <PlusCircle className="w-4 h-4 text-[#D8EC8D]" />
+                <PlusCircle className="w-4 h-4 text-accent" />
                 Create New Combo Package
               </h2>
               <button
@@ -824,7 +824,7 @@ export default function AdminCombosPage() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-4 py-2 rounded-xl bg-[#D8EC8D] hover:bg-[#cbe27a] text-black font-extrabold text-xs flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-accent hover:opacity-90 text-on-accent font-extrabold text-xs flex items-center gap-1.5 shadow-sm transition-all"
                 >
                   {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Create Plan
@@ -837,11 +837,11 @@ export default function AdminCombosPage() {
 
       {/* EDIT MODAL */}
       {showEditModal && activeTemplate && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-lg bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between p-4 border-b border-border">
               <h2 className="text-base font-extrabold text-fg flex items-center gap-2">
-                <Edit2 className="w-4 h-4 text-[#D8EC8D]" />
+                <Edit2 className="w-4 h-4 text-accent" />
                 Edit Plan: {activeTemplate.name}
               </h2>
               <button
@@ -905,7 +905,7 @@ export default function AdminCombosPage() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-4 py-2 rounded-xl bg-[#D8EC8D] hover:bg-[#cbe27a] text-black font-extrabold text-xs flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-accent hover:opacity-90 text-on-accent font-extrabold text-xs flex items-center gap-1.5 shadow-sm transition-all"
                 >
                   {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Save Changes
@@ -918,13 +918,13 @@ export default function AdminCombosPage() {
 
       {/* MANAGE TIERS & BUNDLED SERVICES MODAL */}
       {showTiersModal && activeTemplate && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-4xl max-h-[90vh] bg-surface border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-border bg-surface-raised">
               <div>
                 <h2 className="text-base font-extrabold text-fg flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-[#D8EC8D]" />
+                  <Layers className="w-4 h-4 text-accent" />
                   Tiers & Bundled Services: {activeTemplate.name}
                 </h2>
                 <p className="text-xs text-fg-muted font-mono">
@@ -944,7 +944,7 @@ export default function AdminCombosPage() {
               {/* Existing Tiers Section */}
               <div className="space-y-4">
                 <h3 className="text-xs font-extrabold text-fg uppercase tracking-wider flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-[#D8EC8D]" />
+                  <Tag className="w-4 h-4 text-accent" />
                   Existing Package Tiers
                 </h3>
 
@@ -955,7 +955,7 @@ export default function AdminCombosPage() {
                         key={tier.id}
                         className={`p-4 rounded-xl border transition-all ${
                           selectedTierForItems === tier.id
-                            ? "bg-surface-raised border-[#D8EC8D]/60 ring-1 ring-[#D8EC8D]/30"
+                            ? "bg-surface-raised border-accent ring-1 ring-accent/30"
                             : "bg-surface border-border"
                         }`}
                       >
@@ -963,7 +963,7 @@ export default function AdminCombosPage() {
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-black text-fg">{tier.name}</span>
-                              <span className="text-sm font-mono font-extrabold text-[#D8EC8D]">
+                              <span className="text-sm font-mono font-extrabold text-accent-text">
                                 {formatCurrency(Number(tier.price))}
                               </span>
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface border border-border text-fg-muted font-mono">
@@ -980,7 +980,7 @@ export default function AdminCombosPage() {
                               onClick={() => setSelectedTierForItems(tier.id)}
                               className={`px-3 py-1 rounded-lg text-xs font-bold border transition-colors ${
                                 selectedTierForItems === tier.id
-                                  ? "bg-[#D8EC8D] text-black border-[#D8EC8D]"
+                                  ? "bg-accent text-on-accent border-accent"
                                   : "bg-surface text-fg-2 border-border hover:bg-surface-elevated"
                               }`}
                             >
@@ -1009,7 +1009,7 @@ export default function AdminCombosPage() {
                                   className="flex items-center justify-between p-2 rounded-lg bg-surface border border-border text-xs"
                                 >
                                   <div className="flex items-center gap-2">
-                                    <span className="font-mono font-extrabold text-[#D8EC8D]">
+                                    <span className="font-mono font-extrabold text-accent-text">
                                       {it.quantity.toLocaleString()}
                                     </span>
                                     <span className="text-fg-2 truncate max-w-[200px]">
@@ -1034,7 +1034,7 @@ export default function AdminCombosPage() {
                         {/* Add Item form inside this Tier if selected */}
                         {selectedTierForItems === tier.id && (
                           <div className="mt-4 pt-3 border-t border-border bg-surface/40 p-3 rounded-lg space-y-3">
-                            <span className="text-xs font-bold text-[#D8EC8D] flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-accent-text flex items-center gap-1.5">
                               <Plus className="w-3.5 h-3.5" />
                               Add Bundled Service to {tier.name}
                             </span>
@@ -1082,7 +1082,7 @@ export default function AdminCombosPage() {
                                 type="button"
                                 disabled={isAddingItem || !newItemServiceId || !newItemQty}
                                 onClick={() => handleAddItemToTier(tier.id)}
-                                className="px-3 py-1 rounded-lg bg-[#D8EC8D] text-black font-extrabold text-xs flex items-center gap-1"
+                                className="px-3 py-1 rounded-lg bg-accent text-on-accent font-extrabold text-xs flex items-center gap-1 hover:opacity-90 shadow-sm"
                               >
                                 {isAddingItem && <Loader2 className="w-3 h-3 animate-spin" />}
                                 Add to Tier
@@ -1101,7 +1101,7 @@ export default function AdminCombosPage() {
               {/* Add New Tier Form */}
               <div className="p-4 rounded-xl bg-surface-raised border border-border space-y-3">
                 <h4 className="text-xs font-extrabold text-fg uppercase tracking-wider flex items-center gap-2">
-                  <PlusCircle className="w-4 h-4 text-[#D8EC8D]" />
+                  <PlusCircle className="w-4 h-4 text-accent" />
                   Add New Tier to this Plan
                 </h4>
                 <form onSubmit={handleAddTier} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
@@ -1142,7 +1142,7 @@ export default function AdminCombosPage() {
                     <button
                       type="submit"
                       disabled={isAddingTier}
-                      className="w-full px-3 py-2 rounded-lg bg-[#D8EC8D] text-black font-extrabold text-xs flex items-center justify-center gap-1.5"
+                      className="w-full px-3 py-2 rounded-lg bg-accent text-on-accent font-extrabold text-xs flex items-center justify-center gap-1.5 hover:opacity-90 shadow-sm"
                     >
                       {isAddingTier && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                       Add Tier

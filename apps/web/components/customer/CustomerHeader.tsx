@@ -60,10 +60,9 @@ export function CustomerHeader() {
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Mobile Brand Logo & Title */}
+          {/* Mobile Brand Logo & Title — always show name */}
           <div className="lg:hidden flex items-center shrink-0">
-            <BrandLogo variant="icon" size={28} withLink href="/dashboard" className="sm:hidden" />
-            <BrandLogo variant="combined" size={26} withLink href="/dashboard" className="hidden sm:flex" />
+            <BrandLogo variant="combined" size={26} withLink href="/dashboard" textClassName="text-sm sm:text-base" />
           </div>
 
           {/* Quick Search */}
