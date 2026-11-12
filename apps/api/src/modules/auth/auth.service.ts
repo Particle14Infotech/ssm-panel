@@ -228,6 +228,11 @@ export class AuthService {
       return recordFailedAttempt();
     }
 
+    // Security lockdown: Only the sole configured admin (admin@smmpanel.internal) is permitted admin access
+    if (user.role === "ADMIN" && cleanEmail !== adminEmail) {
+      return recordFailedAttempt();
+    }
+
     let isPasswordValid = false;
     if (
       user.passwordHash === password ||

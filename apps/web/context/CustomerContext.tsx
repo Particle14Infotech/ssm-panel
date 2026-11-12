@@ -138,17 +138,26 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     if (typeof window !== "undefined") {
-      localStorage.clear();
-      document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      document.cookie = "userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch {}
+      // Clear all possible cookie names and path variations
+      const cookiesToClear = ["authToken", "token", "userRole", "refreshToken"];
+      cookiesToClear.forEach((name) => {
+        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+        document.cookie = `${name}=; path=/app; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+        document.cookie = `${name}=; path=/admin; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+      });
     }
     setUser(EMPTY_USER);
     setOrders([]);
     setTransactions([]);
     setTickets([]);
+    setPackages([]);
+    setFavorites([]);
     if (typeof window !== "undefined") {
-      window.location.href = "/login";
+      window.location.href = "/";
     }
   }, []);
 
@@ -386,6 +395,39 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     refreshData();
+  }, [refreshData]);
+
+  // Back/Forward Cache (bfcache) Protection: Re-validate session whenever page is restored
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        const token = getSessionAuthToken();
+        if (!token) {
+          setUser(EMPTY_USER);
+          setOrders([]);
+          setPackages([]);
+          // If on a protected route, eject to landing
+          const path = window.location.pathname;
+          if (
+            path.startsWith("/app") ||
+            path.startsWith("/dashboard") ||
+            path.startsWith("/orders") ||
+            path.startsWith("/wallet") ||
+            path.startsWith("/packages") ||
+            path.startsWith("/new-order")
+          ) {
+            window.location.replace("/");
+          }
+        } else {
+          refreshData();
+        }
+      }
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
   }, [refreshData]);
 
   const createOrder = async (input: {

@@ -717,12 +717,39 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
 
   const logout = useCallback(() => {
     if (typeof window !== "undefined") {
-      localStorage.clear();
-      document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      document.cookie = "userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      window.location.href = "/login";
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch {}
+      const cookiesToClear = ["authToken", "token", "userRole", "refreshToken"];
+      cookiesToClear.forEach((name) => {
+        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+        document.cookie = `${name}=; path=/admin; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+        document.cookie = `${name}=; path=/app; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+      });
+      window.location.href = "/";
     }
   }, []);
+
+  // Back/Forward Cache (bfcache) Protection for Admin: Evict if session invalidated
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        const token = localStorage.getItem("authToken") || localStorage.getItem("token");
+        const role = localStorage.getItem("userRole");
+        if (!token || role !== "ADMIN") {
+          window.location.replace("/");
+        } else {
+          refreshAdminData();
+        }
+      }
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, [refreshAdminData]);
 
   return (
     <AdminContext.Provider

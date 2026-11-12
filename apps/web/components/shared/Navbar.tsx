@@ -5,11 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { landingContent } from "@/content/landing";
-import { Menu, X, ArrowRight } from "lucide-react";
+import { Menu, X, ArrowRight, LayoutDashboard, Shield } from "lucide-react";
 import { MagneticButton } from "@/components/motion/MagneticButton";
 import { ScrollProgress } from "@/components/motion/ScrollProgress";
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { getAuthToken } from "@/lib/auth-session";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -18,7 +19,26 @@ export function Navbar() {
   const [hidden, setHidden] = useState(false);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [sessionInfo, setSessionInfo] = useState<{ isAuthenticated: boolean; isAdmin: boolean }>({
+    isAuthenticated: false,
+    isAdmin: false,
+  });
   const lastScrollY = useRef(0);
+
+  // Sync session state on mount and storage changes
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = getAuthToken();
+      const role = typeof window !== "undefined" ? localStorage.getItem("userRole") : null;
+      setSessionInfo({
+        isAuthenticated: Boolean(token),
+        isAdmin: role === "ADMIN",
+      });
+    };
+    checkAuth();
+    window.addEventListener("storage", checkAuth);
+    return () => window.removeEventListener("storage", checkAuth);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -131,34 +151,67 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle variant="compact" />
 
-            <Link
-              href="/login"
-              className="px-4 py-2.5 min-h-[44px] flex items-center text-sm font-medium text-fg-muted hover:text-fg transition-colors"
-            >
-              {landingContent.navigation.cta.login}
-            </Link>
+            {sessionInfo.isAuthenticated ? (
+              <MagneticButton>
+                <Link
+                  href={sessionInfo.isAdmin ? "/admin/dashboard" : "/wallet"}
+                  className="h-11 min-h-[44px] px-5 rounded-xl bg-accent text-on-accent text-sm font-semibold hover:brightness-105 transition-all flex items-center gap-1.5 shadow-glow focus-visible:ring-2 focus-visible:ring-focus"
+                >
+                  {sessionInfo.isAdmin ? (
+                    <>
+                      <Shield className="w-4 h-4" />
+                      <span>Admin Console</span>
+                    </>
+                  ) : (
+                    <>
+                      <LayoutDashboard className="w-4 h-4" />
+                      <span>Dashboard</span>
+                    </>
+                  )}
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </MagneticButton>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="px-4 py-2.5 min-h-[44px] flex items-center text-sm font-medium text-fg-muted hover:text-fg transition-colors"
+                >
+                  {landingContent.navigation.cta.login}
+                </Link>
 
-            <MagneticButton>
-              <Link
-                href="/register"
-                className="h-11 min-h-[44px] px-5 rounded-xl bg-accent text-on-accent text-sm font-semibold hover:brightness-105 transition-all flex items-center gap-1.5 shadow-glow focus-visible:ring-2 focus-visible:ring-focus"
-              >
-                <span>{landingContent.navigation.cta.register}</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-            </MagneticButton>
+                <MagneticButton>
+                  <Link
+                    href="/register"
+                    className="h-11 min-h-[44px] px-5 rounded-xl bg-accent text-on-accent text-sm font-semibold hover:brightness-105 transition-all flex items-center gap-1.5 shadow-glow focus-visible:ring-2 focus-visible:ring-focus"
+                  >
+                    <span>{landingContent.navigation.cta.register}</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+                </MagneticButton>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button with >= 44px tap targets */}
           <div className="flex md:hidden items-center gap-2">
             <ThemeToggle variant="compact" />
 
-            <Link
-              href="/login"
-              className="min-h-[44px] px-3.5 py-2 flex items-center justify-center text-xs font-medium text-fg bg-surface-raised border border-border rounded-xl"
-            >
-              Sign In
-            </Link>
+            {sessionInfo.isAuthenticated ? (
+              <Link
+                href={sessionInfo.isAdmin ? "/admin/dashboard" : "/wallet"}
+                className="min-h-[44px] px-3.5 py-2 flex items-center justify-center text-xs font-semibold text-on-accent bg-accent rounded-xl shadow-sm"
+              >
+                {sessionInfo.isAdmin ? "Admin" : "Dashboard"}
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="min-h-[44px] px-3.5 py-2 flex items-center justify-center text-xs font-medium text-fg bg-surface-raised border border-border rounded-xl"
+              >
+                Sign In
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -207,18 +260,30 @@ export function Navbar() {
             </div>
 
             <div className="flex flex-col gap-3 pt-6">
-              <Link
-                href="/register"
-                className="w-full h-12 flex items-center justify-center rounded-xl bg-accent text-on-accent font-semibold text-center shadow-glow"
-              >
-                {landingContent.navigation.cta.register}
-              </Link>
-              <Link
-                href="/login"
-                className="w-full h-12 flex items-center justify-center rounded-xl bg-surface-raised text-fg font-medium text-center border border-border"
-              >
-                {landingContent.navigation.cta.login}
-              </Link>
+              {sessionInfo.isAuthenticated ? (
+                <Link
+                  href={sessionInfo.isAdmin ? "/admin/dashboard" : "/wallet"}
+                  className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-accent text-on-accent font-semibold text-center shadow-glow"
+                >
+                  {sessionInfo.isAdmin ? <Shield className="w-4 h-4" /> : <LayoutDashboard className="w-4 h-4" />}
+                  <span>{sessionInfo.isAdmin ? "Go to Admin Console" : "Go to Customer Dashboard"}</span>
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/register"
+                    className="w-full h-12 flex items-center justify-center rounded-xl bg-accent text-on-accent font-semibold text-center shadow-glow"
+                  >
+                    {landingContent.navigation.cta.register}
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="w-full h-12 flex items-center justify-center rounded-xl bg-surface-raised text-fg font-medium text-center border border-border"
+                  >
+                    {landingContent.navigation.cta.login}
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}

@@ -28,13 +28,16 @@ async function main() {
     },
   });
 
-  // 2. Admin User
+  // 2. Sole System Admin User (admin@smmpanel.internal)
   const adminUser = await prisma.user.upsert({
-    where: { email: "admin@smm-panel.io" },
-    update: {},
+    where: { email: "admin@smmpanel.internal" },
+    update: {
+      role: "ADMIN",
+      tier: "ENTERPRISE",
+    },
     create: {
       id: "usr_admin_001",
-      email: "admin@smm-panel.io",
+      email: "admin@smmpanel.internal",
       name: "System Administrator",
       passwordHash: "$argon2id$v=19$m=65536,t=3,p=4$demo_salt$demo_hash",
       role: "ADMIN",
@@ -47,6 +50,11 @@ async function main() {
       },
     },
   });
+
+  // Ensure any old test admin account is cleaned up
+  await prisma.user.deleteMany({
+    where: { email: "admin@smm-panel.io" },
+  }).catch(() => null);
 
   // 3. Customer User
   const customerUser = await prisma.user.upsert({

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCustomer } from "@/context/CustomerContext";
 import { OrderItem } from "@smm/contracts";
 import {
@@ -40,7 +41,12 @@ import { motion } from "framer-motion";
 import { getApiBase } from "@/lib/api-base";
 import { getAuthToken } from "@/lib/auth-session";
 
-export default function OrdersPage() {
+function OrdersPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const orderPlaced = searchParams?.get("orderPlaced") === "true";
+  const placedOrderId = searchParams?.get("orderId");
+
   const { orders, refillOrder, cancelOrder, addFavorite, user } = useCustomer();
 
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
@@ -195,6 +201,50 @@ export default function OrdersPage() {
           <span>{toastMessage}</span>
         </div>
       )}
+      {/* Order Placed Success Banner */}
+      {orderPlaced && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-[#171e00]/40 border border-[#D8EC8D]/50 text-white backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_0_30px_rgba(216,236,141,0.15)] animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#D8EC8D]/20 border border-[#D8EC8D]/40 text-[#D8EC8D] flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-fg flex items-center gap-2">
+                Order Placed Successfully!
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D8EC8D]/20 text-[#D8EC8D] border border-[#D8EC8D]/30">
+                  Dispatched
+                </span>
+              </h3>
+              <p className="text-xs text-fg-2 mt-0.5">
+                {placedOrderId ? (
+                  <>
+                    Order Reference: <span className="font-mono text-[#D8EC8D] font-semibold">{placedOrderId}</span>. Dispatched to the algorithm engine & upstream provider network.
+                  </>
+                ) : (
+                  "Your order has been queued and dispatched to the upstream provider network."
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Link
+              href="/new-order"
+              className="px-3.5 py-2 rounded-xl bg-[#D8EC8D] text-[#171e00] font-bold text-xs hover:brightness-105 transition-all text-center shrink-0 w-full sm:w-auto"
+            >
+              New Order
+            </Link>
+            <button
+              type="button"
+              onClick={() => router.replace("/orders")}
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors"
+              title="Dismiss banner"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header Clean (Telemetry badge removed) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
@@ -378,34 +428,45 @@ export default function OrdersPage() {
           <>
             {/* MOBILE CARDS VIEW (< md) */}
             <div className="block md:hidden space-y-3">
-              {filteredOrders.map((order) => (
-                <div
-                  key={order.id}
-                  onClick={() => setActiveModalOrder(order)}
-                  className="p-4 rounded-2xl bg-white/[0.02] border border-border hover:border-accent/30 transition-all space-y-3 cursor-pointer active:scale-[0.99]"
-                >
-                  {/* Top Header: ID + Copy + Status */}
-                  <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-white/5 pb-2.5">
-                    <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-fg">
-                      <span>{formatOrderId(order.id)}</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopy(formatOrderId(order.id));
-                        }}
-                        className="text-fg-muted hover:text-slate-900 dark:hover:text-white p-1 transition-colors"
-                        title="Copy ID"
-                      >
-                        {copiedId === order.id ? (
-                          <Check className="w-3.5 h-3.5 text-success" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
+              {filteredOrders.map((order) => {
+                const isNewlyPlaced = Boolean(placedOrderId && order.id === placedOrderId);
+                return (
+                  <div
+                    key={order.id}
+                    onClick={() => setActiveModalOrder(order)}
+                    className={`p-4 rounded-2xl transition-all space-y-3 cursor-pointer active:scale-[0.99] ${
+                      isNewlyPlaced
+                        ? "bg-accent/10 border-[#D8EC8D] ring-2 ring-[#D8EC8D]/50 shadow-[0_0_20px_rgba(216,236,141,0.2)]"
+                        : "bg-white/[0.02] border border-border hover:border-accent/30"
+                    }`}
+                  >
+                    {/* Top Header: ID + Copy + Status */}
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-white/5 pb-2.5">
+                      <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-fg">
+                        <span>{formatOrderId(order.id)}</span>
+                        {isNewlyPlaced && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#D8EC8D] text-[#171e00] uppercase font-mono">
+                            NEW
+                          </span>
                         )}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopy(formatOrderId(order.id));
+                          }}
+                          className="text-fg-muted hover:text-slate-900 dark:hover:text-white p-1 transition-colors"
+                          title="Copy ID"
+                        >
+                          {copiedId === order.id ? (
+                            <Check className="w-3.5 h-3.5 text-success" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
+                      <StatusBadge status={order.status} />
                     </div>
-                    <StatusBadge status={order.status} />
-                  </div>
 
                   {/* Service Name & Platform */}
                   <div>
@@ -467,8 +528,9 @@ export default function OrdersPage() {
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
+          </div>
 
             {/* DESKTOP TABLE VIEW (>= md) */}
             <div className="hidden md:block overflow-x-auto">
@@ -485,36 +547,45 @@ export default function OrdersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 text-xs">
-                  {filteredOrders.map((order) => (
-                    <tr
-                      key={order.id}
-                      onClick={() => setActiveModalOrder(order)}
-                      className="hover:bg-white/[0.04] transition-colors cursor-pointer group"
-                    >
-                      {/* Order ID */}
-                      <td className="py-3.5 px-3 font-mono font-semibold text-fg whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <span className="group-hover:text-[#D8EC8D] transition-colors">{formatOrderId(order.id)}</span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCopy(formatOrderId(order.id));
-                          }}
-                          className="text-fg-muted hover:text-slate-900 dark:hover:text-white transition-colors"
-                          title="Copy ID"
-                        >
-                          {copiedId === order.id ? (
-                            <Check className="w-3 h-3 text-success" />
-                          ) : (
-                            <Copy className="w-3 h-3" />
+                  {filteredOrders.map((order) => {
+                    const isNewlyPlaced = Boolean(placedOrderId && order.id === placedOrderId);
+                    return (
+                      <tr
+                        key={order.id}
+                        onClick={() => setActiveModalOrder(order)}
+                        className={`transition-colors cursor-pointer group ${
+                          isNewlyPlaced ? "bg-accent/10 hover:bg-accent/15" : "hover:bg-white/[0.04]"
+                        }`}
+                      >
+                        {/* Order ID */}
+                        <td className="py-3.5 px-3 font-mono font-semibold text-fg whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="group-hover:text-[#D8EC8D] transition-colors">{formatOrderId(order.id)}</span>
+                          {isNewlyPlaced && (
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#D8EC8D] text-[#171e00] uppercase font-mono">
+                              NEW
+                            </span>
                           )}
-                        </button>
-                      </div>
-                      <span className="text-[10px] text-slate-400 block font-normal">
-                        {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ""}
-                      </span>
-                    </td>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopy(formatOrderId(order.id));
+                            }}
+                            className="text-fg-muted hover:text-slate-900 dark:hover:text-white transition-colors"
+                            title="Copy ID"
+                          >
+                            {copiedId === order.id ? (
+                              <Check className="w-3 h-3 text-success" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
+                        <span className="text-[10px] text-slate-400 block font-normal">
+                          {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ""}
+                        </span>
+                      </td>
 
                     <td className="py-3.5 px-3">
                       <div className="font-medium text-fg max-w-xs truncate">{order.serviceName}</div>
@@ -687,8 +758,9 @@ export default function OrdersPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
+                );
+              })}
+            </tbody>
             </table>
           </div>
         </>
@@ -1117,5 +1189,13 @@ export default function OrdersPage() {
         </div>
       )}
     </motion.div>
+  );
+}
+
+export default function OrdersPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-500 animate-pulse font-mono">Loading orders...</div>}>
+      <OrdersPageContent />
+    </Suspense>
   );
 }

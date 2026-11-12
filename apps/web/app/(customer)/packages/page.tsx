@@ -155,12 +155,21 @@ function PackagesListContent() {
   const searchParams = useSearchParams();
   const packagePlaced = searchParams?.get("packagePlaced") === "true";
   const placedPackageId = searchParams?.get("packageId");
+  const categoryParam = searchParams?.get("category")?.toUpperCase() as PackageCategory | undefined;
+  const initialCategory = categoryParam && ["ALL", "CUSTOM", "COMBO", "AUTOPILOT"].includes(categoryParam) ? categoryParam : "ALL";
   const { packages, user, refreshPackages, addFavorite, favorites } = useCustomer();
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<PackageCategory>("ALL");
+  const [categoryFilter, setCategoryFilter] = useState<PackageCategory>(initialCategory);
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "CANCELLED">("ALL");
   const [favoriteSavingId, setFavoriteSavingId] = useState<string | null>(null);
+
+  // Sync category filter if query param changes
+  useEffect(() => {
+    if (categoryParam && ["ALL", "CUSTOM", "COMBO", "AUTOPILOT"].includes(categoryParam)) {
+      setCategoryFilter(categoryParam);
+    }
+  }, [categoryParam]);
 
   const handleSavePackageAsFavorite = async (e: React.MouseEvent, pkg: any) => {
     e.preventDefault();
@@ -273,18 +282,26 @@ function PackagesListContent() {
             </div>
             <div>
               <h3 className="text-sm font-bold text-fg flex items-center gap-2">
-                Package Booked Successfully!
+                {categoryFilter === "AUTOPILOT"
+                  ? "Auto-Pilot Poller Activated!"
+                  : categoryFilter === "COMBO"
+                  ? "Reels Growth Combo Activated!"
+                  : categoryFilter === "CUSTOM"
+                  ? "Custom Drip Campaign Deployed!"
+                  : "Growth Package Activated!"}
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D8EC8D]/20 text-[#D8EC8D] border border-[#D8EC8D]/30">
-                  Active Campaign
+                  {categoryFilter === "AUTOPILOT" ? "60s Poller Active" : "Active Campaign"}
                 </span>
               </h3>
               <p className="text-xs text-fg-2 mt-0.5">
                 {placedPackageId ? (
                   <>
-                    Package Reference: <span className="font-mono text-[#D8EC8D] font-semibold">{placedPackageId}</span>. Delivery batches are actively scheduled below.
+                    Package Reference: <span className="font-mono text-[#D8EC8D] font-semibold">{placedPackageId}</span>. {categoryFilter === "AUTOPILOT" ? "New uploads will be detected and automatically boosted with wave drip." : "Algorithmic delivery batches are actively scheduled below."}
                   </>
                 ) : (
-                  "Your growth package has been created and delivery batches are actively scheduled below."
+                  categoryFilter === "AUTOPILOT"
+                    ? "Your creator handle is being monitored. As soon as you publish a new reel or post, delivery will auto-trigger."
+                    : "Your growth campaign has been initialized and scheduled for delivery below."
                 )}
               </p>
             </div>
@@ -296,6 +313,14 @@ function PackagesListContent() {
             >
               Place Another Order
             </Link>
+            <button
+              type="button"
+              onClick={() => router.replace(categoryFilter !== "ALL" ? `/packages?category=${categoryFilter}` : "/packages")}
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors"
+              title="Dismiss banner"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </motion.div>
       )}
@@ -494,6 +519,8 @@ function PackagesListContent() {
               const startDate = pkg.createdAt || pkg.startAt || pkg.startDate || new Date().toISOString();
               const endDate = pkg.endAt || pkg.endDate || startDate;
 
+              const isNewlyPlaced = Boolean(placedPackageId && pkg.id === placedPackageId);
+
               return (
                 <Link
                   key={pkg.id}
@@ -502,7 +529,11 @@ function PackagesListContent() {
                 >
                   <BentoCard
                     spotlightColor="rgba(216, 236, 141, 0.08)"
-                    className="p-3.5 sm:p-4 rounded-2xl border-border group-hover:border-[#D8EC8D]/40 transition-all bg-white/95 dark:bg-[#181818]/90 backdrop-blur-md flex flex-col justify-between space-y-3 cursor-pointer shadow-sm hover:shadow-md"
+                    className={`p-3.5 sm:p-4 rounded-2xl transition-all bg-white/95 dark:bg-[#181818]/90 backdrop-blur-md flex flex-col justify-between space-y-3 cursor-pointer shadow-sm hover:shadow-md ${
+                      isNewlyPlaced
+                        ? "border-[#D8EC8D] ring-2 ring-[#D8EC8D]/50 shadow-[0_0_25px_rgba(216,236,141,0.2)]"
+                        : "border-border group-hover:border-[#D8EC8D]/40"
+                    }`}
                   >
                     <div className="space-y-2.5">
                       {/* Top Header Row: Platform Icon + Clean Title + Status Badge */}

@@ -253,7 +253,7 @@ export function NewOrderShell() {
   };
 
   // Comprehensive reset and redirection upon successful order placement
-  const handleOrderSuccess = (orderResult: any, orderKind?: "single" | "package") => {
+  const handleOrderSuccess = (orderResult: any, orderKind?: "single" | "custom_drip" | "combos" | "autopilot" | "package") => {
     setOrderDetails(null);
     setConsentChecked(false);
     setQuickLinkInput("");
@@ -267,20 +267,21 @@ export function NewOrderShell() {
 
     if (refreshData) refreshData();
 
-    const isPackage =
-      orderKind === "package" ||
-      activeTab === "custom_drip" ||
-      activeTab === "combos" ||
-      activeTab === "autopilot" ||
-      Boolean(orderResult?.packageId || orderResult?.package?.id);
-
-    const packageId = orderResult?.packageId || orderResult?.package?.id;
+    const packageId = orderResult?.packageId || orderResult?.package?.id || orderResult?.id || "";
     const orderId = orderResult?.id || orderResult?.orderId || "";
 
-    if (activeTab === "custom_drip" || (packageId && packageId.startsWith("pkg_drip_"))) {
-      router.push(`/orders?customOrderPlaced=true${packageId ? `&orderId=${encodeURIComponent(packageId)}` : ""}`);
-    } else if (isPackage) {
-      router.push(`/packages?packagePlaced=true${packageId ? `&packageId=${encodeURIComponent(packageId)}` : ""}`);
+    const effectiveKind = orderKind || (
+      activeTab === "custom_drip" ? "custom_drip" :
+      activeTab === "combos" ? "combos" :
+      activeTab === "autopilot" ? "autopilot" : "single"
+    );
+
+    if (effectiveKind === "custom_drip") {
+      router.push(`/packages?category=CUSTOM&packagePlaced=true${packageId ? `&packageId=${encodeURIComponent(packageId)}` : ""}`);
+    } else if (effectiveKind === "combos") {
+      router.push(`/packages?category=COMBO&packagePlaced=true${packageId ? `&packageId=${encodeURIComponent(packageId)}` : ""}`);
+    } else if (effectiveKind === "autopilot") {
+      router.push(`/packages?category=AUTOPILOT&packagePlaced=true${packageId ? `&packageId=${encodeURIComponent(packageId)}` : ""}`);
     } else {
       router.push(`/orders?orderPlaced=true${orderId ? `&orderId=${encodeURIComponent(orderId)}` : ""}`);
     }
@@ -504,7 +505,7 @@ export function NewOrderShell() {
           services={bootstrapData?.services || []}
           durationChips={bootstrapData?.durationChips || [1, 3, 5, 7, 10, 14, 21, 30, 45, 60]}
           walletBalance={walletBalance}
-          onOrderSuccess={(res) => handleOrderSuccess(res, "package")}
+          onOrderSuccess={(res) => handleOrderSuccess(res, "custom_drip")}
           prefilledTargetUrl={quickLinkInput}
         />
       )}
@@ -514,7 +515,7 @@ export function NewOrderShell() {
           key={`combos-${selectedPlatform}-${formResetKey}`}
           platform={selectedPlatform}
           walletBalance={walletBalance}
-          onOrderSuccess={(res) => handleOrderSuccess(res, "package")}
+          onOrderSuccess={(res) => handleOrderSuccess(res, "combos")}
           prefilledTargetUrl={quickLinkInput}
         />
       )}
@@ -525,7 +526,7 @@ export function NewOrderShell() {
           platform={selectedPlatform}
           services={bootstrapData?.services || []}
           walletBalance={walletBalance}
-          onOrderSuccess={(res) => handleOrderSuccess(res, "package")}
+          onOrderSuccess={(res) => handleOrderSuccess(res, "autopilot")}
           prefilledTargetUrl={quickLinkInput}
         />
       )}
