@@ -100,11 +100,10 @@ export function Navbar() {
         initial={{ y: 0 }}
         animate={{ y: hidden ? -100 : 0 }}
         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
             ? "bg-surface/90 backdrop-blur-xl border-b border-border shadow-2xl py-3"
             : "bg-transparent py-5"
-        }`}
+          }`}
       >
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 flex items-center justify-between">
           {/* Brand Logo */}
@@ -128,17 +127,15 @@ export function Navbar() {
                   key={item.href}
                   href={pathname === "/" ? `#${sectionMatch}` : item.href}
                   onMouseEnter={() => setHoveredLink(item.href)}
-                  className={`relative px-4 py-2.5 min-h-[44px] flex items-center rounded-lg text-sm transition-colors duration-200 z-10 ${
-                    isActive ? "text-fg font-semibold" : "text-fg-muted hover:text-fg"
-                  }`}
+                  className={`relative px-4 py-2.5 min-h-[44px] flex items-center rounded-lg text-sm transition-colors duration-200 z-10 ${isActive ? "text-fg font-semibold" : "text-fg-muted hover:text-fg"
+                    }`}
                 >
                   {(isActive || isHovered) && (
                     <motion.div
                       layoutId="active-nav-indicator"
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                      className={`absolute inset-0 rounded-lg -z-10 ${
-                        isActive ? "bg-surface border border-border" : "bg-surface/50"
-                      }`}
+                      className={`absolute inset-0 rounded-lg -z-10 ${isActive ? "bg-surface border border-border" : "bg-surface/50"
+                        }`}
                     />
                   )}
                   {item.label}
@@ -248,9 +245,8 @@ export function Navbar() {
                 >
                   <Link
                     href={item.href}
-                    className={`text-lg py-3 min-h-[44px] border-b border-border flex items-center justify-between ${
-                      pathname === item.href ? "text-accent-text font-semibold" : "text-fg-2"
-                    }`}
+                    className={`text-lg py-3 min-h-[44px] border-b border-border flex items-center justify-between ${pathname === item.href ? "text-accent-text font-semibold" : "text-fg-2"
+                      }`}
                   >
                     <span>{item.label}</span>
                     <ArrowRight className="w-4 h-4 opacity-50" />

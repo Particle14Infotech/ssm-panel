@@ -84,15 +84,7 @@ export function AdminHeader() {
                 ROOT ADMIN CONSOLE
               </span>
               <span className="text-fg-muted/40">•</span>
-              <span className="text-[11px] text-fg-muted">System Active</span>
-              {process.env.NEXT_PUBLIC_SIMULATE_UPSTREAM_ORDERS === "true" && (
-                <>
-                  <span className="text-fg-muted/40">•</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                    SIMULATION
-                  </span>
-                </>
-              )}
+              <span className="text-[11px] text-fg-muted font-sans font-medium">System Active</span>
             </div>
           </div>
 

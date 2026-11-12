@@ -239,15 +239,15 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
               updatedAt: tk.updatedAt ? new Date(tk.updatedAt).toISOString() : new Date().toISOString(),
               messages: Array.isArray(tk.messages)
                 ? tk.messages.map((m: any) => ({
-                    id: m.id,
-                    ticketId: tk.id,
-                    authorId: m.senderId,
-                    authorName: m.senderId === "ADMIN" || m.senderId === "admin" ? "Support Staff" : (tk.user?.name || "Customer"),
-                    authorRole: (m.senderId === "ADMIN" || m.senderId === "admin" ? "ADMIN" : "USER") as "USER" | "ADMIN",
-                    content: m.message,
-                    attachments: [],
-                    createdAt: m.createdAt ? new Date(m.createdAt).toISOString() : new Date().toISOString(),
-                  }))
+                  id: m.id,
+                  ticketId: tk.id,
+                  authorId: m.senderId,
+                  authorName: m.senderId === "ADMIN" || m.senderId === "admin" ? "Support Staff" : (tk.user?.name || "Customer"),
+                  authorRole: (m.senderId === "ADMIN" || m.senderId === "admin" ? "ADMIN" : "USER") as "USER" | "ADMIN",
+                  content: m.message,
+                  attachments: [],
+                  createdAt: m.createdAt ? new Date(m.createdAt).toISOString() : new Date().toISOString(),
+                }))
                 : [],
             }))
           );
@@ -476,13 +476,13 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
             prev.map((p) =>
               p.id === providerId
                 ? {
-                    ...p,
-                    balance: data.balance,
-                    currency: data.currency || p.currency,
-                    status: data.status === "CONNECTED" ? "CONNECTED" : p.status,
-                    serviceCount: data.totalActiveServices ?? p.serviceCount,
-                    lastSyncAt: data.timestamp || new Date().toISOString(),
-                  }
+                  ...p,
+                  balance: data.balance,
+                  currency: data.currency || p.currency,
+                  status: data.status === "CONNECTED" ? "CONNECTED" : p.status,
+                  serviceCount: data.totalActiveServices ?? p.serviceCount,
+                  lastSyncAt: data.timestamp || new Date().toISOString(),
+                }
                 : p
             )
           );
@@ -570,11 +570,11 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
       prev.map((p) =>
         p.id === id
           ? {
-              ...p,
-              ...(updates.name ? { name: updates.name } : {}),
-              ...(updates.apiUrl ? { apiUrl: updates.apiUrl } : {}),
-              ...(typeof updates.active === "boolean" ? { status: updates.active ? "CONNECTED" : "ERROR" } : {}),
-            }
+            ...p,
+            ...(updates.name ? { name: updates.name } : {}),
+            ...(updates.apiUrl ? { apiUrl: updates.apiUrl } : {}),
+            ...(typeof updates.active === "boolean" ? { status: updates.active ? "CONNECTED" : "ERROR" } : {}),
+          }
           : p
       )
     );
@@ -636,7 +636,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
           return true;
         }
       }
-    } catch {}
+    } catch { }
 
     // Resilient fallback / optimistic update
     setTickets((prev) =>
@@ -683,7 +683,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
           return true;
         }
       }
-    } catch {}
+    } catch { }
 
     setTickets((prev) =>
       prev.map((t) => (t.id === ticketId ? { ...t, status, updatedAt: new Date().toISOString() } : t))
@@ -707,7 +707,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
           return true;
         }
       }
-    } catch {}
+    } catch { }
 
     setTickets((prev) =>
       prev.map((t) => (t.id === ticketId ? { ...t, status: "CLOSED", updatedAt: new Date().toISOString() } : t))
@@ -720,7 +720,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
       try {
         localStorage.clear();
         sessionStorage.clear();
-      } catch {}
+      } catch { }
       const cookiesToClear = ["authToken", "token", "userRole", "refreshToken"];
       cookiesToClear.forEach((name) => {
         document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;

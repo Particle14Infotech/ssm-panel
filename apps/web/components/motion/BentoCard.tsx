@@ -99,10 +99,10 @@ export function BentoCard({
       }}
       whileHover={!shouldReduceMotion ? { y: -3 } : undefined}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className={`group relative overflow-hidden rounded-3xl bg-[#1c1b1b]/85 backdrop-blur-2xl border transition-all duration-300 ${
+      className={`group relative overflow-hidden rounded-3xl bg-surface/90 dark:bg-[#1c1b1b]/85 backdrop-blur-2xl border transition-all duration-300 ${
         highlight
-          ? "border-[#d8ec8d]/35 shadow-[0_12px_40px_-10px_rgba(216,236,141,0.12)]"
-          : "border-white/[0.08] hover:border-[#d8ec8d]/30 hover:shadow-[0_16px_48px_-12px_rgba(0,0,0,0.85)]"
+          ? "border-accent/60 dark:border-[#d8ec8d]/35 shadow-[0_12px_40px_-10px_rgba(216,236,141,0.22)]"
+          : "border-border hover:border-accent/40 dark:border-white/[0.08] dark:hover:border-[#d8ec8d]/30 shadow-sm hover:shadow-md dark:shadow-none dark:hover:shadow-[0_16px_48px_-12px_rgba(0,0,0,0.85)]"
       } ${className}`}
     >
       {/* 1. Animated Border Beam for highlighted cards */}
