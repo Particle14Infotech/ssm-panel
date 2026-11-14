@@ -13,7 +13,9 @@
     "test:pg": "pnpm --filter @smm/api test:pg",
     "test:packages": "pnpm --filter @smm/api test:packages",
     "test:security-package": "pnpm --filter @smm/api test:security-package",
-    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
+    "deploy:live": "node scripts/deploy-live.js",
+    "deploy:fast": "node scripts/deploy-artifacts-vps.js"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
