@@ -1,8 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { GlassCard } from "@/components/shared/GlassCard";
 import { LinkPreviewCard } from "@/components/shared/LinkPreviewCard";
+import { LinkAutoSuggest } from "./LinkAutoSuggest";
+import { SmartServiceSuggestions } from "./SmartServiceSuggestions";
+import { useCustomer } from "@/context/CustomerContext";
 import { getApiBase } from "@/lib/api-base";
 import { getAuthToken } from "@/lib/auth-session";
 import {
@@ -45,6 +49,9 @@ export function ComboPackagesTab({
   onOrderSuccess,
   prefilledTargetUrl = "",
 }: ComboPackagesTabProps) {
+  const searchParams = useSearchParams();
+  const isReordering = searchParams?.get("reorder") === "1";
+  const { services } = useCustomer();
   const [targetUrl, setTargetUrl] = useState<string>(prefilledTargetUrl);
   const [linkPreview, setLinkPreview] = useState<any | null>(null);
   const [templates, setTemplates] = useState<any[]>([]);
@@ -349,6 +356,14 @@ export function ComboPackagesTab({
     <div className="space-y-6">
       {/* Target URL Header Bar with Embedded Reusable LinkPreviewCard */}
       <GlassCard className="p-4 border-border space-y-3">
+        {isReordering && (
+          <div className="p-3 rounded-xl bg-accent/15 border border-accent/30 flex items-center gap-2.5 text-xs text-fg animate-in fade-in">
+            <Sparkles className="w-4 h-4 text-accent-text shrink-0" />
+            <span>
+              <strong>Favorite Configuration Loaded:</strong> Enter your new target link or handle below to instantly book with the same settings.
+            </span>
+          </div>
+        )}
         <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
           <div className="flex-1 w-full space-y-1">
             <div className="flex items-center justify-between">
@@ -361,18 +376,26 @@ export function ComboPackagesTab({
                 Auto-Thumbnail & Smart Suggestion
               </span>
             </div>
-            <input
-              type="text"
+            <LinkAutoSuggest
               value={targetUrl}
-              onChange={(e) => setTargetUrl(e.target.value)}
+              onChange={setTargetUrl}
+              platform={platform}
               placeholder="e.g. https://www.instagram.com/reel/Dfj3U2rpvA9/ or @username"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-surface-raised border border-border text-fg placeholder:text-fg-muted text-xs font-mono focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/40 transition-all"
             />
             {/* Embedded Live Reusable LinkPreviewCard (Real Thumbnail & Metadata) */}
             <LinkPreviewCard
               url={targetUrl}
               selectedPlatform={platform}
               onPreviewChange={setLinkPreview}
+            />
+
+            <SmartServiceSuggestions
+              targetUrl={targetUrl}
+              services={services}
+              onSelectService={(svc) => {
+                // Pre-fills and activates matching quote
+                fetchQuote();
+              }}
             />
           </div>
 

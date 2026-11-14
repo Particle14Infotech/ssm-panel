@@ -33,7 +33,6 @@ export function CustomerSidebar() {
         { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
         { name: "New Order", href: "/new-order", icon: PlusCircle },
         { name: "My Packages", href: "/packages", icon: Boxes },
-        { name: "Favorites", href: "/favorites", icon: Bookmark },
         { name: "Services", href: "/services-catalog", icon: Layers },
         { name: "Orders", href: "/orders", icon: ListOrdered },
       ],
@@ -54,10 +53,10 @@ export function CustomerSidebar() {
   ];
 
   return (
-    <aside className="w-64 shrink-0 hidden lg:flex flex-col justify-between bg-surface border-r border-border h-full z-40 transition-colors duration-200">
+    <aside className="w-64 shrink-0 hidden lg:flex flex-col justify-between bg-gradient-to-b from-white via-slate-50/70 to-slate-100/60 dark:from-surface dark:via-surface dark:to-surface border-r border-slate-200/90 dark:border-border h-full z-40 transition-colors duration-200 shadow-xs">
       <div className="flex flex-col flex-1 min-h-0">
         {/* Brand Header */}
-        <div className="h-16 px-5 flex items-center border-b border-border shrink-0">
+        <div className="h-16 px-5 flex items-center border-b border-slate-200/90 dark:border-border shrink-0 bg-white/70 dark:bg-transparent backdrop-blur-md">
           <BrandLogo variant="combined" size={32} withLink href="/dashboard" />
         </div>
 
@@ -65,7 +64,7 @@ export function CustomerSidebar() {
         <div className="px-3 py-6 space-y-6 flex-1 min-h-0 overflow-y-auto scrollbar-none">
           {navGroups.map((group) => (
             <div key={group.label} className="space-y-1">
-              <div className="px-3 pb-1 text-[10px] uppercase font-mono tracking-widest text-fg-muted font-semibold">
+              <div className="px-3 pb-1.5 text-[10.5px] uppercase font-mono tracking-wider text-slate-500 dark:text-fg-muted font-bold">
                 {group.label}
               </div>
               <div className="space-y-0.5">
@@ -78,15 +77,15 @@ export function CustomerSidebar() {
                     <Link
                       key={item.name}
                       href={item.href}
-                      className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group ${isActive
-                          ? "bg-accent/15 text-fg shadow-sm font-semibold border-l-2 border-accent"
-                          : "text-fg-2 hover:text-fg hover:bg-surface-raised"
+                      className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group ${isActive
+                          ? "bg-gradient-to-r from-lime-300/40 via-lime-200/30 to-emerald-100/30 dark:bg-accent/15 border-l-[3px] border-[#658210] dark:border-accent text-slate-950 dark:text-fg shadow-xs font-bold"
+                          : "text-slate-700 dark:text-fg-2 hover:text-slate-950 dark:hover:text-fg hover:bg-slate-100/90 dark:hover:bg-surface-raised"
                         }`}
                     >
                       <item.icon
                         className={`w-4 h-4 shrink-0 transition-colors ${isActive
-                            ? "text-accent-text"
-                            : "text-fg-muted group-hover:text-fg"
+                            ? "text-[#4D6010] dark:text-accent-text"
+                            : "text-slate-500 dark:text-fg-muted group-hover:text-slate-900 dark:group-hover:text-fg"
                           }`}
                       />
                       <span>{item.name}</span>
@@ -96,27 +95,6 @@ export function CustomerSidebar() {
               </div>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Bottom User Area */}
-      <div className="p-4 border-t border-border shrink-0">
-        <div className="p-3 rounded-2xl bg-surface-raised border border-border flex items-center justify-between gap-3 transition-colors">
-          <div className="min-w-0 flex-1">
-            <div className="text-xs font-semibold text-fg truncate">
-              {user.name || "Customer"}
-            </div>
-            <div className="text-[10px] text-accent-text truncate font-mono font-bold tabular-nums">
-              ₹{user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-            </div>
-          </div>
-          <button
-            onClick={logout}
-            title="Log Out"
-            className="p-2 rounded-xl text-fg-muted hover:text-danger hover:bg-danger-bg transition-colors shrink-0 cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
       </div>
     </aside>

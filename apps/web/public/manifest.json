@@ -1,0 +1,52 @@
+{
+  "id": "/?source=pwa",
+  "name": "SMM Panel",
+  "short_name": "SMMPanel",
+  "description": "Social Media Growth & Real-Time Management Panel",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#10140b",
+  "theme_color": "#D8EC8D",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["business", "social", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "description": "View active campaigns and balance"
+    },
+    {
+      "name": "New Order",
+      "url": "/new-order",
+      "description": "Quickly book new campaign"
+    }
+  ]
+}

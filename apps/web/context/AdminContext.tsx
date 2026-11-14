@@ -19,6 +19,7 @@ import {
   INITIAL_ADMIN_TICKETS,
 } from "@/content/admin-data";
 import { getApiBase } from "@/lib/api-base";
+import { performUniversalLogout } from "@/lib/auth-session";
 
 interface AdminContextType {
   users: AdminUser[];
@@ -716,19 +717,7 @@ export function AdminProviderWrapper({ children }: { children: React.ReactNode }
   };
 
   const logout = useCallback(() => {
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.clear();
-        sessionStorage.clear();
-      } catch { }
-      const cookiesToClear = ["authToken", "token", "userRole", "refreshToken"];
-      cookiesToClear.forEach((name) => {
-        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-        document.cookie = `${name}=; path=/admin; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-        document.cookie = `${name}=; path=/app; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-      });
-      window.location.href = "/";
-    }
+    performUniversalLogout("/");
   }, []);
 
   // Back/Forward Cache (bfcache) Protection for Admin: Evict if session invalidated

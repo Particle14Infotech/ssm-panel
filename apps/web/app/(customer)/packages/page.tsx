@@ -28,7 +28,9 @@ import {
   MessageSquare,
   Users,
   Bookmark,
+  Star,
   Zap,
+  Sliders,
 } from "lucide-react";
 import { formatIndianNumber } from "@/lib/numberFormat";
 import { getApiBase } from "@/lib/api-base";
@@ -59,7 +61,7 @@ function formatTargetDisplay(handle?: string, platform?: string): { title: strin
   return { title: clean.startsWith("@") ? clean : `@${clean}`, isUrl: false };
 }
 
-// Helper: Clean service display names (strip provider IDs, bracket junk, and forbidden marketing words)
+// Helper: Clean service display names
 const CLEANER_BLOCKED = [
   ["org", "anic"].join(""),
   ["nat", "ural"].join(""),
@@ -82,7 +84,7 @@ const CLEANER_WORD_REGEX = new RegExp(`\\b(${CLEANER_BLOCKED.join("|")})\\b`, "g
 function cleanServiceName(name?: string): string {
   if (!name) return "Service";
   return name
-    .replace(/^\d+\s*[-:|]?\s*/, "") // Strip leading IDs e.g. "13 " or "1042 - "
+    .replace(/^\d+\s*[-:|]?\s*/, "")
     .replace(CLEANER_BRACKET_REGEX, "")
     .replace(CLEANER_WORD_REGEX, "")
     .replace(/\s{2,}/g, " ")
@@ -111,7 +113,7 @@ function getMetricIcon(name: string) {
 }
 
 // Helper: Determine Package Category
-type PackageCategory = "ALL" | "CUSTOM" | "COMBO" | "AUTOPILOT";
+type PackageCategory = "FAVORITES" | "COMBO" | "CUSTOM" | "AUTOPILOT";
 
 function getPackageCategory(pkg: any): "CUSTOM" | "COMBO" | "AUTOPILOT" {
   if (
@@ -150,53 +152,184 @@ function getPackageTotal(pkg: any): number {
   return 0;
 }
 
+// Curated Combo Offerings
+const CURATED_COMBOS = [
+  {
+    id: "combo_reels_viral",
+    name: "Reels Viral Growth Combo",
+    platform: "instagram",
+    badge: "Most Popular",
+    description: "Multi-signal algorithm booster designed for Instagram Reels reach and explore distribution.",
+    services: [
+      { name: "Reels High-Retention Views", quantity: 10000, icon: Eye },
+      { name: "Targeted Reel Likes", quantity: 1000, icon: Heart },
+      { name: "Direct Shares & Saves", quantity: 200, icon: Share2 },
+    ],
+    price: 149,
+    originalPrice: 220,
+    savingsPercent: 32,
+    tab: "combos",
+  },
+  {
+    id: "combo_starter_creator",
+    name: "Creator Starter Pack",
+    platform: "instagram",
+    badge: "Fast Activation",
+    description: "Compact growth bundle for new posts and creators seeking organic social proof.",
+    services: [
+      { name: "HQ Post & Reel Views", quantity: 5000, icon: Eye },
+      { name: "Real Active Likes", quantity: 500, icon: Heart },
+      { name: "Profile Impressions", quantity: 1000, icon: Users },
+    ],
+    price: 89,
+    originalPrice: 125,
+    savingsPercent: 28,
+    tab: "combos",
+  },
+  {
+    id: "combo_youtube_velocity",
+    name: "YouTube Shorts Velocity",
+    platform: "youtube",
+    badge: "Trending Spike",
+    description: "Aggressive velocity pacing for YouTube Shorts to jumpstart recommendation algorithms.",
+    services: [
+      { name: "Shorts High Retention Views", quantity: 20000, icon: Eye },
+      { name: "Authentic Video Likes", quantity: 1500, icon: Heart },
+      { name: "Social Shares", quantity: 300, icon: Share2 },
+    ],
+    price: 279,
+    originalPrice: 380,
+    savingsPercent: 26,
+    tab: "combos",
+  },
+  {
+    id: "combo_omni_surge",
+    name: "Omni Viral Surge Pack",
+    platform: "instagram",
+    badge: "All-In-One",
+    description: "Complete 360-degree algorithmic wave with Views, Likes, Comments, Saves, and Shares.",
+    services: [
+      { name: "Ultra HD Reel Views", quantity: 50000, icon: Eye },
+      { name: "Non-Drop Likes", quantity: 3500, icon: Heart },
+      { name: "Custom Positive Comments", quantity: 100, icon: MessageSquare },
+      { name: "Explore Saves & Shares", quantity: 1000, icon: Bookmark },
+    ],
+    price: 549,
+    originalPrice: 799,
+    savingsPercent: 31,
+    tab: "combos",
+  },
+];
+
 function PackagesListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const packagePlaced = searchParams?.get("packagePlaced") === "true";
   const placedPackageId = searchParams?.get("packageId");
   const categoryParam = searchParams?.get("category")?.toUpperCase() as PackageCategory | undefined;
-  const initialCategory = categoryParam && ["ALL", "CUSTOM", "COMBO", "AUTOPILOT"].includes(categoryParam) ? categoryParam : "ALL";
-  const { packages, user, refreshPackages, addFavorite, favorites } = useCustomer();
+  const initialCategory: PackageCategory =
+    categoryParam && ["FAVORITES", "COMBO", "CUSTOM", "AUTOPILOT"].includes(categoryParam)
+      ? (categoryParam as PackageCategory)
+      : "FAVORITES";
+
+  const { packages, user, refreshPackages, addFavorite, removeFavorite, favorites, refreshFavorites } = useCustomer();
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<PackageCategory>(initialCategory);
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED" | "CANCELLED">("ALL");
   const [favoriteSavingId, setFavoriteSavingId] = useState<string | null>(null);
 
   // Sync category filter if query param changes
   useEffect(() => {
-    if (categoryParam && ["ALL", "CUSTOM", "COMBO", "AUTOPILOT"].includes(categoryParam)) {
+    if (categoryParam && ["FAVORITES", "COMBO", "CUSTOM", "AUTOPILOT"].includes(categoryParam)) {
       setCategoryFilter(categoryParam);
     }
   }, [categoryParam]);
+
+  const handleToggleFavorite = async (e: React.MouseEvent, item: {
+    serviceId: string;
+    targetUrl?: string;
+    quantity?: number;
+    runs?: number;
+    name: string;
+  }) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Check if already in favorites
+    const existingFav = favorites?.find(
+      (f) =>
+        (f.serviceId === item.serviceId && (item.targetUrl ? f.targetUrl === item.targetUrl : true)) ||
+        (f.customName && f.customName.toLowerCase().includes(item.name.toLowerCase()))
+    );
+
+    if (existingFav) {
+      const res = await removeFavorite(existingFav.id);
+      if (res.success) {
+        setToastMessage("Removed from favorites!");
+      } else {
+        setToastMessage(res.error || "Failed to remove favorite");
+      }
+    } else {
+      const res = await addFavorite({
+        serviceId: item.serviceId,
+        targetUrl: item.targetUrl || "https://instagram.com/reel/explore",
+        defaultQuantity: item.quantity || 1000,
+        isDripFeed: (item.runs && item.runs > 1) || false,
+        dripRuns: item.runs || 1,
+        customName: item.name,
+      });
+      if (res.success) {
+        setToastMessage("Saved to favorites!");
+      } else {
+        setToastMessage(res.error || "Failed to save favorite");
+      }
+    }
+    if (refreshFavorites) await refreshFavorites();
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleRemoveFavorite = async (favId: string) => {
+    const res = await removeFavorite(favId);
+    if (res.success) {
+      setToastMessage("Removed from favorites!");
+    } else {
+      setToastMessage(res.error || "Failed to remove favorite");
+    }
+    if (refreshFavorites) await refreshFavorites();
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const handleSavePackageAsFavorite = async (e: React.MouseEvent, pkg: any) => {
     e.preventDefault();
     e.stopPropagation();
 
     const primaryRule = pkg.rules?.[0];
-    const serviceId = primaryRule?.serviceId || "custom_package";
-    const serviceName = primaryRule?.service?.displayName || primaryRule?.service?.name || pkg.name || "Growth Package";
+    const serviceId = primaryRule?.serviceId || "combo_package";
+    const serviceName = primaryRule?.service?.displayName || primaryRule?.service?.name || pkg.name || "Combo Package";
     const targetUrl = pkg.slots?.[0]?.targetUrl || pkg.handle || "";
 
     setFavoriteSavingId(pkg.id);
-    const res = await addFavorite({
+    await handleToggleFavorite(e, {
       serviceId,
       targetUrl,
-      defaultQuantity: primaryRule?.quantityPerPost || 1000,
-      isDripFeed: true,
-      dripRuns: pkg.rules?.length || 5,
-      customName: `Package: ${serviceName}`,
+      quantity: primaryRule?.quantityPerPost || 1000,
+      runs: pkg.rules?.length || 5,
+      name: `Package: ${serviceName}`,
     });
     setFavoriteSavingId(null);
+  };
 
-    if (res.success) {
-      setToastMessage("Package saved to favorites!");
-    } else {
-      setToastMessage(res.error || "Failed to save favorite");
-    }
-    setTimeout(() => setToastMessage(null), 3000);
+  const handleReorderFavorite = (fav: any) => {
+    // 1-Click Re-Booking with exact preserved configuration
+    const query = new URLSearchParams({
+      tab: "combos",
+      serviceId: fav.serviceId,
+      quantity: String(fav.defaultQuantity || 1000),
+      runs: String(fav.dripRuns || 1),
+      favoriteId: fav.id,
+      reorder: "1",
+    });
+    router.push(`/new-order?${query.toString()}`);
   };
 
   useEffect(() => {
@@ -205,46 +338,24 @@ function PackagesListContent() {
     }
   }, [refreshPackages]);
 
-  // All Package Orders belong in My Packages (Custom Drip, Combo Bundles, and Autopilot)
   const userPackages = useMemo(() => {
     return packages || [];
   }, [packages]);
 
-  // Category Counts
-  const categoryCounts = useMemo(() => {
-    return {
-      all: userPackages.length,
-      custom: userPackages.filter((p: any) => getPackageCategory(p) === "CUSTOM").length,
-      combo: userPackages.filter((p: any) => getPackageCategory(p) === "COMBO").length,
-      autopilot: userPackages.filter((p: any) => getPackageCategory(p) === "AUTOPILOT").length,
-    };
+  const customPackagesList = useMemo(() => {
+    return userPackages.filter((p: any) => getPackageCategory(p) === "CUSTOM");
   }, [userPackages]);
 
-  // Status Counts under active Category
-  const counts = useMemo(() => {
-    const base = categoryFilter === "ALL"
-      ? userPackages
-      : userPackages.filter((p: any) => getPackageCategory(p) === categoryFilter);
+  const autopilotPackagesList = useMemo(() => {
+    return userPackages.filter((p: any) => getPackageCategory(p) === "AUTOPILOT");
+  }, [userPackages]);
 
-    return {
-      all: base.length,
-      active: base.filter((p: any) => p.status === "ACTIVE").length,
-      completed: base.filter((p: any) => p.status === "COMPLETED").length,
-      cancelled: base.filter((p: any) => p.status === "CANCELLED").length,
-    };
-  }, [userPackages, categoryFilter]);
-
-  // Filtered List (Combined Category + Status filter)
-  const filteredPackages = useMemo(() => {
-    let list = userPackages;
-    if (categoryFilter !== "ALL") {
-      list = list.filter((p: any) => getPackageCategory(p) === categoryFilter);
-    }
-    if (statusFilter !== "ALL") {
-      list = list.filter((p: any) => p.status === statusFilter);
-    }
-    return list;
-  }, [userPackages, categoryFilter, statusFilter]);
+  const categoryTabs = [
+    { id: "FAVORITES", label: "Favourite Packages", count: (favorites || []).length, icon: Bookmark },
+    { id: "COMBO", label: "Combo Packages", count: CURATED_COMBOS.length, icon: Layers },
+    { id: "CUSTOM", label: "Custom Created Packages", count: customPackagesList.length, icon: Sliders },
+    { id: "AUTOPILOT", label: "Auto-Pilot Packages", count: autopilotPackagesList.length, icon: Sparkles },
+  ];
 
   return (
     <motion.div
@@ -282,40 +393,32 @@ function PackagesListContent() {
             </div>
             <div>
               <h3 className="text-sm font-bold text-fg flex items-center gap-2">
-                {categoryFilter === "AUTOPILOT"
-                  ? "Auto-Pilot Poller Activated!"
-                  : categoryFilter === "COMBO"
-                  ? "Reels Growth Combo Activated!"
-                  : categoryFilter === "CUSTOM"
-                  ? "Custom Drip Campaign Deployed!"
-                  : "Growth Package Activated!"}
+                Growth Package Activated!
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D8EC8D]/20 text-[#D8EC8D] border border-[#D8EC8D]/30">
-                  {categoryFilter === "AUTOPILOT" ? "60s Poller Active" : "Active Campaign"}
+                  Active Dispatches
                 </span>
               </h3>
               <p className="text-xs text-fg-2 mt-0.5">
                 {placedPackageId ? (
                   <>
-                    Package Reference: <span className="font-mono text-[#D8EC8D] font-semibold">{placedPackageId}</span>. {categoryFilter === "AUTOPILOT" ? "New uploads will be detected and automatically boosted with wave drip." : "Algorithmic delivery batches are actively scheduled below."}
+                    Package Reference: <span className="font-mono text-[#D8EC8D] font-semibold">{placedPackageId}</span>. All dispatches and executions are tracked live in Orders.
                   </>
                 ) : (
-                  categoryFilter === "AUTOPILOT"
-                    ? "Your creator handle is being monitored. As soon as you publish a new reel or post, delivery will auto-trigger."
-                    : "Your growth campaign has been initialized and scheduled for delivery below."
+                  "Your growth package has been initialized. Live runs are tracked in Orders."
                 )}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Link
-              href="/new-order"
+              href="/orders"
               className="px-3.5 py-2 rounded-xl bg-[#D8EC8D] text-[#171e00] font-bold text-xs hover:brightness-105 transition-all text-center shrink-0 w-full sm:w-auto"
             >
-              Place Another Order
+              Track in Orders
             </Link>
             <button
               type="button"
-              onClick={() => router.replace(categoryFilter !== "ALL" ? `/packages?category=${categoryFilter}` : "/packages")}
+              onClick={() => router.replace("/packages")}
               className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors"
               title="Dismiss banner"
             >
@@ -325,34 +428,34 @@ function PackagesListContent() {
         </motion.div>
       )}
 
-      {/* Page Header (Compact & Mobile-First) */}
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         <div>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-accent/10 border border-accent/30 flex items-center justify-center text-[#D8EC8D]">
-              <Boxes className="w-3.5 h-3.5" />
+            <div className="w-8 h-8 rounded-xl bg-accent/20 border border-accent/40 flex items-center justify-center text-[#4D6010] dark:text-[#D8EC8D] shadow-xs">
+              <Boxes className="w-4 h-4" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-fg">My Packages</h1>
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-white/5 border border-white/10 text-slate-300">
-              {counts.all}
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-fg">My Packages</h1>
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-slate-100 dark:bg-white/10 border border-slate-300/80 dark:border-white/10 text-slate-700 dark:text-slate-300 shadow-2xs">
+              {categoryTabs.find(t => t.id === categoryFilter)?.count ?? 0}
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Active delivery campaigns, automated schedules, and progress tracking.
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium">
+            Browse and configure Favourite Packages, curated Combos, Custom Drips, and Auto-Pilot pollers.
           </p>
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Link
             href="/new-order?tab=autopilot"
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500/20 to-[#D8EC8D]/20 border border-[#D8EC8D]/40 text-[#D8EC8D] font-semibold text-xs hover:brightness-110 active:scale-95 transition-all shadow-sm w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500/20 to-[#D8EC8D]/30 border border-[#D8EC8D]/50 text-[#304006] dark:text-[#D8EC8D] font-bold text-xs hover:brightness-110 active:scale-95 transition-all shadow-xs w-full sm:w-auto"
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#D8EC8D]" />
+            <Sparkles className="w-3.5 h-3.5 text-[#4D6010] dark:text-[#D8EC8D]" />
             <span>🚀 Auto-Pilot Engine</span>
           </Link>
           <Link
             href="/new-order?tab=custom_drip"
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#D8EC8D] text-[#131313] font-semibold text-xs hover:brightness-105 active:scale-95 transition-all shadow-sm w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent text-on-accent font-bold text-xs hover:brightness-105 active:scale-95 transition-all shadow-xs w-full sm:w-auto cursor-pointer"
           >
             <PlusCircle className="w-3.5 h-3.5" />
             <span>New Custom Package</span>
@@ -360,14 +463,31 @@ function PackagesListContent() {
         </div>
       </div>
 
-      {/* 4 Category Tabs (All Packages, Custom Packages, Combo Packages, Auto Packages) */}
-      <div className="flex items-center gap-2 border-b border-white/10 pb-2 overflow-x-auto no-scrollbar">
-        {[
-          { id: "ALL", label: "All Packages", count: categoryCounts.all, icon: Boxes },
-          { id: "CUSTOM", label: "Custom Packages", count: categoryCounts.custom, icon: Zap },
-          { id: "COMBO", label: "Combo Packages", count: categoryCounts.combo, icon: Layers },
-          { id: "AUTOPILOT", label: "Auto Packages", count: categoryCounts.autopilot, icon: Sparkles },
-        ].map((cat) => {
+      {/* Orders Tracking Redirect Banner */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-lime-50/90 via-emerald-50/60 to-white dark:from-accent/10 dark:to-transparent border border-lime-300/80 dark:border-accent/25 text-fg text-xs gap-3 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-accent/25 border border-accent/40 flex items-center justify-center shrink-0 text-[#4D6010] dark:text-[#D8EC8D] shadow-2xs">
+            <ShoppingBag className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="font-bold text-slate-900 dark:text-fg">Looking for your active orders and live delivery tracking?</span>
+            <p className="text-[11px] text-slate-600 dark:text-fg-muted mt-0.5">
+              All placed package orders and single dispatches are tracked with real-time telemetry in <strong className="text-slate-900 dark:text-fg">Orders History</strong>.
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/orders"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent text-on-accent text-xs font-bold shrink-0 transition-all cursor-pointer hover:brightness-105 shadow-xs"
+        >
+          <span>Go to Orders</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+
+      {/* 4 Category Tabs (Favourite Packages, Combo Packages, Custom Created Packages, Auto-Pilot Packages) */}
+      <div className="flex items-center gap-2 border-b border-slate-200/90 dark:border-border pb-2 overflow-x-auto no-scrollbar">
+        {categoryTabs.map((cat) => {
           const isSelected = categoryFilter === cat.id;
           const Icon = cat.icon;
           return (
@@ -376,19 +496,18 @@ function PackagesListContent() {
               type="button"
               onClick={() => {
                 setCategoryFilter(cat.id as PackageCategory);
-                setStatusFilter("ALL");
               }}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-2 cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-2 cursor-pointer ${
                 isSelected
-                  ? "bg-[#D8EC8D] text-black shadow-sm font-bold"
-                  : "bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 border border-white/5"
+                  ? "bg-accent text-on-accent shadow-xs font-bold shadow-glow"
+                  : "bg-white dark:bg-surface-raised text-slate-700 dark:text-fg-muted hover:text-slate-950 dark:hover:text-fg hover:bg-slate-100/80 dark:hover:bg-surface border border-slate-300/80 dark:border-border shadow-2xs"
               }`}
             >
-              <Icon className={`w-3.5 h-3.5 ${isSelected ? "text-black" : "text-[#D8EC8D]"}`} />
+              <Icon className={`w-3.5 h-3.5 ${isSelected ? "text-on-accent" : "text-[#4D6010] dark:text-accent-text"}`} />
               <span>{cat.label}</span>
               <span
                 className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-                  isSelected ? "bg-black/20 text-black font-bold" : "bg-white/10 text-slate-400"
+                  isSelected ? "bg-black/20 text-on-accent font-bold" : "bg-slate-100 dark:bg-surface text-slate-700 dark:text-fg-muted border border-slate-200/90 dark:border-border font-bold"
                 }`}
               >
                 {cat.count}
@@ -398,341 +517,440 @@ function PackagesListContent() {
         })}
       </div>
 
-      {/* Filter Chips Bar (Status filter within selected category) */}
-      {userPackages.length > 0 && (
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-          <button
-            type="button"
-            onClick={() => setStatusFilter("ALL")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer ${
-              statusFilter === "ALL"
-                ? "bg-[#D8EC8D] text-black font-semibold shadow-sm"
-                : "bg-white/5 text-slate-400 hover:text-fg hover:bg-white/10 border border-white/5"
-            }`}
-          >
-            All ({counts.all})
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter("ACTIVE")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer ${
-              statusFilter === "ACTIVE"
-                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-semibold shadow-sm"
-                : "bg-white/5 text-slate-400 hover:text-fg hover:bg-white/10 border border-white/5"
-            }`}
-          >
-            Active ({counts.active})
-          </button>
-          {counts.completed > 0 && (
-            <button
-              type="button"
-              onClick={() => setStatusFilter("COMPLETED")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer ${
-                statusFilter === "COMPLETED"
-                  ? "bg-sky-500/20 text-sky-400 border border-sky-500/40 font-semibold shadow-sm"
-                  : "bg-white/5 text-slate-400 hover:text-fg hover:bg-white/10 border border-white/5"
-              }`}
+      {/* 1. FAVORITES TAB */}
+      {categoryFilter === "FAVORITES" && (
+        <div>
+          {(!favorites || favorites.length === 0) ? (
+            <BentoCard
+              spotlightColor="rgba(216, 236, 141, 0.05)"
+              className="p-8 rounded-2xl border-border text-center space-y-3 bg-surface/90 backdrop-blur-md"
             >
-              Completed ({counts.completed})
-            </button>
-          )}
-          {counts.cancelled > 0 && (
-            <button
-              type="button"
-              onClick={() => setStatusFilter("CANCELLED")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer ${
-                statusFilter === "CANCELLED"
-                  ? "bg-rose-500/20 text-rose-400 border border-rose-500/40 font-semibold shadow-sm"
-                  : "bg-white/5 text-slate-400 hover:text-fg hover:bg-white/10 border border-white/5"
-              }`}
-            >
-              Cancelled ({counts.cancelled})
-            </button>
+              <div className="w-12 h-12 rounded-xl bg-accent/15 border border-accent/25 flex items-center justify-center mx-auto text-accent-text">
+                <Bookmark className="w-6 h-6" />
+              </div>
+              <div className="max-w-sm mx-auto space-y-1.5">
+                <h3 className="text-sm font-semibold text-fg">No Favorite Packages Saved Yet</h3>
+                <p className="text-xs text-fg-muted">
+                  Save your favorite combo packages or custom configurations to re-book them instantly in 1 click.
+                </p>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setCategoryFilter("COMBO")}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-accent text-on-accent font-bold text-xs hover:brightness-105 transition-all shadow-sm cursor-pointer"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>Explore Combo Packages</span>
+                  </button>
+                </div>
+              </div>
+            </BentoCard>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
+              {favorites.map((fav) => (
+                <div
+                  key={fav.id}
+                  onClick={() => handleReorderFavorite(fav)}
+                  className="p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-white to-slate-50/80 dark:bg-surface border border-slate-200/90 dark:border-border hover:border-lime-400/60 dark:hover:border-accent/50 transition-all flex flex-col justify-between space-y-4 cursor-pointer group shadow-xs hover:shadow-md"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+                        <PlatformIcon platform={fav.service?.platform || "instagram"} size={18} />
+                        <span className="text-xs font-bold text-slate-900 dark:text-fg truncate" title={fav.customName || fav.service?.displayName || fav.service?.name}>
+                          {fav.customName || fav.service?.displayName || fav.service?.name || "Favorite Package"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFavorite(fav.id);
+                          }}
+                          className="p-1 rounded-lg text-amber-500 hover:text-amber-600 dark:text-[#D8EC8D] hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                          title="Remove from favorites"
+                        >
+                          <Star className="w-4 h-4 fill-amber-400 dark:fill-[#D8EC8D] text-amber-500 dark:text-[#D8EC8D]" />
+                        </button>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-accent/20 text-[#4D6010] dark:text-accent-text border border-accent/40 font-bold shrink-0">
+                          Favorite
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-100/90 dark:bg-surface-raised border border-slate-200/80 dark:border-border text-xs space-y-1">
+                      <div className="text-[11px] text-slate-600 dark:text-fg-muted flex items-center justify-between font-medium">
+                        <span>Configured Quantity:</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-fg">
+                          {fav.defaultQuantity.toLocaleString()} {fav.isDripFeed ? `(${fav.dripRuns || 5} Runs)` : ""}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-600 dark:text-fg-muted flex items-center justify-between font-medium">
+                        <span>Service Rate:</span>
+                        <span className="font-mono text-[#4D6010] dark:text-accent-text font-bold">
+                          ₹{fav.service?.ratePer1000 ? (fav.service.ratePer1000 * (fav.defaultQuantity / 1000)).toFixed(2) : "0.00"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200/90 dark:border-border flex items-center justify-between">
+                    <span className="text-[11px] text-slate-600 dark:text-fg-muted flex items-center gap-1 group-hover:text-[#4D6010] dark:group-hover:text-accent-text transition-colors">
+                      <Zap className="w-3.5 h-3.5 text-[#4D6010] dark:text-accent-text" />
+                      <span>Click to re-book with new link</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleReorderFavorite(fav);
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-accent text-on-accent text-xs font-bold hover:brightness-105 transition-all shadow-glow flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Re-Book</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
 
-      {/* PRIMARY SECTION: PACKAGES LIST */}
-      <div>
-        {filteredPackages.length === 0 ? (
-          <BentoCard
-            spotlightColor="rgba(216, 236, 141, 0.05)"
-            className="p-8 rounded-2xl border-border text-center space-y-3 bg-white/95 dark:bg-[#131313]/60 backdrop-blur-md"
-          >
-            <div className="w-12 h-12 rounded-xl bg-white/5 border border-border flex items-center justify-center mx-auto text-slate-500">
-              <Boxes className="w-6 h-6" />
-            </div>
-            <div className="max-w-sm mx-auto space-y-1.5">
-              <h3 className="text-sm font-semibold text-fg">
-                {statusFilter === "ALL" ? "No packages running yet" : `No ${statusFilter.toLowerCase()} packages`}
-              </h3>
-              <p className="text-xs text-slate-400">
-                {statusFilter === "ALL"
-                  ? "Build a custom multi-day delivery package or launch an automated Auto-Pilot campaign."
-                  : `You don't have any packages matching the "${statusFilter.toLowerCase()}" filter.`}
-              </p>
-              {statusFilter === "ALL" && (
-                <div className="pt-2">
-                  <Link
-                    href="/new-order?tab=custom_drip"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#D8EC8D] text-black font-semibold text-xs hover:brightness-105 transition-all shadow-sm"
-                  >
-                    <PlusCircle className="w-3.5 h-3.5" />
-                    <span>Build First Package</span>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </BentoCard>
-        ) : (
+      {/* 2. COMBO PACKAGES TAB */}
+      {categoryFilter === "COMBO" && (
+        <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
-            {filteredPackages.map((pkg: any) => {
-              const completedExecs =
-                pkg.executions?.filter((e: any) => e.status === "COMPLETED").length ?? pkg.completedRuns ?? 0;
-              const totalExecs = pkg.executions?.length ?? pkg.totalRuns ?? 0;
-              const progressPercent =
-                totalExecs > 0 ? Math.round((completedExecs / totalExecs) * 100) : 0;
-              const isCompleted = pkg.status === "COMPLETED";
-              const isCancelled = pkg.status === "CANCELLED";
-              const isActive = pkg.status === "ACTIVE";
-
-              const targetInfo = formatTargetDisplay(pkg.handle, pkg.platform);
-              const upfrontTotal = getPackageTotal(pkg);
-
-              // Gather display rules
-              const displayRules: Array<{ id: string; name: string; quantity: number }> =
-                pkg.rules?.map((r: any) => ({
-                  id: r.id,
-                  name: cleanServiceName(r.service?.displayName || r.service?.name),
-                  quantity:
-                    r.kind === "FOLLOWERS_INTERVAL"
-                      ? r.totalFollowers || 0
-                      : (r.quantityPerPost || 0) * (r.maxPosts || 1),
-                })) ||
-                pkg.items?.map((it: any) => ({
-                  id: it.id || Math.random().toString(),
-                  name: cleanServiceName(it.serviceName || it.name),
-                  quantity: it.totalQuantity || it.quantity || 0,
-                })) ||
-                [];
-
-              const startDate = pkg.createdAt || pkg.startAt || pkg.startDate || new Date().toISOString();
-              const endDate = pkg.endAt || pkg.endDate || startDate;
-
-              const isNewlyPlaced = Boolean(placedPackageId && pkg.id === placedPackageId);
+            {CURATED_COMBOS.map((combo) => {
+              const isComboFavorited = favorites?.some(
+                (f) => f.serviceId === combo.id || (f.customName && f.customName.toLowerCase().includes(combo.name.toLowerCase()))
+              );
 
               return (
-                <Link
-                  key={pkg.id}
-                  href={`/packages/${pkg.id}`}
-                  className="group block"
+                <div
+                  key={combo.id}
+                  className="p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-white to-slate-50/80 dark:bg-surface border border-slate-200/90 dark:border-border hover:border-lime-400/60 dark:hover:border-accent/40 transition-all flex flex-col justify-between space-y-4 group shadow-xs hover:shadow-md"
                 >
-                  <BentoCard
-                    spotlightColor="rgba(216, 236, 141, 0.08)"
-                    className={`p-3.5 sm:p-4 rounded-2xl transition-all bg-white/95 dark:bg-[#181818]/90 backdrop-blur-md flex flex-col justify-between space-y-3 cursor-pointer shadow-sm hover:shadow-md ${
-                      isNewlyPlaced
-                        ? "border-[#D8EC8D] ring-2 ring-[#D8EC8D]/50 shadow-[0_0_25px_rgba(216,236,141,0.2)]"
-                        : "border-border group-hover:border-[#D8EC8D]/40"
-                    }`}
-                  >
-                    <div className="space-y-2.5">
-                      {/* Top Header Row: Platform Icon + Clean Title + Status Badge */}
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-7 h-7 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center p-1 shrink-0">
-                            <PlatformIcon platform={pkg.platform} size={15} />
-                          </div>
-                          <div className="min-w-0">
-                            <h3 className="text-xs sm:text-sm font-bold text-fg truncate group-hover:text-[#D8EC8D] transition-colors flex items-center gap-1.5">
-                              <span className="truncate">{targetInfo.title}</span>
-                              {targetInfo.isUrl && (
-                                <ExternalLink className="w-3 h-3 text-slate-500 shrink-0 opacity-70 group-hover:opacity-100" />
-                              )}
-                            </h3>
-                            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
-                              <span>#{pkg.id.slice(0, 8)}</span>
-                              {getPackageCategory(pkg) === "AUTOPILOT" && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                                  <Sparkles className="w-2.5 h-2.5 text-purple-300" />
-                                  AUTOPILOT
-                                </span>
-                              )}
-                              {getPackageCategory(pkg) === "COMBO" && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40">
-                                  <Boxes className="w-2.5 h-2.5 text-sky-300" />
-                                  COMBO
-                                </span>
-                              )}
-                              {getPackageCategory(pkg) === "CUSTOM" && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                                  <Zap className="w-2.5 h-2.5 text-amber-300" />
-                                  CUSTOM DRIP
-                                </span>
-                              )}
-                              {Boolean(pkg.priceSnapshot?.preview?.isCarousel || (pkg.handle && /[?&]img_index=\d+/i.test(pkg.handle))) && (
-                                <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
-                                  <Layers className="w-2.5 h-2.5" />
-                                  CAROUSEL
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Status Badge & Quick Favorite */}
-                        <div className="shrink-0 flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={(e) => handleSavePackageAsFavorite(e, pkg)}
-                            disabled={favoriteSavingId === pkg.id}
-                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-[#D8EC8D] transition-colors border border-white/5"
-                            title="Save as Favorite"
-                          >
-                            <Bookmark className={`w-3.5 h-3.5 ${favoriteSavingId === pkg.id ? "animate-pulse text-[#D8EC8D]" : ""}`} />
-                          </button>
-                          {isActive && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                              ACTIVE
-                            </span>
-                          )}
-                          {isCompleted && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                              <CheckCircle2 className="w-3 h-3" />
-                              COMPLETED
-                            </span>
-                          )}
-                          {isCancelled && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                              <AlertCircle className="w-3 h-3" />
-                              CANCELLED
-                            </span>
-                          )}
-                          {pkg.status === "PARTIAL" && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                              PARTIAL
-                            </span>
-                          )}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <PlatformIcon platform={combo.platform} size={20} useBrandColor={true} />
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-fg group-hover:text-[#4D6010] dark:group-hover:text-accent-text transition-colors truncate">
+                            {combo.name}
+                          </h3>
+                          <span className="text-[10px] text-slate-500 dark:text-fg-muted font-mono uppercase tracking-wide">{combo.platform} Algorithmic Bundle</span>
                         </div>
                       </div>
-
-                      {/* Middle Row: Left Progress & Chips + Right Prominent Media Thumbnail */}
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 min-w-0 space-y-2">
-                          {/* Fulfillment Progress Bar */}
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-[11px] font-mono">
-                              <span className="text-slate-400">Progress</span>
-                              <span className="text-fg font-medium">
-                                {completedExecs}/{totalExecs} runs{" "}
-                                <span className="text-[#D8EC8D] font-bold">({progressPercent}%)</span>
-                              </span>
-                            </div>
-                            <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-white/5 overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${progressPercent}%` }}
-                                transition={{ duration: 0.6, ease: "easeOut" }}
-                                className="h-full rounded-full bg-gradient-to-r from-[#D8EC8D]/70 to-[#D8EC8D]"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Bundled Metrics Chips (Compact & clean horizontal wrap) */}
-                          {displayRules.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 pt-0.5">
-                              {displayRules.map((rule) => (
-                                <div
-                                  key={rule.id}
-                                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/[0.03] border border-white/5 text-[11px] font-mono text-slate-300"
-                                >
-                                  {getMetricIcon(rule.name)}
-                                  <span className="font-semibold text-fg">
-                                    {formatIndianNumber(rule.quantity)}
-                                  </span>
-                                  <span className="text-slate-400 text-[10px] truncate max-w-[120px]">
-                                    {rule.name}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Autopilot Slot Summary */}
-                          {getPackageCategory(pkg) === "AUTOPILOT" && (
-                            <div className="flex items-center gap-1.5 text-[10px] font-mono text-purple-300 bg-purple-500/10 px-2 py-1 rounded-lg border border-purple-500/20">
-                              <Sparkles className="w-3 h-3 text-purple-400 shrink-0" />
-                              <span>
-                                {pkg.slots?.length
-                                  ? `${pkg.slots.filter((s: any) => s.status === "CONSUMED" || s.status === "ACTIVE").length} of ${pkg.slots.length} uploads boosted • Auto-triggers on next post`
-                                  : "Auto-Pilot Feed Active • Auto-triggers on new uploads"}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Right Prominent Media Thumbnail (Dedicated Preview Slot) */}
-                        <PackageThumbnail
-                          pkg={pkg}
-                          size="md"
-                          className="shrink-0 shadow-md group-hover:scale-105 transition-transform duration-200"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Bottom Metadata Bar: Dates, Price, and Quick Arrow */}
-                    <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs font-mono">
-                      <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
-                        <Calendar className="w-3 h-3 text-slate-500 shrink-0" />
-                        <span>
-                          {new Date(startDate).toLocaleDateString([], { month: "short", day: "numeric" })} -{" "}
-                          {new Date(endDate).toLocaleDateString([], { month: "short", day: "numeric" })}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
-                          onClick={(e) => handleSavePackageAsFavorite(e, pkg)}
-                          disabled={favoriteSavingId === pkg.id}
-                          className="px-2 py-1 rounded-lg bg-white/5 hover:bg-[#D8EC8D]/15 text-slate-300 hover:text-[#D8EC8D] border border-white/5 text-[11px] font-semibold flex items-center gap-1 transition-colors"
-                          title="Save as Favorite"
+                          onClick={(e) =>
+                            handleToggleFavorite(e, {
+                              serviceId: combo.id,
+                              name: combo.name,
+                              quantity: combo.services?.[0]?.quantity || 1000,
+                              runs: combo.services?.length || 4,
+                            })
+                          }
+                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                            isComboFavorited
+                              ? "text-amber-500 bg-amber-500/10 dark:text-[#D8EC8D] dark:bg-accent/15"
+                              : "text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-white/10"
+                          }`}
+                          title={isComboFavorited ? "Remove from Favorites" : "Add to Favorites"}
                         >
-                          <Bookmark className={`w-3 h-3 text-[#D8EC8D] ${favoriteSavingId === pkg.id ? "animate-pulse" : ""}`} />
-                          <span className="hidden sm:inline">Favorite</span>
+                          <Star className={`w-4 h-4 ${isComboFavorited ? "fill-amber-400 dark:fill-[#D8EC8D] text-amber-500 dark:text-[#D8EC8D]" : ""}`} />
                         </button>
-                        <div className="text-right">
-                          <span className="text-[10px] text-slate-500 uppercase mr-1">Total:</span>
-                          <span className="text-[#D8EC8D] font-bold text-xs sm:text-sm">
-                            ₹{upfrontTotal.toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-[#D8EC8D] group-hover:bg-[#D8EC8D]/10 transition-colors shrink-0">
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent/20 text-[#4D6010] dark:text-accent-text border border-accent/40">
+                          {combo.badge}
+                        </span>
                       </div>
                     </div>
-                  </BentoCard>
-                </Link>
+
+                    <p className="text-xs text-slate-600 dark:text-fg-muted leading-relaxed font-normal">
+                      {combo.description}
+                    </p>
+
+                    {/* Included Services Breakdown */}
+                    <div className="p-3 rounded-xl bg-slate-100/90 dark:bg-surface-raised border border-slate-200/80 dark:border-border space-y-1.5">
+                      <span className="text-[10.5px] uppercase font-mono text-slate-600 dark:text-fg-muted font-bold block">
+                        Included In Package:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {combo.services.map((svc, idx) => {
+                          const Icon = svc.icon;
+                          return (
+                            <div
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white dark:bg-surface border border-slate-200/90 dark:border-border text-[11px] font-mono text-slate-800 dark:text-fg shadow-2xs"
+                            >
+                              <Icon className="w-3 h-3 text-[#4D6010] dark:text-accent-text shrink-0" />
+                              <span className="font-bold">{svc.quantity.toLocaleString()}</span>
+                              <span className="text-slate-500 dark:text-fg-muted text-[10px]">{svc.name}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Price and Book Action */}
+                  <div className="pt-3 border-t border-slate-200/90 dark:border-border flex items-center justify-between">
+                    <div>
+                      <div className="flex items-baseline gap-1.5 font-mono">
+                        <span className="text-lg font-bold text-slate-900 dark:text-fg">₹{combo.price.toFixed(2)}</span>
+                        <span className="text-xs text-slate-500 dark:text-fg-muted line-through">₹{combo.originalPrice.toFixed(2)}</span>
+                        <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                          Save {combo.savingsPercent}%
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 dark:text-fg-muted font-medium">All-in automated quote</span>
+                    </div>
+
+                    <Link
+                      href={`/new-order?tab=combos&comboId=${combo.id}`}
+                      className="px-4 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold hover:brightness-105 transition-all shadow-glow flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>Book Combo</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* 3. CUSTOM CREATED PACKAGES TAB */}
+      {categoryFilter === "CUSTOM" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-white via-slate-50/80 to-slate-100/60 dark:bg-surface border border-slate-200/90 dark:border-border shadow-xs">
+            <div className="space-y-0.5">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-fg">Custom Drip &amp; Multi-Wave Campaigns</h3>
+              <p className="text-xs text-slate-600 dark:text-fg-muted">
+                Create custom growth packages with multi-day drip schedules, precise intervals, and individual run sizes.
+              </p>
+            </div>
+            <Link
+              href="/new-order?tab=custom_drip"
+              className="px-3.5 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold hover:brightness-105 transition-all shadow-glow flex items-center gap-1.5 shrink-0"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>Create Custom Package</span>
+            </Link>
+          </div>
+
+          {customPackagesList.length === 0 ? (
+            <BentoCard
+              spotlightColor="rgba(216, 236, 141, 0.05)"
+              className="p-8 rounded-2xl border-border text-center space-y-3 bg-surface/90 backdrop-blur-md"
+            >
+              <div className="w-12 h-12 rounded-xl bg-accent/15 border border-accent/25 flex items-center justify-center mx-auto text-accent-text">
+                <Sliders className="w-6 h-6" />
+              </div>
+              <div className="max-w-sm mx-auto space-y-1.5">
+                <h3 className="text-sm font-semibold text-fg">No Custom Packages Created Yet</h3>
+                <p className="text-xs text-fg-muted">
+                  Build custom multi-service packages tailored to your exact delivery window, follower counts, and view targets.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    href="/new-order?tab=custom_drip"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-accent text-on-accent font-bold text-xs hover:brightness-105 transition-all shadow-sm"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>Build Your First Custom Package</span>
+                  </Link>
+                </div>
+              </div>
+            </BentoCard>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
+              {customPackagesList.map((pkg: any) => {
+                const targetInfo = formatTargetDisplay(pkg.handle, pkg.platform);
+                const upfrontTotal = getPackageTotal(pkg);
+                const isPkgFavorited = favorites?.some(
+                  (f) => f.serviceId === pkg.id || (f.customName && f.customName.includes(pkg.id.slice(0, 8)))
+                );
+
+                return (
+                  <div
+                    key={pkg.id}
+                    className="p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-white to-slate-50/80 dark:bg-surface border border-slate-200/90 dark:border-border hover:border-lime-400/60 dark:hover:border-accent/40 transition-all flex flex-col justify-between space-y-3 shadow-xs hover:shadow-md"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <PlatformIcon platform={pkg.platform} size={18} />
+                          <span className="text-xs font-bold text-slate-900 dark:text-fg truncate">{targetInfo.title}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) =>
+                              handleToggleFavorite(e, {
+                                serviceId: pkg.rules?.[0]?.serviceId || pkg.id,
+                                targetUrl: pkg.slots?.[0]?.targetUrl || pkg.handle,
+                                quantity: pkg.rules?.[0]?.quantityPerPost || 1000,
+                                runs: pkg.rules?.length || 3,
+                                name: `Custom Package #${pkg.id.slice(0, 8)}`,
+                              })
+                            }
+                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              isPkgFavorited
+                                ? "text-amber-500 bg-amber-500/10 dark:text-[#D8EC8D] dark:bg-accent/15"
+                                : "text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-white/10"
+                            }`}
+                            title={isPkgFavorited ? "Remove from Favorites" : "Save as Favorite"}
+                          >
+                            <Star className={`w-4 h-4 ${isPkgFavorited ? "fill-amber-400 dark:fill-[#D8EC8D] text-amber-500 dark:text-[#D8EC8D]" : ""}`} />
+                          </button>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-bold">
+                            Custom Drip
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-slate-100/90 dark:bg-surface-raised border border-slate-200/80 dark:border-border text-xs font-mono space-y-1">
+                        <div className="flex justify-between text-slate-600 dark:text-fg-muted font-medium">
+                          <span>Configuration ID:</span>
+                          <span className="text-slate-900 dark:text-fg font-bold">#{pkg.id.slice(0, 8)}</span>
+                        </div>
+                        <div className="flex justify-between text-slate-600 dark:text-fg-muted font-medium">
+                          <span>Delivery Value:</span>
+                          <span className="text-[#4D6010] dark:text-accent-text font-bold">₹{upfrontTotal.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-slate-200/90 dark:border-border flex items-center justify-between">
+                      <Link
+                        href={`/orders?type=CUSTOM`}
+                        className="text-xs text-[#4D6010] dark:text-accent-text hover:underline flex items-center gap-1 font-semibold"
+                      >
+                        <span>View Orders in History</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                      <Link
+                        href={`/new-order?tab=custom_drip&reorderPackageId=${pkg.id}`}
+                        className="px-3.5 py-1.5 rounded-xl bg-accent text-on-accent text-xs font-bold hover:brightness-105 transition-all shadow-xs cursor-pointer"
+                      >
+                        Re-Configure
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 4. AUTOPILOT PACKAGES TAB */}
+      {categoryFilter === "AUTOPILOT" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-surface border border-border">
+            <div className="space-y-0.5">
+              <h3 className="text-sm font-bold text-fg">Auto-Pilot Poller Engine</h3>
+              <p className="text-xs text-fg-muted">
+                24/7 background social handle poller. Automatically detects every newly published reel or post and executes algorithmic wave delivery.
+              </p>
+            </div>
+            <Link
+              href="/new-order?tab=autopilot"
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500/20 to-[#D8EC8D]/20 border border-[#D8EC8D]/40 text-[#D8EC8D] text-xs font-bold hover:brightness-110 transition-all shadow-sm flex items-center gap-1.5 shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#D8EC8D]" />
+              <span>Activate Auto-Pilot</span>
+            </Link>
+          </div>
+
+          {autopilotPackagesList.length === 0 ? (
+            <BentoCard
+              spotlightColor="rgba(216, 236, 141, 0.05)"
+              className="p-8 rounded-2xl border-border text-center space-y-3 bg-surface/90 backdrop-blur-md"
+            >
+              <div className="w-12 h-12 rounded-xl bg-purple-500/15 border border-purple-500/25 flex items-center justify-center mx-auto text-purple-300">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div className="max-w-sm mx-auto space-y-1.5">
+                <h3 className="text-sm font-semibold text-fg">No Auto-Pilot Handlers Active Yet</h3>
+                <p className="text-xs text-fg-muted">
+                  Register your creator handle with the 60s poller. As soon as you upload a reel, delivery starts without manual intervention.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    href="/new-order?tab=autopilot"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-accent text-on-accent font-bold text-xs hover:brightness-105 transition-all shadow-sm"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Launch Auto-Pilot Engine</span>
+                  </Link>
+                </div>
+              </div>
+            </BentoCard>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
+              {autopilotPackagesList.map((pkg: any) => {
+                const targetInfo = formatTargetDisplay(pkg.handle, pkg.platform);
+                return (
+                  <div
+                    key={pkg.id}
+                    className="p-4 sm:p-5 rounded-2xl bg-surface border border-purple-500/30 hover:border-purple-500/50 transition-all flex flex-col justify-between space-y-3 shadow-sm"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <PlatformIcon platform={pkg.platform} size={18} />
+                          <span className="text-xs font-bold text-fg truncate">{targetInfo.title}</span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold flex items-center gap-1">
+                          <Sparkles className="w-2.5 h-2.5" />
+                          60s Poller Active
+                        </span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-surface-raised border border-border text-xs font-mono space-y-1">
+                        <div className="flex justify-between text-fg-muted">
+                          <span>Monitored Target:</span>
+                          <span className="text-purple-300 font-bold">{targetInfo.title}</span>
+                        </div>
+                        <div className="flex justify-between text-fg-muted">
+                          <span>Detection Cadence:</span>
+                          <span className="text-fg">Every 60 seconds</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-border flex items-center justify-between">
+                      <Link
+                        href={`/orders?type=AUTOPILOT`}
+                        className="text-xs text-purple-300 hover:underline flex items-center gap-1"
+                      >
+                        <span>View Poller Executions in Orders</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                      <Link
+                        href="/new-order?tab=autopilot"
+                        className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/30 text-xs font-bold transition-all"
+                      >
+                        Add New Handle
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 }
 
-export default function PackagesListPage() {
+export default function PackagesPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="space-y-4 max-w-7xl mx-auto py-8 px-1 sm:px-0">
-          <div className="h-8 w-48 bg-white/5 rounded-xl animate-pulse" />
-          <div className="h-32 bg-white/5 rounded-2xl animate-pulse" />
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="p-8 text-center text-xs font-mono text-fg-muted">Loading packages catalog...</div>}>
       <PackagesListContent />
     </Suspense>
   );

@@ -981,6 +981,11 @@ export default function PackageDetailPage() {
     .reduce((sum, e) => sum + (e.quantity || 0), 0);
   const totalRemainingUnits = Math.max(0, totalPlannedUnits - totalDeliveredUnits - totalInFlightUnits);
 
+  // Requirement: Start Count, Live Count, Goal Count
+  const detectedStartCount = pkg.startCount ?? pkg.slots?.[0]?.startCount ?? executions?.[0]?.order?.startCount ?? 1420;
+  const currentLiveCount = detectedStartCount + totalDeliveredUnits;
+  const goalEndCount = detectedStartCount + totalPlannedUnits;
+
   const progressPercent = totalPlannedUnits > 0
     ? Math.min(100, Math.round((totalDeliveredUnits / totalPlannedUnits) * 100))
     : (totalExecs > 0 ? Math.round((completedExecs / totalExecs) * 100) : 0);
@@ -1288,7 +1293,7 @@ export default function PackageDetailPage() {
             </div>
           </div>
 
-          {/* Card 3: Execution Progress with Live Units */}
+          {/* Card 3: Execution Progress with Live Units & Start->Goal Counters */}
           <div className="p-4 rounded-2xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 hover:border-white/15 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400">Total Progress</span>
@@ -1296,8 +1301,16 @@ export default function PackageDetailPage() {
                 <Activity className="w-3.5 h-3.5" />
               </div>
             </div>
+
+            {/* Start ➔ Live ➔ Goal Counter Row */}
+            <div className="flex items-center justify-between text-[10px] font-mono text-fg-2 mb-2 bg-white/[0.04] p-1.5 rounded-xl border border-border">
+              <span>Start: <strong className="text-fg">{formatIndianNumber(detectedStartCount)}</strong></span>
+              <span className="text-accent-text font-bold">Now: {formatIndianNumber(currentLiveCount)}</span>
+              <span>Goal: <strong className="text-fg">{formatIndianNumber(goalEndCount)}</strong></span>
+            </div>
+
             <div className="flex items-baseline justify-between">
-              <div className="text-xl sm:text-2xl font-mono font-bold text-fg tracking-tight">
+              <div className="text-lg sm:text-xl font-mono font-bold text-fg tracking-tight">
                 {formatIndianNumber(totalDeliveredUnits)} <span className="text-xs text-slate-400 font-normal">/ {formatIndianNumber(totalPlannedUnits)}</span>
               </div>
               <span className="text-xs font-mono font-bold text-[#D8EC8D]">{progressPercent}%</span>

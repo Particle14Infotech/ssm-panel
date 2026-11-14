@@ -22,6 +22,7 @@ import {
   Lock,
   ExternalLink,
   X,
+  Zap,
 } from "lucide-react";
 import { PaymentIcon } from "@/components/shared/PaymentIcon";
 import { BrandLogo } from "@/components/shared/BrandLogo";
@@ -89,33 +90,47 @@ export default function WalletPage() {
   const gateways = [
     {
       id: "UPI" as PaymentMethod,
-      name: "UPI",
-      sub: "Direct (0–5s) • 0% Fee",
+      name: "UPI Direct",
+      shortName: "UPI / QR",
+      sub: "Instant (0–5s) • 0% Fee",
       badge: "Fast",
+      min: 100,
+      max: 50000,
     },
     ...(youpiEligible
       ? [
           {
             id: "YOUPI_PILOT" as const,
-            name: "UPI (Pilot)",
-            sub: "Confirmation can take a few hours",
+            name: "UPI (Pilot Mode)",
+            shortName: "Pilot",
+            sub: "Confirmation in 10-30 mins",
             badge: "Pilot",
+            min: 100,
+            max: 5000,
           },
         ]
       : []),
     {
       id: "CARD" as PaymentMethod,
-      name: "Credit / Debit Card",
-      sub: "Visa, Mastercard, RuPay",
+      name: "Cards (Visa / MC / RuPay)",
+      shortName: "Cards",
+      sub: "Debit & Credit Cards • 0% Surcharge",
       badge: "Secure",
+      min: 100,
+      max: 50000,
     },
     {
       id: "NETBANKING" as PaymentMethod,
-      name: "Netbanking",
-      sub: "IMPS, NEFT & All Banks",
+      name: "Net Banking (All Banks)",
+      shortName: "Net Banking",
+      sub: "IMPS, NEFT & 50+ Banks",
       badge: "Direct",
+      min: 100,
+      max: 50000,
     },
   ];
+
+  const activeGateway = gateways.find((g) => g.id === selectedMethod) || gateways[0];
 
   // Presets as requested in Phase 5: ₹100, ₹500, ₹1,000, ₹5,000
   const presets = [100, 500, 1000, 5000];
@@ -217,139 +232,157 @@ export default function WalletPage() {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className="w-full bg-white dark:bg-[#131313] min-h-screen pb-24 text-fg"
+      className="w-full bg-white dark:bg-[#131313] min-h-screen pb-36 sm:pb-24 text-fg"
     >
       <div className="max-w-[1560px] mx-auto px-4 md:px-8 py-8 space-y-8">
-        {/* Header Clean */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+        {/* Header with Top Transaction History Button */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="text-3xl md:text-4xl font-semibold text-fg tracking-tight">Wallet & Financials</h1>
-            <p className="text-xs text-slate-400">
-              Manage your wallet balance, add spendable funds, unlock bonuses, and inspect transaction statements.
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-fg tracking-tight">Wallet & Transactions</h1>
+            <p className="text-xs text-fg-muted">
+              Add spendable funds, choose payment methods, and inspect transaction statements.
             </p>
           </div>
-        </div>
 
-        {/* Wallet Navigation Tabs */}
-        <div className="flex items-center gap-2 border-b border-border pb-3">
-          <button
-            type="button"
-            onClick={() => setWalletTab("add_funds")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-              walletTab === "add_funds"
-                ? "bg-accent/15 text-accent-text border border-accent/30 shadow-xs"
-                : "text-fg-muted hover:text-fg hover:bg-surface-raised"
-            }`}
-          >
-            <Wallet className="w-4 h-4" />
-            <span>Add Funds</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setWalletTab("transactions")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-              walletTab === "transactions"
-                ? "bg-accent/15 text-accent-text border border-accent/30 shadow-xs"
-                : "text-fg-muted hover:text-fg hover:bg-surface-raised"
-            }`}
-          >
-            <Receipt className="w-4 h-4" />
-            <span>Transactions & Invoices</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setWalletTab(walletTab === "transactions" ? "add_funds" : "transactions")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer ${
+                walletTab === "transactions"
+                  ? "bg-accent text-on-accent shadow-glow font-bold"
+                  : "bg-surface-raised border border-border text-fg hover:border-accent/40"
+              }`}
+            >
+              <Receipt className="w-4 h-4" />
+              <span>{walletTab === "transactions" ? "Back to Deposit" : "Transaction History"}</span>
+            </button>
+          </div>
         </div>
 
         {/* Success Banner */}
         {successTxn && (
-          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-3xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-2xl">
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-3xl p-5 text-white flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-2xl">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-success flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-7 h-7" />
+              <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-success flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-fg">Deposit Credited Successfully!</h3>
+                <h3 className="text-base font-bold text-fg">Deposit Credited Successfully!</h3>
                 <p className="text-xs text-fg-2 mt-0.5">
-                  Payment <span className="font-mono text-emerald-300">{successTxn.paymentId}</span> for ₹{successTxn.amount.toFixed(2)} has been credited and added to your balance.
+                  Payment <span className="font-mono text-emerald-300">{successTxn.paymentId}</span> for ₹{successTxn.amount.toFixed(2)} has been credited.
                 </p>
               </div>
             </div>
             <button
               onClick={() => setSuccessTxn(null)}
-              className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold"
+              className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold"
             >
               Dismiss
             </button>
           </div>
         )}
 
-        {/* Dual Column: Balance Overview & Deposit Form (Visible on Add Funds tab) */}
+        {/* Primary View: Balance Card + Deposit Methods */}
         {walletTab === "add_funds" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Top Up Gateway Selector (7 cols) */}
-          <div className="lg:col-span-7 bg-white dark:bg-[#1c1b1b] border border-border rounded-3xl p-6 md:p-8 space-y-6 shadow-xl">
-            <div className="flex items-center justify-between border-b border-border pb-4">
+          <div className="space-y-6">
+            {/* Requirement 5: Current Balance directly underneath main headline */}
+            <div className="bg-surface border border-border rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-medium text-fg">Choose Deposit Amount & Method</h2>
+                <span className="text-[10px] uppercase font-mono tracking-widest text-fg-muted block">
+                  Available Spending Liquidity
+                </span>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-3xl sm:text-4xl font-light text-fg font-mono tracking-tight">
+                    ₹{user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
+                  <span className="text-xs font-mono text-accent-text font-bold">INR</span>
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Automated balance crediting with zero gateway processing surcharge.
-                </p>
               </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-success text-[10px] font-mono font-semibold">
-                0% Fee
-              </span>
+
+              <div className="hidden sm:flex items-center gap-3 text-xs font-mono">
+                <div className="bg-surface-raised border border-border rounded-xl px-3.5 py-2">
+                  <span className="text-[10px] text-fg-muted uppercase block">Total Spent</span>
+                  <span className="text-fg font-bold text-sm">₹{user.totalSpent.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="bg-surface-raised border border-border rounded-xl px-3.5 py-2">
+                  <span className="text-[10px] text-fg-muted uppercase block">Total Orders</span>
+                  <span className="text-fg font-bold text-sm">{user.totalOrders}</span>
+                </div>
+              </div>
             </div>
 
-            {/* Gateway Cards Grid with Real Payment Logos */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch">
-              {gateways.map((gw) => {
-                const isSelected = selectedMethod === gw.id;
-                return (
-                  <motion.button
-                    key={gw.id}
-                    type="button"
-                    whileHover={{ y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setSelectedMethod(gw.id)}
-                    className={`relative p-3.5 sm:p-4 rounded-2xl text-left border transition-all flex flex-col justify-between gap-3 overflow-hidden ${
-                      isSelected
-                        ? "bg-accent/15 border-[#D8EC8D] ring-1 ring-[#D8EC8D]/40 shadow-sm"
-                        : "bg-white/[0.03] border-border hover:border-white/20 hover:bg-white/[0.06]"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-1.5 w-full min-h-[26px]">
-                      <div className="shrink-0 flex items-center">
-                        <PaymentIcon method={gw.id} size={20} />
-                      </div>
-                      <span
-                        className={`text-[9px] px-2 py-0.5 rounded-full font-mono font-semibold whitespace-nowrap shrink-0 transition-colors ${
-                          isSelected ? "bg-[#D8EC8D] text-[#131313] font-bold" : "bg-white/10 text-fg-2"
-                        }`}
-                      >
-                        {gw.badge}
+            {/* Deposit Method & Amount Selector (Streamlined without fluff) */}
+            <div className="bg-surface border border-border rounded-3xl p-5 sm:p-7 space-y-6 shadow-sm">
+              <div className="flex items-center justify-between border-b border-border pb-4">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-semibold text-fg">Choose Deposit Amount & Method</h2>
+                  <p className="text-xs text-fg-muted mt-0.5">
+                    Automated balance crediting with zero gateway processing surcharge.
+                  </p>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-success text-[10px] font-mono font-bold">
+                  0% Fee
+                </span>
+              </div>
+
+              {/* Compact Active Method Spotlight Card */}
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-accent/15 via-accent/5 to-transparent border border-accent/40 shadow-xs flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-surface border border-border flex items-center justify-center shrink-0 shadow-xs">
+                    <PaymentIcon method={activeGateway.id} size={22} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm sm:text-base font-bold text-fg tracking-tight truncate">
+                        {activeGateway.name}
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold bg-[#D8EC8D] text-[#131313] shrink-0">
+                        {activeGateway.badge}
                       </span>
                     </div>
+                    <p className="text-[11px] text-fg-muted font-mono truncate mt-0.5">
+                      Min: ₹{activeGateway.min.toLocaleString("en-IN")} • Max: ₹{activeGateway.max.toLocaleString("en-IN")} • {activeGateway.sub}
+                    </p>
+                  </div>
+                </div>
+                <div className="hidden sm:flex items-center gap-1.5 text-xs text-accent-text font-semibold shrink-0">
+                  <ShieldCheck className="w-4 h-4 text-accent" />
+                  <span>0% Fee Verified</span>
+                </div>
+              </div>
 
-                    <div className="min-w-0 mt-1 space-y-1">
-                      <div className="text-xs sm:text-sm font-semibold text-fg tracking-tight leading-tight">
-                        {gw.name}
-                      </div>
-                      <div className="text-[11px] text-slate-400 leading-snug">
-                        {gw.sub}
-                      </div>
-                    </div>
-                  </motion.button>
-                );
-              })}
-            </div>
+              {/* Horizontal Method Selector Tabs */}
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {gateways.map((gw) => {
+                  const isSelected = selectedMethod === gw.id;
+                  return (
+                    <button
+                      key={gw.id}
+                      type="button"
+                      onClick={() => setSelectedMethod(gw.id)}
+                      className={`py-2 px-2.5 rounded-xl border text-center transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5 cursor-pointer ${
+                        isSelected
+                          ? "bg-accent/20 border-accent text-fg font-bold shadow-xs ring-1 ring-accent/30"
+                          : "bg-surface-raised border-border text-fg-muted hover:text-fg hover:border-accent/40"
+                      }`}
+                    >
+                      <PaymentIcon method={gw.id} size={16} />
+                      <span className="text-xs font-semibold tracking-tight truncate">
+                        {gw.shortName}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
 
             {/* Amount Selection */}
             <div className="space-y-3 pt-2">
-              <label className="text-[11px] uppercase tracking-wider text-slate-400 font-mono font-semibold">
+              <label className="text-[11px] uppercase tracking-wider text-fg-muted font-mono font-semibold">
                 Deposit Amount (INR)
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-light text-fg font-mono">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-medium text-fg-muted font-mono">
                   ₹
                 </span>
                 <input
@@ -358,7 +391,7 @@ export default function WalletPage() {
                   step={100}
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}
-                  className="w-full bg-white/5 border border-border focus:border-[#D8EC8D]/50 text-fg font-mono text-2xl font-light pl-10 pr-4 py-3 rounded-2xl focus:outline-none transition-all"
+                  className="w-full bg-surface-raised border border-border focus:border-accent text-fg font-mono text-2xl font-bold pl-10 pr-4 py-3 rounded-2xl focus:outline-none transition-all"
                 />
               </div>
 
@@ -411,7 +444,7 @@ export default function WalletPage() {
               data-testid="deposit-submit-btn"
               onClick={handleOpenCheckout}
               disabled={isProcessing || amount <= 0}
-              className="w-full py-4 px-6 rounded-2xl btn-primary-gradient hover:brightness-105 active:scale-[0.99] text-[#171e00] font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+              className="w-full py-4 px-6 rounded-2xl btn-primary-gradient hover:brightness-105 active:scale-[0.99] text-[#171e00] font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md disabled:opacity-50 cursor-pointer"
             >
               {isProcessing ? (
                 <>
@@ -427,75 +460,28 @@ export default function WalletPage() {
               )}
             </button>
           </div>
-
-          {/* Right Column: Balance Summary & Tier Card (5 cols) */}
-          <div className="lg:col-span-5 space-y-6">
-            {/* Wallet Balance Hero Card */}
-            <div className="bg-white dark:bg-[#1c1b1b] border border-border rounded-3xl p-6 md:p-8 space-y-6 relative overflow-hidden shadow-xl">
-
-              <div className="flex items-center justify-between border-b border-border pb-4">
-                <div className="flex items-center gap-2">
-                  <Wallet className="w-5 h-5 text-[#D8EC8D]" />
-                  <h3 className="text-base font-medium text-fg">Current Balance</h3>
-                </div>
-                <span className="px-3 py-1 rounded-full bg-accent/15 text-[#D8EC8D] text-[10px] font-mono font-bold">
-                  INR WALLET
-                </span>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[10px] uppercase font-mono tracking-widest text-slate-400">
-                  Available Spending Liquidity
-                </span>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-extralight text-fg font-mono tracking-tight">
-                    ₹{user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                  </span>
-                  <span className="text-xs font-mono text-[#D8EC8D]">INR</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 pt-2 text-xs font-mono">
-                <div className="bg-white/[0.03] border border-slate-200/60 dark:border-white/5 rounded-2xl p-3.5">
-                  <span className="text-[10px] text-slate-400 uppercase block">Total Spent</span>
-                  <span className="text-fg font-bold text-sm">₹{user.totalSpent.toLocaleString("en-IN")}</span>
-                </div>
-                <div className="bg-white/[0.03] border border-slate-200/60 dark:border-white/5 rounded-2xl p-3.5">
-                  <span className="text-[10px] text-slate-400 uppercase block">Total Orders</span>
-                  <span className="text-fg font-bold text-sm">{user.totalOrders} Orders</span>
-                </div>
-              </div>
-
-              <div className="bg-white/[0.02] border border-slate-200/60 dark:border-white/5 rounded-2xl p-4 space-y-2 text-xs text-slate-400">
-                <div className="flex items-center justify-between">
-                  <span>Settlement SLA</span>
-                  <span className="text-success font-mono font-semibold">Direct Clearance</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>GST Invoice</span>
-                  <span className="text-fg font-mono font-semibold">Automated Download</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Security</span>
-                  <span className="text-[#D8EC8D] font-mono font-semibold">256-bit SSL Encrypted</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
         )}
 
-        {/* Transactions Statements Table */}
-        <div className="bg-white dark:bg-[#1c1b1b] border border-border rounded-3xl p-4 md:p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] overflow-hidden space-y-4">
+        {/* Requirement 6: Transactions Statements Table only rendered on click ("transactions" tab) */}
+        {walletTab === "transactions" && (
+        <div className="bg-surface border border-border rounded-3xl p-4 md:p-6 shadow-sm overflow-hidden space-y-4">
           <div className="flex items-center justify-between px-2">
             <div>
               <h2 className="text-sm font-semibold uppercase tracking-wider text-fg">
                 Recent Transaction Statements
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-fg-muted mt-0.5">
                 Downloadable tax receipts and ledger verification audit trail.
               </p>
             </div>
+            <button
+              type="button"
+              onClick={() => setWalletTab("add_funds")}
+              className="text-xs text-accent-text hover:underline"
+            >
+              Back to Deposit
+            </button>
           </div>
 
           <div className="overflow-x-auto">
@@ -634,6 +620,7 @@ export default function WalletPage() {
             )}
           </div>
         </div>
+        )}
       </div>
 
       {/* Razorpay-style Simulated Checkout Modal */}

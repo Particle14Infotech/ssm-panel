@@ -364,7 +364,12 @@ model Order {
 
   @@unique([userId, idempotencyKey], name: "unique_order_idempotency_per_user")
   @@index([userId, status, createdAt])
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([createdAt])
   @@index([providerId, status])
+  @@index([providerOrderId])
+  @@index([serviceId])
 }
 
 model OrderRun {
@@ -477,6 +482,7 @@ model AuditLog {
 
   @@index([userId, createdAt])
   @@index([action])
+  @@index([createdAt])
 }
 
 model Ticket {
@@ -492,6 +498,8 @@ model Ticket {
   messages TicketMessage[]
 
   @@index([userId, status])
+  @@index([userId, createdAt])
+  @@index([status, updatedAt])
 }
 
 model TicketMessage {
@@ -786,6 +794,9 @@ model Package {
 
   @@unique([userId, idempotencyKey], name: "unique_package_idempotency_per_user")
   @@index([userId, status, createdAt])
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([createdAt])
   @@index([platform, handle, status])
   @@index([status, endAt])
 }
@@ -868,6 +879,7 @@ model PackageExecution {
   @@unique([packageId, mediaKey, seq], name: "unique_package_media_seq")
   @@index([status, executeAt])
   @@index([packageId])
+  @@index([packageId, status])
   @@index([ruleId])
 }
 

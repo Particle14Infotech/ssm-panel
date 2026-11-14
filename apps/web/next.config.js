@@ -5,7 +5,7 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
   compress: true,
   swcMinify: true,
-  output: process.env.DOCKER_CONTAINER === "true" ? "standalone" : undefined,
+  output: "standalone",
   transpilePackages: ["@smm/contracts", "@smm/config", "three", "framer-motion"],
   images: {
     formats: ["image/avif", "image/webp"],
@@ -37,14 +37,9 @@ const nextConfig = {
     ],
   },
   async rewrites() {
-    let backendUrl = process.env.INTERNAL_API_URL || process.env.API_URL;
-    if (process.env.DOCKER_CONTAINER === "true") {
-      backendUrl = process.env.INTERNAL_API_URL || "http://api:4000";
-    } else if (!backendUrl && process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.startsWith("http")) {
-      backendUrl = process.env.NEXT_PUBLIC_API_URL;
-    }
-    if (!backendUrl || backendUrl.includes("railway.app") || (process.env.DOCKER_CONTAINER === "true" && backendUrl.includes("localhost"))) {
-      backendUrl = (process.env.DOCKER_CONTAINER === "true" || process.env.NODE_ENV === "production") ? "http://api:4000" : "http://127.0.0.1:4000";
+    let backendUrl = process.env.INTERNAL_API_URL || "http://api:4000";
+    if (process.env.NODE_ENV === "development" && !process.env.INTERNAL_API_URL) {
+      backendUrl = "http://127.0.0.1:4000";
     }
     const cleanBackend = backendUrl.replace(/\/api\/v1\/?$/, "").replace(/\/+$/, "");
     const fastifyUrl = process.env.INTERNAL_FASTIFY_URL?.replace(/\/api\/v1\/?$/, "").replace(/\/+$/, "");

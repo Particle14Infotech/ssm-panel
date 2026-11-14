@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCustomer } from "@/context/CustomerContext";
@@ -29,20 +29,38 @@ import {
 
 export function CustomerHeader() {
   const pathname = usePathname();
-  const { user, logout } = useCustomer();
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const { user, logout, mobileDrawerOpen, setMobileDrawerOpen } = useCustomer();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  // Auto-close drawer on route change (e.g. when tapping bottom nav)
+  useEffect(() => {
+    setMobileDrawerOpen(false);
+  }, [pathname]);
+
+  // Toggle body class to coordinate mobile bottom nav hiding
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      if (mobileDrawerOpen) {
+        document.body.classList.add("mobile-drawer-active");
+      } else {
+        document.body.classList.remove("mobile-drawer-active");
+      }
+    }
+    return () => {
+      if (typeof document !== "undefined") {
+        document.body.classList.remove("mobile-drawer-active");
+      }
+    };
+  }, [mobileDrawerOpen]);
 
   const mobileNavLinks = [
     { name: "Dashboard", href: "/dashboard", icon: Layers },
     { name: "New Order", href: "/new-order", icon: PlusCircle },
     { name: "My Packages", href: "/packages", icon: Boxes },
-    { name: "Favorites", href: "/favorites", icon: Bookmark },
     { name: "Services", href: "/services-catalog", icon: Layers },
     { name: "Orders", href: "/orders", icon: ListOrdered },
     { name: "Wallet", href: "/wallet", icon: Wallet },
-    { name: "Support Tickets", href: "/support", icon: HelpCircle },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
@@ -67,22 +85,22 @@ export function CustomerHeader() {
 
           {/* Quick Search */}
           <div className="relative w-full hidden sm:block">
-            <Search className="w-4 h-4 text-fg-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-500 dark:text-fg-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder="Search services, orders, IDs..."
-              className="w-full bg-surface-raised border border-border focus:border-focus rounded-xl pl-9 pr-4 py-1.5 text-xs text-fg placeholder:text-fg-muted focus:outline-none transition-all"
+              className="w-full bg-slate-100/90 dark:bg-surface-raised border border-slate-300/80 dark:border-border focus:border-[#4D6010] dark:focus:border-focus rounded-xl pl-9 pr-4 py-1.5 text-xs text-slate-900 dark:text-fg placeholder:text-slate-500 dark:placeholder:text-fg-muted focus:outline-none transition-all shadow-2xs font-medium"
             />
           </div>
         </div>
 
         {/* Right: Balance Chip + Add Funds, Notifications, User Menu */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Balance Chip (No-wrap per T3 rules) */}
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-surface-raised border border-border rounded-xl p-1 pr-1.5 pl-2.5 sm:pl-3 whitespace-nowrap transition-colors">
+          {/* Balance Chip (Hidden on mobile per Requirement 10, visible on md+) */}
+          <div className="hidden md:flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-slate-100 to-lime-50/70 dark:from-transparent dark:to-transparent dark:bg-surface-raised border border-slate-300/80 dark:border-border rounded-xl p-1 pr-1.5 pl-2.5 sm:pl-3 whitespace-nowrap transition-colors shadow-2xs">
             <div className="flex items-baseline gap-1 font-sans whitespace-nowrap">
-              <span className="text-[10px] sm:text-[11px] text-fg-muted uppercase tracking-wide font-medium">Bal:</span>
-              <span className="text-xs font-semibold text-fg tabular-nums tracking-tight">
+              <span className="text-[10px] sm:text-[11px] text-slate-600 dark:text-fg-muted uppercase tracking-wide font-bold">Bal:</span>
+              <span className="text-xs font-bold text-slate-950 dark:text-fg tabular-nums tracking-tight">
                 ₹{user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </span>
             </div>
@@ -128,8 +146,8 @@ export function CustomerHeader() {
             )}
           </div>
 
-          {/* User Profile Dropdown */}
-          <div className="relative">
+          {/* User Profile Dropdown: Hidden on mobile per Requirement 3, placed inside hamburger drawer */}
+          <div className="relative hidden lg:block">
             <button
               type="button"
               onClick={() => {
@@ -189,15 +207,15 @@ export function CustomerHeader() {
 
       {/* Mobile Drawer */}
       {mobileDrawerOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-[100] lg:hidden">
           {/* Overlay */}
           <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100]"
             onClick={() => setMobileDrawerOpen(false)}
           />
 
           {/* Drawer Menu */}
-          <div className="fixed top-0 bottom-0 left-0 w-72 bg-surface border-r border-border p-6 flex flex-col justify-between shadow-2xl z-50">
+          <div className="fixed top-0 bottom-0 left-0 w-72 bg-surface border-r border-border p-6 flex flex-col justify-between shadow-2xl z-[101]">
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <BrandLogo variant="combined" size={28} withLink href="/dashboard" />
@@ -208,6 +226,27 @@ export function CustomerHeader() {
                 >
                   <X className="w-5 h-5" />
                 </button>
+              </div>
+
+              {/* Requirement 3: User Profile Card embedded inside Hamburger Drawer */}
+              <div className="p-3.5 rounded-2xl bg-surface-raised border border-border flex items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-accent text-on-accent flex items-center justify-center text-sm font-bold font-mono shrink-0 shadow-sm">
+                    {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-bold text-fg truncate">{user.name || "User"}</div>
+                    <div className="text-[10px] text-fg-muted truncate">{user.email || ""}</div>
+                  </div>
+                </div>
+                <Link
+                  href="/settings"
+                  onClick={() => setMobileDrawerOpen(false)}
+                  className="p-2 rounded-xl text-fg-muted hover:text-fg hover:bg-surface border border-border transition-colors"
+                  title="Account Settings"
+                >
+                  <Settings className="w-4 h-4" />
+                </Link>
               </div>
 
               {/* Mobile Balance Pill */}

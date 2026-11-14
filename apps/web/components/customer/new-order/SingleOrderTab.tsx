@@ -5,6 +5,8 @@ import { GlassCard } from "@/components/shared/GlassCard";
 import { formatIndianNumber } from "@/lib/numberFormat";
 import { validateServiceLink } from "@smm/contracts";
 import { LinkPreviewCard } from "@/components/shared/LinkPreviewCard";
+import { LinkAutoSuggest } from "./LinkAutoSuggest";
+import { SmartServiceSuggestions } from "./SmartServiceSuggestions";
 import { GenericSelect } from "./CustomDropdownSelect";
 import {
   Search,
@@ -21,6 +23,8 @@ import {
   History,
   X,
   Check,
+  Layers,
+  Bot,
 } from "lucide-react";
 
 interface SingleOrderTabProps {
@@ -30,6 +34,8 @@ interface SingleOrderTabProps {
   durationChips: number[];
   favorites: any[];
   recentOrders: any[];
+  autoSuggestEnabled?: boolean;
+  onToggleAutoSuggest?: (val: boolean) => void;
   onOrderDetailsChange: (details: {
     service: any;
     targetUrl: string;
@@ -53,6 +59,8 @@ export function SingleOrderTab({
   durationChips,
   favorites,
   recentOrders,
+  autoSuggestEnabled = true,
+  onToggleAutoSuggest,
   onOrderDetailsChange,
   onSwitchTab,
   prefilledTargetUrl = "",
@@ -106,10 +114,10 @@ export function SingleOrderTab({
 
   // Update target URL if prefill changes from external
   useEffect(() => {
-    if (prefilledTargetUrl && !targetUrl) {
+    if (prefilledTargetUrl && prefilledTargetUrl !== targetUrl) {
       setTargetUrl(prefilledTargetUrl);
     }
-  }, [prefilledTargetUrl, targetUrl]);
+  }, [prefilledTargetUrl]);
 
   // Normalize services for the selected platform
   const platformServices = useMemo(() => {
@@ -491,61 +499,87 @@ export function SingleOrderTab({
         </div>
       )}
 
-      {/* Favorites & Recent Orders Quick Strips (Section 4.2) */}
-      <div className="space-y-2">
-        {favorites && favorites.length > 0 && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs scrollbar-none no-scrollbar">
-            <span className="text-slate-500 flex items-center gap-1 shrink-0 text-[11px] font-medium">
-              <Star className="w-3.5 h-3.5 text-warning fill-amber-400" />
-              <span>Favorites:</span>
-            </span>
-            {favorites.slice(0, 5).map((fav) => (
-              <button
-                key={fav.id}
-                type="button"
-                onClick={() =>
-                  handlePrefillItem({
-                    serviceId: fav.serviceId,
-                    targetUrl: fav.targetUrl,
-                    quantity: fav.defaultQuantity || fav.quantity,
-                    title: fav.customName || fav.name || "Saved Favorite",
-                  })
-                }
-                className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.04] hover:bg-slate-200 dark:hover:bg-white/[0.08] text-fg-2 border border-slate-200/80 dark:border-white/5 whitespace-nowrap transition-colors flex items-center gap-1.5 font-medium"
-              >
-                <span>{fav.customName || fav.name || "Favorite"}</span>
-              </button>
-            ))}
-          </div>
+      {/* 1. Target Link & Auto-Suggestion / Thumbnail Preview */}
+      <section aria-labelledby="link-heading" className="space-y-2">
+        <div className="flex justify-between items-center text-xs">
+          <label id="link-heading" className="text-xs font-bold text-fg-2 uppercase tracking-wider block">
+            1. Target Link
+          </label>
+          <span className="text-slate-500 text-[11px]">The account or post must be public</span>
+        </div>
+
+        <div className="relative">
+          <LinkAutoSuggest
+            value={targetUrl}
+            onChange={setTargetUrl}
+            platform={selectedService?.platform || platform}
+            placeholder={linkPlaceholder}
+            className={
+              targetUrl && !linkValidation.isValid
+                ? "border-red-500/70 focus:ring-1 focus:ring-red-500"
+                : "border-slate-300 dark:border-white/10 focus:border-[#D8EC8D]/60 focus:ring-1 focus:ring-[#D8EC8D]/60"
+            }
+          />
+        </div>
+
+        {/* Link Preview and Validation Hint Card (Maintains Thumbnail Preview) */}
+        <LinkPreviewCard
+          url={targetUrl}
+          selectedPlatform={selectedService?.platform || platform}
+          serviceTypeOrMetric={linkType}
+        />
+
+        {/* Smart Link-to-Service Recommendation Strip (Only when autoSuggestEnabled is ON) */}
+        {autoSuggestEnabled && (
+          <SmartServiceSuggestions
+            targetUrl={targetUrl}
+            services={services}
+            selectedServiceId={selectedServiceId}
+            onSelectService={(svc) => {
+              setSelectedServiceId(svc.id);
+              if (svc.category) setSelectedCategoryId(svc.category);
+            }}
+          />
         )}
 
-        {recentOrders && recentOrders.length > 0 && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs scrollbar-none no-scrollbar">
-            <span className="text-slate-500 flex items-center gap-1 shrink-0 text-[11px] font-medium">
-              <History className="w-3.5 h-3.5 text-slate-400" />
-              <span>Recent orders:</span>
+        {/* Quick Growth Path Switchers for this Link */}
+        {targetUrl && targetUrl.trim().length > 10 && (
+          <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-surface-raised border border-border text-xs">
+            <span className="text-[11px] text-fg-muted font-medium flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-accent-text" />
+              Growth paths for this link:
             </span>
-            {recentOrders.slice(0, 5).map((ro) => (
+            <div className="flex items-center gap-1.5 flex-wrap">
               <button
-                key={ro.id}
                 type="button"
-                onClick={() =>
-                  handlePrefillItem({
-                    serviceId: ro.serviceId,
-                    targetUrl: ro.target,
-                    quantity: ro.quantity,
-                    title: `Order #${ro.id.slice(-6)}`,
-                  })
-                }
-                className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.04] hover:bg-slate-200 dark:hover:bg-white/[0.08] text-fg-2 border border-slate-200/80 dark:border-white/5 whitespace-nowrap transition-colors flex items-center gap-1.5"
+                onClick={() => onSwitchTab?.("combos")}
+                className="px-2.5 py-1 rounded-lg bg-surface hover:bg-white/10 border border-border text-fg font-medium text-xs flex items-center gap-1 cursor-pointer transition-colors"
               >
-                <span className="font-mono text-slate-400">#{ro.id.slice(-5)}</span>
-                <span className="truncate max-w-[140px]">{ro.serviceName || "Service"}</span>
+                <Layers className="w-3 h-3 text-accent-text" />
+                <span>Combo Packages</span>
               </button>
-            ))}
+              <button
+                type="button"
+                onClick={() => onSwitchTab?.("autopilot")}
+                className="px-2.5 py-1 rounded-lg bg-surface hover:bg-white/10 border border-border text-fg font-medium text-xs flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <Bot className="w-3 h-3 text-accent-text" />
+                <span>Auto-Pilot</span>
+              </button>
+              {autoSuggestEnabled && (
+                <button
+                  type="button"
+                  onClick={() => onToggleAutoSuggest?.(false)}
+                  className="px-2.5 py-1 rounded-lg hover:bg-white/10 text-fg-muted hover:text-fg text-xs flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  <span>Skip suggestions</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
-      </div>
+      </section>
 
       {/* 2. Category Selection (Custom Searchable Dropdown for Light & Dark Theme) */}
       <section aria-labelledby="category-heading" className="space-y-2">
@@ -859,49 +893,11 @@ export function SingleOrderTab({
         )}
       </section>
 
-      {/* 4. Target Link & Quantity Details */}
+      {/* 4. Quantity & Execution Controls */}
       <section aria-labelledby="details-heading" className="space-y-4">
         <label id="details-heading" className="text-xs font-bold text-fg-2 uppercase tracking-wider block">
-          4. Details
+          4. Quantity & Details
         </label>
-
-        {/* Target Link Input */}
-        <div className="space-y-1.5">
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-fg-2 font-medium text-xs">{linkLabel}</span>
-            <span className="text-slate-500 text-[11px]">The account or post must be public.</span>
-          </div>
-
-          <div className="relative flex items-center">
-            <Link2 className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="url"
-              value={targetUrl}
-              onChange={(e) => setTargetUrl(e.target.value)}
-              placeholder={linkPlaceholder}
-              className={`w-full pl-10 pr-20 py-3 rounded-xl bg-white dark:bg-[#131313] border text-fg text-xs font-mono placeholder:text-slate-400 focus:outline-none transition-all shadow-xs ${
-                targetUrl && !linkValidation.isValid
-                  ? "border-red-500/70 focus:ring-1 focus:ring-red-500"
-                  : "border-slate-300 dark:border-white/10 focus:border-[#D8EC8D]/60 focus:ring-1 focus:ring-[#D8EC8D]/60"
-              }`}
-            />
-            <button
-              type="button"
-              onClick={handlePaste}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/[0.15] text-[11px] text-fg-2 font-medium flex items-center gap-1 transition-colors select-none"
-            >
-              <Clipboard className="w-3 h-3" />
-              <span>Paste</span>
-            </button>
-          </div>
-
-          {/* Link Preview and Validation Hint Card */}
-          <LinkPreviewCard
-            url={targetUrl}
-            selectedPlatform={selectedService?.platform || platform}
-            serviceTypeOrMetric={linkType}
-          />
-        </div>
 
         {/* Quantity Controls */}
         <div className="space-y-2">

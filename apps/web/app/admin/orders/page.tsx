@@ -198,8 +198,8 @@ export default function AdminOrdersPage() {
                 Root Orders Administration / Execution Supervisor
               </span>
             </div>
-            <h1 className="text-3xl font-light text-white tracking-tight">Admin Orders Ledger</h1>
-            <p className="text-xs text-on-surface-variant">
+            <h1 className="text-3xl font-light text-fg tracking-tight">Admin Orders Ledger</h1>
+            <p className="text-xs text-fg-muted">
               Override fulfillment states, resend stuck provider vectors, or issue direct ledger refunds.
             </p>
           </div>
@@ -207,23 +207,23 @@ export default function AdminOrdersPage() {
           <button
             onClick={handleManualRefresh}
             disabled={isRefreshing}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/[0.04] border border-white/10 hover:border-[#D8EC8D]/40 text-xs font-mono text-white transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-surface-raised border border-border hover:border-accent/40 text-xs font-mono text-fg transition-colors cursor-pointer"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-[#D8EC8D] ${isRefreshing ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-accent-text ${isRefreshing ? "animate-spin" : ""}`} />
             <span>{isRefreshing ? "Refreshing..." : "Refresh Orders"}</span>
           </button>
         </div>
 
         {/* Filters & Search */}
-        <div className="glass-panel rounded-3xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="bg-surface border border-border rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
           <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 text-on-surface-variant absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-fg-muted absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by Order ID, User ID, Target URL, or Service..."
-              className="w-full bg-surface-container-highest/80 border border-white/5 focus:border-[#D8EC8D]/50 rounded-2xl pl-11 pr-4 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none font-mono"
+              className="w-full bg-surface-raised border border-border focus:border-accent rounded-xl pl-11 pr-4 py-2.5 text-xs text-fg placeholder:text-fg-muted focus:outline-none font-mono"
             />
           </div>
 
@@ -231,14 +231,14 @@ export default function AdminOrdersPage() {
             <button
               type="button"
               onClick={() => setDripFeedOnly(!dripFeedOnly)}
-              className={`px-3.5 py-2 rounded-2xl text-xs font-mono font-semibold transition-all flex items-center gap-2 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-mono font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                 dripFeedOnly
-                  ? "btn-primary-gradient text-[#171e00] shadow-sm shadow-[#D8EC8D]/20"
-                  : "bg-surface-container-highest/80 border border-white/10 text-slate-400 hover:text-white"
+                  ? "bg-accent text-on-accent shadow-glow"
+                  : "bg-surface-raised border border-border text-fg-muted hover:text-fg"
               }`}
             >
               <span>Drip-feed Only</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/30 font-bold">
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-surface border border-border font-bold">
                 {orders.filter((o) => o.isDripFeed).length}
               </span>
             </button>
@@ -246,14 +246,14 @@ export default function AdminOrdersPage() {
             <button
               type="button"
               onClick={() => setLateRunsOnly(!lateRunsOnly)}
-              className={`px-3 py-2 rounded-2xl text-xs font-mono font-medium flex items-center gap-1.5 transition-all ${
+              className={`px-3 py-2 rounded-xl text-xs font-mono font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                 lateRunsOnly
                   ? "bg-amber-500 text-black font-bold shadow-sm shadow-amber-500/20"
-                  : "bg-surface-container-highest/80 border border-white/10 text-slate-400 hover:text-white"
+                  : "bg-surface-raised border border-border text-fg-muted hover:text-fg"
               }`}
             >
               <span>Late Runs</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/30 font-bold">
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-surface border border-border font-bold">
                 {orders.filter((o) => isLate(o)).length}
               </span>
             </button>
@@ -261,7 +261,7 @@ export default function AdminOrdersPage() {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-surface-container-highest/80 border border-white/10 rounded-2xl px-4 py-2.5 text-xs text-white font-medium cursor-pointer"
+              className="bg-surface-raised border border-border rounded-xl px-4 py-2.5 text-xs text-fg font-medium cursor-pointer focus:outline-none focus:border-accent"
             >
               <option value="ALL">All Statuses ({orders.length})</option>
               <option value="PROCESSING">Processing</option>
@@ -277,7 +277,7 @@ export default function AdminOrdersPage() {
         </div>
 
         {/* Orders Table */}
-        <div className="glass-panel rounded-3xl p-4 md:p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.65)] overflow-hidden">
+        <div className="bg-surface border border-border rounded-2xl p-4 md:p-6 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
@@ -293,41 +293,41 @@ export default function AdminOrdersPage() {
                   <th className="py-3 px-3 text-right">Root Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-border">
                 {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="py-4 px-3 font-mono font-bold text-white whitespace-nowrap">
+                  <tr key={order.id} className="hover:bg-surface-raised/50 transition-colors">
+                    <td className="py-3.5 px-3 font-mono font-bold text-fg whitespace-nowrap">
                       <div>{order.id.slice(0, 8)}...</div>
-                      <div className="text-[10px] text-on-surface-variant font-normal">
+                      <div className="text-[10px] text-fg-muted font-normal">
                         {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ""}
                       </div>
                     </td>
-                    <td className="py-4 px-3 font-mono text-on-surface-variant whitespace-nowrap">
-                      <div className="text-white font-medium">{order.userEmail || order.userId}</div>
-                      <div className="text-[10px] text-white/40">{order.userId}</div>
+                    <td className="py-3.5 px-3 font-mono text-fg-muted whitespace-nowrap">
+                      <div className="text-fg font-medium">{order.userEmail || order.userId}</div>
+                      <div className="text-[10px] text-fg-muted">{order.userId}</div>
                     </td>
-                    <td className="py-4 px-3">
-                      <div className="font-medium text-white max-w-xs truncate">{order.serviceName}</div>
-                      <div className="text-[10px] text-on-surface-variant uppercase font-mono mt-0.5">
+                    <td className="py-3.5 px-3">
+                      <div className="font-medium text-fg max-w-xs truncate">{order.serviceName}</div>
+                      <div className="text-[10px] text-fg-muted uppercase font-mono mt-0.5">
                         {order.platform}
                       </div>
                     </td>
-                    <td className="py-4 px-3">
+                    <td className="py-3.5 px-3">
                       <a
                         href={order.target}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[#D8EC8D] hover:underline font-mono truncate max-w-[160px] inline-flex items-center gap-1"
+                        className="text-accent-text hover:underline font-mono truncate max-w-[160px] inline-flex items-center gap-1"
                       >
                         <span className="truncate">{order.target}</span>
                         <ExternalLink className="w-3 h-3 shrink-0" />
                       </a>
                     </td>
-                    <td className="py-4 px-3 font-mono text-white">
+                    <td className="py-3.5 px-3 font-mono text-fg">
                       {order.isDripFeed ? (
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1.5">
-                            <span className="px-1.5 py-0.2 rounded bg-accent/15 text-[#D8EC8D] text-[10px] font-semibold">
+                            <span className="px-1.5 py-0.2 rounded bg-accent/15 text-accent-text text-[10px] font-semibold">
                               Drip-feed
                             </span>
                             <span className="font-semibold text-[#D8EC8D]">

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { RegisterInputSchema, RegisterInput } from "@smm/contracts";
-import { Zap, ArrowRight, Lock, User, Mail, AlertCircle, ShieldCheck } from "lucide-react";
+import { Zap, ArrowRight, Lock, User, Mail, AlertCircle, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { BrandLogo } from "@/components/shared/BrandLogo";
 
 import dynamic from "next/dynamic";
@@ -18,6 +18,8 @@ const DynamicAuthCrown = dynamic(
 
 export default function RegisterPage() {
   const [serverError, setServerError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     register,
@@ -80,10 +82,18 @@ export default function RegisterPage() {
         document.cookie = `authToken=${encodeURIComponent(json.token)}; path=/; max-age=604800; SameSite=Lax`;
         document.cookie = `userRole=${encodeURIComponent(role)}; path=/; max-age=604800; SameSite=Lax`;
 
-        window.location.href = "/app/dashboard";
+        const searchParams = new URLSearchParams(window.location.search);
+        const fromParam = searchParams.get("from");
+        const isSafeRelativeUrl =
+          fromParam &&
+          fromParam.startsWith("/") &&
+          !fromParam.startsWith("//") &&
+          !fromParam.includes(":");
+        const target = isSafeRelativeUrl && !fromParam.startsWith("/admin") ? fromParam : "/dashboard";
+        window.location.href = target;
         return;
       }
-      window.location.href = "/app/dashboard";
+      window.location.href = "/dashboard";
     } catch (err: any) {
       setServerError(err.message || "Registration could not be completed. Please try again.");
     }
@@ -202,11 +212,19 @@ export default function RegisterPage() {
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute left-3.5 top-3 text-[#c7c8b6]" />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     {...register("password")}
                     placeholder="••••••••••••"
-                    className="w-full bg-[#131313] text-white text-sm pl-10 pr-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-[#D8EC8D]/50"
+                    className="w-full bg-[#131313] text-white text-sm pl-10 pr-11 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-[#D8EC8D]/50"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3.5 top-2.5 p-1 text-[#c7c8b6] hover:text-white transition-colors cursor-pointer"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
                 {errors.password && (
                   <span className="text-xs text-[#ffb4ab] mt-1 block">
@@ -222,11 +240,19 @@ export default function RegisterPage() {
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute left-3.5 top-3 text-[#c7c8b6]" />
                   <input
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     {...register("confirmPassword")}
                     placeholder="••••••••••••"
-                    className="w-full bg-[#131313] text-white text-sm pl-10 pr-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-[#D8EC8D]/50"
+                    className="w-full bg-[#131313] text-white text-sm pl-10 pr-11 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-[#D8EC8D]/50"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute right-3.5 top-2.5 p-1 text-[#c7c8b6] hover:text-white transition-colors cursor-pointer"
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
                 {errors.confirmPassword && (
                   <span className="text-xs text-[#ffb4ab] mt-1 block">

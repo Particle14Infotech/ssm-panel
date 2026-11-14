@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useCustomer } from "@/context/CustomerContext";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
+import { LinkAutoSuggest } from "./LinkAutoSuggest";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap,
@@ -581,12 +582,11 @@ export function AutoPilotTab({
               </div>
 
               <div className="relative">
-                <input
-                  type="text"
+                <LinkAutoSuggest
                   value={handleInput}
-                  onChange={(e) => handleInputChange(e.target.value)}
+                  onChange={(val) => handleInputChange(val)}
+                  platform={selectedPlatform.toLowerCase()}
                   placeholder={activePlatform.placeholder}
-                  className="w-full pl-3.5 pr-20 py-2.5 sm:py-3 rounded-2xl bg-surface-raised border border-border text-fg placeholder:text-fg-muted/60 focus:outline-none focus:border-emerald-500 dark:focus:border-[#D8EC8D] text-sm font-medium transition-all"
                 />
 
                 <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5">

@@ -15,7 +15,7 @@ import { formatIndianNumber } from "@/lib/numberFormat";
 
 export function CustomerBottomNav() {
   const pathname = usePathname();
-  const { user } = useCustomer();
+  const { user, mobileDrawerOpen, setMobileDrawerOpen } = useCustomer();
 
   const navItems = [
     {
@@ -24,16 +24,15 @@ export function CustomerBottomNav() {
       icon: LayoutDashboard,
     },
     {
+      name: "My Packages",
+      href: "/packages",
+      icon: Boxes,
+    },
+    {
       name: "New Order",
       href: "/new-order",
       icon: PlusCircle,
       highlight: true,
-    },
-    {
-      name: "My Packages",
-      href: "/packages",
-      icon: Boxes,
-      badge: "Multi",
     },
     {
       name: "Orders",
@@ -51,7 +50,9 @@ export function CustomerBottomNav() {
   return (
     <nav
       aria-label="Mobile Navigation"
-      className="lg:hidden fixed bottom-3 left-3 right-3 sm:left-auto sm:right-auto sm:w-[440px] sm:left-1/2 sm:-translate-x-1/2 z-40 bg-surface/85 dark:bg-[#10140b]/80 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 rounded-full px-2 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.65)] select-none transition-all duration-200 pb-[calc(env(safe-area-inset-bottom)+0.25rem)]"
+      className={`lg:hidden fixed bottom-3 left-3 right-3 sm:left-auto sm:right-auto sm:w-[440px] sm:left-1/2 sm:-translate-x-1/2 z-40 bg-surface/85 dark:bg-[#10140b]/80 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 rounded-full px-2 py-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.65)] select-none transition-all duration-300 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] ${
+        mobileDrawerOpen ? "translate-y-28 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
+      }`}
     >
       <div className="flex items-center justify-around w-full gap-1">
         {navItems.map((item) => {
@@ -64,6 +65,7 @@ export function CustomerBottomNav() {
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={() => setMobileDrawerOpen(false)}
                 className="flex flex-col items-center group focus:outline-none"
               >
                 <div
@@ -90,6 +92,7 @@ export function CustomerBottomNav() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={() => setMobileDrawerOpen(false)}
               className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-full transition-all relative group focus:outline-none ${
                 isActive
                   ? "bg-accent/15 dark:bg-[#D8EC8D]/15 text-accent-text border border-accent/30 dark:border-[#D8EC8D]/30 shadow-[0_0_12px_rgba(216,236,141,0.18)]"
@@ -102,11 +105,6 @@ export function CustomerBottomNav() {
                     isActive ? "stroke-[2.2] text-accent-text" : "stroke-[1.7]"
                   }`}
                 />
-                {item.badge && !item.isWallet && (
-                  <span className="absolute -top-1 -right-2 text-[7px] font-mono font-bold bg-accent/20 text-accent-text px-1 rounded-full border border-accent/40">
-                    {item.badge}
-                  </span>
-                )}
               </div>
 
               {item.isWallet && user?.balance !== undefined ? (

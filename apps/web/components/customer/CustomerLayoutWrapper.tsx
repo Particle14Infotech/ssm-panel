@@ -1,15 +1,31 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { CustomerProvider } from "@/context/CustomerContext";
 import { CustomerSidebar } from "./CustomerSidebar";
 import { CustomerHeader } from "./CustomerHeader";
 import { CustomerBottomNav } from "./CustomerBottomNav";
+import { getUserRole, getAuthToken } from "@/lib/auth-session";
 
 export function CustomerLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isDashboard = pathname === "/dashboard" || pathname === "/app/dashboard";
+
+  // Enforce customer authentication and prevent admin users from being trapped in Customer portal
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = getAuthToken();
+      if (!token) {
+        window.location.replace("/login?logout=true");
+        return;
+      }
+      const role = getUserRole();
+      if (role === "ADMIN") {
+        window.location.replace("/admin/dashboard");
+      }
+    }
+  }, []);
 
   return (
     <CustomerProvider>
@@ -21,7 +37,7 @@ export function CustomerLayoutWrapper({ children }: { children: React.ReactNode 
         <CustomerSidebar />
 
         {/* Main Content Viewport */}
-        <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative z-10">
+        <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
           {/* Header visible across all views - permanently pinned to top on mobile and desktop */}
           <CustomerHeader />
           <main

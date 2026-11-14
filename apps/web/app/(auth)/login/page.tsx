@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginInputSchema, LoginInput } from "@smm/contracts";
-import { ArrowRight, Lock, User, AlertCircle, ShieldCheck } from "lucide-react";
+import { ArrowRight, Lock, User, AlertCircle, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import dynamic from "next/dynamic";
 import { getApiBase } from "@/lib/api-base";
@@ -17,6 +17,20 @@ const DynamicAuthCrown = dynamic(
 
 export default function LoginPage() {
   const [serverError, setServerError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // When visiting with logout=true, thoroughly wipe any stale client storage
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get("logout") === "true") {
+        try {
+          localStorage.clear();
+          sessionStorage.clear();
+        } catch {}
+      }
+    }
+  }, []);
 
   const {
     register,
@@ -39,6 +53,7 @@ export default function LoginPage() {
     if (typeof window !== "undefined") {
       localStorage.clear();
       localStorage.setItem("authToken", token);
+      localStorage.setItem("userRole", role);
       if (refreshTokenStr) {
         localStorage.setItem("refreshToken", refreshTokenStr);
       }
@@ -49,10 +64,21 @@ export default function LoginPage() {
       document.cookie = `token=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax`;
       document.cookie = `userRole=${encodeURIComponent(role)}; path=/; max-age=604800; SameSite=Lax`;
 
+      // Safe relative redirect to prevent open-redirect vulnerabilities
+      const searchParams = new URLSearchParams(window.location.search);
+      const fromParam = searchParams.get("from");
+      const isSafeRelativeUrl =
+        fromParam &&
+        fromParam.startsWith("/") &&
+        !fromParam.startsWith("//") &&
+        !fromParam.includes(":");
+
       if (role === "ADMIN") {
-        window.location.href = "/admin/dashboard";
+        const target = isSafeRelativeUrl && fromParam.startsWith("/admin") ? fromParam : "/admin/dashboard";
+        window.location.href = target;
       } else {
-        window.location.href = "/wallet";
+        const target = isSafeRelativeUrl && !fromParam.startsWith("/admin") ? fromParam : "/dashboard";
+        window.location.href = target;
       }
     }
   };
@@ -190,11 +216,19 @@ export default function LoginPage() {
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute left-3.5 top-3 text-[#c7c8b6]" />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     {...register("password")}
                     placeholder="••••••••••••"
-                    className="w-full bg-[#131313] text-white text-sm pl-10 pr-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-[#D8EC8D]/50"
+                    className="w-full bg-[#131313] text-white text-sm pl-10 pr-11 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-[#D8EC8D]/50"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3.5 top-2.5 p-1 text-[#c7c8b6] hover:text-white transition-colors cursor-pointer"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
                 {errors.password && (
                   <span className="text-xs text-[#ffb4ab] mt-1 block">

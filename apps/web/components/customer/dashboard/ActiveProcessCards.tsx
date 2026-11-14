@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { GlowingFluidOrb } from "./GlowingFluidOrb";
+import { PackageThumbnail } from "@/components/shared/PackageThumbnail";
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
-import { Pause, Play, RefreshCw, CheckCircle2, ArrowRight, ArrowUpRight } from "lucide-react";
+import { Pause, Play, RefreshCw, CheckCircle2, ArrowRight, ArrowUpRight, Target } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { formatIndianNumber } from "@/lib/numberFormat";
 
 export interface ProcessItem {
   id: string;
@@ -23,7 +24,16 @@ export interface ProcessItem {
   quotaUsed?: number;
   quotaTotal?: number;
   targetUrl?: string;
+  thumbnailUrl?: string;
+  rawPkg?: any;
   isPaused?: boolean;
+  startCount?: number;
+  endCount?: number;
+  currentCount?: number;
+  deliveredUnits?: number;
+  totalPlannedUnits?: number;
+  completedRuns?: number;
+  totalRuns?: number;
 }
 
 interface ActiveProcessCardsProps {
@@ -142,13 +152,54 @@ export function ActiveProcessCards({ processes: initialProcesses }: ActiveProces
         </div>
       )}
 
-      {/* 3-Column Glass Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
+      {/* Responsive Grid for up to 5 Active Links */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5">
         {items.map((item, idx) => {
-          const variant = (idx === 0 ? 1 : idx === 1 ? 2 : 3) as 1 | 2 | 3;
           const destinationUrl = item.isPackage || item.id.startsWith("pkg_")
             ? `/packages/${item.id}`
             : `/orders/${item.id}`;
+
+          // Requirement 11: Extract Instagram account name / handle
+          const accountHandle = (() => {
+            if (item.rawPkg?.handle && !item.rawPkg.handle.startsWith("http")) {
+              return `@${item.rawPkg.handle.replace(/^@/, "")}`;
+            }
+            if (item.targetUrl) {
+              const raw = item.targetUrl.trim();
+              if (raw.startsWith("@")) return raw;
+              try {
+                const url = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
+                const parts = url.pathname.split("/").filter(Boolean);
+                if (parts.length >= 1 && !["reel", "reels", "p", "tv", "shorts", "channel"].includes(parts[0])) {
+                  return `@${parts[0]}`;
+                }
+              } catch {}
+            }
+            if (item.orderRef && item.orderRef.startsWith("@")) {
+              return item.orderRef;
+            }
+            return null;
+          })();
+
+          // Sanitize title so raw links are never shown as the card header
+          const cleanTitle = (() => {
+            if (!item.title) return "Active Dispatch";
+            if (
+              item.title.startsWith("http://") ||
+              item.title.startsWith("https://") ||
+              item.title.startsWith("@http://") ||
+              item.title.startsWith("@https://")
+            ) {
+              const raw = item.title.replace(/^@/, "");
+              if (raw.includes("/reel/")) return "Instagram Reel";
+              if (raw.includes("/p/")) return "Instagram Post";
+              if (raw.includes("/shorts/")) return "YouTube Short";
+              if (raw.includes("/watch") || raw.includes("youtu.be")) return "YouTube Video";
+              if (raw.includes("t.me/")) return "Telegram Channel";
+              return "Growth Dispatch";
+            }
+            return item.title;
+          })();
 
           return (
             <div
@@ -160,25 +211,41 @@ export function ActiveProcessCards({ processes: initialProcesses }: ActiveProces
                   router.push(destinationUrl);
                 }
               }}
-              className="p-4 sm:p-5 rounded-2xl bg-surface border border-border hover:border-border-control transition-all duration-300 shadow-sm relative overflow-hidden flex flex-col justify-between space-y-3.5 group cursor-pointer hover:-translate-y-0.5"
+              className="p-3 sm:p-3.5 rounded-2xl bg-surface border border-border hover:border-border-control transition-all duration-300 shadow-sm relative overflow-hidden flex flex-col justify-between space-y-2 group cursor-pointer hover:-translate-y-0.5"
             >
-              {/* Top-Right Glowing 3D Amorphous Fluid Orb Graphic */}
-              <div className="absolute top-2 right-2 z-0 opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none">
-                <GlowingFluidOrb size={100} delay={idx * 1.5} variant={variant} />
+              {/* Top-Right Media Thumbnail: Enlarged per Requirement 11 */}
+              <div className="absolute top-3 right-3 z-10">
+                <PackageThumbnail
+                  pkg={
+                    item.rawPkg || {
+                      id: item.id,
+                      platform: item.platform,
+                      handle: item.targetUrl,
+                      slots: [{ targetUrl: item.targetUrl }],
+                    }
+                  }
+                  size="lg"
+                  className="rounded-2xl border border-border shadow-sm group-hover:border-accent/40 transition-colors w-14 h-14 sm:w-16 sm:h-16"
+                />
               </div>
 
               {/* Card Header & Title */}
-              <div className="relative z-10 space-y-1 pr-16">
-                <div className="flex items-center gap-2">
-                  <PlatformIcon platform={item.platform} size={15} useBrandColor={true} />
-                  <h3 className="text-sm font-bold text-fg font-sans truncate transition-colors group-hover:text-[#556910] dark:group-hover:text-[#d8ec8d]">
-                    {item.title}
+              <div className="relative z-10 space-y-0.5 pr-16 sm:pr-20">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <PlatformIcon platform={item.platform} size={14} useBrandColor={true} />
+                  <h3 className="text-xs sm:text-sm font-bold text-fg font-sans truncate transition-colors group-hover:text-accent-text">
+                    {cleanTitle}
                   </h3>
+                  {accountHandle && (
+                    <span className="text-[11px] font-mono font-bold text-accent-text bg-accent/10 px-1.5 py-0.2 rounded border border-accent/20 truncate max-w-[120px]">
+                      {accountHandle}
+                    </span>
+                  )}
                 </div>
 
                 {/* Clickable Order Reference */}
                 <div className="flex items-center gap-1.5 pt-0.5">
-                  <span className="inline-flex items-center gap-1 text-xs font-mono font-bold text-[#556910] dark:text-[#d8ec8d] bg-[#d8ec8d]/20 dark:bg-accent/10 px-2 py-0.5 rounded-md border border-[#b4cf47]/40 dark:border-[#d8ec8d]/30">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-accent-text bg-accent/10 px-2 py-0.5 rounded-md border border-accent/20">
                     <span>{item.orderRef}</span>
                     <ArrowUpRight className="w-3 h-3 opacity-80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                   </span>
@@ -206,34 +273,74 @@ export function ActiveProcessCards({ processes: initialProcesses }: ActiveProces
                 </div>
               </div>
 
-              {/* Progress Bar & Quantities */}
-              <div className="relative z-10 space-y-1.5 pt-1">
-                <div className="flex justify-between items-baseline text-xs font-sans">
-                  <span className="font-extrabold text-fg tracking-tight transition-colors">
+              {/* Start Count -> Current -> Target End Count Visualizer */}
+              {item.startCount !== undefined && item.endCount !== undefined ? (
+                <div className="relative z-10 space-y-1.5 pt-1">
+                  {/* Start -> Live -> Goal Metric Row */}
+                  <div className="flex items-center justify-between text-[11px] font-mono text-fg-2">
+                    <span className="bg-surface-raised px-2 py-0.5 rounded border border-border">
+                      Start: <strong className="text-fg">{formatIndianNumber(item.startCount)}</strong>
+                    </span>
+                    <span className="text-accent-text font-bold">
+                      Now: {formatIndianNumber(item.currentCount ?? (item.startCount + (item.deliveredUnits ?? item.currentUnits)))}
+                    </span>
+                    <span className="bg-surface-raised px-2 py-0.5 rounded border border-border">
+                      Goal: <strong className="text-fg">{formatIndianNumber(item.endCount)}</strong>
+                    </span>
+                  </div>
+
+                  {/* Progress Bar Track & Fill */}
+                  <div className="w-full bg-slate-100 dark:bg-black/60 h-2 rounded-full overflow-hidden p-0.5 border border-slate-200/80 dark:border-white/5 relative">
+                    <div
+                      className="bg-gradient-to-r from-accent to-[#BEF264] h-full rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(216,236,141,0.5)]"
+                      style={{ width: `${Math.min(100, Math.max(item.progressPercent, 4))}%` }}
+                    />
+                  </div>
+
+                  {/* Units & Runs Progress Subline */}
+                  <div className="flex justify-between items-center text-[10px] font-mono text-fg-muted">
+                    <span>
+                      {formatIndianNumber(item.deliveredUnits ?? item.currentUnits)} / {formatIndianNumber(item.totalPlannedUnits ?? item.targetUnits)} {item.unitLabel} ({item.progressPercent}%)
+                    </span>
+                    {item.totalRuns ? (
+                      <span className="text-accent-text font-semibold">
+                        Batch {item.completedRuns ?? 0}/{item.totalRuns}
+                      </span>
+                    ) : (
+                      <span>{item.nextBatchInfo}</span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Fallback Progress Bar & Quantities */
+                <div className="relative z-10 space-y-1.5 pt-1">
+                  <div className="flex justify-between items-baseline text-xs font-sans">
+                    <span className="font-extrabold text-fg tracking-tight transition-colors">
+                      {item.isAutoPilot
+                        ? `${item.quotaUsed}/${item.quotaTotal}`
+                        : `${item.currentUnits.toLocaleString()} / ${item.targetUnits.toLocaleString()} ${item.unitLabel}`}
+                    </span>
+                    <span className="text-[11px] font-mono text-[#556910] dark:text-[#d8ec8d] font-bold">
+                      {item.progressPercent}%
+                    </span>
+                  </div>
+
+                  {/* Progress Bar Track & Fill */}
+                  <div className="w-full bg-slate-100 dark:bg-black/60 h-2 rounded-full overflow-hidden p-0.5 border border-slate-200/80 dark:border-white/5">
+                    <div
+                      className="bg-[#d8ec8d] h-full rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(216,236,141,0.5)]"
+                      style={{ width: `${Math.min(item.progressPercent, 100)}%` }}
+                    />
+                  </div>
+
+                  {/* Subline Details */}
+                  <div className="text-[11px] font-mono text-fg-muted">
                     {item.isAutoPilot
-                      ? `${item.quotaUsed}/${item.quotaTotal}`
-                      : `${item.currentUnits.toLocaleString()} / ${item.targetUnits.toLocaleString()} ${item.unitLabel}`}
-                  </span>
-                  <span className="text-[11px] font-mono text-[#556910] dark:text-[#d8ec8d] font-bold">
-                    {item.progressPercent}%
-                  </span>
+                      ? "Monthly Post Quota Used"
+                      : item.nextBatchInfo}
+                  </div>
                 </div>
-
-                {/* Progress Bar Track & Fill */}
-                <div className="w-full bg-slate-100 dark:bg-black/60 h-2 rounded-full overflow-hidden p-0.5 border border-slate-200/80 dark:border-white/5">
-                  <div
-                    className="bg-[#d8ec8d] h-full rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(216,236,141,0.5)]"
-                    style={{ width: `${Math.min(item.progressPercent, 100)}%` }}
-                  />
-                </div>
-
-                {/* Subline Details */}
-                <div className="text-[11px] font-mono text-fg-muted">
-                  {item.isAutoPilot
-                    ? "Monthly Post Quota Used"
-                    : item.nextBatchInfo}
-                </div>
-              </div>
+              )}
 
               {/* Bottom Action Buttons */}
               <div

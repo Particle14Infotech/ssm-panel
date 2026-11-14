@@ -234,10 +234,6 @@ export default function AdminDashboardPage() {
         >
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
-              </span>
               <span className="text-xs font-mono font-bold uppercase tracking-widest text-accent-text dark:text-[#d8ec8d]">
                 Administrative Command Matrix
               </span>
@@ -541,7 +537,6 @@ export default function AdminDashboardPage() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-medium uppercase tracking-wider text-fg-muted font-mono flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-accent-text dark:text-[#d8ec8d]" />
                     <span>Net Yield & Margins</span>
                   </span>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-accent/10 text-accent-text dark:text-[#d8ec8d] border border-accent/20 font-bold">

@@ -10,7 +10,7 @@ import { MagneticButton } from "@/components/motion/MagneticButton";
 import { ScrollProgress } from "@/components/motion/ScrollProgress";
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
-import { getAuthToken } from "@/lib/auth-session";
+import { getAuthToken, getUserRole } from "@/lib/auth-session";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -29,7 +29,7 @@ export function Navbar() {
   useEffect(() => {
     const checkAuth = () => {
       const token = getAuthToken();
-      const role = typeof window !== "undefined" ? localStorage.getItem("userRole") : null;
+      const role = getUserRole();
       setSessionInfo({
         isAuthenticated: Boolean(token),
         isAdmin: role === "ADMIN",
@@ -151,7 +151,7 @@ export function Navbar() {
             {sessionInfo.isAuthenticated ? (
               <MagneticButton>
                 <Link
-                  href={sessionInfo.isAdmin ? "/admin/dashboard" : "/wallet"}
+                  href={sessionInfo.isAdmin ? "/admin/dashboard" : "/dashboard"}
                   className="h-11 min-h-[44px] px-5 rounded-xl bg-accent text-on-accent text-sm font-semibold hover:brightness-105 transition-all flex items-center gap-1.5 shadow-glow focus-visible:ring-2 focus-visible:ring-focus"
                 >
                   {sessionInfo.isAdmin ? (
@@ -171,7 +171,7 @@ export function Navbar() {
             ) : (
               <>
                 <Link
-                  href="/login"
+                  href="/login?logout=true"
                   className="px-4 py-2.5 min-h-[44px] flex items-center text-sm font-medium text-fg-muted hover:text-fg transition-colors"
                 >
                   {landingContent.navigation.cta.login}
@@ -196,14 +196,14 @@ export function Navbar() {
 
             {sessionInfo.isAuthenticated ? (
               <Link
-                href={sessionInfo.isAdmin ? "/admin/dashboard" : "/wallet"}
+                href={sessionInfo.isAdmin ? "/admin/dashboard" : "/dashboard"}
                 className="min-h-[44px] px-3.5 py-2 flex items-center justify-center text-xs font-semibold text-on-accent bg-accent rounded-xl shadow-sm"
               >
                 {sessionInfo.isAdmin ? "Admin" : "Dashboard"}
               </Link>
             ) : (
               <Link
-                href="/login"
+                href="/login?logout=true"
                 className="min-h-[44px] px-3.5 py-2 flex items-center justify-center text-xs font-medium text-fg bg-surface-raised border border-border rounded-xl"
               >
                 Sign In
@@ -258,7 +258,7 @@ export function Navbar() {
             <div className="flex flex-col gap-3 pt-6">
               {sessionInfo.isAuthenticated ? (
                 <Link
-                  href={sessionInfo.isAdmin ? "/admin/dashboard" : "/wallet"}
+                  href={sessionInfo.isAdmin ? "/admin/dashboard" : "/dashboard"}
                   className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-accent text-on-accent font-semibold text-center shadow-glow"
                 >
                   {sessionInfo.isAdmin ? <Shield className="w-4 h-4" /> : <LayoutDashboard className="w-4 h-4" />}

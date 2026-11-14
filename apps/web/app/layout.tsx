@@ -4,6 +4,8 @@ import { Poppins } from "next/font/google";
 import { cookies } from "next/headers";
 import "@/styles/globals.css";
 import { landingContent } from "@/content/landing";
+import { ServiceWorkerRegister } from "@/components/shared/ServiceWorkerRegister";
+import { InstallAppButton } from "@/components/shared/InstallAppButton";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -35,6 +37,12 @@ export const metadata: Metadata = {
   authors: [{ name: `${landingContent.brand.name} Platform` }],
   creator: landingContent.brand.name,
   publisher: landingContent.brand.name,
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "SMM Panel",
+  },
   alternates: {
     canonical: siteUrl,
   },
@@ -151,6 +159,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0F0F0F" />
         <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F5F5F8" />
         <script
@@ -173,6 +186,8 @@ export default function RootLayout({
         </a>
 
         <ThemeProvider>
+          <ServiceWorkerRegister />
+          <InstallAppButton />
           <div id="main-content" className="w-full min-h-screen">
             {children}
           </div>

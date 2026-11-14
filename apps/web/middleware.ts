@@ -36,6 +36,20 @@ export function middleware(request: NextRequest) {
 
   const isProtectedAdminRoute = pathname.startsWith("/admin");
 
+  // Allow explicit forced logout on any page (clears cookies directly on the response)
+  if (request.nextUrl.searchParams.get("logout") === "true") {
+    const res = NextResponse.next();
+    const cookiesToPurge = ["authToken", "token", "userRole", "refreshToken"];
+    const paths = ["/", "/admin", "/app", "/dashboard"];
+    cookiesToPurge.forEach((c) => {
+      res.cookies.delete(c);
+      paths.forEach((p) => {
+        res.cookies.set({ name: c, value: "", maxAge: 0, path: p });
+      });
+    });
+    return res;
+  }
+
   // 1. Unauthenticated users cannot access customer or admin areas
   if (!token && (isProtectedCustomerRoute || isProtectedAdminRoute)) {
     const loginUrl = new URL("/login", request.url);
@@ -43,17 +57,23 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 2. Non-admin users cannot access admin routes
+  // 2a. Non-admin users cannot access admin routes
   if (token && isProtectedAdminRoute && role && role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/app/dashboard", request.url));
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // 3. Authenticated users visiting login/register get redirected to dashboard
-  if (token && isAuthPage) {
+  // 2b. Admin users accessing customer portal are rerouted to Admin Command Center
+  if (token && role === "ADMIN" && isProtectedCustomerRoute) {
+    return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+  }
+
+  // 3. Authenticated users visiting login/register get redirected to their portal
+  // unless logout is explicitly requested
+  if (token && isAuthPage && request.nextUrl.searchParams.get("logout") !== "true") {
     if (role === "ADMIN") {
       return NextResponse.redirect(new URL("/admin/dashboard", request.url));
     }
-    return NextResponse.redirect(new URL("/app/dashboard", request.url));
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   // Add no-store cache headers for all dynamic routes

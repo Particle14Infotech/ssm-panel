@@ -1,14 +1,33 @@
 # 🌐 SMM Panel (Production Platform)
 
 > **Enterprise-Grade Social Media Marketing Dispatch Platform & Reseller Infrastructure**  
-> *Built with NestJS Modular Monolith, Next.js 14 App Router, PostgreSQL Invariant Engine, Redis Outbox Queue & Zero-Docker Architecture.*
+> *Built with Node.js Fastify API, Next.js 14 App Router, PostgreSQL Invariant Engine, Redis Queue & Zero-Docker VPS Deployment.*
 
-> 🚀 **VPS Production Deployment**: Follow the complete guide at [VPS_DEPLOYMENT.md](VPS_DEPLOYMENT.md) for 1-command Docker Compose or PM2 + Nginx setups.
+> 📘 **Master Architecture & Engineering History**: Read the comprehensive documentation covering all features, historical problems, and incident resolutions at [docs/PROJECT_MASTER_ARCHITECTURE_AND_HISTORY.md](docs/PROJECT_MASTER_ARCHITECTURE_AND_HISTORY.md).  
+> 🚀 **Production VPS Deployment Guide**: Follow the zero-build deployment workflow at [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md).
+
+---
+
+## 📑 Documentation Index & Directory Sitemap
+
+The project maintains a curated, high-standard documentation set in `docs/`:
+
+| Document | Purpose & Scope |
+| :--- | :--- |
+| **[Master Architecture & Engineering History](docs/PROJECT_MASTER_ARCHITECTURE_AND_HISTORY.md)** | **Single Source of Truth**: End-to-end system architecture, 10-phase feature deep dive, and the "War Room" Incident Log covering the 7 major historical bugs and final fixes. |
+| **[VPS Deployment Guide](docs/DEPLOYMENT_GUIDE.md)** | **Production Operations**: Zero-Build VPS deployment pipeline (`pack-standalone.js` -> SFTP -> rollback snapshot -> health check polling). |
+| **[Dispatch Engine Runbook](docs/DISPATCH_ENGINE_RUNBOOK.md)** | **Queue & Worker Operations**: Background BullMQ workers, provider rate limits, and dispatch failure recovery. |
+| **[UPI Pilot Design](docs/YOUPI_PILOT_DESIGN.md)** | **Payment System**: Architecture for manual verification and pilot mode payments. |
+| **[UPI Operator Runbook](docs/YOUPI_OPERATOR_RUNBOOK.md)** | **Admin Procedures**: Step-by-step operator guide for verifying manual bank transactions. |
+| **[Security Scan Report](docs/SECURITY_SCAN.md)** | **Security & Hardening**: Automated vulnerability scanning, SAST/DAST results, and API security audits. |
+| **[Security Findings Matrix](docs/SECURITY_FINDINGS.md)** | **Vulnerability Triage**: Prioritized vulnerability tracking and mitigations. |
+| **[Database Migration Plan](docs/DATABASE_MIGRATION_PLAN.md)** | **Data Architecture**: Prisma schema baselines, migration execution, and rollback strategies. |
 
 ---
 
 ## 📑 Table of Contents
-0. [VPS Deployment Guide (Docker & PM2)](VPS_DEPLOYMENT.md)
+0. [Master Architecture & Engineering History](docs/PROJECT_MASTER_ARCHITECTURE_AND_HISTORY.md)
+0.1. [VPS Deployment Guide (Zero-Build Artifact Pipeline)](docs/DEPLOYMENT_GUIDE.md)
 1. [Overview & What It Is](#-overview--what-it-is)
 2. [Core Feature Matrix](#-core-feature-matrix)
 3. [System Architecture](#-system-architecture)

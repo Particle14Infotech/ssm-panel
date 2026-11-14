@@ -849,105 +849,39 @@ export function WorkWalkthroughSection() {
           </div>
         </div>
 
-        {/* Dual Column Layout: Left = Step selector cards, Right = Interactive live preview */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          
-          {/* Left Column (Step Selector Cards: 5 cols) */}
-          <div className="lg:col-span-5 flex flex-col gap-3">
-            {STEPS.map((s, idx) => {
-              const isSelected = activeStep === idx;
-
-              return (
-                <button
-                  key={s.num}
-                  type="button"
-                  onClick={() => handleStepClick(idx)}
-                  className={`w-full min-h-[48px] p-4 sm:p-5 rounded-2xl text-left border transition-all duration-300 flex items-start gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus cursor-pointer ${
-                    isSelected
-                      ? "bg-white/[0.06] border-accent shadow-[0_4px_20px_rgba(216,236,141,0.08)]"
-                      : "bg-white/[0.02] border-border hover:bg-white/[0.04] hover:border-white/[0.12]"
-                  }`}
-                >
-                  {/* Step Number Badge */}
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono text-xs font-bold shrink-0 transition-colors ${
-                      isSelected
-                        ? "bg-accent text-on-accent shadow-sm"
-                        : "bg-white/[0.04] text-fg-muted border border-border"
-                    }`}
-                  >
-                    {s.num}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <h3 className="text-base font-semibold text-fg truncate">
-                        {s.title}
-                      </h3>
-                      {isSelected && (
-                        <span className="text-[11px] font-mono text-accent-text px-2 py-0.5 rounded-full bg-accent/10 shrink-0 border border-accent/20">
-                          Active
-                        </span>
-                      )}
+        {/* Four Simple Steps Grid: Responsive full-width layout without distracting mock preview */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {STEPS.map((s, idx) => {
+            return (
+              <div
+                key={s.num}
+                className="w-full p-5 sm:p-6 rounded-2xl bg-white/[0.02] border border-border hover:border-accent/40 hover:bg-white/[0.04] transition-all duration-300 flex flex-col justify-between space-y-4"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-accent text-on-accent flex items-center justify-center font-mono text-xs font-bold shadow-sm">
+                      {s.num}
                     </div>
-                    <p className="text-xs sm:text-sm text-fg-muted font-normal leading-relaxed line-clamp-2">
-                      {s.sentence}
-                    </p>
+                    <span className="text-[11px] font-mono text-accent-text px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20">
+                      Step {s.num}
+                    </span>
                   </div>
-                </button>
-              );
-            })}
-          </div>
 
-          {/* Right Column (Glass Preview Panel: 7 cols) */}
-          <div className="lg:col-span-7 flex flex-col items-center justify-center relative">
-            <div className="w-full rounded-3xl bg-surface-glass border border-border backdrop-blur-2xl p-4 sm:p-6 shadow-2xl relative overflow-hidden">
-              {/* Header Bar */}
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-border">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-white/20" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-white/20" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-white/20" />
+                  <h3 className="text-base font-semibold text-fg">
+                    {s.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-fg-muted font-normal leading-relaxed">
+                    {s.sentence}
+                  </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-fg-muted">
-                    Step {current.num} / {current.total}: {current.title}
-                  </span>
-                  <div className="text-[11px] font-mono tracking-wider uppercase px-2 py-0.5 rounded-full bg-white/[0.06] border border-border text-fg-2">
-                    Live UI Preview
-                  </div>
+
+                <div className="pt-3 border-t border-border flex items-center gap-2 text-xs text-accent-text font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span className="text-fg-2">{s.detail}</span>
                 </div>
               </div>
-
-              {/* Screen Preview Frame: Crisp, reactive, authentic mock UI */}
-              <div className="relative min-h-[350px] sm:min-h-[380px] w-full rounded-2xl overflow-hidden bg-surface border border-border">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={current.num}
-                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 1.02 }}
-                    transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute inset-0 overflow-y-auto"
-                  >
-                    <ActiveScreenComponent />
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-
-              {/* Bottom detail pill */}
-              <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-fg-muted">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-accent-text" />
-                  <span>{current.detail}</span>
-                </div>
-                <span className="font-mono text-fg/50">
-                  {userLocked ? "Interacting (Locked)" : "Auto-advancing"}
-                </span>
-              </div>
-            </div>
-          </div>
-
+            );
+          })}
         </div>
 
         {/* Workflow Guarantee Chips */}

@@ -19,12 +19,12 @@ import {
   PackagePurchaseInput,
 } from "@smm/contracts";
 import { getApiBase } from "@/lib/api-base";
-import { getAuthToken as getSessionAuthToken } from "@/lib/auth-session";
+import { getAuthToken as getSessionAuthToken, performUniversalLogout } from "@/lib/auth-session";
 
 export const EMPTY_USER: UserProfile = {
   id: "",
   email: "",
-  name: "New Customer",
+  name: "",
   phone: "",
   avatarUrl: "",
   balance: 0,
@@ -57,6 +57,8 @@ interface CustomerContextType {
   packages: any[];
   isLoading: boolean;
   isServicesLoading: boolean;
+  mobileDrawerOpen: boolean;
+  setMobileDrawerOpen: (open: boolean) => void;
   logout: () => void;
   refreshData: () => Promise<void>;
   refreshFavorites: () => Promise<void>;
@@ -131,34 +133,20 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const [favoriteSuggestions, setFavoriteSuggestions] = useState<FavoriteSuggestion[]>([]);
   const [packages, setPackages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState<boolean>(false);
 
   const getAuthToken = useCallback(() => {
     return getSessionAuthToken();
   }, []);
 
-  const logout = useCallback(() => {
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.clear();
-        sessionStorage.clear();
-      } catch {}
-      // Clear all possible cookie names and path variations
-      const cookiesToClear = ["authToken", "token", "userRole", "refreshToken"];
-      cookiesToClear.forEach((name) => {
-        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-        document.cookie = `${name}=; path=/app; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-        document.cookie = `${name}=; path=/admin; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-      });
-    }
+  const logout = useCallback(async () => {
     setUser(EMPTY_USER);
     setOrders([]);
     setTransactions([]);
     setTickets([]);
     setPackages([]);
     setFavorites([]);
-    if (typeof window !== "undefined") {
-      window.location.href = "/";
-    }
+    await performUniversalLogout("/?logout=true");
   }, []);
 
   const refreshData = useCallback(async () => {
@@ -245,7 +233,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       ]);
 
       if ((profileRes.status === 401 || balanceRes.status === 401) && !token.startsWith("jwt_demo_") && !token.startsWith("jwt_bholu_") && !token.startsWith("jwt_local_")) {
-        logout();
+        await logout();
         return;
       }
 
@@ -882,6 +870,8 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         packages,
         isLoading,
         isServicesLoading,
+        mobileDrawerOpen,
+        setMobileDrawerOpen,
         logout,
         refreshData,
         refreshFavorites,

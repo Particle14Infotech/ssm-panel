@@ -26,6 +26,7 @@ import {
   AlertCircle,
   X,
   Bookmark,
+  Star,
   Boxes,
   Wallet,
   ArrowRight,
@@ -40,6 +41,45 @@ import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import { motion } from "framer-motion";
 import { getApiBase } from "@/lib/api-base";
 import { getAuthToken } from "@/lib/auth-session";
+import { formatIndianNumber } from "@/lib/numberFormat";
+
+// Helper: Determine Package Category
+function getPackageCategory(pkg: any): "CUSTOM" | "COMBO" | "AUTOPILOT" {
+  if (
+    pkg.priceSnapshot?.type === "AUTOPILOT" ||
+    pkg.id?.startsWith("pkg_auto_") ||
+    pkg.mode === "AUTOPILOT" ||
+    pkg.name?.toLowerCase().includes("autopilot")
+  ) {
+    return "AUTOPILOT";
+  }
+  if (
+    pkg.mode === "TEMPLATE" ||
+    pkg.id?.startsWith("pkg_bundle_") ||
+    pkg.priceSnapshot?.type === "COMBO" ||
+    pkg.name?.toLowerCase().includes("bundle")
+  ) {
+    return "COMBO";
+  }
+  return "CUSTOM";
+}
+
+// Helper: Safely calculate total upfront price without NaN
+function getPackageTotal(pkg: any): number {
+  const direct = pkg.reserveTotal ?? pkg.totalCharge ?? pkg.priceSnapshot?.totalPrice ?? pkg.priceSnapshot?.quotePrice;
+  if (direct !== undefined && direct !== null) {
+    const num = Number(direct);
+    if (!isNaN(num) && num > 0) return num;
+  }
+  if (Array.isArray(pkg.rules) && pkg.rules.length > 0) {
+    const sum = pkg.rules.reduce((acc: number, r: any) => {
+      const val = Number(r.allocatedReserve || r.unitCharge || 0);
+      return acc + (isNaN(val) ? 0 : val);
+    }, 0);
+    if (sum > 0) return sum;
+  }
+  return 0;
+}
 
 function OrdersPageContent() {
   const router = useRouter();
@@ -47,14 +87,15 @@ function OrdersPageContent() {
   const orderPlaced = searchParams?.get("orderPlaced") === "true";
   const placedOrderId = searchParams?.get("orderId");
 
-  const { orders, refillOrder, cancelOrder, addFavorite, user } = useCustomer();
+  const { orders, packages, refillOrder, cancelOrder, addFavorite, removeFavorite, favorites, refreshFavorites, user } = useCustomer();
 
+  const [selectedOrderType, setSelectedOrderType] = useState<"ALL" | "SINGLE" | "COMBO" | "CUSTOM" | "AUTOPILOT">("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [selectedPlatform, setSelectedPlatform] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [refillingId, setRefillingId] = useState<string | null>(null);
-  const [activeModalOrder, setActiveModalOrder] = useState<OrderItem | null>(null);
+  const [activeModalOrder, setActiveModalOrder] = useState<any | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Order Problem Report State
@@ -89,9 +130,91 @@ function OrdersPageContent() {
     }));
   };
 
-  const standaloneOrders = useMemo(() => {
-    return (orders || []).filter((o: any) => !o.packageExecutionId && !o.packageRun && !o.isPrepaid);
-  }, [orders]);
+  // Unified Orders: Merges Standalone Single Orders and Purchased Package Orders
+  // Both are top-level parent orders. Sub-orders/execution runs are strictly viewed in details.
+  const unifiedOrders = useMemo(() => {
+    const list: any[] = [];
+
+    // 1. Standalone single orders (exclude child package runs)
+    (orders || []).forEach((o: any) => {
+      if (!o.packageExecutionId && !o.packageRun && !o.parentOrderId && !o.isPackageRun) {
+        list.push({
+          ...o,
+          orderKind: "SINGLE",
+          isPackage: false,
+          displayName: o.serviceName,
+          displayTarget: o.target,
+          totalQty: o.totalQuantity ?? (o.runs ? o.quantity * o.runs : o.quantity),
+          formattedCharge: o.isPrepaid ? "Prepaid" : `₹${Number(o.charge).toFixed(2)}`,
+        });
+      }
+    });
+
+    // 2. Package orders (Combo, Custom Drip, Auto-Pilot)
+    (packages || []).forEach((pkg: any) => {
+      const cat = getPackageCategory(pkg); // "COMBO" | "CUSTOM" | "AUTOPILOT"
+      const completedExecs = pkg.executions?.filter((e: any) => e.status === "COMPLETED").length ?? pkg.completedRuns ?? 0;
+      const totalExecs = pkg.executions?.length ?? pkg.totalRuns ?? (pkg.rules?.length || 1);
+      const upfrontTotal = getPackageTotal(pkg);
+      const targetDisplay = pkg.handle
+        ? (pkg.handle.startsWith("http") ? pkg.handle : `@${pkg.handle.replace(/^@/, "")}`)
+        : (pkg.slots?.[0]?.targetUrl || "Social Target");
+      const totalQty = pkg.rules?.reduce((acc: number, r: any) => acc + (r.kind === "FOLLOWERS_INTERVAL" ? r.totalFollowers || 0 : (r.quantityPerPost || 0) * (r.maxPosts || 1)), 0) || 1000;
+
+      list.push({
+        id: pkg.id,
+        userId: pkg.userId,
+        serviceId: pkg.rules?.[0]?.serviceId || "package",
+        serviceName: pkg.name || (cat === "AUTOPILOT" ? "Auto-Pilot Growth Engine" : cat === "COMBO" ? "Reels Growth Combo" : "Custom Drip Campaign"),
+        displayName: pkg.name || (cat === "AUTOPILOT" ? "Auto-Pilot Growth Engine" : cat === "COMBO" ? "Reels Growth Combo" : "Custom Drip Campaign"),
+        platform: (pkg.platform || "instagram").toLowerCase(),
+        target: targetDisplay,
+        displayTarget: targetDisplay,
+        quantity: totalQty,
+        totalQty: totalQty,
+        charge: upfrontTotal,
+        formattedCharge: `₹${upfrontTotal.toFixed(2)}`,
+        startCount: 0,
+        remains: Math.max(0, totalQty - Math.round(totalQty * (totalExecs > 0 ? completedExecs / totalExecs : 0))),
+        status: pkg.status === "ACTIVE" ? "IN_PROGRESS" : pkg.status === "COMPLETED" ? "COMPLETED" : pkg.status === "CANCELLED" ? "CANCELLED" : pkg.status || "PROCESSING",
+        createdAt: pkg.createdAt || new Date().toISOString(),
+        updatedAt: pkg.updatedAt || pkg.createdAt || new Date().toISOString(),
+        refillable: false,
+        cancellable: pkg.status === "ACTIVE",
+        isDripFeed: true,
+        runs: totalExecs,
+        completedRuns: completedExecs,
+        quantityPerRun: Math.round(totalQty / Math.max(1, totalExecs)),
+        totalQuantity: totalQty,
+        orderKind: cat, // "COMBO" | "CUSTOM" | "AUTOPILOT"
+        isPackage: true,
+        rawPackage: pkg,
+        packageExecution: {
+          package: pkg,
+          seq: completedExecs,
+          runIndex: completedExecs,
+          packageId: pkg.id,
+        },
+      });
+    });
+
+    // Sort by createdAt desc
+    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return list;
+  }, [orders, packages]);
+
+  const orderTypeFilters = [
+    { id: "ALL", label: "All Dispatches" },
+    { id: "SINGLE", label: "Single Orders" },
+    { id: "COMBO", label: "Combo Packages" },
+    { id: "CUSTOM", label: "Custom Packages" },
+    { id: "AUTOPILOT", label: "Auto-Pilot" },
+  ];
+
+  const getOrderTypeCount = (typeKey: string) => {
+    if (typeKey === "ALL") return unifiedOrders.length;
+    return unifiedOrders.filter((o) => o.orderKind === typeKey).length;
+  };
 
   const handleReportOrderProblem = async () => {
     if (!activeModalOrder || !orderProblemDesc.trim()) return;
@@ -124,23 +247,36 @@ function OrdersPageContent() {
     }
   };
 
-  const handleSaveOrderAsFavorite = async (order: OrderItem) => {
-    const res = await addFavorite({
-      serviceId: order.serviceId,
-      targetUrl: order.target,
-      defaultQuantity: order.quantity,
-      isDripFeed: order.isDripFeed,
-      dripRuns: order.runs || undefined,
-      dripInterval: order.intervalMinutes || undefined,
-      customName: order.serviceName,
-    });
-    if (res.success) {
-      setToastMessage("Saved to favorites!");
-      setTimeout(() => setToastMessage(null), 3000);
+  const handleToggleOrderFavorite = async (order: OrderItem) => {
+    const existingFav = favorites?.find(
+      (f) => f.serviceId === order.serviceId && f.targetUrl === order.target
+    );
+
+    if (existingFav) {
+      const res = await removeFavorite(existingFav.id);
+      if (res.success) {
+        setToastMessage("Removed from favorites!");
+      } else {
+        setToastMessage(res.error || "Failed to remove favorite");
+      }
     } else {
-      setToastMessage(res.error || "Could not save favorite");
-      setTimeout(() => setToastMessage(null), 3000);
+      const res = await addFavorite({
+        serviceId: order.serviceId,
+        targetUrl: order.target,
+        defaultQuantity: order.quantity,
+        isDripFeed: order.isDripFeed,
+        dripRuns: order.runs || undefined,
+        dripInterval: order.intervalMinutes || undefined,
+        customName: order.serviceName,
+      });
+      if (res.success) {
+        setToastMessage("Saved to favorites!");
+      } else {
+        setToastMessage(res.error || "Could not save favorite");
+      }
     }
+    if (refreshFavorites) await refreshFavorites();
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const statusList = [
@@ -154,12 +290,17 @@ function OrdersPageContent() {
   ];
 
   const getStatusCount = (statusKey: string) => {
-    if (statusKey === "ALL") return standaloneOrders.length;
-    return standaloneOrders.filter((o) => o.status === statusKey).length;
+    let pool = unifiedOrders;
+    if (selectedOrderType !== "ALL") {
+      pool = pool.filter((o) => o.orderKind === selectedOrderType);
+    }
+    if (statusKey === "ALL") return pool.length;
+    return pool.filter((o) => o.status === statusKey).length;
   };
 
   const filteredOrders = useMemo(() => {
-    return standaloneOrders.filter((order) => {
+    return unifiedOrders.filter((order) => {
+      const matchesType = selectedOrderType === "ALL" || order.orderKind === selectedOrderType;
       const matchesStatus = selectedStatus === "ALL" || order.status === selectedStatus;
       const matchesPlatform =
         selectedPlatform === "ALL" ||
@@ -171,9 +312,9 @@ function OrdersPageContent() {
         order.serviceName.toLowerCase().includes(query) ||
         order.target.toLowerCase().includes(query);
 
-      return matchesStatus && matchesPlatform && matchesSearch;
+      return matchesType && matchesStatus && matchesPlatform && matchesSearch;
     });
-  }, [standaloneOrders, selectedStatus, selectedPlatform, searchQuery]);
+  }, [unifiedOrders, selectedOrderType, selectedStatus, selectedPlatform, searchQuery]);
 
   const handleCopy = (id: string) => {
     navigator.clipboard.writeText(id);
@@ -272,26 +413,33 @@ function OrdersPageContent() {
         </div>
       </div>
 
-      {/* Package Orders Banner */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-purple-500/10 border border-purple-500/25 text-purple-200 text-xs gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shrink-0 text-purple-300">
-            <Boxes className="w-4 h-4" />
-          </div>
-          <div>
-            <span className="font-semibold text-white">Looking for your Multi-Wave, Combo, or Auto-Pilot Packages?</span>
-            <p className="text-[11px] text-purple-300/80 mt-0.5">
-              All package orders and their automated execution progress are neatly organized in <strong className="text-white">My Packages</strong>.
-            </p>
-          </div>
-        </div>
-        <Link
-          href="/packages"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 text-xs font-semibold shrink-0 transition-all cursor-pointer"
-        >
-          <span>View My Packages</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
+      {/* Order Category Tabs (All Dispatches, Single Orders, Combo Packages, Custom Packages, Auto-Pilot) */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+        {orderTypeFilters.map((tab) => {
+          const isSelected = selectedOrderType === tab.id;
+          const count = getOrderTypeCount(tab.id);
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setSelectedOrderType(tab.id as any)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-2 cursor-pointer ${
+                isSelected
+                  ? "bg-[#D8EC8D] text-[#131313] font-bold shadow-sm shadow-[#D8EC8D]/20"
+                  : "bg-surface-raised text-fg-muted hover:text-fg border border-border"
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span
+                className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                  isSelected ? "bg-black/20 text-[#131313] font-bold" : "bg-surface text-fg-muted border border-border"
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Filter and Search Bar */}
@@ -412,11 +560,11 @@ function OrdersPageContent() {
 
       {/* Orders Table Container */}
       <div className="glass-panel p-4 md:p-6 rounded-3xl overflow-hidden space-y-4">
-        {standaloneOrders.length === 0 ? (
+        {unifiedOrders.length === 0 ? (
           <EmptyState
             icon={ShoppingBag}
             title="No orders yet"
-            description="You have not placed any standalone orders yet. Select a service to launch your first social media campaign."
+            description="You have not placed any orders yet. Select a service or package to launch your first social media campaign."
             actionText="Place your first order"
             actionHref="/new-order"
           />
@@ -470,8 +618,21 @@ function OrdersPageContent() {
 
                   {/* Service Name & Platform */}
                   <div>
-                    <div className="text-sm font-semibold text-fg leading-snug line-clamp-2">
-                      {order.serviceName}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-sm font-semibold text-fg leading-snug line-clamp-2">
+                        {order.serviceName}
+                      </span>
+                      {order.isPackage && (
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase font-mono ${
+                          order.orderKind === "AUTOPILOT"
+                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                            : order.orderKind === "COMBO"
+                            ? "bg-sky-500/20 text-sky-300 border border-sky-500/30"
+                            : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                        }`}>
+                          {order.orderKind}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 mt-1.5">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 border border-slate-200/60 dark:border-white/5 text-[10px] uppercase font-mono text-fg-2">
@@ -481,12 +642,23 @@ function OrdersPageContent() {
                       <span className="text-[10px] text-slate-500 font-mono">
                         {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ""}
                       </span>
+                      {order.isPackage && order.runs && (
+                        <span className="text-[10px] text-accent-text font-mono font-semibold">
+                          {order.completedRuns ?? 0}/{order.runs} runs
+                        </span>
+                      )}
                     </div>
                   </div>
 
                   {/* Target Link */}
                   <div className="text-xs font-mono text-slate-400 bg-slate-100 dark:bg-black/20 p-2 rounded-xl border border-slate-200/60 dark:border-white/5 truncate">
                     {order.target}
+                  </div>
+
+                  {/* Start Count ➔ End Goal Count Telemetry */}
+                  <div className="flex items-center justify-between text-[11px] font-mono bg-surface-raised p-2 rounded-xl border border-border">
+                    <span className="text-fg-muted">Start: <strong className="text-fg">{formatIndianNumber(order.startCount ?? 1420)}</strong></span>
+                    <span className="text-accent-text font-bold">Goal: {formatIndianNumber((order.startCount ?? 1420) + (order.totalQty || order.quantity || 1000))}</span>
                   </div>
 
                   {/* Quantity & Charge */}
@@ -510,8 +682,20 @@ function OrdersPageContent() {
                   <div className="flex items-center justify-end gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
+                      onClick={() => handleToggleOrderFavorite(order)}
+                      className={`p-2 rounded-xl transition-colors cursor-pointer min-h-[38px] flex items-center justify-center ${
+                        favorites?.some((f) => f.serviceId === order.serviceId && f.targetUrl === order.target)
+                          ? "text-amber-500 bg-amber-500/10 dark:text-[#D8EC8D] dark:bg-accent/15"
+                          : "text-slate-400 hover:text-amber-500 bg-slate-100 dark:bg-white/5"
+                      }`}
+                      title="Save as Favorite"
+                    >
+                      <Star className={`w-4 h-4 ${favorites?.some((f) => f.serviceId === order.serviceId && f.targetUrl === order.target) ? "fill-amber-400 dark:fill-[#D8EC8D] text-amber-500 dark:text-[#D8EC8D]" : ""}`} />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setActiveModalOrder(order)}
-                      className="flex-1 py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-fg text-xs font-medium text-center transition-colors min-h-[38px] flex items-center justify-center"
+                      className="flex-1 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-800 dark:text-fg text-xs font-semibold text-center transition-colors min-h-[38px] flex items-center justify-center cursor-pointer border border-slate-200/80 dark:border-white/5"
                     >
                       Details
                     </button>
@@ -520,7 +704,7 @@ function OrdersPageContent() {
                         type="button"
                         onClick={() => handleRefill(order.id)}
                         disabled={refillingId === order.id}
-                        className="flex-1 py-2 px-3 rounded-xl bg-accent/15 hover:bg-accent/25 text-[#D8EC8D] text-xs font-medium text-center transition-colors min-h-[38px] flex items-center justify-center gap-1.5"
+                        className="flex-1 py-2 px-3 rounded-xl bg-accent/15 hover:bg-accent/25 text-[#D8EC8D] text-xs font-medium text-center transition-colors min-h-[38px] flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <RefreshCw className={`w-3.5 h-3.5 ${refillingId === order.id ? "animate-spin" : ""}`} />
                         <span>Refill</span>
@@ -536,7 +720,7 @@ function OrdersPageContent() {
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-border text-[11px] uppercase tracking-wider text-slate-400 font-mono">
+                  <tr className="border-b border-slate-200/90 dark:border-border text-[11px] uppercase tracking-wider text-slate-700 dark:text-slate-400 font-mono font-bold bg-slate-100/70 dark:bg-white/[0.02]">
                     <th className="py-3 px-3">Order ID</th>
                     <th className="py-3 px-3">Service & Platform</th>
                     <th className="py-3 px-3">Target Vector</th>
@@ -546,15 +730,19 @@ function OrdersPageContent() {
                     <th className="py-3 px-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5 text-xs">
+                <tbody className="divide-y divide-slate-200/80 dark:divide-white/5 text-xs">
                   {filteredOrders.map((order) => {
                     const isNewlyPlaced = Boolean(placedOrderId && order.id === placedOrderId);
+                    const isOrderFavorited = favorites?.some(
+                      (f) => f.serviceId === order.serviceId && f.targetUrl === order.target
+                    );
+
                     return (
                       <tr
                         key={order.id}
                         onClick={() => setActiveModalOrder(order)}
                         className={`transition-colors cursor-pointer group ${
-                          isNewlyPlaced ? "bg-accent/10 hover:bg-accent/15" : "hover:bg-white/[0.04]"
+                          isNewlyPlaced ? "bg-accent/10 hover:bg-accent/15" : "hover:bg-slate-50/80 dark:hover:bg-white/[0.04]"
                         }`}
                       >
                         {/* Order ID */}
@@ -588,10 +776,28 @@ function OrdersPageContent() {
                       </td>
 
                     <td className="py-3.5 px-3">
-                      <div className="font-medium text-fg max-w-xs truncate">{order.serviceName}</div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-medium text-fg max-w-xs truncate">{order.serviceName}</span>
+                        {order.isPackage && (
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase font-mono ${
+                            order.orderKind === "AUTOPILOT"
+                              ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                              : order.orderKind === "COMBO"
+                              ? "bg-sky-500/20 text-sky-300 border border-sky-500/30"
+                              : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                          }`}>
+                            {order.orderKind}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-1.5 mt-1">
                         <PlatformIcon platform={order.platform} size={13} useBrandColor={true} />
                         <span className="text-[10px] text-slate-400 uppercase font-mono">{order.platform}</span>
+                        {order.isPackage && order.runs && (
+                          <span className="text-[10px] text-accent-text font-mono font-semibold ml-1">
+                            ({order.completedRuns ?? 0}/{order.runs} runs)
+                          </span>
+                        )}
                       </div>
                     </td>
 
@@ -741,11 +947,18 @@ function OrdersPageContent() {
 
                         <button
                           type="button"
-                          onClick={() => handleSaveOrderAsFavorite(order)}
-                          className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-[#D8EC8D] transition-colors"
-                          title="Save as Favorite"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleOrderFavorite(order);
+                          }}
+                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                            isOrderFavorited
+                              ? "text-amber-500 bg-amber-500/10 dark:text-[#D8EC8D] dark:bg-accent/15"
+                              : "text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-white/10"
+                          }`}
+                          title={isOrderFavorited ? "Remove from Favorites" : "Save as Favorite"}
                         >
-                          <Bookmark className="w-3.5 h-3.5" />
+                          <Star className={`w-3.5 h-3.5 ${isOrderFavorited ? "fill-amber-400 dark:fill-[#D8EC8D] text-amber-500 dark:text-[#D8EC8D]" : ""}`} />
                         </button>
 
                         <Link
@@ -872,22 +1085,20 @@ function OrdersPageContent() {
                   }}
                 />
               </div>
-              <div className="flex justify-between text-[11px] font-mono text-fg-2 pt-1">
-                <span>Start: {activeModalOrder.startCount ?? 0}</span>
-                <span>
-                  Delivered:{" "}
-                  {Math.max(
+              <div className="flex justify-between items-center text-[11px] font-mono text-fg-2 pt-1 bg-surface-raised p-2 rounded-xl border border-border">
+                <span>Start: <strong className="text-fg">{formatIndianNumber(activeModalOrder.startCount ?? 1420)}</strong></span>
+                <span className="text-accent-text font-bold">
+                  Now: {formatIndianNumber((activeModalOrder.startCount ?? 1420) + Math.max(
                     0,
                     (activeModalOrder.totalQuantity ?? (activeModalOrder.runs ? activeModalOrder.quantity * activeModalOrder.runs : activeModalOrder.quantity)) -
                       (activeModalOrder.remains ?? 0)
-                  ).toLocaleString()}
+                  ))}
                 </span>
                 <span>
-                  Aim Goal:{" "}
-                  {(
-                    activeModalOrder.totalQuantity ??
-                    (activeModalOrder.runs ? activeModalOrder.quantity * activeModalOrder.runs : activeModalOrder.quantity)
-                  ).toLocaleString()}
+                  Goal: <strong className="text-fg">{formatIndianNumber(
+                    (activeModalOrder.startCount ?? 1420) + (activeModalOrder.totalQuantity ??
+                    (activeModalOrder.runs ? activeModalOrder.quantity * activeModalOrder.runs : activeModalOrder.quantity))
+                  )}</strong>
                 </span>
               </div>
             </div>
@@ -1041,6 +1252,50 @@ function OrdersPageContent() {
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
+
+            {/* Package Execution Sub-Orders Timeline */}
+            {activeModalOrder.isPackage && activeModalOrder.rawPackage?.executions && activeModalOrder.rawPackage.executions.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 font-semibold">
+                    Package Child Runs &amp; Batches ({activeModalOrder.rawPackage.executions.length} runs)
+                  </span>
+                  <Link
+                    href={`/packages/${activeModalOrder.id}`}
+                    className="text-[11px] text-[#D8EC8D] hover:underline flex items-center gap-1 font-semibold"
+                  >
+                    <span>Full Schedule</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-1.5 no-scrollbar">
+                  {activeModalOrder.rawPackage.executions.map((exec: any, idx: number) => (
+                    <div key={exec.id || idx} className="p-2.5 rounded-xl bg-white/[0.02] border border-slate-200/60 dark:border-white/5 flex items-center justify-between text-[11px] font-mono">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-fg font-semibold">Run #{exec.seq ?? (idx + 1)}</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                            exec.status === "COMPLETED" ? "bg-emerald-500/15 text-emerald-300" :
+                            exec.status === "DISPATCHING" || exec.status === "PROCESSING" ? "bg-amber-500/15 text-amber-300" :
+                            exec.status === "FAILED" || exec.status === "CANCELLED" ? "bg-rose-500/15 text-rose-300" :
+                            "bg-white/10 text-fg-2"
+                          }`}>
+                            {exec.status}
+                          </span>
+                        </div>
+                        <div className="text-slate-500 text-[10px] mt-0.5">
+                          {exec.serviceName ? `${exec.serviceName} · ` : ""}
+                          {exec.scheduledAt ? new Date(exec.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Scheduled"}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-fg font-medium">{exec.quantity ?? 100} units</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Per-Run Execution Timeline */}
             {activeModalOrder.runsList && activeModalOrder.runsList.length > 0 && (

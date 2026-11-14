@@ -35,7 +35,21 @@ export function NewOrderShell() {
 
   // URL state
   const currentTab = (searchParams?.get("tab") || "single") as OrderTabKey;
-  const currentPlatform = (searchParams?.get("platform") || "instagram").toLowerCase();
+  const initialTarget = searchParams?.get("target") || searchParams?.get("link") || "";
+  const autoSuggestParam = searchParams?.get("autoSuggest");
+
+  const detectedPlat = useMemo(() => {
+    if (!initialTarget) return null;
+    const lower = initialTarget.toLowerCase();
+    if (lower.includes("instagram.com")) return "instagram";
+    if (lower.includes("youtube.com") || lower.includes("youtu.be")) return "youtube";
+    if (lower.includes("tiktok.com")) return "tiktok";
+    if (lower.includes("t.me") || lower.includes("telegram.me")) return "telegram";
+    if (lower.includes("x.com") || lower.includes("twitter.com")) return "x";
+    return null;
+  }, [initialTarget]);
+
+  const currentPlatform = (searchParams?.get("platform") || detectedPlat || "instagram").toLowerCase();
 
   // Bootstrap state
   const [bootstrapData, setBootstrapData] = useState<any>(null);
@@ -45,9 +59,35 @@ export function NewOrderShell() {
   // Tab State & Drafts
   const [activeTab, setActiveTab] = useState<OrderTabKey>(currentTab);
   const [selectedPlatform, setSelectedPlatform] = useState<string>(currentPlatform);
-  const [quickLinkInput, setQuickLinkInput] = useState<string>("");
+  const [quickLinkInput, setQuickLinkInput] = useState<string>(initialTarget);
   const [consentChecked, setConsentChecked] = useState<boolean>(false);
   const [formResetKey, setFormResetKey] = useState<number>(0);
+  const [autoSuggestEnabled, setAutoSuggestEnabled] = useState<boolean>(
+    autoSuggestParam === "false" ? false : true
+  );
+
+  // Sync state if search params change dynamically
+  useEffect(() => {
+    const target = searchParams?.get("target") || searchParams?.get("link");
+    if (target) {
+      setQuickLinkInput(target);
+      const lower = target.toLowerCase();
+      if (lower.includes("instagram.com") && selectedPlatform !== "instagram") setSelectedPlatform("instagram");
+      else if ((lower.includes("youtube.com") || lower.includes("youtu.be")) && selectedPlatform !== "youtube") setSelectedPlatform("youtube");
+      else if (lower.includes("tiktok.com") && selectedPlatform !== "tiktok") setSelectedPlatform("tiktok");
+      else if (lower.includes("t.me") && selectedPlatform !== "telegram") setSelectedPlatform("telegram");
+      else if ((lower.includes("x.com") || lower.includes("twitter.com")) && selectedPlatform !== "x") setSelectedPlatform("x");
+    }
+    const tab = searchParams?.get("tab") as OrderTabKey;
+    if (tab && (tab === "single" || tab === "combos" || tab === "autopilot" || tab === "custom_drip")) {
+      setActiveTab(tab);
+    }
+    if (searchParams?.get("autoSuggest") === "false") {
+      setAutoSuggestEnabled(false);
+    } else if (searchParams?.get("autoSuggest") === "true") {
+      setAutoSuggestEnabled(true);
+    }
+  }, [searchParams]);
 
   // Single Order State for Sticky Summary
   const [orderDetails, setOrderDetails] = useState<{
@@ -291,7 +331,7 @@ export function NewOrderShell() {
 
   return (
     <div className="space-y-6 md:space-y-8">
-      {/* 1. Four Main Tabs Navigation */}
+      {/* 1. Four Main Tabs Navigation: Single Order -> Combo Packages -> Auto-Pilot -> Custom Package */}
       <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-black/40 border border-slate-200/80 dark:border-white/5 backdrop-blur-xl overflow-x-auto scrollbar-none shadow-xs">
         <button
           type="button"
@@ -304,19 +344,6 @@ export function NewOrderShell() {
         >
           <Zap className="w-3.5 h-3.5 shrink-0" />
           <span>Single Order</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange("custom_drip")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap select-none ${
-            activeTab === "custom_drip"
-              ? "bg-[#D8EC8D] text-[#171e00] shadow-[0_0_20px_rgba(216,236,141,0.35)]"
-              : "text-fg-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04]"
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5 shrink-0" />
-          <span>Custom Package</span>
         </button>
 
         <button
@@ -347,37 +374,49 @@ export function NewOrderShell() {
             Beta
           </span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange("custom_drip")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap select-none ${
+            activeTab === "custom_drip"
+              ? "bg-[#D8EC8D] text-[#171e00] shadow-[0_0_20px_rgba(216,236,141,0.35)]"
+              : "text-fg-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04]"
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+          <span>Custom Package</span>
+        </button>
       </div>
 
-      {/* 2. Platform Picker Strip & Quick Link Detection Bar (for Single, Custom Drip & Combo Packages) */}
+      {/* 2. Platform Picker Strip (with Reset Action & Auto-Suggest Toggle for Single Order) */}
       {activeTab !== "autopilot" && (
-        <>
-          <PlatformPicker
-            platforms={bootstrapData?.enabledPlatforms || ["INSTAGRAM", "YOUTUBE", "TIKTOK", "X", "TELEGRAM"]}
-            selectedPlatform={selectedPlatform}
-            onSelect={handlePlatformChange}
-          />
-
-          {/* Quick Link Detection Bar */}
-          <div className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200/90 dark:border-white/5 text-xs shadow-sm dark:shadow-none transition-colors">
-            <Clipboard className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1.5" />
-            <input
-              type="text"
-              value={quickLinkInput}
-              onChange={handleQuickLinkPaste}
-              placeholder="Paste profile or post link here to identify platform..."
-              className="w-full bg-transparent text-fg text-xs placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none font-mono"
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <PlatformPicker
+              platforms={bootstrapData?.enabledPlatforms || ["INSTAGRAM", "YOUTUBE", "TIKTOK", "X", "TELEGRAM"]}
+              selectedPlatform={selectedPlatform}
+              onSelect={handlePlatformChange}
             />
-            {quickLinkInput && (
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            {activeTab === "single" && (
               <button
                 type="button"
-                onClick={() => setQuickLinkInput("")}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
-                title="Clear link input"
+                onClick={() => setAutoSuggestEnabled((prev) => !prev)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all select-none shadow-xs ${
+                  autoSuggestEnabled
+                    ? "bg-[#D8EC8D] text-[#171e00] border-[#b4cf47] shadow-[0_0_12px_rgba(216,236,141,0.3)]"
+                    : "bg-slate-100 dark:bg-white/[0.05] text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:text-slate-700 dark:hover:text-white"
+                }`}
+                title="Toggle smart service recommendations based on pasted link"
               >
-                <RefreshCw className="w-3 h-3" />
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Auto: {autoSuggestEnabled ? "ON" : "OFF"}</span>
               </button>
             )}
+
             <button
               type="button"
               onClick={() => {
@@ -388,14 +427,14 @@ export function NewOrderShell() {
                 setOrderError(null);
                 setFormResetKey((prev) => prev + 1);
               }}
-              className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors flex items-center gap-1 shrink-0"
+              className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/10 transition-colors flex items-center gap-1.5 shrink-0 shadow-xs"
               title="Reset order form"
             >
-              <RefreshCw className="w-3 h-3" />
-              <span>Reset Form</span>
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Reset</span>
             </button>
           </div>
-        </>
+        </div>
       )}
 
       {/* Success Notification */}
@@ -465,6 +504,8 @@ export function NewOrderShell() {
               onSwitchTab={(tab) => handleTabChange(tab as OrderTabKey)}
               prefilledTargetUrl={quickLinkInput}
               isLoading={isLoadingBootstrap}
+              autoSuggestEnabled={autoSuggestEnabled}
+              onToggleAutoSuggest={() => setAutoSuggestEnabled((prev) => !prev)}
             />
           </div>
 

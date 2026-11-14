@@ -6,6 +6,8 @@ import { getApiBase } from "@/lib/api-base";
 import { getAuthToken } from "@/lib/auth-session";
 import { STANDARD_DELIVERY_WINDOW_PRESETS, DeliveryWindowConfig } from "@smm/contracts";
 import { LinkPreviewCard } from "@/components/shared/LinkPreviewCard";
+import { LinkAutoSuggest } from "./LinkAutoSuggest";
+import { SmartServiceSuggestions } from "./SmartServiceSuggestions";
 import { ServiceDropdownSelect, GenericSelect } from "./CustomDropdownSelect";
 import {
   Heart,
@@ -620,12 +622,11 @@ export function CustomDripTab({
                     <Users className="w-3.5 h-3.5 text-[#D8EC8D]" />
                     Profile URL (for Followers)
                   </label>
-                  <input
-                    type="url"
+                  <LinkAutoSuggest
                     value={profileUrl}
-                    onChange={(e) => setProfileUrl(e.target.value)}
+                    onChange={setProfileUrl}
+                    platform={platform}
                     placeholder="https://instagram.com/username"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-border text-fg placeholder-slate-400 text-xs focus:outline-none focus:border-[#D8EC8D]/60 focus:ring-1 focus:ring-[#D8EC8D]/50 transition-all font-mono"
                   />
                   <p className="text-[10px] text-slate-500">
                     Used for followers and profile engagement dispatches.
@@ -644,12 +645,11 @@ export function CustomDripTab({
                     <Heart className="w-3.5 h-3.5 text-[#D8EC8D]" />
                     Reel / Post URL (for Views, Likes & Reach)
                   </label>
-                  <input
-                    type="url"
+                  <LinkAutoSuggest
                     value={targetUrl}
-                    onChange={(e) => setTargetUrl(e.target.value)}
+                    onChange={setTargetUrl}
+                    platform={platform}
                     placeholder="https://instagram.com/reel/C8xyz123"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-border text-fg placeholder-slate-400 text-xs focus:outline-none focus:border-[#D8EC8D]/60 focus:ring-1 focus:ring-[#D8EC8D]/50 transition-all font-mono"
                   />
                   <p className="text-[10px] text-slate-500">
                     Target post or reel for views, likes, and share metrics.
@@ -659,6 +659,28 @@ export function CustomDripTab({
                     selectedPlatform={platform}
                     serviceTypeOrMetric="POST"
                     onPreviewChange={setTargetPreview}
+                  />
+                  <SmartServiceSuggestions
+                    targetUrl={targetUrl}
+                    services={services}
+                    onSelectService={(svc) => {
+                      const kind = (svc.kind || "").toUpperCase();
+                      const name = (svc.name || "").toLowerCase();
+                      if (kind === "VIEWS" || name.includes("view")) {
+                        setViewsCard((p) => ({ ...p, enabled: true, serviceId: svc.id }));
+                      } else if (kind === "LIKES" || name.includes("like")) {
+                        setLikesCard((p) => ({ ...p, enabled: true, serviceId: svc.id }));
+                      } else if (kind === "SHARES" || kind === "REACH" || name.includes("share") || name.includes("save")) {
+                        setSharesCard((p) => ({ ...p, enabled: true, serviceId: svc.id }));
+                      } else if (kind === "FOLLOWERS" || name.includes("follower")) {
+                        setFollowersCard((p) => ({ ...p, enabled: true, serviceId: svc.id }));
+                      } else {
+                        setAdditionalServices((prev) => [
+                          ...prev.filter((item) => item.serviceId !== svc.id),
+                          { id: `rec-${Date.now()}`, serviceId: svc.id, quantity: svc.minQuantity || 1000 },
+                        ]);
+                      }
+                    }}
                   />
                 </div>
               </div>

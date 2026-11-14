@@ -2,6 +2,12 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/* Hide native Edge / IE password reveal button to prevent duplicate eye icons */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none !important;
+}
+
 @layer base {
   :root,
   .dark,
@@ -61,27 +67,27 @@
     /* @smm/ui Semantic Tokens - Light */
     --bg: #F5F5F8;
     --surface: #FFFFFF;
-    --surface-glass: rgba(255, 255, 255, 0.72);
-    --surface-raised: #F0F1F4;
+    --surface-glass: rgba(255, 255, 255, 0.85);
+    --surface-raised: #EEF0F4;
     --fg: #0F172A;
-    --fg-2: #475569;
-    --fg-muted: #5B6577;
-    --border: rgba(15, 23, 42, 0.10);
-    --border-control: #80868F;
+    --fg-2: #334155;
+    --fg-muted: #475569;
+    --border: rgba(15, 23, 42, 0.14);
+    --border-control: #64748B;
     --accent: #D4F55F;
     --on-accent: #171E00;
     --accent-text: #4D6010;
     --success: #047857;
-    --success-bg: rgba(4, 120, 87, 0.08);
+    --success-bg: rgba(4, 120, 87, 0.10);
     --warning: #92400E;
-    --warning-bg: rgba(146, 64, 14, 0.08);
+    --warning-bg: rgba(146, 64, 14, 0.10);
     --danger: #B91C1C;
-    --danger-bg: rgba(185, 28, 28, 0.08);
+    --danger-bg: rgba(185, 28, 28, 0.10);
     --info: #0369A1;
-    --info-bg: rgba(3, 105, 161, 0.08);
+    --info-bg: rgba(3, 105, 161, 0.10);
     --focus: #4D6010;
-    --glow: rgba(77, 96, 16, 0.14);
-    --overlay: rgba(15, 23, 42, 0.40);
+    --glow: rgba(77, 96, 16, 0.20);
+    --overlay: rgba(15, 23, 42, 0.45);
 
     /* Legacy compatibility aliases */
     --background: var(--bg);
@@ -204,8 +210,11 @@
 }
 
 .light .ambient-glow-layer, [data-theme="light"] .ambient-glow-layer {
-  background: radial-gradient(circle at 50% 0%, rgba(77, 96, 16, 0.08) 0%, rgba(212, 245, 95, 0.03) 40%, transparent 70%);
-  opacity: 0.6;
+  background: 
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(212, 245, 95, 0.22) 0%, rgba(163, 230, 53, 0.10) 35%, rgba(52, 211, 153, 0.05) 60%, transparent 80%),
+    radial-gradient(circle at 10% 40%, rgba(212, 245, 95, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 90% 70%, rgba(56, 189, 248, 0.06) 0%, transparent 50%);
+  opacity: 0.95;
 }
 
 /* Glassmorphism Implementation per Rule & Prompt Recipe */
@@ -360,3 +369,21 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--fg-muted);
 }
+
+/* Continuous Infinite Smooth Marquee for Social Platforms */
+@keyframes continuous-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-continuous-marquee {
+  display: flex;
+  width: max-content;
+  animation: continuous-marquee 24s linear infinite !important;
+  will-change: transform;
+}
+

@@ -2,7 +2,7 @@
 
 import React, { useRef } from "react";
 import { PaymentIcon } from "@/components/shared/PaymentIcon";
-import { CreditCard, RotateCcw, Activity, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { CreditCard, RotateCcw, Activity, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { CrownSlot } from "@/components/three/CrownSlot";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 
@@ -20,8 +20,8 @@ function BentoCard({
   const mouseXSpring = useSpring(x, { stiffness: 200, damping: 20 });
   const mouseYSpring = useSpring(y, { stiffness: 200, damping: 20 });
 
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["5deg", "-5deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-5deg", "5deg"]);
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["3deg", "-3deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-3deg", "3deg"]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -51,7 +51,7 @@ function BentoCard({
         rotateY,
         transformStyle: "preserve-3d",
       }}
-      className={`rounded-3xl bg-surface-glass border border-border backdrop-blur-2xl p-6 sm:p-8 shadow-2xl transition-colors hover:border-border-control relative overflow-hidden ${className}`}
+      className={`rounded-2xl sm:rounded-3xl bg-surface/80 dark:bg-surface-glass border border-border backdrop-blur-xl p-5 sm:p-6 shadow-xl transition-all hover:border-accent/40 relative overflow-hidden ${className}`}
     >
       {children}
     </motion.div>
@@ -73,22 +73,22 @@ export function PaymentsSection() {
   return (
     <section
       id="payments"
-      className="w-full py-16 sm:py-24 lg:py-28 bg-transparent relative"
+      className="w-full py-10 sm:py-14 lg:py-16 bg-transparent relative"
     >
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-        {/* Title Block */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        {/* Title Block - Compact & balanced */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
           <div className="max-w-xl text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-border mb-4">
-              <span className="w-2 h-2 rounded-full bg-accent" />
-              <span className="text-[13px] font-medium text-accent-text">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 mb-3">
+              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              <span className="text-xs font-semibold text-accent-text uppercase tracking-wider">
                 04 / 05 — Wallet & Payments
               </span>
             </div>
-            <h2 className="text-[clamp(28px,3.8vw,48px)] font-semibold text-fg tracking-[-0.02em] leading-tight mb-4">
+            <h2 className="text-[clamp(24px,3vw,38px)] font-bold text-fg tracking-[-0.02em] leading-tight mb-2">
               Direct INR payments & instant refunds
             </h2>
-            <p className="text-base sm:text-lg text-fg-muted font-normal leading-relaxed">
+            <p className="text-sm sm:text-base text-fg-muted font-normal leading-relaxed">
               Top up your balance seamlessly in Indian Rupees. Unfulfilled balances automatically return to your wallet.
             </p>
           </div>
@@ -96,19 +96,19 @@ export function PaymentsSection() {
           <div className="hidden lg:flex items-center justify-end">
             <CrownSlot
               id="payments"
-              className="w-28 h-28 pointer-events-none"
+              className="w-24 h-24 pointer-events-none"
             />
           </div>
         </div>
 
-        {/* Bento Grid: 1 Large tile + 2 Secondary tiles */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        {/* Bento Grid: 1 Large tile + 2 Secondary tiles - Reduced height */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           
           {/* Tile 1: Pay in INR (Large Tile: 7 cols) */}
           <BentoCard className="lg:col-span-7 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs uppercase tracking-widest text-accent-text font-mono px-2.5 py-1 rounded-md bg-white/[0.04] border border-border">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[11px] uppercase tracking-widest text-accent-text font-mono px-2.5 py-0.5 rounded-md bg-accent/10 border border-accent/20 font-bold">
                   INR Gateway
                 </span>
                 <span className="text-xs font-mono text-fg-muted">
@@ -116,24 +116,24 @@ export function PaymentsSection() {
                 </span>
               </div>
 
-              <h3 className="text-2xl sm:text-3xl font-semibold text-fg mb-3">
+              <h3 className="text-xl sm:text-2xl font-bold text-fg mb-1.5">
                 Pay in INR
               </h3>
-              <p className="text-sm sm:text-base text-fg-muted font-normal leading-relaxed mb-6">
+              <p className="text-xs sm:text-sm text-fg-muted font-normal leading-relaxed mb-4">
                 Instant wallet top-ups through official UPI apps, debit/credit cards, and RuPay. Zero exchange fees or conversion delays.
               </p>
 
-              {/* Logo Plates Grid: 4 columns, light plates for dark logos */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* Logo Plates Grid: 4 columns, compact & crisp */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {supportedMethods.map((m) => (
                   <div
                     key={m.id}
-                    className="h-16 flex items-center justify-start gap-2.5 p-2 rounded-xl bg-white/[0.03] border border-border hover:border-white/[0.2] transition-colors"
+                    className="h-11 sm:h-12 flex items-center justify-start gap-2 p-1.5 rounded-xl bg-surface-raised/70 dark:bg-white/[0.04] border border-border hover:border-accent/30 transition-colors"
                   >
-                    <div className="w-11 h-9 rounded-lg bg-white flex items-center justify-center p-1.5 shrink-0 shadow-sm">
-                      <PaymentIcon method={m.id} size={22} />
+                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center p-1 shrink-0 shadow-xs">
+                      <PaymentIcon method={m.id} size={18} />
                     </div>
-                    <span className="text-xs font-medium text-fg truncate">
+                    <span className="text-xs font-semibold text-fg truncate">
                       {m.name}
                     </span>
                   </div>
@@ -141,36 +141,36 @@ export function PaymentsSection() {
               </div>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-border flex items-center gap-2 text-xs text-fg-muted">
-              <ShieldCheck className="w-4 h-4 text-accent-text shrink-0" />
+            <div className="mt-5 pt-3 border-t border-border flex items-center gap-2 text-[11px] text-fg-muted">
+              <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
               <span>PCI-DSS compliant encrypted transactions with 256-bit bank security.</span>
             </div>
           </BentoCard>
 
           {/* Right Column: 2 Stacked Tiles (5 cols) */}
-          <div className="lg:col-span-5 flex flex-col gap-6">
+          <div className="lg:col-span-5 flex flex-col gap-5">
             
             {/* Tile 2: Automatic Refunds */}
             <BentoCard className="flex-1 flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-9 h-9 rounded-xl bg-white/[0.04] border border-border flex items-center justify-center">
-                    <RotateCcw className="w-4 h-4 text-accent-text" />
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-xl bg-accent/15 border border-accent/25 flex items-center justify-center">
+                    <RotateCcw className="w-3.5 h-3.5 text-accent-text" />
                   </div>
-                  <span className="text-[11px] font-mono text-accent-text px-2 py-0.5 rounded-full bg-white/[0.04]">
+                  <span className="text-[10px] font-mono font-bold text-accent-text px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20">
                     Automatic
                   </span>
                 </div>
-                <h3 className="text-xl font-semibold text-fg mb-2">
+                <h3 className="text-base sm:text-lg font-bold text-fg mb-1">
                   Automatic refunds
                 </h3>
-                <p className="text-sm text-fg-muted font-normal leading-relaxed">
+                <p className="text-xs text-fg-muted font-normal leading-relaxed">
                   If any order cannot be fully completed or is cancelled by the network, the unfulfilled amount is credited straight back to your wallet balance automatically.
                 </p>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-border flex items-center gap-2 text-xs text-fg-muted">
-                <CheckCircle2 className="w-3.5 h-3.5 text-accent-text" />
+              <div className="mt-3 pt-2.5 border-t border-border flex items-center gap-1.5 text-[11px] text-fg-muted">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                 <span>Zero support tickets required for partial refunds.</span>
               </div>
             </BentoCard>
@@ -178,28 +178,28 @@ export function PaymentsSection() {
             {/* Tile 3: Live Tracking */}
             <BentoCard className="flex-1 flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-9 h-9 rounded-xl bg-white/[0.04] border border-border flex items-center justify-center">
-                    <Activity className="w-4 h-4 text-accent-text" />
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-xl bg-accent/15 border border-accent/25 flex items-center justify-center">
+                    <Activity className="w-3.5 h-3.5 text-accent-text" />
                   </div>
-                  <span className="text-[11px] font-mono text-fg-muted">
+                  <span className="text-[10px] font-mono text-fg-muted">
                     Real-time
                   </span>
                 </div>
-                <h3 className="text-xl font-semibold text-fg mb-2">
+                <h3 className="text-base sm:text-lg font-bold text-fg mb-1">
                   Live tracking
                 </h3>
-                <p className="text-sm text-fg-muted font-normal leading-relaxed mb-4">
+                <p className="text-xs text-fg-muted font-normal leading-relaxed mb-3">
                   Watch order status advance in real-time with continuous progress counters.
                 </p>
 
                 {/* Status-timeline illustration */}
-                <div className="p-3 rounded-xl bg-white/[0.02] border border-border flex items-center justify-between">
+                <div className="p-2.5 rounded-xl bg-surface-raised/70 dark:bg-white/[0.03] border border-border flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-                    <span className="text-xs font-mono text-fg">In Progress</span>
+                    <span className="text-xs font-mono font-semibold text-fg">In Progress</span>
                   </div>
-                  <span className="text-xs font-mono text-accent-text">
+                  <span className="text-xs font-mono font-bold text-accent-text">
                     940 / 1,000 delivered
                   </span>
                 </div>

@@ -13,7 +13,8 @@ import {
   Lock,
   Power,
   Sliders,
-  DollarSign
+  DollarSign,
+  X
 } from "lucide-react";
 
 export default function AdminYoupiPilotPage() {
@@ -200,7 +201,9 @@ export default function AdminYoupiPilotPage() {
         {actionMessage && (
           <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-xs text-blue-300 flex items-center justify-between">
             <span>{actionMessage}</span>
-            <button onClick={() => setActionMessage("")} className="text-blue-400 font-bold ml-4">✕</button>
+            <button onClick={() => setActionMessage("")} className="text-blue-400 hover:text-blue-200 transition-colors ml-4 p-1 rounded">
+              <X className="w-4 h-4" />
+            </button>
           </div>
         )}
 
