@@ -419,7 +419,7 @@ export class ServicesService {
         filtered = filtered.filter((s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q));
       }
       if (cacheKey) {
-        await this.cacheService.set(cacheKey, filtered, { ttlSeconds: 300, jitterSeconds: 30 });
+        await this.cacheService.set(cacheKey, filtered, { ttlSeconds: 3600, jitterSeconds: 60 });
       }
       return filtered as any[];
     }
@@ -545,7 +545,7 @@ export class ServicesService {
       });
 
       if (cacheKey) {
-        await this.cacheService.set(cacheKey, mappedResult, { ttlSeconds: 300, jitterSeconds: 30 });
+        await this.cacheService.set(cacheKey, mappedResult, { ttlSeconds: 3600, jitterSeconds: 60 });
       }
 
       return mappedResult;

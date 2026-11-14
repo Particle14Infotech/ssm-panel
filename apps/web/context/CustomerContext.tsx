@@ -150,40 +150,68 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshData = useCallback(async () => {
-    // 1. Single unified public services fetch
+    // 1. Single unified public services fetch with Instant Stale-While-Revalidate Cache
     const servicesFetchPromise = (async () => {
       try {
+        if (typeof window !== "undefined") {
+          try {
+            const cached = sessionStorage.getItem("smm_cached_services_v1");
+            const cachedTime = sessionStorage.getItem("smm_cached_services_time");
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setServices(parsed);
+                setIsServicesLoading(false);
+                // If cache is fresh (< 10 minutes), skip background re-fetching on rapid route switches
+                if (cachedTime && Date.now() - Number(cachedTime) < 10 * 60 * 1000) {
+                  return;
+                }
+              }
+            }
+          } catch {
+            // ignore sessionStorage read errors
+          }
+        }
+
         const servicesRes = await fetch(`${API_BASE}/services`);
         if (servicesRes.ok) {
           const rawServices = await servicesRes.json();
           if (Array.isArray(rawServices)) {
-            setServices(
-              rawServices.map((s: any) => ({
-                id: s.id,
-                categoryId: s.categoryId || "general",
-                categoryName: s.categoryName || s.category?.name || "General Services",
-                name: s.name,
-                displayName: s.displayName,
-                platform: s.platform,
-                ratePer1000: Number(s.ratePer1000),
-                minQty: s.minQty,
-                maxQty: s.maxQty,
-                packageEligible: s.packageEligible !== false,
-                avgProcessingSpeed: "15 - 30 mins",
-                avgStartTime: "0 - 15 mins",
-                refillable: s.refillable,
-                cancellable: s.cancellable,
-                description: s.description || "",
-                status: s.status,
-                serviceType: s.serviceType || "DEFAULT",
-                dripFeedSupported: s.dripFeedSupported ?? false,
-                allowManagedDrip: s.allowManagedDrip ?? (s.serviceType !== "CUSTOM_COMMENTS" && !s.name?.toLowerCase().includes("comment")),
-                dripFeedMinRuns: s.dripFeedMinRuns ?? null,
-                dripFeedMaxRuns: s.dripFeedMaxRuns ?? null,
-                dripFeedMinInterval: s.dripFeedMinInterval ?? null,
-                dripFeedMaxInterval: s.dripFeedMaxInterval ?? null,
-              }))
-            );
+            const mapped = rawServices.map((s: any) => ({
+              id: s.id,
+              categoryId: s.categoryId || "general",
+              categoryName: s.categoryName || s.category?.name || "General Services",
+              name: s.name,
+              displayName: s.displayName,
+              platform: s.platform,
+              ratePer1000: Number(s.ratePer1000),
+              minQty: s.minQty,
+              maxQty: s.maxQty,
+              packageEligible: s.packageEligible !== false,
+              avgProcessingSpeed: "15 - 30 mins",
+              avgStartTime: "0 - 15 mins",
+              refillable: s.refillable,
+              cancellable: s.cancellable,
+              description: s.description || "",
+              status: s.status,
+              serviceType: s.serviceType || "DEFAULT",
+              dripFeedSupported: s.dripFeedSupported ?? false,
+              allowManagedDrip: s.allowManagedDrip ?? (s.serviceType !== "CUSTOM_COMMENTS" && !s.name?.toLowerCase().includes("comment")),
+              dripFeedMinRuns: s.dripFeedMinRuns ?? null,
+              dripFeedMaxRuns: s.dripFeedMaxRuns ?? null,
+              dripFeedMinInterval: s.dripFeedMinInterval ?? null,
+              dripFeedMaxInterval: s.dripFeedMaxInterval ?? null,
+            }));
+
+            setServices(mapped);
+            if (typeof window !== "undefined") {
+              try {
+                sessionStorage.setItem("smm_cached_services_v1", JSON.stringify(mapped));
+                sessionStorage.setItem("smm_cached_services_time", String(Date.now()));
+              } catch {
+                // ignore sessionStorage quota errors
+              }
+            }
           }
         }
       } catch (err) {

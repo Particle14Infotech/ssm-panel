@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useCustomer } from "@/context/CustomerContext";
 import {
@@ -25,6 +25,11 @@ export default function ServicesCatalogPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [copiedServiceId, setCopiedServiceId] = useState<string | null>(null);
+  const [displayLimit, setDisplayLimit] = useState<number>(60);
+
+  useEffect(() => {
+    setDisplayLimit(60);
+  }, [selectedPlatform, selectedCategory, searchQuery]);
 
   const platforms = [
     { id: "ALL", name: "All Networks" },
@@ -68,6 +73,10 @@ export default function ServicesCatalogPage() {
 
     return matchesPlatform && matchesCategory && matchesSearch;
   });
+
+  const visibleServices = useMemo(() => {
+    return filteredServices.slice(0, displayLimit);
+  }, [filteredServices, displayLimit]);
 
   const handleCopyId = (id: string) => {
     navigator.clipboard.writeText(id);
@@ -179,7 +188,7 @@ export default function ServicesCatalogPage() {
           <>
             {/* MOBILE SERVICES CARDS (< md) */}
             <div className="block md:hidden space-y-3">
-              {filteredServices.map((service) => (
+              {visibleServices.map((service) => (
                 <div
                   key={service.id}
                   className="p-4 rounded-2xl bg-white/[0.02] border border-border hover:border-accent/30 transition-all space-y-3"
@@ -251,7 +260,7 @@ export default function ServicesCatalogPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-xs">
-                {filteredServices.map((service) => (
+                {visibleServices.map((service) => (
                   <motion.tr
                     key={service.id}
                     whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.04)" }}
@@ -332,6 +341,22 @@ export default function ServicesCatalogPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination / Load More Footer */}
+          {filteredServices.length > displayLimit && (
+            <div className="flex flex-col sm:flex-row items-center justify-between pt-4 border-t border-slate-200/60 dark:border-white/5 gap-3">
+              <span className="text-xs font-mono text-slate-400">
+                Showing <strong className="text-fg">{displayLimit}</strong> of <strong className="text-fg">{filteredServices.length.toLocaleString()}</strong> services
+              </span>
+              <button
+                type="button"
+                onClick={() => setDisplayLimit((prev) => prev + 60)}
+                className="px-5 py-2 rounded-xl bg-accent/15 hover:bg-[#D8EC8D] text-[#D8EC8D] hover:text-[#171e00] border border-accent/30 text-xs font-bold transition-all shadow-sm active:scale-95"
+              >
+                Load More (+60 Services)
+              </button>
+            </div>
+          )}
         </>
         )}
       </div>
