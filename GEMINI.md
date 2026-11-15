@@ -19,3 +19,13 @@ Run Step 0 first (once per session) and summarize the detected profile in 3 bull
 - Target architecture & deployment mode
 - Build artifact strategy & change delta
 
+## Universal Zero-Conflict Dark & Light Mode Rules
+To prevent visual inversions, unreadable text, and white-card bleed in dark mode:
+1. **CSS Gradient Precedence Rule**: In CSS, `background-image` renders on top of `background-color`. Therefore, never write `bg-gradient-to-... from-white ... dark:bg-surface` alone.
+2. **Mandatory Gradient Neutralization in Dark Mode**: Whenever a light gradient is used on a card, container, or header, always pair it with:
+   `dark:from-transparent dark:via-transparent dark:to-transparent dark:bg-surface` (or `dark:bg-none dark:bg-surface`).
+3. **Paired Semantic Tokens**: Prefer semantic tokens: `bg-white dark:bg-surface` for light/dark card surfaces, and `text-slate-900 dark:text-fg` for text.
+4. **Automated Static Audit**: Run `pnpm test:theme` (`node scripts/check-theme-conflicts.js`) to automatically detect any un-neutralized gradients.
+5. **Dual-Theme Verification**: Verify every UI screen in both Light and Dark mode before deploying.
+
+

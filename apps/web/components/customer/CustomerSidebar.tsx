@@ -78,7 +78,7 @@ export function CustomerSidebar() {
                       key={item.name}
                       href={item.href}
                       className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group ${isActive
-                          ? "bg-gradient-to-r from-lime-300/40 via-lime-200/30 to-emerald-100/30 dark:bg-accent/15 border-l-[3px] border-[#658210] dark:border-accent text-slate-950 dark:text-fg shadow-xs font-bold"
+                          ? "bg-gradient-to-r from-lime-300/40 via-lime-200/30 to-emerald-100/30 dark:from-transparent dark:via-transparent dark:to-transparent dark:bg-accent/15 border-l-[3px] border-[#658210] dark:border-accent text-slate-950 dark:text-fg shadow-xs font-bold"
                           : "text-slate-700 dark:text-fg-2 hover:text-slate-950 dark:hover:text-fg hover:bg-slate-100/90 dark:hover:bg-surface-raised"
                         }`}
                     >

@@ -464,7 +464,7 @@ function PackagesListContent() {
       </div>
 
       {/* Orders Tracking Redirect Banner */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-lime-50/90 via-emerald-50/60 to-white dark:from-accent/10 dark:to-transparent border border-lime-300/80 dark:border-accent/25 text-fg text-xs gap-3 shadow-xs">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-lime-50/90 via-emerald-50/60 to-white dark:from-accent/10 dark:via-transparent dark:to-transparent dark:bg-surface-raised border border-lime-300/80 dark:border-accent/25 text-fg text-xs gap-3 shadow-xs">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-accent/25 border border-accent/40 flex items-center justify-center shrink-0 text-[#4D6010] dark:text-[#D8EC8D] shadow-2xs">
             <ShoppingBag className="w-4 h-4" />
@@ -551,7 +551,7 @@ function PackagesListContent() {
                 <div
                   key={fav.id}
                   onClick={() => handleReorderFavorite(fav)}
-                  className="p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-white to-slate-50/80 dark:bg-surface border border-slate-200/90 dark:border-border hover:border-lime-400/60 dark:hover:border-accent/50 transition-all flex flex-col justify-between space-y-4 cursor-pointer group shadow-xs hover:shadow-md"
+                  className="p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-white to-slate-50/80 dark:from-transparent dark:to-transparent dark:bg-surface border border-slate-200/90 dark:border-border hover:border-lime-400/60 dark:hover:border-accent/50 transition-all flex flex-col justify-between space-y-4 cursor-pointer group shadow-xs hover:shadow-md"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-2 min-w-0">
@@ -631,7 +631,7 @@ function PackagesListContent() {
               return (
                 <div
                   key={combo.id}
-                  className="p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-white to-slate-50/80 dark:bg-surface border border-slate-200/90 dark:border-border hover:border-lime-400/60 dark:hover:border-accent/40 transition-all flex flex-col justify-between space-y-4 group shadow-xs hover:shadow-md"
+                  className="p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-white to-slate-50/80 dark:from-transparent dark:to-transparent dark:bg-surface border border-slate-200/90 dark:border-border hover:border-lime-400/60 dark:hover:border-accent/40 transition-all flex flex-col justify-between space-y-4 group shadow-xs hover:shadow-md"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-2 min-w-0">
@@ -728,7 +728,7 @@ function PackagesListContent() {
       {/* 3. CUSTOM CREATED PACKAGES TAB */}
       {categoryFilter === "CUSTOM" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-white via-slate-50/80 to-slate-100/60 dark:bg-surface border border-slate-200/90 dark:border-border shadow-xs">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-white via-slate-50/80 to-slate-100/60 dark:from-transparent dark:via-transparent dark:to-transparent dark:bg-surface border border-slate-200/90 dark:border-border shadow-xs">
             <div className="space-y-0.5">
               <h3 className="text-sm font-bold text-slate-900 dark:text-fg">Custom Drip &amp; Multi-Wave Campaigns</h3>
               <p className="text-xs text-slate-600 dark:text-fg-muted">
@@ -780,7 +780,7 @@ function PackagesListContent() {
                 return (
                   <div
                     key={pkg.id}
-                    className="p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-white to-slate-50/80 dark:bg-surface border border-slate-200/90 dark:border-border hover:border-lime-400/60 dark:hover:border-accent/40 transition-all flex flex-col justify-between space-y-3 shadow-xs hover:shadow-md"
+                    className="p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-white to-slate-50/80 dark:from-transparent dark:to-transparent dark:bg-surface border border-slate-200/90 dark:border-border hover:border-lime-400/60 dark:hover:border-accent/40 transition-all flex flex-col justify-between space-y-3 shadow-xs hover:shadow-md"
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2 min-w-0">
