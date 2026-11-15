@@ -85,10 +85,16 @@ function CustomerDashboardContent() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [refillingId, setRefillingId] = useState<string | null>(null);
 
-  // Clean real metrics calculations (Zero-safe without artificial mock fallbacks)
+  // Dynamic real metrics calculations (Zero-safe without artificial mock fallbacks)
   const totalOrdersCount = useMemo(() => orders.length, [orders]);
   const inProgressCount = useMemo(() => {
-    return orders.filter((o) => o.status === "IN_PROGRESS" || o.status === "PROCESSING").length;
+    return orders.filter(
+      (o) =>
+        o.status === "IN_PROGRESS" ||
+        o.status === "PROCESSING" ||
+        o.status === "PENDING" ||
+        o.status === "PARTIAL"
+    ).length;
   }, [orders]);
   const completedCount = useMemo(() => {
     return orders.filter((o) => o.status === "COMPLETED").length;
@@ -97,7 +103,14 @@ function CustomerDashboardContent() {
   const fulfillmentRate = useMemo(() => {
     if (orders.length === 0) return 100;
     const completed = orders.filter((o) => o.status === "COMPLETED").length;
-    return Math.round((completed / orders.length) * 1000) / 10;
+    const partialCredit = orders
+      .filter((o) => o?.status === "PARTIAL" && (o.quantity || 0) > 0)
+      .reduce((acc, o) => {
+        const delivered = Math.min(o.quantity || 0, Math.max(0, (o.quantity || 0) - (o.remains ?? 0)));
+        return acc + delivered / (o.quantity || 1);
+      }, 0);
+    const score = ((completed + partialCredit) / orders.length) * 100;
+    return Math.min(100, Math.max(0, Math.round(score * 10) / 10));
   }, [orders]);
 
   // Map real active packages and orders to process cards
@@ -247,44 +260,6 @@ function CustomerDashboardContent() {
     return combined.slice(0, 5);
   }, [packages, orders]);
 
-  // Genuine 24h delivery rhythm points calculated directly from user's actual order activity
-  const wavePoints = useMemo(() => {
-    const timeSlots = [
-      { label: "12 AM", hour: 0 },
-      { label: "2 AM", hour: 2 },
-      { label: "4 AM", hour: 4 },
-      { label: "6 AM", hour: 6 },
-      { label: "8 AM", hour: 8 },
-      { label: "10 AM", hour: 10 },
-      { label: "12 PM", hour: 12 },
-      { label: "2 PM", hour: 14 },
-      { label: "4 PM", hour: 16 },
-      { label: "6 PM", hour: 18 },
-      { label: "8 PM", hour: 20 },
-      { label: "10 PM", hour: 22 },
-      { label: "12 AM", hour: 24 },
-    ];
-
-    const buckets = new Array(timeSlots.length).fill(0);
-
-    if (orders && orders.length > 0) {
-      orders.forEach((o) => {
-        const d = o.createdAt ? new Date(o.createdAt) : new Date();
-        const h = d.getHours();
-        const slotIdx = Math.min(11, Math.floor(h / 2));
-        const units = Number(o.quantity) || 100;
-        buckets[slotIdx] += units;
-      });
-      // Wrap 12 AM end slot
-      buckets[12] = buckets[0];
-    }
-
-    return timeSlots.map((slot, i) => ({
-      time: slot.label,
-      value: buckets[i],
-    }));
-  }, [orders]);
-
   const handleSync = async () => {
     setIsSyncing(true);
     try {
@@ -382,8 +357,8 @@ function CustomerDashboardContent() {
         fulfillmentRate={fulfillmentRate}
       />
 
-      {/* 3. Live Graph: 24h Delivery Rhythm Wave (Glowing Neon Sine Curve Chart) */}
-      <DeliveryRhythmWave data={wavePoints} metricLabel="Views per hour" />
+      {/* 3. Live Graph: Dynamic Delivery Rhythm Wave (Day / Week / Month Real-Time Sync) */}
+      <DeliveryRhythmWave orders={orders} />
 
       {/* 4. Active Link Processes (Top 5 Active Links per Requirement 11) */}
       <ActiveProcessCards processes={mappedProcesses ? mappedProcesses.slice(0, 5) : undefined} />
