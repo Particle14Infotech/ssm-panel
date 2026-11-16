@@ -24,35 +24,14 @@ export function formatINR(amount: number | string, maximumFractionDigits = 2): s
   }).format(num);
 }
 
-export function formatOrderId(id: string | undefined | null): string {
-  if (!id) return "#ORD-00000000";
-  const clean = id.replace(/[^a-zA-Z0-9]/g, "");
-  return `#ORD-${clean.slice(0, 8).toUpperCase()}`;
-}
+const formatEntityId = (prefix: string, id: string | undefined | null) =>
+  !id ? `#${prefix}-00000000` : `#${prefix}-${id.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase()}`;
 
-export function formatPackageId(id: string | undefined | null): string {
-  if (!id) return "#PKG-00000000";
-  const clean = id.replace(/[^a-zA-Z0-9]/g, "");
-  return `#PKG-${clean.slice(0, 8).toUpperCase()}`;
-}
-
-export function formatTxnId(id: string | undefined | null): string {
-  if (!id) return "#TXN-00000000";
-  const clean = id.replace(/[^a-zA-Z0-9]/g, "");
-  return `#TXN-${clean.slice(0, 8).toUpperCase()}`;
-}
-
-export function formatInvoiceId(id: string | undefined | null): string {
-  if (!id) return "#INV-00000000";
-  const clean = id.replace(/[^a-zA-Z0-9]/g, "");
-  return `#INV-${clean.slice(0, 8).toUpperCase()}`;
-}
-
-export function formatTicketId(id: string | undefined | null): string {
-  if (!id) return "#TKT-00000000";
-  const clean = id.replace(/[^a-zA-Z0-9]/g, "");
-  return `#TKT-${clean.slice(0, 8).toUpperCase()}`;
-}
+export const formatOrderId = (id?: string | null) => formatEntityId("ORD", id);
+export const formatPackageId = (id?: string | null) => formatEntityId("PKG", id);
+export const formatTxnId = (id?: string | null) => formatEntityId("TXN", id);
+export const formatInvoiceId = (id?: string | null) => formatEntityId("INV", id);
+export const formatTicketId = (id?: string | null) => formatEntityId("TKT", id);
 
 export function formatServiceId(id: string | undefined | null): string {
   if (!id) return "#SRV-000";

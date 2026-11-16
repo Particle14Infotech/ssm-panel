@@ -41,14 +41,9 @@ import { CountUpNumber } from "@/components/motion/CountUpNumber";
 import { motion, AnimatePresence } from "framer-motion";
 import { PackageOrderBuilder } from "@/components/customer/PackageOrderBuilder";
 import { CustomPackageBuilder } from "@/components/customer/CustomPackageBuilder";
+import { formatIndianNumber } from "@/lib/numberFormat";
 import { NewOrderSkeleton } from "@/components/skeletons/NewOrderSkeleton";
 import { NewOrderShell } from "@/components/customer/new-order/NewOrderShell";
-
-// Helper: Format numbers with Indian numbering system (e.g. 1,00,000)
-function formatIndianNumber(num: number): string {
-  if (num === undefined || num === null || isNaN(num)) return "0";
-  return Number(num).toLocaleString("en-IN");
-}
 
 // Helper: Format duration minutes into plain text
 function formatDuration(mins: number): string {
