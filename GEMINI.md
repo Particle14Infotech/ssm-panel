@@ -28,4 +28,20 @@ To prevent visual inversions, unreadable text, and white-card bleed in dark mode
 4. **Automated Static Audit**: Run `pnpm test:theme` (`node scripts/check-theme-conflicts.js`) to automatically detect any un-neutralized gradients.
 5. **Dual-Theme Verification**: Verify every UI screen in both Light and Dark mode before deploying.
 
+## Ponytail: Lazy Senior Developer Mode (Anti-Bloat & YAGNI)
+The best code is the code never written. Solve the whole problem with the least new code.
+Follow the 6-tier ladder before writing code:
+1. **YAGNI**: Does it need to exist? Skip features, options, and flexibility nobody asked for.
+2. **Reuse**: Check if a helper, component, service, or pattern already exists in the repository. Use it.
+3. **Standard Library / Native Platform**: Leverage standard library or native browser/HTML features before custom logic or dependencies.
+4. **Installed Dependency**: Use an already-installed dependency. Never add a new package for a few lines of code.
+5. **One-liners**: If it can be one clean, readable line, write one line.
+6. **Minimum Viable Code**: Otherwise, write the absolute minimum code that completely works.
+- **Rules of Engagement**:
+  - Deletion beats addition.
+  - Never introduce wrappers, abstractions, or "for later" boilerplate nobody asked for.
+  - The shortest working diff wins, once all callers and edge cases are accounted for.
+  - Never cut: validation at trust boundaries, security, error handling that prevents data loss, or accessibility.
+
+
 
