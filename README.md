@@ -32,7 +32,7 @@ The project maintains a curated, high-standard documentation set in `docs/`:
 0.2. [VPS Deployment Guide (Zero-Build Artifact Pipeline)](file:///d:/projects/internship%20projects/SMM/docs/DEPLOYMENT_GUIDE.md)
 1. [Overview & What It Is](#-overview--what-it-is)
 2. [Core Feature Matrix](#-core-feature-matrix)
-3. [System Architecture](#-system-architecture)
+3. [System Architecture & UML Models](#-system-architecture--uml-models)
 4. [Technology Stack](#-technology-stack)
 5. [Prerequisites & Free Cloud Services](#-prerequisites--free-cloud-services)
 6. [Step-by-Step Local Setup](#-step-by-step-local-setup)
@@ -93,20 +93,21 @@ The project maintains a curated, high-standard documentation set in `docs/`:
 
 ---
 
-## 🏗️ System Architecture
+## 🏗️ System Architecture & UML Models
 
+### 1. Component & Data Flow Architecture
 ```mermaid
 flowchart TD
     subgraph ClientLayer ["Client Layer (Desktop 1440px / Mobile Web)"]
         Web["Next.js 14 Web Application<br/>Port 3000 (React 18, Tailwind, Context API)"]
     end
 
-    subgraph APILayer ["API Layer (Modular Monolith)"]
-        API["NestJS API Server<br/>Port 4000/4001 (Fastify/Express Platform)"]
+    subgraph APILayer ["API Layer (Fastify Engine)"]
+        API["Fastify REST API Server<br/>Port 4000 (Modular Monolith)"]
         AuthMod["Auth & RBAC Module<br/>(Argon2id, JWT)"]
         OrdersMod["Orders Dispatch Module<br/>(Atomic Balance & Idempotency)"]
         WalletMod["Wallet & Ledger Module<br/>(Pessimistic Row Locking)"]
-        PayMod["Payments Module<br/>(Razorpay HMAC Webhooks)"]
+        PayMod["Payments Module<br/>(Razorpay & UPI Pilot)"]
         ProvMod["Providers Module<br/>(AES-256-GCM Tokens)"]
     end
 
@@ -134,6 +135,46 @@ flowchart TD
     Redis --> ProviderDispatcher
     ProviderDispatcher -->|Dispatch Order| StatusSync
     StatusSync -->|Update Status & Refund| DB
+```
+
+### 2. UML Sequence Diagram: Order Placement & Dispatch Lifecycle
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Customer as 👤 Customer
+    participant Web as 💻 Next.js Web (Port 3000)
+    participant API as ⚡ Fastify API (Port 4000)
+    participant DB as 🗄️ PostgreSQL (Prisma)
+    participant Redis as 📬 Redis (BullMQ Queue)
+    participant Worker as ⚙️ Background Worker
+    participant Provider as 🌐 Upstream SMM Provider
+
+    Customer->>Web: 1. Select service & enter target link
+    Web->>API: POST /api/v1/orders (with Idempotency-Key)
+    critical Atomic Database Transaction
+        API->>DB: SELECT wallet FOR UPDATE (Pessimistic Row Lock)
+        API->>DB: Deduct balance & insert Ledger Transaction
+        API->>DB: Create Order (Status: PENDING)
+        API->>DB: Insert OutboxEvent (ORDER_CREATED)
+    end
+    API-->>Web: HTTP 201 Created (Order ID & Ledger receipt)
+    Web-->>Customer: Display real-time telemetry & active card
+
+    loop Outbox Relay Daemon
+        Worker->>DB: Poll unprocessed OutboxEvents
+        Worker->>Redis: Enqueue job to 'dispatch-queue'
+        Worker->>DB: Mark OutboxEvent as RELAYED
+    end
+
+    Redis->>Worker: Consume dispatch job
+    Worker->>Provider: Forward Order via AES-256 API Token
+    Provider-->>Worker: Upstream Provider Order ID
+    Worker->>DB: Update Order Status -> IN_PROGRESS / PROCESSING
+
+    loop Polling & Telemetry Sync
+        Worker->>Provider: Check fulfillment status & delivery count
+        Worker->>DB: Update delivered units & rhythm wave telemetry
+    end
 ```
 
 ---
