@@ -1962,13 +1962,13 @@ export function CustomDripTab({
               <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/50 text-[11px] font-mono">
                 <div>
                   <span className="text-slate-400 block text-[10px]">Booking Date</span>
-                  <span className="text-fg font-medium">
+                  <span suppressHydrationWarning className="text-fg font-medium">
                     {new Date().toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[10px]">Valid Through</span>
-                  <span className="text-[#D8EC8D] font-medium">
+                  <span suppressHydrationWarning className="text-[#D8EC8D] font-medium">
                     {new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 </div>

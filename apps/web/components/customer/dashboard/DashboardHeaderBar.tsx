@@ -71,7 +71,10 @@ export function DashboardHeaderBar() {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         {/* Left: Greeting */}
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-fg tracking-tight font-sans transition-colors">
+          <h1
+            suppressHydrationWarning
+            className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-fg tracking-tight font-sans transition-colors"
+          >
             Welcome, {firstName}
           </h1>
           <p className="text-xs text-slate-600 dark:text-fg-muted mt-0.5 font-medium">

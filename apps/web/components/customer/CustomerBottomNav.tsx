@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -16,6 +16,11 @@ import { formatIndianNumber } from "@/lib/numberFormat";
 export function CustomerBottomNav() {
   const pathname = usePathname();
   const { user, mobileDrawerOpen, setMobileDrawerOpen } = useCustomer();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const navItems = [
     {
@@ -107,8 +112,11 @@ export function CustomerBottomNav() {
                 />
               </div>
 
-              {item.isWallet && user?.balance !== undefined ? (
-                <span className="text-[9px] font-mono font-bold text-accent-text mt-0.5 tracking-tight truncate max-w-[56px] leading-tight">
+              {item.isWallet && mounted && user?.balance !== undefined ? (
+                <span
+                  suppressHydrationWarning
+                  className="text-[9px] font-mono font-bold text-accent-text mt-0.5 tracking-tight truncate max-w-[56px] leading-tight"
+                >
                   ₹{formatIndianNumber(Math.floor(user.balance))}
                 </span>
               ) : (

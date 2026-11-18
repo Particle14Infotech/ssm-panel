@@ -111,12 +111,8 @@ function NewOrderContent() {
 
   const { user, services, createOrder, favorites, orders, isServicesLoading } = useCustomer();
 
-  // Load last platform or query param
-  const initialPlatform = initialPlatformParam
-    ? initialPlatformParam.toLowerCase()
-    : typeof window !== "undefined"
-    ? localStorage.getItem(LAST_PLATFORM_KEY) || "instagram"
-    : "instagram";
+  // Deterministic initial platform for SSR/hydration safety
+  const initialPlatform = initialPlatformParam ? initialPlatformParam.toLowerCase() : "instagram";
 
   const [state, dispatch] = useReducer(formReducer, {
     selectedPlatform: initialPlatform,
@@ -128,6 +124,18 @@ function NewOrderContent() {
     dripInterval: 60,
     comments: "",
   });
+
+  // Restore saved platform from localStorage safely after client hydration
+  useEffect(() => {
+    if (!initialPlatformParam) {
+      try {
+        const saved = localStorage.getItem(LAST_PLATFORM_KEY);
+        if (saved && saved !== state.selectedPlatform) {
+          dispatch({ type: "SET_PLATFORM", platform: saved });
+        }
+      } catch {}
+    }
+  }, [initialPlatformParam]);
 
   // UI modal / state
   const [comboboxOpen, setComboboxOpen] = useState(false);
@@ -307,14 +315,22 @@ function NewOrderContent() {
     });
   }, [filteredServices]);
 
-  // Services filtered by category
+  // Reset selected category to ALL if it does not belong to the current platform's categories
+  useEffect(() => {
+    if (selectedCategory !== "ALL" && !categoryList.some((c) => c.id === selectedCategory)) {
+      setSelectedCategory("ALL");
+    }
+  }, [categoryList, selectedCategory]);
+
+  // Services filtered by category with bulletproof fallback so services are never hidden
   const categoryFilteredServices = useMemo(() => {
     if (selectedCategory === "ALL") return filteredServices;
-    return filteredServices.filter((s) => {
+    const matches = filteredServices.filter((s) => {
       const catName = s.categoryName?.trim() || "Other";
       const catId = catName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
       return catId === selectedCategory;
     });
+    return matches.length > 0 ? matches : filteredServices;
   }, [filteredServices, selectedCategory]);
 
   // Current active service
@@ -799,7 +815,14 @@ function NewOrderContent() {
                     <button
                       key={p.id}
                       type="button"
-                      onClick={() => dispatch({ type: "SET_PLATFORM", platform: p.id })}
+                      onClick={() => {
+                        setSelectedCategory("ALL");
+                        try {
+                          localStorage.setItem("smm_last_category", "ALL");
+                          localStorage.setItem(LAST_PLATFORM_KEY, p.id);
+                        } catch {}
+                        dispatch({ type: "SET_PLATFORM", platform: p.id });
+                      }}
                       className={`min-h-[44px] px-4 py-2 rounded-xl border text-sm font-medium flex items-center gap-2.5 shrink-0 transition-all select-none ${
                         isSelected
                           ? "bg-accent/10 border-[#D8EC8D] text-fg"

@@ -136,7 +136,10 @@ export function StickySummary({
                   </div>
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-fg-muted">Estimated finish</span>
-                    <span className="font-mono font-semibold text-[#D8EC8D]">
+                    <span
+                      suppressHydrationWarning
+                      className="font-mono font-semibold text-[#D8EC8D]"
+                    >
                       {estDate.toLocaleString([], {
                         month: "short",
                         day: "numeric",

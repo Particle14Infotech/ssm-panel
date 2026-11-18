@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, Suspense } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCustomer } from "@/context/CustomerContext";
@@ -8,8 +9,29 @@ import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { DashboardHeaderBar } from "@/components/customer/dashboard/DashboardHeaderBar";
 import { DashboardKpiGrid } from "@/components/customer/dashboard/DashboardKpiGrid";
 import { ActiveProcessCards, ProcessItem } from "@/components/customer/dashboard/ActiveProcessCards";
-import { DeliveryRhythmWave } from "@/components/customer/dashboard/DeliveryRhythmWave";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+
+// Client-only dynamic import for timezone/locale SVG graph to eliminate hydration mismatches (#418 / #423 / #425)
+const DeliveryRhythmWave = dynamic(
+  () => import("@/components/customer/dashboard/DeliveryRhythmWave").then((mod) => mod.DeliveryRhythmWave),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[280px] w-full rounded-2xl bg-surface border border-border animate-pulse p-5 flex flex-col justify-between">
+        <div className="flex items-center justify-between">
+          <div className="h-4 w-36 bg-surface-raised rounded-md" />
+          <div className="h-8 w-28 bg-surface-raised rounded-xl" />
+        </div>
+        <div className="h-36 w-full bg-surface-raised/40 rounded-xl" />
+        <div className="flex justify-between">
+          <div className="h-3 w-12 bg-surface-raised rounded" />
+          <div className="h-3 w-12 bg-surface-raised rounded" />
+          <div className="h-3 w-12 bg-surface-raised rounded" />
+        </div>
+      </div>
+    ),
+  }
+);
 import { PlatformIcon } from "@/components/shared/PlatformIcon";
 import {
   Search,

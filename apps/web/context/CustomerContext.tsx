@@ -108,22 +108,7 @@ const CustomerContext = createContext<CustomerContextType | undefined>(undefined
 const API_BASE = "/api/v1";
 
 export function CustomerProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserProfile>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem("authUser");
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          return {
-            ...EMPTY_USER,
-            ...parsed,
-            balance: parsed.balance !== undefined ? Number(parsed.balance) : 5000,
-          };
-        }
-      } catch {}
-    }
-    return EMPTY_USER;
-  });
+  const [user, setUser] = useState<UserProfile>(EMPTY_USER);
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [isServicesLoading, setIsServicesLoading] = useState<boolean>(true);
@@ -134,6 +119,21 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const [packages, setPackages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState<boolean>(false);
+
+  // Restore cached auth user safely after client hydration to prevent hydration mismatch #418 / #425
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem("authUser");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setUser({
+          ...EMPTY_USER,
+          ...parsed,
+          balance: parsed.balance !== undefined ? Number(parsed.balance) : 0,
+        });
+      }
+    } catch {}
+  }, []);
 
   const getAuthToken = useCallback(() => {
     return getSessionAuthToken();

@@ -100,7 +100,10 @@ export function CustomerHeader() {
           <div className="hidden md:flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-slate-100 to-lime-50/70 dark:from-transparent dark:to-transparent dark:bg-surface-raised border border-slate-300/80 dark:border-border rounded-xl p-1 pr-1.5 pl-2.5 sm:pl-3 whitespace-nowrap transition-colors shadow-2xs">
             <div className="flex items-baseline gap-1 font-sans whitespace-nowrap">
               <span className="text-[10px] sm:text-[11px] text-slate-600 dark:text-fg-muted uppercase tracking-wide font-bold">Bal:</span>
-              <span className="text-xs font-bold text-slate-950 dark:text-fg tabular-nums tracking-tight">
+              <span
+                suppressHydrationWarning
+                className="text-xs font-bold text-slate-950 dark:text-fg tabular-nums tracking-tight"
+              >
                 ₹{user.balance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </span>
             </div>
@@ -157,7 +160,10 @@ export function CustomerHeader() {
               aria-label="User account menu"
               className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-surface-raised transition-colors"
             >
-              <div className="w-8 h-8 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent-text text-xs font-semibold font-mono">
+              <div
+                suppressHydrationWarning
+                className="w-8 h-8 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent-text text-xs font-semibold font-mono"
+              >
                 {user.name ? user.name.charAt(0).toUpperCase() : "U"}
               </div>
               <ChevronDown className="w-3.5 h-3.5 text-fg-muted hidden sm:block" />
