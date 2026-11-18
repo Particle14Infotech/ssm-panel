@@ -36,6 +36,7 @@ export default function ServicesCatalogPage() {
     { id: "instagram", name: "Instagram" },
     { id: "youtube", name: "YouTube" },
     { id: "tiktok", name: "TikTok" },
+    { id: "facebook", name: "Facebook" },
     { id: "telegram", name: "Telegram" },
     { id: "twitter", name: "X (Twitter)" },
     { id: "spotify", name: "Spotify" },
